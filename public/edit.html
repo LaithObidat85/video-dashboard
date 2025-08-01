@@ -97,7 +97,6 @@
   </div>
   <div id="descBackdrop" class="modal-backdrop-custom" style="display:none" onclick="hideModal()"></div>
 
-  <!-- Modal for Editing -->
   <div class="modal fade" id="editModal" tabindex="-1">
     <div class="modal-dialog">
       <div class="modal-content">
@@ -158,13 +157,13 @@ async function confirmDeleteSelectedVideos() {
   if (!confirm('هل أنت متأكد من حذف جميع الفيديوهات المحددة؟')) return;
   const selected = [...document.querySelectorAll('#videoContainer input[type="checkbox"]:checked')].map(cb => cb.getAttribute('data-id'));
   await Promise.all(selected.map(id => fetch(`${API_BASE}/api/videos/${id}`, { method: 'DELETE' })));
-  await fetchVideos();
+  await renderFilteredVideos();
 }
 
 async function deleteVideo(id) {
   if (!confirm('هل تريد حذف هذا الفيديو؟')) return;
   await fetch(`${API_BASE}/api/videos/${id}`, { method: 'DELETE' });
-  await fetchVideos();
+  await renderFilteredVideos();
 }
 
 function editVideo(id) {
@@ -190,15 +189,14 @@ async function saveEditModal() {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(updated)
   });
-  await fetchVideos();
   editModal.hide();
+  await renderFilteredVideos();
 }
 
 async function fetchVideos() {
   const res = await fetch(`${API_BASE}/api/videos`);
   videos = await res.json();
   populateDepartments();
-  renderFilteredVideos();
 }
 
 function populateDepartments() {
@@ -218,8 +216,12 @@ function populateDepartments() {
 function renderFilteredVideos() {
   const dept = deptSelect.value;
   const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+  if (!dept) {
+    container.innerHTML = '<div class="alert alert-warning text-center">يرجى اختيار قسم لعرض الفيديوهات.</div>';
+    return;
+  }
   const filtered = videos.filter(v =>
-    (!dept || v.department === dept) &&
+    v.department === dept &&
     (v.title.toLowerCase().includes(searchTerm) || v.description.toLowerCase().includes(searchTerm))
   );
   container.innerHTML = '';
