@@ -105,11 +105,12 @@
   </div>
 
 <script>
+const API_BASE = 'https://video-dashboard-backend.onrender.com'; // ✅ عنوان الخادم الخارجي
 let videos = [];
 
 async function fetchVideos() {
   try {
-    const res = await fetch('/api/videos');
+    const res = await fetch(`${API_BASE}/api/videos`);
     videos = await res.json();
     populateDepartmentOptions();
   } catch (err) {
@@ -231,7 +232,7 @@ function confirmPassword(wrapper, input) {
 
   const handleLogin = () => {
     const password = input.value;
-    fetch('/api/verify-password', {
+    fetch(`${API_BASE}/api/verify-password`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ password })
