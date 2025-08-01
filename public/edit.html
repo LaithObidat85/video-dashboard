@@ -114,9 +114,7 @@
           <label class="form-label">رابط الفيديو</label>
           <input type="text" class="form-control mb-2" id="editUrl" placeholder="رابط الفيديو">
           <label class="form-label">القسم</label>
-          <select class="form-select" id="editDept">
-            <option value="">-- اختر القسم --</option>
-          </select>
+          <select class="form-select" id="editDept"></select>
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إغلاق</button>
@@ -199,29 +197,39 @@ async function saveEditModal() {
 async function fetchVideos() {
   const res = await fetch(`${API_BASE}/api/videos`);
   videos = await res.json();
+  populateDepartments();
   renderFilteredVideos();
+}
+
+function populateDepartments() {
+  const deptMap = {};
+  videos.forEach(v => {
+    deptMap[v.department] = (deptMap[v.department] || 0) + 1;
+  });
+  deptSelect.innerHTML = '<option value="">-- اختر القسم --</option>';
+  const editDept = document.getElementById('editDept');
+  editDept.innerHTML = '<option value="">-- اختر القسم --</option>';
+  Object.entries(deptMap).forEach(([dept, count]) => {
+    deptSelect.add(new Option(`${dept} (${count})`, dept));
+    editDept.add(new Option(dept, dept));
+  });
 }
 
 function renderFilteredVideos() {
   const dept = deptSelect.value;
   const searchTerm = document.getElementById('searchInput').value.toLowerCase();
-
   const filtered = videos.filter(v =>
-    v.department === dept &&
-    (v.title.toLowerCase().includes(searchTerm) ||
-     v.description.toLowerCase().includes(searchTerm))
+    (!dept || v.department === dept) &&
+    (v.title.toLowerCase().includes(searchTerm) || v.description.toLowerCase().includes(searchTerm))
   );
-
   container.innerHTML = '';
   if (filtered.length === 0) {
     container.innerHTML = '<div class="alert alert-info text-center">لا توجد فيديوهات مطابقة.</div>';
     return;
   }
-
   filtered.forEach(video => {
     const shortTitle = video.title.split(" ").slice(0, 4).join(" ") + '...';
     const shortDesc = video.description?.split(" ").slice(0, 3).join(" ") + '...';
-
     container.innerHTML += `
       <div class="video-card">
         <div class="form-check mb-2">
@@ -238,31 +246,6 @@ function renderFilteredVideos() {
       </div>`;
   });
 }
-
-function populateDepartmentsSelect(departments) {
-  const deptSelect = document.getElementById('deptSelect');
-  const editDept = document.getElementById('editDept');
-  departments.forEach(dept => {
-    const opt1 = new Option(dept, dept);
-    const opt2 = new Option(dept, dept);
-    deptSelect.add(opt1);
-    editDept.add(opt2);
-  });
-}
-
-const predefinedDepartments = [
-  "قسم اللغة العربية",
-  "قسم اللغة الانجليزية",
-  "قسم الترجمة",
-  "قسم علم النفس",
-  "قسم المساقات الخدمية",
-  "نظام ملف المادة",
-  "نظام المخرجات التعليمية (الواصفات)",
-  "نظام السيرة الذاتية",
-  "صفحة الموظف",
-  "البوابة الالكترونية"
-];
-populateDepartmentsSelect(predefinedDepartments);
 
 fetchVideos();
 </script>
