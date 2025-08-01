@@ -113,11 +113,11 @@ let videos = [];
 const container = document.getElementById('videoContainer');
 const deptSelect = document.getElementById('deptSelect');
 const editDeptSelect = document.getElementById('editDepartment');
+const API_BASE = 'https://video-dashboard-backend.onrender.com';
 
 async function fetchVideos() {
-  const res = await fetch('/api/videos');
+  const res = await fetch(`${API_BASE}/api/videos`);
   videos = await res.json();
-
   populateDepartments();
   container.innerHTML = '<div class="alert alert-info text-center">الرجاء اختيار قسم لعرض الفيديوهات.</div>';
 }
@@ -145,7 +145,7 @@ async function renderFilteredVideos() {
     return;
   }
 
-  const res = await fetch('/api/videos');
+  const res = await fetch(`${API_BASE}/api/videos`);
   videos = await res.json();
 
   const filtered = videos.filter(v =>
@@ -165,23 +165,23 @@ async function renderFilteredVideos() {
     container.innerHTML += `
       <div class="video-card">
         <div class="form-check mb-2">
-          <input type="checkbox" class="form-check-input" data-id="${video.id}">
+          <input type="checkbox" class="form-check-input" data-id="${video._id}">
         </div>
         <h5>${video.title}</h5>
         <p>${video.description}</p>
         <video src="${video.link}" controls></video>
         <button class="btn btn-sm btn-info mt-2" onclick="openInPopup('${video.link}')">انقر لعرض الفيديو</button>
         <div class="action-buttons">
-          <button class="btn btn-warning btn-sm" onclick="editVideo('${video.id}')">تعديل</button>
-          <button class="btn btn-danger btn-sm" onclick="deleteVideo('${video.id}')">حذف</button>
+          <button class="btn btn-warning btn-sm" onclick="editVideo('${video._id}')">تعديل</button>
+          <button class="btn btn-danger btn-sm" onclick="deleteVideo('${video._id}')">حذف</button>
         </div>
       </div>`;
   });
 }
 
 function editVideo(id) {
-  const video = videos.find(v => v.id === id);
-  document.getElementById('editId').value = video.id;
+  const video = videos.find(v => v._id === id);
+  document.getElementById('editId').value = video._id;
   document.getElementById('editTitle').value = video.title;
   document.getElementById('editDescription').value = video.description;
   document.getElementById('editLink').value = video.link;
@@ -198,19 +198,21 @@ async function saveEdit() {
     link: document.getElementById('editLink').value,
     department: document.getElementById('editDepartment').value,
   };
-  await fetch(`/api/videos/${id}`, {
+  await fetch(`${API_BASE}/api/videos/${id}`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(updatedVideo)
   });
   await fetchVideos();
   bootstrap.Modal.getInstance(document.getElementById('editModal')).hide();
+  renderFilteredVideos();
 }
 
 async function deleteVideo(id) {
   if (!confirm('هل أنت متأكد أنك تريد حذف هذا الفيديو؟')) return;
-  await fetch(`/api/videos/${id}`, { method: 'DELETE' });
+  await fetch(`${API_BASE}/api/videos/${id}`, { method: 'DELETE' });
   await fetchVideos();
+  renderFilteredVideos();
 }
 
 function toggleSelectAll(source) {
@@ -220,8 +222,9 @@ function toggleSelectAll(source) {
 async function confirmDeleteSelectedVideos() {
   if (!confirm('هل أنت متأكد من حذف جميع الفيديوهات المحددة؟')) return;
   const selected = [...document.querySelectorAll('#videoContainer input[type="checkbox"]:checked')].map(cb => cb.getAttribute('data-id'));
-  await Promise.all(selected.map(id => fetch(`/api/videos/${id}`, { method: 'DELETE' })));
+  await Promise.all(selected.map(id => fetch(`${API_BASE}/api/videos/${id}`, { method: 'DELETE' })));
   await fetchVideos();
+  renderFilteredVideos();
 }
 
 function openInPopup(link) {
