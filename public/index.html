@@ -51,19 +51,6 @@
   </div>
 
 <script>
-const allDepartments = [
-  "قسم اللغة العربية",
-  "قسم اللغة الانجليزية",
-  "قسم الترجمة",
-  "قسم علم النفس",
-  "قسم المساقات الخدمية",
-  "نظام ملف المادة",
-  "نظام المخرجات التعليمية (الواصفات)",
-  "نظام السيرة الذاتية",
-  "صفحة الموظف",
-  "البوابة الالكترونية"
-];
-
 async function loadSections() {
   const container = document.getElementById('sectionsContainer');
   container.innerHTML = '<p class="text-muted">🔄 جاري تحميل الأقسام...</p>';
@@ -72,6 +59,7 @@ async function loadSections() {
     const res = await fetch('/api/videos', { cache: "no-cache" });
     const videos = await res.json();
 
+    // استخراج الأقسام وعدد الفيديوهات لكل قسم
     const videoCounts = {};
     videos.forEach(v => {
       if (v.department) {
@@ -79,14 +67,15 @@ async function loadSections() {
       }
     });
 
+    const departments = Object.entries(videoCounts).sort(([a], [b]) => a.localeCompare(b, 'ar'));
+
     container.innerHTML = '';
     let col1 = document.createElement('div');
     col1.className = 'col-md-6';
     let col2 = document.createElement('div');
     col2.className = 'col-md-6';
 
-    allDepartments.forEach((dept, index) => {
-      const count = videoCounts[dept] || 0;
+    departments.forEach(([dept, count], index) => {
       const html = `
         <div class="section-card">
           <a href="department.html?dept=${encodeURIComponent(dept)}">${dept} (${count})</a>
@@ -134,10 +123,8 @@ function confirmPassword(wrapper, input) {
   modal.appendChild(box);
   document.body.appendChild(modal);
 
-  // ✅ تركيز المؤشر داخل مربع الإدخال
   input.focus();
 
-  // ✅ دالة التحقق
   const handleLogin = () => {
     const password = input.value;
     fetch('/api/verify-password', {
@@ -156,7 +143,6 @@ function confirmPassword(wrapper, input) {
     .catch(() => alert("❌ حدث خطأ في الاتصال بالخادم"));
   };
 
-  // ✅ تنفيذ الإدخال عند الضغط على Enter
   input.addEventListener('keydown', e => {
     if (e.key === 'Enter') {
       handleLogin();
