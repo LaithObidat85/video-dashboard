@@ -162,13 +162,15 @@ async function confirmDeleteSelectedVideos() {
   if (!confirm('هل أنت متأكد من حذف جميع الفيديوهات المحددة؟')) return;
   const selected = [...document.querySelectorAll('#videoContainer input[type="checkbox"]:checked')].map(cb => cb.getAttribute('data-id'));
   await Promise.all(selected.map(id => fetch(`${API_BASE}/api/videos/${id}`, { method: 'DELETE' })));
-  await renderFilteredVideos();
+  await fetchVideos();
+  renderFilteredVideos();
 }
 
 async function deleteVideo(id) {
   if (!confirm('هل تريد حذف هذا الفيديو؟')) return;
   await fetch(`${API_BASE}/api/videos/${id}`, { method: 'DELETE' });
-  await renderFilteredVideos();
+  await fetchVideos();
+  renderFilteredVideos();
 }
 
 function editVideo(id) {
@@ -195,7 +197,8 @@ async function saveEditModal() {
     body: JSON.stringify(updated)
   });
   editModal.hide();
-  await renderFilteredVideos();
+  await fetchVideos();
+  renderFilteredVideos();
 }
 
 async function fetchVideos() {
