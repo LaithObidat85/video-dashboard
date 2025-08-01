@@ -1,0 +1,21 @@
+{
+  "name": "video-dashboard",
+  "version": "1.0.0",
+  "description": "لوحة تحكم للفيديوهات التعليمية باستخدام Node.js وExpress",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "archiver": "^7.0.1",
+    "body-parser": "^2.2.0",
+    "cors": "^2.8.5",
+    "dotenv": "^17.2.1",
+    "express": "^4.21.2",
+    "fs": "^0.0.1-security",
+    "mongoose": "^8.17.0"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
+}

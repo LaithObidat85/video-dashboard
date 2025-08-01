@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <title>إضافة فيديو</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.rtl.min.css">
+  <style>
+    body {
+      padding: 30px;
+      background-color: #f2f4f8;
+      font-family: 'Segoe UI', sans-serif;
+    }
+    .form-section {
+      background: white;
+      padding: 20px;
+      border-radius: 12px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+      max-width: 600px;
+      margin: auto;
+    }
+    #preview {
+      margin-top: 20px;
+      position: relative;
+    }
+    iframe, video {
+      width: 100%;
+      height: 360px;
+      border: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="form-section">
+    <h3 class="mb-4 text-center">إضافة فيديو جديد</h3>
+    <form id="videoForm">
+      <div class="mb-3">
+        <label class="form-label">عنوان الفيديو</label>
+        <input type="text" class="form-control" id="title" required>
+      </div>
+      <div class="mb-3">
+        <label class="form-label">وصف الفيديو</label>
+        <textarea class="form-control" id="description" rows="2"></textarea>
+      </div>
+      <div class="mb-3">
+        <label class="form-label">رابط الفيديو</label>
+        <input type="url" class="form-control" id="link" required oninput="updatePreview()">
+      </div>
+      <div id="preview"></div>
+      <div class="mb-3 mt-3">
+        <label class="form-label">القسم</label>
+        <select class="form-select" id="department" required>
+          <option value="">-- اختر القسم --</option>
+          <option>قسم المساقات الخدمية</option>
+          <option>قسم اللغة العربية</option>
+          <option>قسم اللغة الانجليزية</option>
+          <option>قسم الترجمة</option>
+          <option>قسم علم النفس</option>
+          <option>نظام ملف المادة</option>
+          <option>نظام المخرجات التعليمية (الواصفات)</option>
+          <option>نظام السيرة الذاتية</option>
+          <option>صفحة الموظف</option>
+          <option>البوابة الالكترونية</option>
+        </select>
+      </div>
+      <div class="d-grid">
+        <button type="submit" class="btn btn-primary">إضافة الفيديو</button>
+      </div>
+    </form>
+
+    <div class="text-center mt-3">
+      <a href="edit.html" class="btn btn-outline-secondary">الذهاب إلى تعديل الفيديوهات</a>
+      <a href="dashboard.html" class="btn btn-outline-info ms-2">لوحة التحكم</a>
+    </div>
+
+    <div id="confirmation" class="alert alert-success mt-3 d-none"></div>
+  </div>
+
+<script>
+function updatePreview() {
+  const link = document.getElementById('link').value.trim();
+  const preview = document.getElementById('preview');
+  
+  if (link === "") {
+    preview.innerHTML = '';
+    return;
+  }
+
+  let embedUrl = null;
+
+  // ✅ يوتيوب
+  if (link.includes("youtube.com/watch?v=")) {
+    const videoId = link.split("v=")[1].split("&")[0];
+    embedUrl = `https://www.youtube.com/embed/${videoId}`;
+  }
+
+  // ✅ Google Drive
+  else if (link.includes("drive.google.com/file/d/")) {
+    const match = link.match(/\/file\/d\/(.*?)(\/|$)/);
+    if (match) {
+      const fileId = match[1];
+      embedUrl = `https://drive.google.com/file/d/${fileId}/preview`;
+    }
+  }
+
+  // ❌ روابط غير مدعومة
+  if (embedUrl) {
+    preview.innerHTML = `<iframe src="${embedUrl}" allowfullscreen></iframe>`;
+  } else {
+    preview.innerHTML = `
+      <div class="alert alert-warning">
+        ⚠️ لا يمكن عرض هذا الرابط داخل المعاينة.
+      </div>
+    `;
+  }
+}
+
+document.getElementById('videoForm').addEventListener('submit', async function(e) {
+  e.preventDefault();
+  
+  const title = document.getElementById('title').value;
+  const url = document.getElementById('link').value;
+  const description = document.getElementById('description').value;
+  const department = document.getElementById('department').value;
+
+  const response = await fetch('/api/videos', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ title, url, description, department })
+  });
+
+  if (response.ok) {
+    document.getElementById('confirmation').textContent = '✅ تم إضافة الفيديو بنجاح';
+    document.getElementById('confirmation').classList.remove('d-none');
+    document.getElementById('videoForm').reset();
+    document.getElementById('preview').innerHTML = '';
+  } else {
+    alert('حدث خطأ أثناء الإضافة.');
+  }
+});
+</script>
+</body>
+</html>
