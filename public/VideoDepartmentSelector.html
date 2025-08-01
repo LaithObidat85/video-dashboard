@@ -105,7 +105,167 @@
   </div>
 
 <script>
-// Code continues in next cell...
+let videos = [];
+
+async function fetchVideos() {
+  try {
+    const res = await fetch('/api/videos');
+    videos = await res.json();
+    populateDepartmentOptions();
+  } catch (err) {
+    console.error('فشل تحميل الفيديوهات:', err);
+  }
+}
+
+function renderVideos() {
+  const department = document.getElementById('departmentSelect').value;
+  const query = document.getElementById('searchInput').value.trim().toLowerCase();
+  const container = document.getElementById('videoContainer');
+  container.innerHTML = '';
+
+  if (!department) {
+    container.innerHTML = '<p class="text-muted">🔍 يرجى اختيار قسم لعرض الفيديوهات</p>';
+    return;
+  }
+
+  const filtered = videos.filter(v => 
+    (!department || v.department === department) &&
+    (v.title.toLowerCase().includes(query) || v.description.toLowerCase().includes(query))
+  );
+
+  filtered.forEach(video => {
+    const card = document.createElement('div');
+    card.className = 'video-card';
+
+    const title = <div class="video-title">${video.title}</div>;
+    const description = <div class="video-description" data-fulltext="${video.description}">${video.description}</div>;
+
+    let media = '';
+    if (video.link.includes('youtube.com') || video.link.includes('youtu.be')) {
+      media = <iframe src="https://www.youtube.com/embed/${extractYouTubeID(video.link)}" allowfullscreen></iframe>;
+    } else {
+      media = <video controls src="${video.link}" onloadedmetadata="this.nextElementSibling.textContent = formatDuration(this.duration)"></video><div class="video-duration"></div>;
+    }
+
+    const popout = <button class="popout-button" onclick="window.open('${video.link}', '_blank', 'width=800,height=600')">انقر لعرض الفيديو</button>;
+    card.innerHTML = title + description + media + popout;
+    container.appendChild(card);
+  });
+}
+
+function extractYouTubeID(url) {
+  const match = url.match(/[?&]v=([^&#]*)|youtu\.be\/([^&#]*)/);
+  return match ? (match[1] || match[2]) : '';
+}
+
+function formatDuration(seconds) {
+  const minutes = Math.floor(seconds / 60);
+  const secs = Math.floor(seconds % 60);
+  return ${minutes}:${secs.toString().padStart(2, '0')};
+}
+
+function populateDepartmentOptions() {
+  const departmentCounts = videos.reduce((acc, video) => {
+    acc[video.department] = (acc[video.department] || 0) + 1;
+    return acc;
+  }, {});
+
+  const departmentSelect = document.getElementById('departmentSelect');
+  departmentSelect.innerHTML = '<option value="">-- اختر القسم --</option>';
+
+  const departments = [
+    "قسم المساقات الخدمية",
+    "قسم اللغة العربية",
+    "قسم اللغة الانجليزية",
+    "قسم الترجمة",
+    "قسم علم النفس",
+    "نظام ملف المادة",
+    "نظام المخرجات التعليمية (الواصفات)",
+    "نظام السيرة الذاتية",
+    "صفحة الموظف",
+    "البوابة الالكترونية"
+  ];
+
+  departments.forEach(dept => {
+    const count = departmentCounts[dept] || 0;
+    const option = document.createElement('option');
+    option.value = dept;
+    option.textContent = ${dept} (${count});
+    departmentSelect.appendChild(option);
+  });
+}
+
+function requestDashboardAccess() {
+  const input = document.createElement('input');
+  input.type = 'password';
+  input.placeholder = '🔐 أدخل كلمة المرور';
+  input.style = 'padding:10px; width:100%; font-size:1rem;';
+  const wrapper = document.createElement('div');
+  wrapper.appendChild(input);
+  const result = confirmPassword(wrapper, input);
+}
+
+function confirmPassword(wrapper, input) {
+  const modal = document.createElement('div');
+  modal.style = 'position:fixed;top:0;left:0;width:100vw;height:100vh;background-color:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;z-index:9999;';
+
+  const box = document.createElement('div');
+  box.style = 'background:white;padding:30px;border-radius:12px;max-width:400px;width:90%;text-align:center;';
+  box.innerHTML = '<h5>🔐 أدخل كلمة المرور</h5>';
+  box.appendChild(wrapper);
+
+  const btn = document.createElement('button');
+  btn.className = 'btn btn-primary mt-3';
+  btn.textContent = 'دخول';
+  box.appendChild(btn);
+
+  const cancel = document.createElement('button');
+  cancel.className = 'btn btn-secondary mt-3 ms-2';
+  cancel.textContent = 'إلغاء';
+  box.appendChild(cancel);
+
+  modal.appendChild(box);
+  document.body.appendChild(modal);
+
+  input.focus();
+
+  const handleLogin = () => {
+    const password = input.value;
+    fetch('/api/verify-password', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ password })
+    })
+    .then(res => {
+      if (res.ok) {
+        document.body.removeChild(modal);
+        window.location.href = 'dashboard.html';
+      } else {
+        alert("❌ كلمة المرور غير صحيحة");
+      }
+    })
+    .catch(() => alert("❌ حدث خطأ في الاتصال بالخادم"));
+  };
+
+  btn.onclick = handleLogin;
+  cancel.onclick = () => {
+    document.body.removeChild(modal);
+  };
+
+  input.addEventListener('keydown', e => {
+    if (e.key === 'Enter') {
+      handleLogin();
+    }
+  });
+}
+
+document.getElementById('departmentSelect').addEventListener('change', () => {
+  document.getElementById('searchInput').disabled = false;
+  renderVideos();
+});
+document.getElementById('searchInput').addEventListener('input', renderVideos);
+
+fetchVideos();
 </script>
 </body>
 </html>
