@@ -67,15 +67,6 @@
       background-color: rgba(0,0,0,0.5);
       z-index: 9998;
     }
-    .title-two-lines {
-      height: 3em;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      display: -webkit-box;
-      -webkit-line-clamp: 2;
-      -webkit-box-orient: vertical;
-      cursor: pointer;
-    }
   </style>
 </head>
 <body>
@@ -164,7 +155,7 @@
             <div class="form-check mb-2">
               <input type="checkbox" class="form-check-input" data-id="${video._id}">
             </div>
-            <h5 class="title-two-lines" onclick="showFullDescription('${encodeURIComponent(video.title)}')">${video.title}</h5>
+            <h5 onclick="showFullDescription('${encodeURIComponent(video.title)}')">${video.title}</h5>
             <p class="desc-tooltip" onclick="showFullDescription('${encodeURIComponent(video.description)}')">${truncatedDesc}...</p>
             <video src="${video.url}" controls onerror="this.outerHTML='<p>تعذر تحميل الفيديو</p>'"></video>
             <button class="btn btn-sm btn-info mt-2" onclick="openInPopup('${video.url}')">انقر لعرض الفيديو</button>
