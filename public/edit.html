@@ -242,7 +242,9 @@ function renderFilteredVideos() {
         <div class="form-check mb-2">
           <input type="checkbox" class="form-check-input" data-id="${video._id}">
         </div>
+        <small class="text-muted">عنوان الفيديو:</small>
         <h5 class="title-tooltip" onclick="showModal(\`${video.title}\`)">${shortTitle}</h5>
+        <small class="text-muted">وصف الفيديو:</small>
         <p class="desc-tooltip" onclick="showModal(\`${video.description}\`)">${shortDesc}</p>
         <button class="btn btn-sm btn-info mt-2" onclick="openInPopup('${video.url}')">انقر لعرض الفيديو</button>
         <div class="action-buttons">
