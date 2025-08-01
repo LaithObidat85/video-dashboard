@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
@@ -103,13 +104,12 @@
       <a href="index.html" class="btn btn-secondary">الرجوع إلى فهرس الأقسام</a>
     </div>
   </div>
-
 <script>
 let videos = [];
 
 async function fetchVideos() {
   try {
-    const res = await fetch('/api/videos');
+    const res = await fetch('https://video-dashboard-backend.onrender.com/api/videos');
     videos = await res.json();
     populateDepartmentOptions();
   } catch (err) {
@@ -137,17 +137,17 @@ function renderVideos() {
     const card = document.createElement('div');
     card.className = 'video-card';
 
-    const title = <div class="video-title">${video.title}</div>;
-    const description = <div class="video-description" data-fulltext="${video.description}">${video.description}</div>;
+    const title = `<div class="video-title">${video.title}</div>`;
+    const description = `<div class="video-description" data-fulltext="${video.description}">${video.description}</div>`;
 
     let media = '';
     if (video.link.includes('youtube.com') || video.link.includes('youtu.be')) {
-      media = <iframe src="https://www.youtube.com/embed/${extractYouTubeID(video.link)}" allowfullscreen></iframe>;
+      media = `<iframe src="https://www.youtube.com/embed/${extractYouTubeID(video.link)}" allowfullscreen></iframe>`;
     } else {
-      media = <video controls src="${video.link}" onloadedmetadata="this.nextElementSibling.textContent = formatDuration(this.duration)"></video><div class="video-duration"></div>;
+      media = `<video controls src="${video.link}" onloadedmetadata="this.nextElementSibling.textContent = formatDuration(this.duration)"></video><div class="video-duration"></div>`;
     }
 
-    const popout = <button class="popout-button" onclick="window.open('${video.link}', '_blank', 'width=800,height=600')">انقر لعرض الفيديو</button>;
+    const popout = `<button class="popout-button" onclick="window.open('${video.link}', '_blank', 'width=800,height=600')">انقر لعرض الفيديو</button>`;
     card.innerHTML = title + description + media + popout;
     container.appendChild(card);
   });
@@ -161,7 +161,7 @@ function extractYouTubeID(url) {
 function formatDuration(seconds) {
   const minutes = Math.floor(seconds / 60);
   const secs = Math.floor(seconds % 60);
-  return ${minutes}:${secs.toString().padStart(2, '0')};
+  return `${minutes}:${secs.toString().padStart(2, '0')}`;
 }
 
 function populateDepartmentOptions() {
@@ -190,7 +190,7 @@ function populateDepartmentOptions() {
     const count = departmentCounts[dept] || 0;
     const option = document.createElement('option');
     option.value = dept;
-    option.textContent = ${dept} (${count});
+    option.textContent = `${dept} (${count})`;
     departmentSelect.appendChild(option);
   });
 }
@@ -231,7 +231,7 @@ function confirmPassword(wrapper, input) {
 
   const handleLogin = () => {
     const password = input.value;
-    fetch('/api/verify-password', {
+    fetch('https://video-dashboard-backend.onrender.com/api/verify-password', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ password })
