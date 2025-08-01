@@ -36,6 +36,15 @@ app.use(bodyParser.json());
 app.use(express.static(path.join(__dirname, 'public')));
 app.use('/backups', express.static(BACKUP_DIR));
 
+// ✅ مسار التحقق من كلمة المرور للوحة التحكم
+app.post('/api/verify-password', (req, res) => {
+  const { password } = req.body;
+  const correctPassword = process.env.DASHBOARD_PASSWORD;
+  if (password === correctPassword) return res.sendStatus(200);
+  else return res.sendStatus(403);
+});
+
+// 📥 جلب الفيديوهات
 app.get('/api/videos', async (req, res) => {
   try {
     const videos = await Video.find().sort({ dateAdded: -1 });
@@ -45,6 +54,7 @@ app.get('/api/videos', async (req, res) => {
   }
 });
 
+// ➕ إضافة فيديو
 app.post('/api/videos', async (req, res) => {
   try {
     const video = new Video(req.body);
@@ -55,6 +65,7 @@ app.post('/api/videos', async (req, res) => {
   }
 });
 
+// ✏️ تعديل فيديو
 app.put('/api/videos/:id', async (req, res) => {
   try {
     const { id } = req.params;
@@ -66,6 +77,7 @@ app.put('/api/videos/:id', async (req, res) => {
   }
 });
 
+// 🗑️ حذف فيديو
 app.delete('/api/videos/:id', async (req, res) => {
   try {
     const { id } = req.params;
@@ -77,6 +89,7 @@ app.delete('/api/videos/:id', async (req, res) => {
   }
 });
 
+// 📦 إنشاء نسخة احتياطية
 function createBackup() {
   Video.find().then(videos => {
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
@@ -94,6 +107,7 @@ app.post('/api/backups/create', (req, res) => {
   }
 });
 
+// 📂 عرض النسخ الاحتياطية
 app.get('/api/backups', (req, res) => {
   fs.readdir(BACKUP_DIR, (err, files) => {
     if (err) return res.status(500).json({ message: 'فشل في قراءة النسخ الاحتياطية' });
@@ -112,6 +126,7 @@ app.get('/api/backups', (req, res) => {
   });
 });
 
+// 🗑️ حذف نسخة احتياطية
 app.delete('/api/backups/:filename', (req, res) => {
   const filename = req.params.filename;
   const filePath = path.join(BACKUP_DIR, filename);
@@ -124,6 +139,7 @@ app.delete('/api/backups/:filename', (req, res) => {
   });
 });
 
+// 📦 تحميل النسخ الاحتياطية كملف ZIP
 app.get('/api/backups/zip', (req, res) => {
   let files = req.query.files;
   if (!files) return res.status(400).json({ message: '❌ لم يتم تحديد ملفات' });
@@ -149,6 +165,7 @@ app.get('/api/backups/zip', (req, res) => {
   archive.finalize();
 });
 
+// ▶️ تشغيل الخادم
 app.listen(PORT, () => {
   console.log(`🚀 الخادم يعمل على: http://localhost:${PORT}`);
 });
