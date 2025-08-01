@@ -67,6 +67,15 @@
       background-color: rgba(0,0,0,0.5);
       z-index: 9998;
     }
+    .title-two-lines {
+      height: 3em;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      cursor: pointer;
+    }
   </style>
 </head>
 <body>
@@ -95,191 +104,114 @@
     <div id="videoContainer" class="video-grid">
       <div class="alert alert-info text-center">الرجاء اختيار قسم لعرض الفيديوهات.</div>
     </div>
-
-    <!-- Modal تعديل -->
-    <div class="modal fade" id="editModal" tabindex="-1" aria-labelledby="editModalLabel" aria-hidden="true">
-      <div class="modal-dialog">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h5 class="modal-title" id="editModalLabel">تعديل الفيديو</h5>
-            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-          </div>
-          <div class="modal-body">
-            <input type="hidden" id="editId">
-            <div class="mb-3">
-              <label class="form-label">العنوان</label>
-              <input type="text" class="form-control" id="editTitle">
-            </div>
-            <div class="mb-3">
-              <label class="form-label">الوصف</label>
-              <textarea class="form-control" id="editDescription" rows="2"></textarea>
-            </div>
-            <div class="mb-3">
-              <label class="form-label">الرابط</label>
-              <input type="url" class="form-control" id="editLink">
-              <button class="btn btn-sm btn-info mt-2" onclick="openInPopup(document.getElementById('editLink').value)">انقر لعرض الفيديو</button>
-            </div>
-            <div class="mb-3">
-              <label class="form-label">القسم</label>
-              <select class="form-select" id="editDepartment"></select>
-            </div>
-          </div>
-          <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إغلاق</button>
-            <button type="button" class="btn btn-primary" onclick="saveEdit()">حفظ التعديلات</button>
-          </div>
-        </div>
-      </div>
-    </div>
   </div>
 
-<div id="descModal" style="display:none"></div>
-<div id="descBackdrop" class="modal-backdrop-custom" style="display:none" onclick="closeDescModal()"></div>
+  <div id="descModal" class="modal-desc" style="display:none">
+    <p id="fullDescription"></p>
+    <button class="btn btn-secondary mt-3" onclick="hideDescriptionModal()">إغلاق</button>
+  </div>
+  <div id="descBackdrop" class="modal-backdrop-custom" style="display:none" onclick="hideDescriptionModal()"></div>
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-<script>
-let videos = [];
-const container = document.getElementById('videoContainer');
-const deptSelect = document.getElementById('deptSelect');
-const editDeptSelect = document.getElementById('editDepartment');
-const API_BASE = 'https://video-dashboard-backend.onrender.com';
+  <script>
+    const API_BASE = 'https://video-dashboard-backend.onrender.com';
+    let videos = [];
+    const container = document.getElementById('videoContainer');
+    const deptSelect = document.getElementById('deptSelect');
 
-async function fetchVideos() {
-  const res = await fetch(`${API_BASE}/api/videos`);
-  videos = await res.json();
-  populateDepartments();
-  container.innerHTML = '<div class="alert alert-info text-center">الرجاء اختيار قسم لعرض الفيديوهات.</div>';
-}
+    async function fetchVideos() {
+      const res = await fetch(`${API_BASE}/api/videos`);
+      videos = await res.json();
+      populateDepartments();
+      renderFilteredVideos();
+    }
 
-function populateDepartments() {
-  const deptMap = {};
-  videos.forEach(v => {
-    deptMap[v.department] = (deptMap[v.department] || 0) + 1;
-  });
-  deptSelect.innerHTML = '<option value="">-- اختر القسم --</option>';
-  editDeptSelect.innerHTML = '';
-  Object.entries(deptMap).forEach(([dept, count]) => {
-    const option = new Option(`${dept} (${count})`, dept);
-    deptSelect.add(option);
-    editDeptSelect.add(new Option(dept, dept));
-  });
-}
+    function populateDepartments() {
+      const deptMap = {};
+      videos.forEach(v => {
+        deptMap[v.department] = (deptMap[v.department] || 0) + 1;
+      });
+      deptSelect.innerHTML = '<option value="">-- اختر القسم --</option>';
+      Object.entries(deptMap).forEach(([dept, count]) => {
+        deptSelect.add(new Option(`${dept} (${count})`, dept));
+      });
+    }
 
-async function renderFilteredVideos() {
-  const dept = deptSelect.value;
-  const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+    function renderFilteredVideos() {
+      const dept = deptSelect.value;
+      const searchTerm = document.getElementById('searchInput').value.toLowerCase();
 
-  if (!dept) {
-    container.innerHTML = '<div class="alert alert-warning text-center">يرجى اختيار قسم لعرض الفيديوهات.</div>';
-    return;
-  }
+      if (!dept) {
+        container.innerHTML = '<div class="alert alert-warning text-center">يرجى اختيار قسم لعرض الفيديوهات.</div>';
+        return;
+      }
 
-  const res = await fetch(`${API_BASE}/api/videos`);
-  videos = await res.json();
+      const filtered = videos.filter(v =>
+        v.department === dept &&
+        (v.title.toLowerCase().includes(searchTerm) ||
+         v.description.toLowerCase().includes(searchTerm))
+      );
 
-  const filtered = videos.filter(v =>
-    v.department === dept &&
-    (v.title.toLowerCase().includes(searchTerm) ||
-     v.description.toLowerCase().includes(searchTerm))
-  );
+      if (filtered.length === 0) {
+        container.innerHTML = '<div class="alert alert-info text-center">لا توجد فيديوهات مطابقة.</div>';
+        return;
+      }
 
-  container.innerHTML = '';
+      container.innerHTML = '';
+      filtered.forEach(video => {
+        const truncatedDesc = video.description?.split(" ").slice(0, 3).join(" ") || "لا يوجد وصف";
+        container.innerHTML += `
+          <div class="video-card">
+            <div class="form-check mb-2">
+              <input type="checkbox" class="form-check-input" data-id="${video._id}">
+            </div>
+            <h5 class="title-two-lines" onclick="showFullDescription('${encodeURIComponent(video.title)}')">${video.title}</h5>
+            <p class="desc-tooltip" onclick="showFullDescription('${encodeURIComponent(video.description)}')">${truncatedDesc}...</p>
+            <video src="${video.url}" controls onerror="this.outerHTML='<p>تعذر تحميل الفيديو</p>'"></video>
+            <button class="btn btn-sm btn-info mt-2" onclick="openInPopup('${video.url}')">انقر لعرض الفيديو</button>
+            <div class="action-buttons">
+              <button class="btn btn-warning btn-sm" onclick="editVideo('${video._id}')">تعديل</button>
+              <button class="btn btn-danger btn-sm" onclick="deleteVideo('${video._id}')">حذف</button>
+            </div>
+          </div>`;
+      });
+    }
 
-  if (filtered.length === 0) {
-    container.innerHTML = '<div class="alert alert-info text-center">لا توجد فيديوهات مطابقة.</div>';
-    return;
-  }
+    function openInPopup(link) {
+      if (!link || link === 'undefined') {
+        alert('الرابط غير صالح');
+        return;
+      }
+      window.open(link, '_blank', 'width=800,height=600');
+    }
 
-  filtered.forEach(video => {
-    const videoSrc = video.url || video.link;
-    const shortDesc = video.description.split(" ").slice(0, 3).join(" ") + '...';
-    container.innerHTML += `
-      <div class="video-card">
-        <div class="form-check mb-2">
-          <input type="checkbox" class="form-check-input" data-id="${video._id}">
-        </div>
-        <h5>${video.title}</h5>
-        <p class="desc-tooltip" onclick="showDescModal(\`${video.description}\`)" title="اضغط لعرض الوصف كاملًا">${shortDesc}</p>
-        <video src="${videoSrc}" controls onerror="this.outerHTML='<div class=\'alert alert-danger\'>تعذر عرض الفيديو</div>'"></video>
-        <button class="btn btn-sm btn-info mt-2" onclick="openInPopup('${videoSrc}')">انقر لعرض الفيديو</button>
-        <div class="action-buttons">
-          <button class="btn btn-warning btn-sm" onclick="editVideo('${video._id}')">تعديل</button>
-          <button class="btn btn-danger btn-sm" onclick="deleteVideo('${video._id}')">حذف</button>
-        </div>
-      </div>`;
-  });
-}
+    function showFullDescription(text) {
+      const full = decodeURIComponent(text);
+      document.getElementById('fullDescription').textContent = full;
+      document.getElementById('descModal').style.display = 'block';
+      document.getElementById('descBackdrop').style.display = 'block';
+    }
 
-function showDescModal(desc) {
-  const modal = document.getElementById('descModal');
-  const backdrop = document.getElementById('descBackdrop');
-  modal.innerHTML = `<div class='modal-desc'>
-    <p>${desc}</p>
-    <button class='btn btn-secondary mt-3' onclick='closeDescModal()'>إغلاق</button>
-  </div>`;
-  modal.style.display = 'block';
-  backdrop.style.display = 'block';
-}
+    function hideDescriptionModal() {
+      document.getElementById('descModal').style.display = 'none';
+      document.getElementById('descBackdrop').style.display = 'none';
+    }
 
-function closeDescModal() {
-  document.getElementById('descModal').style.display = 'none';
-  document.getElementById('descBackdrop').style.display = 'none';
-}
+    function toggleSelectAll(source) {
+      document.querySelectorAll('#videoContainer input[type="checkbox"]').forEach(cb => cb.checked = source.checked);
+    }
 
-function editVideo(id) {
-  const video = videos.find(v => v._id === id);
-  document.getElementById('editId').value = video._id;
-  document.getElementById('editTitle').value = video.title;
-  document.getElementById('editDescription').value = video.description;
-  document.getElementById('editLink').value = video.url || video.link;
-  document.getElementById('editDepartment').value = video.department;
-  const modal = new bootstrap.Modal(document.getElementById('editModal'));
-  modal.show();
-}
+    async function confirmDeleteSelectedVideos() {
+      if (!confirm('هل أنت متأكد من حذف جميع الفيديوهات المحددة؟')) return;
+      const selected = [...document.querySelectorAll('#videoContainer input[type="checkbox"]:checked')].map(cb => cb.getAttribute('data-id'));
+      await Promise.all(selected.map(id => fetch(`${API_BASE}/api/videos/${id}`, { method: 'DELETE' })));
+      await fetchVideos();
+    }
 
-async function saveEdit() {
-  const id = document.getElementById('editId').value;
-  const updatedVideo = {
-    title: document.getElementById('editTitle').value,
-    description: document.getElementById('editDescription').value,
-    url: document.getElementById('editLink').value,
-    department: document.getElementById('editDepartment').value,
-  };
-  await fetch(`${API_BASE}/api/videos/${id}`, {
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(updatedVideo)
-  });
-  await fetchVideos();
-  bootstrap.Modal.getInstance(document.getElementById('editModal')).hide();
-  renderFilteredVideos();
-}
+    async function editVideo(id) {
+      window.location.href = `edit.html?id=${id}`;
+    }
 
-async function deleteVideo(id) {
-  if (!confirm('هل أنت متأكد أنك تريد حذف هذا الفيديو؟')) return;
-  await fetch(`${API_BASE}/api/videos/${id}`, { method: 'DELETE' });
-  await fetchVideos();
-  renderFilteredVideos();
-}
-
-function toggleSelectAll(source) {
-  document.querySelectorAll('#videoContainer input[type="checkbox"]').forEach(cb => cb.checked = source.checked);
-}
-
-async function confirmDeleteSelectedVideos() {
-  if (!confirm('هل أنت متأكد من حذف جميع الفيديوهات المحددة؟')) return;
-  const selected = [...document.querySelectorAll('#videoContainer input[type="checkbox"]:checked')].map(cb => cb.getAttribute('data-id'));
-  await Promise.all(selected.map(id => fetch(`${API_BASE}/api/videos/${id}`, { method: 'DELETE' })));
-  await fetchVideos();
-  renderFilteredVideos();
-}
-
-function openInPopup(link) {
-  if (!link || link === 'undefined') return alert('الرابط غير صالح');
-  window.open(link, '_blank', 'width=800,height=600');
-}
-
-fetchVideos();
-</script>
+    fetchVideos();
+  </script>
 </body>
 </html>
