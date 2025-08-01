@@ -191,6 +191,7 @@ async function renderFilteredVideos() {
   }
 
   filtered.forEach(video => {
+    const videoSrc = video.url || video.link;
     const shortDesc = video.description.split(" ").slice(0, 3).join(" ") + '...';
     container.innerHTML += `
       <div class="video-card">
@@ -199,8 +200,8 @@ async function renderFilteredVideos() {
         </div>
         <h5>${video.title}</h5>
         <p class="desc-tooltip" onclick="showDescModal(\`${video.description}\`)" title="اضغط لعرض الوصف كاملًا">${shortDesc}</p>
-        <video src="${video.url}" controls></video>
-        <button class="btn btn-sm btn-info mt-2" onclick="openInPopup('${video.url}')">انقر لعرض الفيديو</button>
+        <video src="${videoSrc}" controls onerror="this.outerHTML='<div class=\'alert alert-danger\'>تعذر عرض الفيديو</div>'"></video>
+        <button class="btn btn-sm btn-info mt-2" onclick="openInPopup('${videoSrc}')">انقر لعرض الفيديو</button>
         <div class="action-buttons">
           <button class="btn btn-warning btn-sm" onclick="editVideo('${video._id}')">تعديل</button>
           <button class="btn btn-danger btn-sm" onclick="deleteVideo('${video._id}')">حذف</button>
@@ -230,7 +231,7 @@ function editVideo(id) {
   document.getElementById('editId').value = video._id;
   document.getElementById('editTitle').value = video.title;
   document.getElementById('editDescription').value = video.description;
-  document.getElementById('editLink').value = video.url;
+  document.getElementById('editLink').value = video.url || video.link;
   document.getElementById('editDepartment').value = video.department;
   const modal = new bootstrap.Modal(document.getElementById('editModal'));
   modal.show();
