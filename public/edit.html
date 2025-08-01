@@ -31,11 +31,6 @@
       -webkit-line-clamp: 2;
       -webkit-box-orient: vertical;
     }
-    iframe, video {
-      width: 100%;
-      height: 200px;
-      border: none;
-    }
     .action-buttons {
       position: absolute;
       top: 15px;
@@ -75,70 +70,42 @@
   </style>
 </head>
 <body>
-  <div class="container">
-    <div class="d-flex justify-content-between align-items-center mb-3">
-      <h3>تعديل الفيديوهات</h3>
-      <div class="d-flex gap-2">
-        <a href="index.html" class="btn btn-secondary">إضافة فيديو جديد</a>
-        <a href="dashboard.html" class="btn btn-outline-info">لوحة التحكم</a>
-      </div>
-    </div>
-
-    <select id="deptSelect" class="form-select" onchange="renderFilteredVideos()">
-      <option value="">-- اختر القسم --</option>
-    </select>
-
-    <input type="text" id="searchInput" class="form-control" placeholder="ابحث بعنوان أو وصف الفيديو..." oninput="renderFilteredVideos()">
-
-    <div class="form-check mb-3">
-      <input type="checkbox" class="form-check-input" id="selectAll" onchange="toggleSelectAll(this)">
-      <label for="selectAll" class="form-check-label">تحديد الكل</label>
-    </div>
-
-    <button class="btn btn-danger mb-4" onclick="confirmDeleteSelectedVideos()">حذف المحدد</button>
-
-    <div id="videoContainer" class="video-grid"></div>
-  </div>
-
-  <div id="descModal" class="modal-desc" style="display:none">
-    <p id="fullText"></p>
-    <button class="btn btn-secondary mt-3" onclick="hideModal()">إغلاق</button>
-  </div>
-  <div id="descBackdrop" class="modal-backdrop-custom" style="display:none" onclick="hideModal()"></div>
-
-  <div class="modal fade" id="editModal" tabindex="-1">
-    <div class="modal-dialog">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title">تعديل الفيديو</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-        </div>
-        <div class="modal-body">
-          <input type="hidden" id="editId">
-          <label class="form-label">العنوان</label>
-          <input type="text" class="form-control mb-2" id="editTitle" placeholder="العنوان">
-          <label class="form-label">الوصف</label>
-          <textarea class="form-control mb-2" id="editDesc" placeholder="الوصف"></textarea>
-          <label class="form-label">رابط الفيديو</label>
-          <input type="text" class="form-control mb-2" id="editUrl" placeholder="رابط الفيديو">
-          <label class="form-label">القسم</label>
-          <select class="form-select" id="editDept"></select>
-        </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إغلاق</button>
-          <button type="button" class="btn btn-primary" onclick="saveEditModal()">حفظ</button>
-        </div>
-      </div>
+<div class="container">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h3>تعديل الفيديوهات</h3>
+    <div class="d-flex gap-2">
+      <a href="index.html" class="btn btn-secondary">إضافة فيديو جديد</a>
+      <a href="dashboard.html" class="btn btn-outline-info">لوحة التحكم</a>
     </div>
   </div>
+  
+  <select id="deptSelect" class="form-select" onchange="renderFilteredVideos()">
+    <option value="">-- اختر القسم --</option>
+  </select>
+  
+  <input type="text" id="searchInput" class="form-control" placeholder="ابحث بعنوان أو وصف الفيديو..." oninput="renderFilteredVideos()">
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <div class="form-check mb-3">
+    <input type="checkbox" class="form-check-input" id="selectAll" onchange="toggleSelectAll(this)">
+    <label for="selectAll" class="form-check-label">تحديد الكل</label>
+  </div>
+
+  <button class="btn btn-danger mb-4" onclick="confirmDeleteSelectedVideos()">حذف المحدد</button>
+
+  <div id="videoContainer" class="video-grid"></div>
+</div>
+
+<div id="descModal" class="modal-desc" style="display:none">
+  <p id="fullText"></p>
+  <button class="btn btn-secondary mt-3" onclick="hideModal()">إغلاق</button>
+</div>
+<div id="descBackdrop" class="modal-backdrop-custom" style="display:none" onclick="hideModal()"></div>
+
 <script>
 const API_BASE = 'https://video-dashboard-backend.onrender.com';
 let videos = [];
 const container = document.getElementById('videoContainer');
 const deptSelect = document.getElementById('deptSelect');
-const editModal = new bootstrap.Modal(document.getElementById('editModal'));
 
 function showModal(text) {
   document.getElementById('fullText').textContent = text;
@@ -175,33 +142,6 @@ async function deleteVideo(id) {
   await renderFilteredVideos();
 }
 
-function editVideo(id) {
-  const video = videos.find(v => v._id === id);
-  document.getElementById('editId').value = video._id;
-  document.getElementById('editTitle').value = video.title;
-  document.getElementById('editDesc').value = video.description;
-  document.getElementById('editUrl').value = video.url;
-  document.getElementById('editDept').value = video.department;
-  editModal.show();
-}
-
-async function saveEditModal() {
-  const id = document.getElementById('editId').value;
-  const updated = {
-    title: document.getElementById('editTitle').value,
-    description: document.getElementById('editDesc').value,
-    url: document.getElementById('editUrl').value,
-    department: document.getElementById('editDept').value
-  };
-  await fetch(`${API_BASE}/api/videos/${id}`, {
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(updated)
-  });
-  editModal.hide();
-  await renderFilteredVideos();
-}
-
 async function fetchVideos() {
   const res = await fetch(`${API_BASE}/api/videos`);
   videos = await res.json();
@@ -214,11 +154,8 @@ function populateDepartments() {
     deptMap[v.department] = (deptMap[v.department] || 0) + 1;
   });
   deptSelect.innerHTML = '<option value="">-- اختر القسم --</option>';
-  const editDept = document.getElementById('editDept');
-  editDept.innerHTML = '<option value="">-- اختر القسم --</option>';
   Object.entries(deptMap).forEach(([dept, count]) => {
     deptSelect.add(new Option(`${dept} (${count})`, dept));
-    editDept.add(new Option(dept, dept));
   });
 }
 
@@ -248,7 +185,6 @@ function renderFilteredVideos() {
         </div>
         <h5 class="title-tooltip" onclick="showModal(\`${video.title}\`)">${shortTitle}</h5>
         <p class="desc-tooltip" onclick="showModal(\`${video.description}\`)">${shortDesc}</p>
-        <video src="${video.url}" controls onerror="this.outerHTML='<p>تعذر تحميل الفيديو</p>'"></video>
         <button class="btn btn-sm btn-info mt-2" onclick="openInPopup('${video.url}')">انقر لعرض الفيديو</button>
         <div class="action-buttons">
           <button class="btn btn-warning btn-sm" onclick="editVideo('${video._id}')">تعديل</button>
