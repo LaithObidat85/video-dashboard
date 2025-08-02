@@ -35,14 +35,8 @@
   <div class="container">
     <h2 class="text-center mb-4" id="page-title">فيديوهات القسم</h2>
 
-    <div class="text-center mb-3">
-      <select id="departmentSelect" class="form-select" onchange="handleDepartmentChange()">
-        <option value="">-- اختر القسم --</option>
-      </select>
-    </div>
-
     <div class="mb-3">
-      <input type="text" id="searchInput" class="form-control" placeholder="ابحث بعنوان أو وصف الفيديو..." oninput="renderFilteredVideos()" disabled>
+      <input type="text" id="searchInput" class="form-control" placeholder="ابحث بعنوان أو وصف الفيديو..." oninput="renderFilteredVideos()">
     </div>
 
     <div class="text-center mb-4">
@@ -86,9 +80,10 @@ function openInPopup(link) {
 }
 
 let allVideos = [];
-let selectedDept = '';
 const container = document.getElementById('videoContainer');
 const pageTitle = document.getElementById('page-title');
+const urlParams = new URLSearchParams(window.location.search);
+const selectedDept = urlParams.get('dept');
 
 async function fetchVideos() {
   try {
@@ -98,32 +93,14 @@ async function fetchVideos() {
       ...video,
       link: video.url
     }));
-    populateDepartmentOptions();
+    if (selectedDept) {
+      pageTitle.textContent = `فيديوهات ${selectedDept}`;
+      renderFilteredVideos();
+    } else {
+      container.innerHTML = '<div class="alert alert-warning text-center">لم يتم تحديد القسم.</div>';
+    }
   } catch (err) {
     container.innerHTML = `<div class="alert alert-danger text-center">فشل تحميل الفيديوهات من الخادم</div>`;
-  }
-}
-
-function populateDepartmentOptions() {
-  const departments = [...new Set(allVideos.map(v => v.department))].sort();
-  const select = document.getElementById('departmentSelect');
-  departments.forEach(dept => {
-    const option = document.createElement('option');
-    option.value = dept;
-    option.textContent = dept;
-    select.appendChild(option);
-  });
-}
-
-function handleDepartmentChange() {
-  selectedDept = document.getElementById('departmentSelect').value;
-  document.getElementById('searchInput').disabled = !selectedDept;
-  if (selectedDept) {
-    pageTitle.textContent = `فيديوهات ${selectedDept}`;
-    renderFilteredVideos();
-  } else {
-    container.innerHTML = '';
-    pageTitle.textContent = 'فيديوهات القسم';
   }
 }
 
