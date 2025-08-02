@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
@@ -104,6 +103,7 @@
       <a href="index.html" class="btn btn-secondary">الرجوع إلى فهرس الأقسام</a>
     </div>
   </div>
+
 <script>
 const API_BASE = 'https://video-dashboard-backend.onrender.com';
 let videos = [];
@@ -130,7 +130,7 @@ function renderVideos() {
   }
 
   const filtered = videos.filter(v => 
-    (!department || v.department === department) &&
+    (!department || v.department.trim().toLowerCase() === department.trim().toLowerCase()) &&
     (v.title.toLowerCase().includes(query) || v.description.toLowerCase().includes(query))
   );
 
@@ -264,6 +264,7 @@ document.getElementById('departmentSelect').addEventListener('change', () => {
   document.getElementById('searchInput').disabled = false;
   renderVideos();
 });
+
 document.getElementById('searchInput').addEventListener('input', renderVideos);
 
 fetchVideos();
