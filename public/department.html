@@ -62,7 +62,7 @@ function getEmbedCode(link) {
       ? `<iframe src="https://drive.google.com/file/d/${fileId}/preview" allowfullscreen onerror="
             alert('تعذر تشغيل فيديو Google Drive. سيتم فتحه في نافذة جديدة.');
             window.open('${link}', '_blank', 'width=800,height=600');
-            this.outerHTML = '<p class="text-danger">تعذر تشغيل الفيديو. <a href='${link}' target='_blank'>اضغط هنا لفتحه في نافذة جديدة</a></p>';
+            this.outerHTML = '<p class=\"text-danger\">تعذر تشغيل الفيديو. <a href='${link}' target='_blank'>اضغط هنا لفتحه في نافذة جديدة</a></p>';
           "></iframe>`
       : '<div class="alert alert-danger">رابط Google Drive غير صالح أو خاص. تأكد من أنه مشترك علنًا.</div>';
   } else {
@@ -97,7 +97,7 @@ async function fetchVideos() {
       pageTitle.textContent = `فيديوهات ${selectedDept}`;
       renderFilteredVideos();
     } else {
-      container.innerHTML = '<div class="alert alert-warning text-center">لم يتم تحديد القسم.</div>';
+      container.innerHTML = '<div class="alert alert-warning text-center">⚠️ لم يتم تحديد القسم. يرجى الرجوع واختيار قسم من صفحة الفهرس.</div>';
     }
   } catch (err) {
     container.innerHTML = `<div class="alert alert-danger text-center">فشل تحميل الفيديوهات من الخادم</div>`;
