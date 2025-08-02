@@ -114,6 +114,8 @@ function updatePreview() {
   }
 }
 
+const API_BASE = 'https://video-dashboard-backend.onrender.com';
+
 document.getElementById('videoForm').addEventListener('submit', async function(e) {
   e.preventDefault();
   
@@ -122,10 +124,10 @@ document.getElementById('videoForm').addEventListener('submit', async function(e
   const description = document.getElementById('description').value;
   const department = document.getElementById('department').value;
 
-  const response = await fetch('/api/videos', {
+  const response = await fetch(`${API_BASE}/api/videos`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ title, link: url, description, department }) // ✅ هذا هو التعديل المهم
+    body: JSON.stringify({ title, url, description, department })
   });
 
   if (response.ok) {
