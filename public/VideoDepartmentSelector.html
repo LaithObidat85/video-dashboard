@@ -119,6 +119,7 @@ async function fetchVideos() {
 }
 
 function renderVideos() {
+  console.log("All departments in DB:", videos.map(v => v.department));
   const department = document.getElementById('departmentSelect').value;
   const query = document.getElementById('searchInput').value.trim().toLowerCase();
   const container = document.getElementById('videoContainer');
@@ -133,6 +134,7 @@ function renderVideos() {
     (!department || v.department.trim().toLowerCase() === department.trim().toLowerCase()) &&
     (v.title.toLowerCase().includes(query) || v.description.toLowerCase().includes(query))
   );
+  console.log("Filtered videos:", filtered);
 
   filtered.forEach(video => {
     const card = document.createElement('div');
