@@ -119,7 +119,6 @@ async function fetchVideos() {
 }
 
 function renderVideos() {
-  console.log("All departments in DB:", videos.map(v => v.department));
   const department = document.getElementById('departmentSelect').value;
   const query = document.getElementById('searchInput').value.trim().toLowerCase();
   const container = document.getElementById('videoContainer');
@@ -130,12 +129,12 @@ function renderVideos() {
     return;
   }
 
-  const filtered = videos.filter(v => 
-    (!department || v.department?.trim().toLowerCase() === department.trim().toLowerCase()) &&
-    ((typeof v.title === 'string' && v.title.toLowerCase().includes(query)) ||
-     (typeof v.description === 'string' && v.description.toLowerCase().includes(query)))
-  );
-  console.log("Filtered videos:", filtered);
+  const filtered = videos.filter(v => {
+    const dep = v.department?.trim().toLowerCase();
+    const title = v.title?.toLowerCase() || '';
+    const desc = v.description?.toLowerCase() || '';
+    return dep === department.trim().toLowerCase() && (title.includes(query) || desc.includes(query));
+  });
 
   filtered.forEach(video => {
     const card = document.createElement('div');
@@ -196,70 +195,6 @@ function populateDepartmentOptions() {
     option.value = dept;
     option.textContent = `${dept} (${count})`;
     departmentSelect.appendChild(option);
-  });
-}
-
-function requestDashboardAccess() {
-  const input = document.createElement('input');
-  input.type = 'password';
-  input.placeholder = '🔐 أدخل كلمة المرور';
-  input.style = 'padding:10px; width:100%; font-size:1rem;';
-  const wrapper = document.createElement('div');
-  wrapper.appendChild(input);
-  const result = confirmPassword(wrapper, input);
-}
-
-function confirmPassword(wrapper, input) {
-  const modal = document.createElement('div');
-  modal.style = 'position:fixed;top:0;left:0;width:100vw;height:100vh;background-color:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;z-index:9999;';
-
-  const box = document.createElement('div');
-  box.style = 'background:white;padding:30px;border-radius:12px;max-width:400px;width:90%;text-align:center;';
-  box.innerHTML = '<h5>🔐 أدخل كلمة المرور</h5>';
-  box.appendChild(wrapper);
-
-  const btn = document.createElement('button');
-  btn.className = 'btn btn-primary mt-3';
-  btn.textContent = 'دخول';
-  box.appendChild(btn);
-
-  const cancel = document.createElement('button');
-  cancel.className = 'btn btn-secondary mt-3 ms-2';
-  cancel.textContent = 'إلغاء';
-  box.appendChild(cancel);
-
-  modal.appendChild(box);
-  document.body.appendChild(modal);
-
-  input.focus();
-
-  const handleLogin = () => {
-    const password = input.value;
-    fetch(`${API_BASE}/api/verify-password`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ password })
-    })
-    .then(res => {
-      if (res.ok) {
-        document.body.removeChild(modal);
-        window.location.href = 'dashboard.html';
-      } else {
-        alert("❌ كلمة المرور غير صحيحة");
-      }
-    })
-    .catch(() => alert("❌ حدث خطأ في الاتصال بالخادم"));
-  };
-
-  btn.onclick = handleLogin;
-  cancel.onclick = () => {
-    document.body.removeChild(modal);
-  };
-
-  input.addEventListener('keydown', e => {
-    if (e.key === 'Enter') {
-      handleLogin();
-    }
   });
 }
 
