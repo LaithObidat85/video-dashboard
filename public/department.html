@@ -35,8 +35,14 @@
   <div class="container">
     <h2 class="text-center mb-4" id="page-title">فيديوهات القسم</h2>
 
+    <div class="text-center mb-3">
+      <select id="departmentSelect" class="form-select" onchange="handleDepartmentChange()">
+        <option value="">-- اختر القسم --</option>
+      </select>
+    </div>
+
     <div class="mb-3">
-      <input type="text" id="searchInput" class="form-control" placeholder="ابحث بعنوان أو وصف الفيديو..." oninput="renderFilteredVideos()">
+      <input type="text" id="searchInput" class="form-control" placeholder="ابحث بعنوان أو وصف الفيديو..." oninput="renderFilteredVideos()" disabled>
     </div>
 
     <div class="text-center mb-4">
@@ -80,8 +86,7 @@ function openInPopup(link) {
 }
 
 let allVideos = [];
-const urlParams = new URLSearchParams(window.location.search);
-const dept = urlParams.get('dept');
+let selectedDept = '';
 const container = document.getElementById('videoContainer');
 const pageTitle = document.getElementById('page-title');
 
@@ -91,18 +96,41 @@ async function fetchVideos() {
     const videosFromServer = await res.json();
     allVideos = videosFromServer.map(video => ({
       ...video,
-      link: video.url  // تعديل لاستخدام video.url بدل video.link
+      link: video.url
     }));
-    renderFilteredVideos();
+    populateDepartmentOptions();
   } catch (err) {
     container.innerHTML = `<div class="alert alert-danger text-center">فشل تحميل الفيديوهات من الخادم</div>`;
+  }
+}
+
+function populateDepartmentOptions() {
+  const departments = [...new Set(allVideos.map(v => v.department))].sort();
+  const select = document.getElementById('departmentSelect');
+  departments.forEach(dept => {
+    const option = document.createElement('option');
+    option.value = dept;
+    option.textContent = dept;
+    select.appendChild(option);
+  });
+}
+
+function handleDepartmentChange() {
+  selectedDept = document.getElementById('departmentSelect').value;
+  document.getElementById('searchInput').disabled = !selectedDept;
+  if (selectedDept) {
+    pageTitle.textContent = `فيديوهات ${selectedDept}`;
+    renderFilteredVideos();
+  } else {
+    container.innerHTML = '';
+    pageTitle.textContent = 'فيديوهات القسم';
   }
 }
 
 function renderFilteredVideos() {
   const searchTerm = document.getElementById('searchInput').value.toLowerCase();
   container.innerHTML = '';
-  const filtered = allVideos.filter(v => v.department === dept && (v.title.toLowerCase().includes(searchTerm) || v.description.toLowerCase().includes(searchTerm)));
+  const filtered = allVideos.filter(v => v.department === selectedDept && (v.title.toLowerCase().includes(searchTerm) || v.description.toLowerCase().includes(searchTerm)));
 
   if (filtered.length === 0) {
     container.innerHTML = `<div class="alert alert-info text-center">لا توجد فيديوهات مطابقة.</div>`;
@@ -120,12 +148,7 @@ function renderFilteredVideos() {
   }
 }
 
-if (dept) {
-  pageTitle.textContent = `فيديوهات ${dept}`;
-  fetchVideos();
-} else {
-  container.innerHTML = `<div class="alert alert-warning text-center">لم يتم تحديد القسم في عنوان الرابط.</div>`;
-}
+fetchVideos();
 </script>
 </body>
 </html>
