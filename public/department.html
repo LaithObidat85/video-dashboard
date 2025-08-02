@@ -54,32 +54,31 @@
 const API_BASE = 'https://video-dashboard-backend.onrender.com';
 
 function getEmbedCode(link) {
-  if (!link || link.trim() === "") return '<p class="text-danger">الرابط غير متوفر</p>';
-  if (link.includes("youtube.com") || link.includes("youtu.be")) {
-    const videoID = extractYouTubeID(link);
-    return videoID ? `<iframe src="https://www.youtube.com/embed/${videoID}" allowfullscreen></iframe>` : `<video controls src="${link}"></video>`;
-  } else if (link.includes("drive.google.com")) {
-    const idMatch = link.match(/[-\w]{25,}/);
-    const fileId = idMatch ? idMatch[0] : null;
-    return fileId
-      ? `<iframe src="https://drive.google.com/file/d/${fileId}/preview" allowfullscreen></iframe>`
-      : `<video controls src="${link}"></video>`;
-  } else {
-    return `<video controls src="${link}"></video>`;
+  if (!link || link.trim() === "") {
+    return '<div class="alert alert-warning">الرابط غير متوفر</div>';
+  }
+
+  try {
+    if (link.includes("youtube.com") || link.includes("youtu.be")) {
+      const videoID = extractYouTubeID(link);
+      return videoID ? `<iframe src="https://www.youtube.com/embed/${videoID}" allowfullscreen></iframe>` : '<div class="alert alert-danger">رابط YouTube غير صالح</div>';
+    } else if (link.includes("drive.google.com")) {
+      const idMatch = link.match(/[-\w]{25,}/);
+      const fileId = idMatch ? idMatch[0] : null;
+      return fileId
+        ? `<iframe src="https://drive.google.com/file/d/${fileId}/preview" allowfullscreen></iframe>`
+        : '<div class="alert alert-danger">رابط Google Drive غير صالح أو خاص</div>';
+    } else {
+      return `<video controls src="${link}" onerror="this.outerHTML='<div class=\"alert alert-danger\">تعذر تشغيل الفيديو</div>'"></video>`;
+    }
+  } catch (e) {
+    return '<div class="alert alert-danger">تعذر تحميل الفيديو</div>';
   }
 }
 
 function extractYouTubeID(url) {
   const match = url.match(/[?&]v=([^&#]*)|youtu\.be\/([^&#]*)/);
   return match ? (match[1] || match[2]) : null;
-}
-
-function openInPopup(link) {
-  if (link && link.trim() !== '') {
-    window.open(link, '_blank', 'width=800,height=600');
-  } else {
-    alert("الرابط غير متاح لعرضه في نافذة جديدة");
-  }
 }
 
 let allVideos = [];
