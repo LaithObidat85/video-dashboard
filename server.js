@@ -19,10 +19,10 @@ mongoose.connect(MONGO_URI, {
 .then(() => console.log('✅ Connected to MongoDB Atlas'))
 .catch(err => console.error('❌ MongoDB connection error:', err));
 
-// نموذج بيانات الفيديو
+// ✅ تعديل اسم الحقل إلى link بدل url
 const videoSchema = new mongoose.Schema({
   title: { type: String, required: true },
-  url: { type: String, required: true },
+  link: { type: String, required: true }, // <-- هذا هو التعديل
   department: { type: String, required: true },
   description: String,
   dateAdded: { type: Date, default: Date.now }
@@ -36,7 +36,7 @@ app.use(bodyParser.json());
 app.use(express.static(path.join(__dirname, 'public')));
 app.use('/backups', express.static(BACKUP_DIR));
 
-// ✅ مسار التحقق من كلمة المرور للوحة التحكم
+// ✅ تحقق كلمة مرور لوحة التحكم
 app.post('/api/verify-password', (req, res) => {
   const { password } = req.body;
   const correctPassword = process.env.DASHBOARD_PASSWORD;
@@ -44,7 +44,7 @@ app.post('/api/verify-password', (req, res) => {
   else return res.sendStatus(403);
 });
 
-// 📥 جلب الفيديوهات
+// 📥 جلب كل الفيديوهات
 app.get('/api/videos', async (req, res) => {
   try {
     const videos = await Video.find().sort({ dateAdded: -1 });
@@ -89,7 +89,7 @@ app.delete('/api/videos/:id', async (req, res) => {
   }
 });
 
-// 📦 إنشاء نسخة احتياطية
+// 📦 نسخة احتياطية
 function createBackup() {
   Video.find().then(videos => {
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
@@ -139,7 +139,7 @@ app.delete('/api/backups/:filename', (req, res) => {
   });
 });
 
-// 📦 تحميل النسخ الاحتياطية كملف ZIP
+// 📦 تحميل النسخ كملف ZIP
 app.get('/api/backups/zip', (req, res) => {
   let files = req.query.files;
   if (!files) return res.status(400).json({ message: '❌ لم يتم تحديد ملفات' });
