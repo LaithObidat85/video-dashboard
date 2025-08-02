@@ -54,10 +54,10 @@
 const API_BASE = 'https://video-dashboard-backend.onrender.com';
 
 function getEmbedCode(link) {
-  if (!link) return '<p class="text-danger">الرابط غير متوفر</p>';
+  if (!link || link.trim() === "") return '<p class="text-danger">الرابط غير متوفر</p>';
   if (link.includes("youtube.com") || link.includes("youtu.be")) {
     const videoID = extractYouTubeID(link);
-    return videoID ? `<iframe src="https://www.youtube.com/embed/${videoID}" allowfullscreen></iframe>` : '<p>رابط YouTube غير صالح</p>';
+    return videoID ? `<iframe src="https://www.youtube.com/embed/${videoID}" allowfullscreen></iframe>` : '<p class="text-danger">رابط YouTube غير صالح</p>';
   } else if (link.includes("drive.google.com")) {
     const idMatch = link.match(/[-\w]{25,}/);
     const fileId = idMatch ? idMatch[0] : null;
@@ -69,7 +69,7 @@ function getEmbedCode(link) {
           "></iframe>`
       : '<div class="alert alert-danger">رابط Google Drive غير صالح أو خاص. تأكد من أنه مشترك علنًا.</div>';
   } else {
-    return `<video controls src="${link}" onerror="this.outerHTML='<p>تعذر تحميل الفيديو</p>'"></video>`;
+    return `<video controls src="${link}" onerror="this.outerHTML='<p class=\"text-danger\">تعذر تحميل الفيديو</p>'"></video>`;
   }
 }
 
@@ -98,7 +98,7 @@ async function fetchVideos() {
       department: decodeURIComponent(video.department || '').trim(),
       title: video.title || '',
       description: video.description || '',
-      link: video.url || ''
+      link: (video.url || '').trim()
     }));
     renderFilteredVideos();
   } catch (err) {
