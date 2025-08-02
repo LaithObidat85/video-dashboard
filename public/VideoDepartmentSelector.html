@@ -200,9 +200,17 @@ function populateDepartmentOptions() {
   });
 }
 
-function requestDashboardAccess() {
-  // Placeholder to prevent error if not defined
-  alert('🔐 خاصية لوحة التحكم غير مفعلة بعد');
+async function requestDashboardAccess() {
+  const response = await fetch(`${API_BASE}/api/password`);
+  const data = await response.json();
+  const expectedPassword = data.password;
+
+  const password = prompt("🔐 من فضلك أدخل كلمة المرور للوصول إلى لوحة التحكم:");
+  if (password === expectedPassword) {
+    window.location.href = 'dashboard.html';
+  } else if (password !== null) {
+    alert('❌ كلمة المرور غير صحيحة');
+  }
 }
 
 document.getElementById('departmentSelect').addEventListener('change', renderVideos);
