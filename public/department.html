@@ -65,8 +65,8 @@ function getEmbedCode(link) {
       ? `<iframe src="https://drive.google.com/file/d/${fileId}/preview" allowfullscreen onerror="
             alert('تعذر تشغيل فيديو Google Drive. سيتم فتحه في نافذة جديدة.');
             window.open('${link}', '_blank', 'width=800,height=600');
-            this.outerHTML = '<p class=\"text-danger\">تعذر تشغيل الفيديو. <a href='${link}' target='_blank'>اضغط هنا لفتحه في نافذة جديدة</a></p>';
-          "></iframe>`
+            ">
+        </iframe>`
       : '<div class="alert alert-danger">رابط Google Drive غير صالح أو خاص. تأكد من أنه مشترك علنًا.</div>';
   } else {
     return `<video controls src="${link}" onerror="this.outerHTML='<p class=\"text-danger\">تعذر تحميل الفيديو</p>'"></video>`;
@@ -79,7 +79,11 @@ function extractYouTubeID(url) {
 }
 
 function openInPopup(link) {
-  window.open(link, '_blank', 'width=800,height=600');
+  if (link && link.trim() !== '') {
+    window.open(link, '_blank', 'width=800,height=600');
+  } else {
+    alert("الرابط غير متاح لعرضه في نافذة جديدة");
+  }
 }
 
 let allVideos = [];
@@ -122,7 +126,7 @@ function renderFilteredVideos() {
           <h5>${video.title}</h5>
           <p>${video.description}</p>
           ${embedCode}
-          <a class="alt-link" onclick="openInPopup('${video.link}')">انقر هنا لعرض الفيديو إذا لم يعمل</a>
+          <a class="alt-link" href="${video.link}" target="_blank">انقر هنا لعرض الفيديو إذا لم يعمل</a>
         </div>`;
     });
   }
