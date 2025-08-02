@@ -54,6 +54,7 @@
 const API_BASE = 'https://video-dashboard-backend.onrender.com';
 
 function getEmbedCode(link) {
+  if (!link) return '<p class="text-danger">الرابط غير متوفر</p>';
   if (link.includes("youtube.com") || link.includes("youtu.be")) {
     const videoID = extractYouTubeID(link);
     return videoID ? `<iframe src="https://www.youtube.com/embed/${videoID}" allowfullscreen></iframe>` : '<p>رابط YouTube غير صالح</p>';
@@ -97,7 +98,7 @@ async function fetchVideos() {
       department: decodeURIComponent(video.department || '').trim(),
       title: video.title || '',
       description: video.description || '',
-      link: video.url
+      link: video.url || ''
     }));
     renderFilteredVideos();
   } catch (err) {
