@@ -43,7 +43,7 @@
       </div>
       <div class="mb-3">
         <label class="form-label">رابط الفيديو</label>
-        <input type="url" class="form-control" id="link" required oninput="updatePreview()">
+        <input type="url" class="form-control" id="url" required oninput="updatePreview()">
       </div>
       <div id="preview"></div>
       <div class="mb-3 mt-3">
@@ -77,9 +77,9 @@
 
 <script>
 function updatePreview() {
-  const link = document.getElementById('link').value.trim();
+  const link = document.getElementById('url').value.trim();
   const preview = document.getElementById('preview');
-  
+
   if (link === "") {
     preview.innerHTML = '';
     return;
@@ -87,14 +87,10 @@ function updatePreview() {
 
   let embedUrl = null;
 
-  // ✅ يوتيوب
   if (link.includes("youtube.com/watch?v=")) {
     const videoId = link.split("v=")[1].split("&")[0];
     embedUrl = `https://www.youtube.com/embed/${videoId}`;
-  }
-
-  // ✅ Google Drive
-  else if (link.includes("drive.google.com/file/d/")) {
+  } else if (link.includes("drive.google.com/file/d/")) {
     const match = link.match(/\/file\/d\/(.*?)(\/|$)/);
     if (match) {
       const fileId = match[1];
@@ -102,15 +98,10 @@ function updatePreview() {
     }
   }
 
-  // ❌ روابط غير مدعومة
   if (embedUrl) {
     preview.innerHTML = `<iframe src="${embedUrl}" allowfullscreen></iframe>`;
   } else {
-    preview.innerHTML = `
-      <div class="alert alert-warning">
-        ⚠️ لا يمكن عرض هذا الرابط داخل المعاينة.
-      </div>
-    `;
+    preview.innerHTML = `<div class="alert alert-warning">⚠️ لا يمكن عرض هذا الرابط داخل المعاينة.</div>`;
   }
 }
 
@@ -118,9 +109,9 @@ const API_BASE = 'https://video-dashboard-backend.onrender.com';
 
 document.getElementById('videoForm').addEventListener('submit', async function(e) {
   e.preventDefault();
-  
+
   const title = document.getElementById('title').value;
-  const url = document.getElementById('link').value;
+  const url = document.getElementById('url').value;
   const description = document.getElementById('description').value;
   const department = document.getElementById('department').value;
 
