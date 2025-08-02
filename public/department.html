@@ -83,22 +83,26 @@ function openInPopup(link) {
 
 let allVideos = [];
 const urlParams = new URLSearchParams(window.location.search);
-const dept = decodeURIComponent(urlParams.get('dept') || '');
+const dept = decodeURIComponent(urlParams.get('dept') || '').trim();
 const container = document.getElementById('videoContainer');
 const pageTitle = document.getElementById('page-title');
 
 async function fetchVideos() {
   try {
     const res = await fetch(`${API_BASE}/api/videos`);
+    if (!res.ok) throw new Error(`HTTP status ${res.status}`);
     const videosFromServer = await res.json();
     allVideos = videosFromServer.map(video => ({
       ...video,
+      department: decodeURIComponent(video.department || '').trim(),
+      title: video.title || '',
+      description: video.description || '',
       link: video.url
     }));
     renderFilteredVideos();
   } catch (err) {
     console.error('Fetch error:', err);
-    container.innerHTML = `<div class="alert alert-danger text-center">فشل تحميل الفيديوهات من الخادم</div>`;
+    container.innerHTML = `<div class="alert alert-danger text-center">فشل تحميل الفيديوهات من الخادم: ${err.message}</div>`;
   }
 }
 
