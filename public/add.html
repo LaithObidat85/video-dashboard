@@ -125,7 +125,7 @@ document.getElementById('videoForm').addEventListener('submit', async function(e
   const response = await fetch('/api/videos', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ title, url, description, department })
+    body: JSON.stringify({ title, link: url, description, department }) // ✅ هذا هو التعديل المهم
   });
 
   if (response.ok) {
