@@ -128,7 +128,7 @@ function renderVideos() {
     const dep = v.department?.trim().toLowerCase();
     const title = v.title?.toLowerCase() || '';
     const desc = v.description?.toLowerCase() || '';
-    const link = v.link || '';
+    const link = v.link || v.url || '';
     const matchesQuery = title.includes(query) || desc.includes(query);
     return dep === department.trim().toLowerCase() && matchesQuery;
   });
@@ -145,14 +145,24 @@ function renderVideos() {
     const title = `<div class="video-title">${video.title}</div>`;
     const description = `<div class="video-description" data-fulltext="${video.description}">${video.description}</div>`;
 
+    const link = video.link || video.url || '';
     let media = '';
-    if (video.link && (video.link.includes('youtube.com') || video.link.includes('youtu.be'))) {
-      media = `<iframe src="https://www.youtube.com/embed/${extractYouTubeID(video.link)}" allowfullscreen></iframe>`;
+
+    if (link.includes('youtube.com') || link.includes('youtu.be')) {
+      media = `<iframe src="https://www.youtube.com/embed/${extractYouTubeID(link)}" allowfullscreen></iframe>`;
+    } else if (link.includes('drive.google.com/file/d/')) {
+      const match = link.match(/\/file\/d\/(.*?)(\/|$)/);
+      if (match) {
+        const fileId = match[1];
+        media = `<iframe src="https://drive.google.com/file/d/${fileId}/preview" allowfullscreen></iframe>`;
+      } else {
+        media = `<video controls src="${link}" onloadedmetadata="this.nextElementSibling.textContent = formatDuration(this.duration)"></video><div class="video-duration"></div>`;
+      }
     } else {
-      media = `<video controls src="${video.link}" onloadedmetadata="this.nextElementSibling.textContent = formatDuration(this.duration)"></video><div class="video-duration"></div>`;
+      media = `<video controls src="${link}" onloadedmetadata="this.nextElementSibling.textContent = formatDuration(this.duration)"></video><div class="video-duration"></div>`;
     }
 
-    const popout = `<button class="popout-button" onclick="window.open('${video.link}', '_blank', 'width=800,height=600')">انقر لعرض الفيديو</button>`;
+    const popout = `<button class="popout-button" onclick="window.open('${link}', '_blank', 'width=800,height=600')">انقر لعرض الفيديو</button>`;
     card.innerHTML = title + description + media + popout;
     container.appendChild(card);
   });
@@ -171,7 +181,8 @@ function formatDuration(seconds) {
 
 function populateDepartmentOptions() {
   const departmentCounts = videos.reduce((acc, video) => {
-    acc[video.department] = (acc[video.department] || 0) + 1;
+    const dep = video.department;
+    acc[dep] = (acc[dep] || 0) + 1;
     return acc;
   }, {});
 
