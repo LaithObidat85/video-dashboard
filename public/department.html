@@ -84,8 +84,7 @@ function extractYouTubeID(url) {
 function fallbackMessage(link) {
   return `
     <div class="alert alert-warning text-center">
-      تعذر تشغيل الفيديو في الصفحة.<br>
-      <iframe src="${link}" allowfullscreen style="width: 100%; height: 360px;"></iframe>
+      تعذر تشغيل الفيديو في الصفحة. يمكنك <a href="${link}" target="_blank">النقر هنا لمشاهدته في نافذة جديدة</a>.
     </div>`;
 }
 
