@@ -66,10 +66,10 @@ function getEmbedCode(link) {
       const idMatch = link.match(/[-\w]{25,}/);
       const fileId = idMatch ? idMatch[0] : null;
       return fileId
-        ? `<iframe src="https://drive.google.com/file/d/${fileId}/preview" allowfullscreen></iframe>`
+        ? `<iframe src="https://drive.google.com/file/d/${fileId}/preview" allowfullscreen onerror="fallbackOpen('${link}')"></iframe>`
         : '<div class="alert alert-danger">رابط Google Drive غير صالح أو خاص</div>';
     } else {
-      return `<video controls src="${link}" onerror="this.outerHTML='<div class=\"alert alert-danger\">تعذر تشغيل الفيديو</div>'"></video>`;
+      return `<video controls src="${link}" onerror="fallbackOpen('${link}')"></video>`;
     }
   } catch (e) {
     return '<div class="alert alert-danger">تعذر تحميل الفيديو</div>';
@@ -79,6 +79,15 @@ function getEmbedCode(link) {
 function extractYouTubeID(url) {
   const match = url.match(/[?&]v=([^&#]*)|youtu\.be\/([^&#]*)/);
   return match ? (match[1] || match[2]) : null;
+}
+
+function fallbackOpen(link) {
+  const fallbackMessage = `
+    <div class="alert alert-warning text-center">
+      تعذر تشغيل الفيديو في الصفحة.<br>
+      <a href="${link}" target="_blank" class="btn btn-primary mt-2">اضغط هنا لفتحه في نافذة جديدة</a>
+    </div>`;
+  document.currentScript.parentElement.innerHTML = fallbackMessage;
 }
 
 let allVideos = [];
