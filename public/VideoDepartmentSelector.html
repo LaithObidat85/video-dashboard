@@ -111,7 +111,7 @@ async function fetchVideos() {
     const res = await fetch(`${API_BASE}/api/videos`);
     videos = await res.json();
     populateDepartmentOptions();
-    renderVideos(); // عرض كل الفيديوهات فورًا
+    renderVideos();
   } catch (err) {
     console.error('فشل تحميل الفيديوهات:', err);
   }
@@ -127,6 +127,7 @@ function renderVideos() {
     const dep = v.department?.trim().toLowerCase();
     const title = v.title?.toLowerCase() || '';
     const desc = v.description?.toLowerCase() || '';
+    const link = v.link || '';
     const matchesQuery = title.includes(query) || desc.includes(query);
     if (!department) return matchesQuery;
     return dep === department.trim().toLowerCase() && matchesQuery;
@@ -145,7 +146,7 @@ function renderVideos() {
     const description = `<div class="video-description" data-fulltext="${video.description}">${video.description}</div>`;
 
     let media = '';
-    if (video.link.includes('youtube.com') || video.link.includes('youtu.be')) {
+    if (video.link && (video.link.includes('youtube.com') || video.link.includes('youtu.be'))) {
       media = `<iframe src="https://www.youtube.com/embed/${extractYouTubeID(video.link)}" allowfullscreen></iframe>`;
     } else {
       media = `<video controls src="${video.link}" onloadedmetadata="this.nextElementSibling.textContent = formatDuration(this.duration)"></video><div class="video-duration"></div>`;
@@ -197,6 +198,11 @@ function populateDepartmentOptions() {
     option.textContent = `${dept} (${count})`;
     departmentSelect.appendChild(option);
   });
+}
+
+function requestDashboardAccess() {
+  // Placeholder to prevent error if not defined
+  alert('🔐 خاصية لوحة التحكم غير مفعلة بعد');
 }
 
 document.getElementById('departmentSelect').addEventListener('change', renderVideos);
