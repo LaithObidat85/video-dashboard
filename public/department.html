@@ -51,6 +51,8 @@
   </div>
 
 <script>
+const API_BASE = 'https://video-dashboard-backend.onrender.com';
+
 function getEmbedCode(link) {
   if (link.includes("youtube.com") || link.includes("youtu.be")) {
     const videoID = extractYouTubeID(link);
@@ -62,7 +64,7 @@ function getEmbedCode(link) {
       ? `<iframe src="https://drive.google.com/file/d/${fileId}/preview" allowfullscreen onerror="
             alert('تعذر تشغيل فيديو Google Drive. سيتم فتحه في نافذة جديدة.');
             window.open('${link}', '_blank', 'width=800,height=600');
-            this.outerHTML = '<p class=\"text-danger\">تعذر تشغيل الفيديو. <a href='${link}' target='_blank'>اضغط هنا لفتحه في نافذة جديدة</a></p>';
+            this.outerHTML = '<p class="text-danger">تعذر تشغيل الفيديو. <a href='${link}' target='_blank'>اضغط هنا لفتحه في نافذة جديدة</a></p>';
           "></iframe>`
       : '<div class="alert alert-danger">رابط Google Drive غير صالح أو خاص. تأكد من أنه مشترك علنًا.</div>';
   } else {
@@ -80,25 +82,20 @@ function openInPopup(link) {
 }
 
 let allVideos = [];
+const urlParams = new URLSearchParams(window.location.search);
+const dept = urlParams.get('dept');
 const container = document.getElementById('videoContainer');
 const pageTitle = document.getElementById('page-title');
-const urlParams = new URLSearchParams(window.location.search);
-const selectedDept = urlParams.get('dept');
 
 async function fetchVideos() {
   try {
-    const res = await fetch('/api/videos');
+    const res = await fetch(`${API_BASE}/api/videos`);
     const videosFromServer = await res.json();
     allVideos = videosFromServer.map(video => ({
       ...video,
       link: video.url
     }));
-    if (selectedDept) {
-      pageTitle.textContent = `فيديوهات ${selectedDept}`;
-      renderFilteredVideos();
-    } else {
-      container.innerHTML = '<div class="alert alert-warning text-center">⚠️ لم يتم تحديد القسم. يرجى الرجوع واختيار قسم من صفحة الفهرس.</div>';
-    }
+    renderFilteredVideos();
   } catch (err) {
     container.innerHTML = `<div class="alert alert-danger text-center">فشل تحميل الفيديوهات من الخادم</div>`;
   }
@@ -107,7 +104,7 @@ async function fetchVideos() {
 function renderFilteredVideos() {
   const searchTerm = document.getElementById('searchInput').value.toLowerCase();
   container.innerHTML = '';
-  const filtered = allVideos.filter(v => v.department === selectedDept && (v.title.toLowerCase().includes(searchTerm) || v.description.toLowerCase().includes(searchTerm)));
+  const filtered = allVideos.filter(v => v.department === dept && (v.title.toLowerCase().includes(searchTerm) || v.description.toLowerCase().includes(searchTerm)));
 
   if (filtered.length === 0) {
     container.innerHTML = `<div class="alert alert-info text-center">لا توجد فيديوهات مطابقة.</div>`;
@@ -125,7 +122,12 @@ function renderFilteredVideos() {
   }
 }
 
-fetchVideos();
+if (dept) {
+  pageTitle.textContent = `فيديوهات ${dept}`;
+  fetchVideos();
+} else {
+  container.innerHTML = `<div class="alert alert-warning text-center">لم يتم تحديد القسم في عنوان الرابط.</div>`;
+}
 </script>
 </body>
 </html>
