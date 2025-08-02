@@ -201,15 +201,19 @@ function populateDepartmentOptions() {
 }
 
 async function requestDashboardAccess() {
-  const response = await fetch(`${API_BASE}/api/password`);
-  const data = await response.json();
-  const expectedPassword = data.password;
-
-  const password = prompt("🔐 من فضلك أدخل كلمة المرور للوصول إلى لوحة التحكم:");
-  if (password === expectedPassword) {
-    window.location.href = 'dashboard.html';
-  } else if (password !== null) {
-    alert('❌ كلمة المرور غير صحيحة');
+  try {
+    const response = await fetch(`${API_BASE}/api/verify-password`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ password: prompt("🔐 من فضلك أدخل كلمة المرور للوصول إلى لوحة التحكم:") })
+    });
+    if (response.ok) {
+      window.location.href = 'dashboard.html';
+    } else {
+      alert('❌ كلمة المرور غير صحيحة');
+    }
+  } catch (err) {
+    alert('❌ حدث خطأ في الاتصال بالخادم');
   }
 }
 
