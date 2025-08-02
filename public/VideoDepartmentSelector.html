@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
@@ -103,14 +104,12 @@
       <a href="index.html" class="btn btn-secondary">الرجوع إلى فهرس الأقسام</a>
     </div>
   </div>
-
 <script>
-const API_BASE = 'https://video-dashboard-backend.onrender.com';
 let videos = [];
 
 async function fetchVideos() {
   try {
-    const res = await fetch(`${API_BASE}/api/videos`);
+    const res = await fetch('https://video-dashboard-backend.onrender.com/api/videos');
     videos = await res.json();
     populateDepartmentOptions();
   } catch (err) {
@@ -119,7 +118,6 @@ async function fetchVideos() {
 }
 
 function renderVideos() {
-  console.log("All departments in DB:", videos.map(v => v.department));
   const department = document.getElementById('departmentSelect').value;
   const query = document.getElementById('searchInput').value.trim().toLowerCase();
   const container = document.getElementById('videoContainer');
@@ -131,10 +129,9 @@ function renderVideos() {
   }
 
   const filtered = videos.filter(v => 
-    (!department || v.department.trim().toLowerCase() === department.trim().toLowerCase()) &&
-    (v.title?.toLowerCase().includes(query) || v.description?.toLowerCase().includes(query))
+    (!department || v.department === department) &&
+    (v.title.toLowerCase().includes(query) || v.description.toLowerCase().includes(query))
   );
-  console.log("Filtered videos:", filtered);
 
   filtered.forEach(video => {
     const card = document.createElement('div');
@@ -234,7 +231,7 @@ function confirmPassword(wrapper, input) {
 
   const handleLogin = () => {
     const password = input.value;
-    fetch(`${API_BASE}/api/verify-password`, {
+    fetch('https://video-dashboard-backend.onrender.com/api/verify-password', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ password })
@@ -266,7 +263,6 @@ document.getElementById('departmentSelect').addEventListener('change', () => {
   document.getElementById('searchInput').disabled = false;
   renderVideos();
 });
-
 document.getElementById('searchInput').addEventListener('input', renderVideos);
 
 fetchVideos();
