@@ -22,7 +22,6 @@
       display: flex;
       flex-direction: column;
       justify-content: flex-start;
-      height: auto;
     }
     .video-title {
       font-weight: bold;
@@ -35,6 +34,7 @@
       white-space: nowrap;
       cursor: pointer;
       margin: 2px 0 10px 0;
+      color: #0d6efd;
     }
     .video-grid {
       display: flex;
@@ -79,6 +79,19 @@
     </select>
     <input id="searchInput" class="form-control mb-4" type="text" placeholder="ابحث بعنوان أو وصف الفيديو..." disabled>
     <div id="videoContainer" class="video-grid"></div>
+  </div>
+
+  <!-- Modal عرض الوصف -->
+  <div class="modal fade" id="descModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">وصف الفيديو</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body" id="descContent" style="white-space: pre-wrap; text-align: justify;"></div>
+      </div>
+    </div>
   </div>
 
   <!-- نافذة تعديل الفيديو -->
@@ -177,13 +190,18 @@ function renderVideos() {
     card.className = 'video-card';
 
     const title = `<div class="video-title">${video.title}</div>`;
-    const description = `<div class="video-description" data-fulltext="${video.description}">${video.description}</div>`;
+    const description = `<div class="video-description" onclick="showDescription('${escapeHtml(video.description)}')">${video.description}</div>`;
 
     const link = video.url || '';
     let media = '';
 
     if (link.includes('youtube.com') || link.includes('youtu.be')) {
       media = `<iframe src="https://www.youtube.com/embed/${extractYouTubeID(link)}" allowfullscreen></iframe>`;
+    } else if (link.includes('drive.google.com/file/d/')) {
+      const match = link.match(/\/file\/d\/(.*?)(\/|$)/);
+      if (match) {
+        media = `<iframe src="https://drive.google.com/file/d/${match[1]}/preview" allowfullscreen></iframe>`;
+      }
     } else {
       media = `<video controls src="${link}"></video>`;
     }
@@ -202,9 +220,19 @@ function renderVideos() {
   });
 }
 
+function escapeHtml(text) {
+  return text?.replace(/"/g, '&quot;').replace(/'/g, '&#39;') || '';
+}
+
 function extractYouTubeID(url) {
   const match = url.match(/[?&]v=([^&#]*)|youtu\.be\/([^&#]*)/);
   return match ? (match[1] || match[2]) : '';
+}
+
+function showDescription(desc) {
+  document.getElementById('descContent').innerHTML = desc;
+  const modal = new bootstrap.Modal(document.getElementById('descModal'));
+  modal.show();
 }
 
 function openEditModal(id) {
