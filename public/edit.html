@@ -217,7 +217,7 @@ function editVideo(id) {
   document.getElementById('editUrl').value = video.url;
   document.getElementById('editDept').value = video.department;
 
-  // التحقق من جاهزية المحرر قبل إدخال النص
+  // التأكد من جاهزية CKEditor قبل إدخال النص
   if (descEditor) {
     descEditor.setData(video.description || '');
   } else {
