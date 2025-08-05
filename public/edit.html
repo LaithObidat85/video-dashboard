@@ -134,44 +134,10 @@
 <script>
 const API_BASE = 'https://video-dashboard-backend.onrender.com';
 let videos = [];
+let descEditor = null;
 const container = document.getElementById('videoContainer');
 const deptSelect = document.getElementById('deptSelect');
 const editModal = new bootstrap.Modal(document.getElementById('editModal'));
-let descEditor;
-
-// تهيئة CKEditor Super-Build
-CKEDITOR.ClassicEditor
-    .create(document.querySelector('#editDesc'), {
-        toolbar: {
-            items: [
-                'bold', 'italic', 'link', 'insertImage', 'insertTable',
-                'bulletedList', 'numberedList', '|', 'undo', 'redo'
-            ]
-        },
-        link: {
-            addTargetToExternalLinks: true,
-            defaultProtocol: 'https://',
-            decorators: {
-                openInNewTab: {
-                    mode: 'manual',
-                    label: 'فتح في تبويب جديد',
-                    attributes: {
-                        target: '_blank',
-                        rel: 'noopener noreferrer'
-                    }
-                }
-            }
-        },
-        table: {
-            contentToolbar: ['tableColumn', 'tableRow', 'mergeTableCells']
-        }
-    })
-    .then(editor => {
-        descEditor = editor;
-    })
-    .catch(error => {
-        console.error(error);
-    });
 
 function showModal(text) {
   document.getElementById('fullText').innerHTML = text;
@@ -217,16 +183,43 @@ function editVideo(id) {
   document.getElementById('editUrl').value = video.url;
   document.getElementById('editDept').value = video.department;
 
-  // التأكد من جاهزية CKEditor قبل إدخال النص
-  if (descEditor) {
-    descEditor.setData(video.description || '');
-  } else {
-    const waitForEditor = setInterval(() => {
-      if (descEditor) {
+  // إنشاء CKEditor فقط عند الحاجة
+  if (!descEditor) {
+    CKEDITOR.ClassicEditor
+      .create(document.querySelector('#editDesc'), {
+        toolbar: {
+          items: [
+            'bold', 'italic', 'link', 'insertImage', 'insertTable',
+            'bulletedList', 'numberedList', '|', 'undo', 'redo'
+          ]
+        },
+        link: {
+          addTargetToExternalLinks: true,
+          defaultProtocol: 'https://',
+          decorators: {
+            openInNewTab: {
+              mode: 'manual',
+              label: 'فتح في تبويب جديد',
+              attributes: {
+                target: '_blank',
+                rel: 'noopener noreferrer'
+              }
+            }
+          }
+        },
+        table: {
+          contentToolbar: ['tableColumn', 'tableRow', 'mergeTableCells']
+        }
+      })
+      .then(editor => {
+        descEditor = editor;
         descEditor.setData(video.description || '');
-        clearInterval(waitForEditor);
-      }
-    }, 100);
+      })
+      .catch(error => {
+        console.error(error);
+      });
+  } else {
+    descEditor.setData(video.description || '');
   }
 
   editModal.show();
