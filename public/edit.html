@@ -68,8 +68,8 @@
       z-index: 9998;
     }
   </style>
-  <!-- مكتبة CKEditor -->
-  <script src="https://cdn.ckeditor.com/ckeditor5/41.1.0/classic/ckeditor.js"></script>
+  <!-- CKEditor Super-Build -->
+  <script src="https://cdn.ckeditor.com/ckeditor5/41.1.0/super-build/ckeditor.js"></script>
 </head>
 <body>
 <div class="container">
@@ -139,12 +139,15 @@ const deptSelect = document.getElementById('deptSelect');
 const editModal = new bootstrap.Modal(document.getElementById('editModal'));
 let descEditor;
 
-// تهيئة CKEditor مع روابط وصور وجداول
-ClassicEditor
+// تهيئة CKEditor Super-Build
+CKEDITOR.ClassicEditor
     .create(document.querySelector('#editDesc'), {
-        toolbar: [
-            'bold', 'italic', 'link', 'insertImage', 'insertTable', 'bulletedList', 'numberedList', '|', 'undo', 'redo'
-        ],
+        toolbar: {
+            items: [
+                'bold', 'italic', 'link', 'insertImage', 'insertTable',
+                'bulletedList', 'numberedList', '|', 'undo', 'redo'
+            ]
+        },
         link: {
             addTargetToExternalLinks: true,
             defaultProtocol: 'https://',
