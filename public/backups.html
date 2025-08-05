@@ -19,9 +19,8 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
-    }
-    .backup-card input {
-      margin-left: 10px;
+      flex-wrap: wrap;
+      gap: 10px;
     }
   </style>
 </head>
@@ -35,7 +34,6 @@
     <div class="d-flex gap-2 mb-3">
       <button class="btn btn-primary" onclick="createBackup()">📥 إنشاء نسخة احتياطية</button>
       <button class="btn btn-danger" onclick="deleteSelected()">🗑️ حذف المحدد</button>
-      <button class="btn btn-success" onclick="downloadSelectedZip()">⬇️ تنزيل النسخ المحددة كاملة</button>
     </div>
 
     <div class="form-check mb-3">
@@ -53,14 +51,6 @@ let backups = [];
 async function fetchBackups() {
   const res = await fetch('/api/backups');
   backups = await res.json();
-
-  for (let b of backups) {
-    const stat = await fetch(b.path, { method: 'HEAD' });
-    const size = stat.headers.get('content-length');
-    b.sizeKB = size ? (parseInt(size) / 1024).toFixed(2) : "0";
-  }
-
-  backups.sort((a, b) => b.name.localeCompare(a.name));
   renderBackups();
 }
 
@@ -78,16 +68,21 @@ function renderBackups() {
   let totalSize = 0;
 
   backups.forEach((b, index) => {
-    const dateText = formatDate(b.name);
-    totalSize += parseFloat(b.sizeKB || 0);
+    const dateText = new Date(b.date).toLocaleString('ar-EG', { dateStyle: 'full', timeStyle: 'short' });
+    const sizeKB = (JSON.stringify(b.data).length / 1024).toFixed(2);
+    totalSize += parseFloat(sizeKB);
 
     const card = document.createElement('div');
     card.className = 'backup-card';
     card.innerHTML = `
       <div>
-        <input type="checkbox" class="backup-check" data-filename="${b.name}">
-        <a href="${b.path}" target="_blank">${b.name}</a> – <span class="text-primary">#${index + 1}</span><br>
-        <small class="text-muted">${dateText} – ${b.sizeKB} KB</small>
+        <input type="checkbox" class="backup-check" data-id="${b._id}">
+        <strong>نسخة رقم #${index + 1}</strong><br>
+        <small class="text-muted">${dateText} – ${sizeKB} KB</small>
+      </div>
+      <div class="d-flex gap-2">
+        <a class="btn btn-success btn-sm" href="/api/backups/download/${b._id}">⬇️ تنزيل</a>
+        <button class="btn btn-warning btn-sm" onclick="restoreBackup('${b._id}')">♻️ استرجاع</button>
       </div>
     `;
     container.appendChild(card);
@@ -105,17 +100,15 @@ function toggleSelectAll(source) {
 async function deleteSelected() {
   const selected = [...document.querySelectorAll('.backup-check:checked')];
   if (selected.length === 0) {
-    alert("يرجى تحديد ملف واحد على الأقل");
+    alert("يرجى تحديد نسخة واحدة على الأقل");
     return;
   }
-
   if (!confirm("هل أنت متأكد من حذف النسخ المحددة؟")) return;
 
   for (let cb of selected) {
-    const filename = cb.getAttribute('data-filename');
-    await fetch(`/api/backups/${filename}`, { method: 'DELETE' });
+    const id = cb.getAttribute('data-id');
+    await fetch(`/api/backups/${id}`, { method: 'DELETE' });
   }
-
   await fetchBackups();
   document.getElementById('selectAll').checked = false;
 }
@@ -127,24 +120,11 @@ async function createBackup() {
   await fetchBackups();
 }
 
-function formatDate(filename) {
-  const match = filename.match(/backup-(\d{4})-(\d{2})-(\d{2})T(\d{2})-(\d{2})-(\d{2})/);
-  if (!match) return "";
-  const [_, y, m, d, h, min, s] = match;
-  const date = new Date(`${y}-${m}-${d}T${h}:${min}:${s}Z`);
-  return date.toLocaleString('ar-EG', { dateStyle: 'full', timeStyle: 'short' });
-}
-
-function downloadSelectedZip() {
-  const selected = [...document.querySelectorAll('.backup-check:checked')];
-  if (selected.length === 0) {
-    alert("يرجى تحديد ملف واحد على الأقل");
-    return;
-  }
-
-  const filenames = selected.map(cb => cb.getAttribute('data-filename'));
-  const url = '/api/backups/zip?files=' + encodeURIComponent(JSON.stringify(filenames));
-  window.open(url, '_blank');
+async function restoreBackup(id) {
+  if (!confirm("هل تريد استرجاع هذه النسخة إلى قاعدة البيانات؟")) return;
+  const res = await fetch(`/api/backups/restore/${id}`, { method: 'POST' });
+  const result = await res.json();
+  alert(result.message || 'تم استرجاع النسخة الاحتياطية');
 }
 
 fetchBackups();
