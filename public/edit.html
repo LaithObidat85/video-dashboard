@@ -216,7 +216,19 @@ function editVideo(id) {
   document.getElementById('editTitle').value = video.title;
   document.getElementById('editUrl').value = video.url;
   document.getElementById('editDept').value = video.department;
-  descEditor.setData(video.description || '');
+
+  // التحقق من جاهزية المحرر قبل إدخال النص
+  if (descEditor) {
+    descEditor.setData(video.description || '');
+  } else {
+    const waitForEditor = setInterval(() => {
+      if (descEditor) {
+        descEditor.setData(video.description || '');
+        clearInterval(waitForEditor);
+      }
+    }, 100);
+  }
+
   editModal.show();
 }
 
