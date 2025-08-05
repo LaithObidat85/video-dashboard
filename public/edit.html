@@ -57,14 +57,21 @@
 const API_BASE = 'https://video-dashboard-backend.onrender.com';
 let videos = [];
 
-// تهيئة TinyMCE مرة واحدة عند تحميل الصفحة
+// تهيئة TinyMCE مع دعم الروابط بشكل كامل
 tinymce.init({
   selector: '#editDesc',
   height: 300,
   directionality: 'rtl',
   plugins: 'link image table lists code',
   toolbar: 'undo redo | bold italic underline | alignleft aligncenter alignright | bullist numlist | link image table | code',
-  language: 'ar'
+  language: 'ar',
+  link_title: true,
+  default_link_target: "_blank",
+  target_list: [
+    { title: 'فتح في نفس النافذة', value: '' },
+    { title: 'فتح في نافذة جديدة', value: '_blank' }
+  ],
+  readonly: false
 });
 
 async function fetchVideos() {
