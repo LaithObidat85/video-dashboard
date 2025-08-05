@@ -68,6 +68,8 @@
       z-index: 9998;
     }
   </style>
+  <!-- إضافة مكتبة CKEditor -->
+  <script src="https://cdn.ckeditor.com/ckeditor5/41.1.0/classic/ckeditor.js"></script>
 </head>
 <body>
 <div class="container">
@@ -101,7 +103,7 @@
 </div>
 <div id="descBackdrop" class="modal-backdrop-custom" style="display:none" onclick="hideModal()"></div>
 
-<!-- ✅ تم إضافة مودال التعديل مجددًا لأنه كان مفقوداً -->
+<!-- نافذة تعديل الفيديو -->
 <div class="modal fade" id="editModal" tabindex="-1">
   <div class="modal-dialog">
     <div class="modal-content">
@@ -135,9 +137,22 @@ let videos = [];
 const container = document.getElementById('videoContainer');
 const deptSelect = document.getElementById('deptSelect');
 const editModal = new bootstrap.Modal(document.getElementById('editModal'));
+let descEditor; // محرر الوصف
+
+// تهيئة CKEditor
+ClassicEditor
+    .create(document.querySelector('#editDesc'), {
+        toolbar: ['bold', 'italic', 'link', 'bulletedList', 'numberedList', 'undo', 'redo']
+    })
+    .then(editor => {
+        descEditor = editor;
+    })
+    .catch(error => {
+        console.error(error);
+    });
 
 function showModal(text) {
-  document.getElementById('fullText').textContent = text;
+  document.getElementById('fullText').innerHTML = text;
   document.getElementById('descModal').style.display = 'block';
   document.getElementById('descBackdrop').style.display = 'block';
 }
@@ -177,9 +192,9 @@ function editVideo(id) {
   const video = videos.find(v => v._id === id);
   document.getElementById('editId').value = video._id;
   document.getElementById('editTitle').value = video.title;
-  document.getElementById('editDesc').value = video.description;
   document.getElementById('editUrl').value = video.url;
   document.getElementById('editDept').value = video.department;
+  descEditor.setData(video.description || '');
   editModal.show();
 }
 
@@ -187,7 +202,7 @@ async function saveEditModal() {
   const id = document.getElementById('editId').value;
   const updated = {
     title: document.getElementById('editTitle').value,
-    description: document.getElementById('editDesc').value,
+    description: descEditor.getData(),
     url: document.getElementById('editUrl').value,
     department: document.getElementById('editDept').value
   };
