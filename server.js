@@ -235,7 +235,7 @@ app.post('/api/backups/restore/:id', async (req, res) => {
   }
 });
 // ✅ فتح الرابط عبر الخادم لحجب الرابط الحقيقي
-app.get('/api/open/:id', async (req, res) => {
+app.get('/api/redirect/:id', async (req, res) => {
   try {
     const link = await Link.findById(req.params.id);
     if (!link) return res.status(404).send('الرابط غير موجود');
