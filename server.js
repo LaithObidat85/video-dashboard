@@ -17,6 +17,8 @@ mongoose.connect(MONGO_URI, {
 .then(() => console.log('✅ Connected to MongoDB Atlas'))
 .catch(err => console.error('❌ MongoDB connection error:', err));
 
+// ====== نماذج البيانات ======
+
 // نموذج بيانات الفيديو
 const videoSchema = new mongoose.Schema({
   title: { type: String, required: true },
@@ -34,6 +36,12 @@ const backupSchema = new mongoose.Schema({
 });
 const Backup = mongoose.model('Backup', backupSchema);
 
+// نموذج الأقسام
+const departmentSchema = new mongoose.Schema({
+  name: { type: String, required: true, unique: true }
+});
+const Department = mongoose.model('Department', departmentSchema);
+
 app.use(bodyParser.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
@@ -43,6 +51,51 @@ app.post('/api/verify-password', (req, res) => {
   if (password === process.env.DASHBOARD_PASSWORD) return res.sendStatus(200);
   else return res.sendStatus(403);
 });
+
+// ====== إدارة الأقسام ======
+
+// جلب الأقسام
+app.get('/api/departments', async (req, res) => {
+  try {
+    const deps = await Department.find().sort({ name: 1 });
+    res.json(deps);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// إضافة قسم جديد
+app.post('/api/departments', async (req, res) => {
+  try {
+    const dep = new Department({ name: req.body.name });
+    await dep.save();
+    res.status(201).json(dep);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+// تعديل قسم
+app.put('/api/departments/:id', async (req, res) => {
+  try {
+    const dep = await Department.findByIdAndUpdate(req.params.id, { name: req.body.name }, { new: true });
+    res.json(dep);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+// حذف قسم
+app.delete('/api/departments/:id', async (req, res) => {
+  try {
+    await Department.findByIdAndDelete(req.params.id);
+    res.json({ message: 'تم حذف القسم' });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+// ====== إدارة الفيديوهات ======
 
 // 📥 جلب الفيديوهات
 app.get('/api/videos', async (req, res) => {
@@ -86,6 +139,8 @@ app.delete('/api/videos/:id', async (req, res) => {
     res.status(400).json({ message: 'خطأ في الحذف', error: err.message });
   }
 });
+
+// ====== إدارة النسخ الاحتياطية ======
 
 // 📦 إنشاء نسخة احتياطية داخل MongoDB
 app.post('/api/backups/create', async (req, res) => {
