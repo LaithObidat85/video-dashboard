@@ -2,7 +2,7 @@
 <html lang="ar" dir="rtl">
 <head>
   <meta charset="UTF-8">
-  <title>عرض الفيديوهات حسب القسم</title>
+  <title>الرئيسية</title>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.rtl.min.css">
   <style>
     body {
@@ -71,7 +71,6 @@
   <div class="container text-center">
     <h3 class="mb-4">اختر القسم لعرض الفيديوهات</h3>
     <div class="mb-3 d-flex justify-content-center gap-3">
-      <a href="index.html" class="btn btn-secondary">الرجوع إلى فهرس الأقسام</a>
       <button class="btn btn-warning" onclick="requestDashboardAccess()">🔐 لوحة التحكم</button>
     </div>
     <select id="departmentSelect" class="form-select mb-3">
@@ -79,9 +78,6 @@
     </select>
     <input id="searchInput" class="form-control mb-4" type="text" placeholder="ابحث بعنوان أو وصف الفيديو..." disabled>
     <div id="videoContainer" class="video-grid"></div>
-    <div class="text-center mt-4">
-      <a href="index.html" class="btn btn-secondary">الرجوع إلى فهرس الأقسام</a>
-    </div>
   </div>
 
   <!-- نافذة عرض الوصف -->
