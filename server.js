@@ -18,8 +18,6 @@ mongoose.connect(MONGO_URI, {
 .catch(err => console.error('❌ MongoDB connection error:', err));
 
 // ====== نماذج البيانات ======
-
-// نموذج بيانات الفيديو
 const videoSchema = new mongoose.Schema({
   title: { type: String, required: true },
   url: { type: String, required: true },
@@ -29,26 +27,23 @@ const videoSchema = new mongoose.Schema({
 });
 const Video = mongoose.model('Video', videoSchema);
 
-// نموذج النسخ الاحتياطية
 const backupSchema = new mongoose.Schema({
   date: { type: Date, default: Date.now },
   data: Array
 });
 const Backup = mongoose.model('Backup', backupSchema);
 
-// نموذج الأقسام
 const departmentSchema = new mongoose.Schema({
   name: { type: String, required: true, unique: true }
 });
 const Department = mongoose.model('Department', departmentSchema);
 
-// نموذج بيانات الروابط
 const linkSchema = new mongoose.Schema({
-  name: { type: String, required: true },        // اسم الرابط
-  description: String,                           // وصف الرابط
-  link: { type: String, required: true },        // رابط الملف أو المستند
-  linkText: { type: String, required: true },    // النص الذي يعرض للمستخدم
-  requiresPassword: { type: Boolean, default: false }, // 🔐 يحدد ما إذا كان الرابط يتطلب كلمة مرور
+  name: { type: String, required: true },
+  description: String,
+  link: { type: String, required: true },
+  linkText: { type: String, required: true },
+  requiresPassword: { type: Boolean, default: false },
   dateAdded: { type: Date, default: Date.now }
 });
 const Link = mongoose.model('Link', linkSchema);
@@ -56,7 +51,7 @@ const Link = mongoose.model('Link', linkSchema);
 app.use(bodyParser.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
-// ✅ التحقق من كلمة المرور للوحة التحكم
+// ✅ التحقق من كلمة المرور
 app.post('/api/verify-password', (req, res) => {
   const { password } = req.body;
   if (password === process.env.DASHBOARD_PASSWORD) return res.sendStatus(200);
@@ -185,9 +180,9 @@ app.post('/api/backups/create', async (req, res) => {
     const videos = await Video.find();
     const backup = new Backup({ data: videos });
     await backup.save();
-    res.json({ message: '✅ تم إنشاء النسخة الاحتياطية وحفظها في قاعدة البيانات' });
+    res.json({ message: '✅ تم إنشاء النسخة الاحتياطية' });
   } catch (err) {
-    res.status(500).json({ message: '❌ فشل في إنشاء النسخة الاحتياطية', error: err.message });
+    res.status(500).json({ message: '❌ فشل في إنشاء النسخة', error: err.message });
   }
 });
 
@@ -196,14 +191,14 @@ app.get('/api/backups', async (req, res) => {
     const backups = await Backup.find().sort({ date: -1 });
     res.json(backups);
   } catch (err) {
-    res.status(500).json({ message: '❌ فشل في جلب النسخ الاحتياطية' });
+    res.status(500).json({ message: '❌ فشل في جلب النسخ' });
   }
 });
 
 app.delete('/api/backups/:id', async (req, res) => {
   try {
     await Backup.findByIdAndDelete(req.params.id);
-    res.json({ message: '🗑️ تم حذف النسخة الاحتياطية بنجاح' });
+    res.json({ message: '🗑️ تم حذف النسخة' });
   } catch (err) {
     res.status(500).json({ message: '❌ فشل في الحذف', error: err.message });
   }
@@ -217,7 +212,7 @@ app.get('/api/backups/download/:id', async (req, res) => {
     res.setHeader('Content-Type', 'application/json');
     res.send(JSON.stringify(backup.data, null, 2));
   } catch (err) {
-    res.status(500).json({ message: '❌ فشل في تنزيل النسخة' });
+    res.status(500).json({ message: '❌ فشل في التنزيل' });
   }
 });
 
@@ -229,19 +224,21 @@ app.post('/api/backups/restore/:id', async (req, res) => {
     await Video.deleteMany({});
     await Video.insertMany(backup.data);
 
-    res.json({ message: '♻️ تم استرجاع النسخة الاحتياطية بنجاح إلى قاعدة البيانات' });
+    res.json({ message: '♻️ تم الاسترجاع بنجاح' });
   } catch (err) {
     res.status(500).json({ message: '❌ فشل في الاسترجاع', error: err.message });
   }
 });
-// ✅ فتح الرابط عبر الخادم لحجب الرابط الحقيقي
-app.get('/api/redirect/:id', async (req, res) => {
+
+// ✅ تحميل الرابط كمحتوى (لصفحة proxy)
+app.get('/api/proxy/:id', async (req, res) => {
   try {
     const link = await Link.findById(req.params.id);
-    if (!link) return res.status(404).send('الرابط غير موجود');
-    res.redirect(link.link);
+    if (!link) return res.status(404).json({ error: 'الرابط غير موجود' });
+
+    res.json({ link: link.link });
   } catch (err) {
-    res.status(500).send('حدث خطأ أثناء محاولة فتح الرابط');
+    res.status(500).json({ error: 'فشل في جلب الرابط' });
   }
 });
 
