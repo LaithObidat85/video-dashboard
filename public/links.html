@@ -50,7 +50,7 @@
             <th>#</th>
             <th>وصف</th>
             <th>الرابط</th>
-            <th>محمي؟</th>
+            <th>محمي؟</th> <!-- ✅ العمود الجديد -->
             <th>إجراءات</th>
           </tr>
         </thead>
@@ -195,7 +195,8 @@ document.getElementById('confirmPasswordBtn').addEventListener('click', async ()
       }
     }
     else if (pendingAction === 'openLink') {
-      window.open(`/go/${editId}`, '_blank');
+      const link = linksData.find(l => l._id === editId);
+      if (link) window.open(link.link, '_blank');
     }
     else if (pendingAction === 'dashboard') {
       window.location.href = 'dashboard.html';
@@ -221,7 +222,7 @@ async function fetchLinks() {
     const lockIcon = link.requiresPassword ? '🔒' : '';
     const linkHtml = link.requiresPassword 
       ? `<a href="#" onclick="openPasswordModal('openLink','${link._id}')">${link.linkText}</a>` 
-      : `<a href="/go/${link._id}" target="_blank">${link.linkText}</a>`;
+      : `<a href="${link.link}" target="_blank">${link.linkText}</a>`;
     const tr = document.createElement('tr');
     tr.innerHTML = `
       <td>${index + 1}</td>
