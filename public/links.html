@@ -195,8 +195,7 @@ document.getElementById('confirmPasswordBtn').addEventListener('click', async ()
       }
     }
     else if (pendingAction === 'openLink') {
-      const link = linksData.find(l => l._id === editId);
-      if (link) window.open(`/go/${link._id}`, '_blank');
+      window.open(`/go/${editId}`, '_blank');
     }
     else if (pendingAction === 'dashboard') {
       window.location.href = 'dashboard.html';
