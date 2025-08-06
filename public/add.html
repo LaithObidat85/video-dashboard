@@ -76,9 +76,16 @@ function updatePreview() {
     const match = link.match(/\/file\/d\/(.*?)(\/|$)/);
     if (match) embedUrl = `https://drive.google.com/file/d/${match[1]}/preview`;
 
-  // SharePoint / OneDrive Stream
-  } else if (link.includes("sharepoint.com/") && link.includes("/stream.aspx")) {
+  // SharePoint / OneDrive Stream (embed.aspx مباشرة)
+  } else if (link.includes("sharepoint.com/") && link.includes("/embed.aspx")) {
     embedUrl = link;
+
+  // SharePoint / OneDrive Stream (تحويل من stream.aspx إلى embed.aspx)
+  } else if (link.includes("sharepoint.com/") && link.includes("/stream.aspx")) {
+    const uniqueIdMatch = link.match(/UniqueId=([a-zA-Z0-9\-]+)/);
+    if (uniqueIdMatch) {
+      embedUrl = `https://ymkh-my.sharepoint.com/personal/laith_obaidat_iu_edu_jo/_layouts/15/embed.aspx?UniqueId=${uniqueIdMatch[1]}&embed=%7B%22ust%22%3Atrue%7D&referrer=StreamWebApp&referrerScenario=EmbedDialog.Create`;
+    }
   }
 
   preview.innerHTML = embedUrl 
