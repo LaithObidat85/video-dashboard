@@ -38,8 +38,9 @@
     <img src="https://app.iu.edu.jo/cf/images/iu.png" alt="Icon" class="page-icon">
     <h2 class="mb-4">إدارة الروابط</h2>
 
-    <div class="text-center mb-3">
+    <div class="text-center mb-3 d-flex justify-content-center gap-2">
       <button class="btn btn-primary" onclick="openPasswordModal('add')">➕ إضافة رابط جديد</button>
+      <button class="btn btn-warning" onclick="requestDashboardAccess()">🔐 لوحة التحكم</button>
     </div>
 
     <div class="table-responsive">
@@ -121,6 +122,7 @@
 const API_BASE = 'https://video-dashboard-backend.onrender.com';
 let pendingAction = null;
 let editId = null;
+let protectedLinks = []; // روابط تتطلب كلمة مرور
 
 function openPasswordModal(action, id = null) {
   pendingAction = action;
@@ -128,6 +130,10 @@ function openPasswordModal(action, id = null) {
   const modal = new bootstrap.Modal(document.getElementById('passwordModal'));
   modal.show();
   setTimeout(() => document.getElementById('actionPassword').focus(), 200);
+}
+
+function requestDashboardAccess() {
+  openPasswordModal('dashboard');
 }
 
 document.getElementById('actionPassword').addEventListener('keydown', (e) => {
@@ -182,6 +188,13 @@ document.getElementById('confirmPasswordBtn').addEventListener('click', async ()
         fetchLinks();
       }
     }
+    else if (pendingAction === 'openLink') {
+      const link = linksData.find(l => l._id === editId);
+      if (link) window.open(link.link, '_blank');
+    }
+    else if (pendingAction === 'dashboard') {
+      window.location.href = 'dashboard.html';
+    }
 
     pendingAction = null;
     editId = null;
@@ -202,12 +215,17 @@ async function fetchLinks() {
     return;
   }
   linksData.forEach((link, index) => {
+    const lockIcon = link.requiresPassword ? '🔒' : '';
+    const linkHtml = link.requiresPassword 
+      ? `<a href="#" onclick="openPasswordModal('openLink','${link._id}')">${link.linkText}</a>` 
+      : `<a href="${link.link}" target="_blank">${link.linkText}</a>`;
     const tr = document.createElement('tr');
     tr.innerHTML = `
       <td>${index + 1}</td>
       <td>${link.description || ''}</td>
-      <td><a href="${link.link}" target="_blank">${link.linkText}</a></td>
+      <td>${linkHtml}</td>
       <td>
+        ${lockIcon}
         <button class="btn btn-sm btn-warning" onclick="openPasswordModal('edit','${link._id}')">✏️ تعديل</button>
         <button class="btn btn-sm btn-danger" onclick="openPasswordModal('delete','${link._id}')">🗑️ حذف</button>
       </td>
