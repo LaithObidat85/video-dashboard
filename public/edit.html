@@ -232,6 +232,16 @@ function renderVideos() {
       } else {
         media = `<video controls src="${link}"></video>`;
       }
+    } else if (link.includes("sharepoint.com/") && link.includes("/embed.aspx")) {
+      media = `<iframe src="${link}" allowfullscreen></iframe>`;
+    } else if (link.includes("sharepoint.com/") && link.includes("/stream.aspx")) {
+      const uniqueIdMatch = link.match(/UniqueId=([a-zA-Z0-9\-]+)/);
+      if (uniqueIdMatch) {
+        const embedUrl = `https://ymkh-my.sharepoint.com/personal/laith_obaidat_iu_edu_jo/_layouts/15/embed.aspx?UniqueId=${uniqueIdMatch[1]}&embed=%7B%22ust%22%3Atrue%7D&referrer=StreamWebApp&referrerScenario=EmbedDialog.Create`;
+        media = `<iframe src="${embedUrl}" allowfullscreen></iframe>`;
+      } else {
+        media = `<video controls src="${link}"></video>`;
+      }
     } else {
       media = `<video controls src="${link}"></video>`;
     }
