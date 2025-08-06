@@ -50,7 +50,7 @@
             <th>#</th>
             <th>وصف</th>
             <th>الرابط</th>
-            <th>محمي؟</th> <!-- ✅ العمود الجديد -->
+            <th>محمي؟</th>
             <th>إجراءات</th>
           </tr>
         </thead>
@@ -75,6 +75,21 @@
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
           <button type="button" class="btn btn-primary" id="confirmPasswordBtn">تأكيد</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- نافذة عرض الرابط -->
+  <div class="modal fade" id="viewLinkModal" tabindex="-1">
+    <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">📄 عرض الرابط</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body p-0" style="height: 80vh;">
+          <iframe id="linkFrame" src="" width="100%" height="100%" frameborder="0" allowfullscreen></iframe>
         </div>
       </div>
     </div>
@@ -135,6 +150,12 @@ function openPasswordModal(action, id = null) {
   const modal = new bootstrap.Modal(document.getElementById('passwordModal'));
   modal.show();
   setTimeout(() => document.getElementById('actionPassword').focus(), 200);
+}
+
+function openInModal(link) {
+  const iframe = document.getElementById('linkFrame');
+  iframe.src = link;
+  new bootstrap.Modal(document.getElementById('viewLinkModal')).show();
 }
 
 function requestDashboardAccess() {
@@ -222,7 +243,7 @@ async function fetchLinks() {
     const lockIcon = link.requiresPassword ? '🔒' : '';
     const linkHtml = link.requiresPassword 
       ? `<a href="#" onclick="openPasswordModal('openLink','${link._id}')">${link.linkText}</a>` 
-      : `<a href="${link.link}" target="_blank">${link.linkText}</a>`;
+      : `<a href="#" onclick="openInModal('${link.link}')">${link.linkText}</a>`;
     const tr = document.createElement('tr');
     tr.innerHTML = `
       <td>${index + 1}</td>
