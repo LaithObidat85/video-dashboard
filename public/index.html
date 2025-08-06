@@ -102,7 +102,7 @@
           <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
         </div>
         <div class="modal-body">
-          <input type="password" id="dashboardPassword" class="form-control" placeholder="Enter password" style="ime-mode:disabled;" autocomplete="off">
+          <input type="password" id="dashboardPassword" class="form-control" placeholder="أدخل كلمة المرور">
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
@@ -209,27 +209,28 @@ function populateDepartmentOptions() {
 }
 
 function requestDashboardAccess() {
-  const modal = new bootstrap.Modal(document.getElementById('passwordModal'));
+  const modalEl = document.getElementById('passwordModal');
+  const modal = new bootstrap.Modal(modalEl);
   modal.show();
-  const passwordInput = document.getElementById('dashboardPassword');
 
-  // تفعيل المؤشر مباشرة وضبط اللغة للإنجليزية
-  setTimeout(() => {
-    passwordInput.focus();
+  // عند اكتمال فتح المودال
+  modalEl.addEventListener('shown.bs.modal', () => {
+    const passwordInput = document.getElementById('dashboardPassword');
     passwordInput.setAttribute('lang', 'en');
-  }, 300);
+    passwordInput.focus();
 
-  passwordInput.addEventListener('keydown', function(e) {
-    if (e.key === 'Enter') {
-      document.getElementById('confirmDashboardAccess').click();
-    }
-    if (e.key === 'Escape') {
-      modal.hide();
-    }
+    passwordInput.addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') {
+        document.getElementById('confirmDashboardAccess').click();
+      }
+      if (e.key === 'Escape') {
+        modal.hide();
+      }
+    });
   });
 
   document.getElementById('confirmDashboardAccess').onclick = async () => {
-    const password = passwordInput.value.trim();
+    const password = document.getElementById('dashboardPassword').value.trim();
     if (!password) return;
     try {
       const response = await fetch(`${API_BASE}/api/verify-password`, {
