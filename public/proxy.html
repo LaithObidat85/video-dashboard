@@ -1,0 +1,40 @@
+
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <title>جارٍ التحميل...</title>
+  <style>
+    html, body {
+      height: 100%;
+      margin: 0;
+    }
+    iframe {
+      width: 100%;
+      height: 100%;
+      border: none;
+    }
+  </style>
+</head>
+<body>
+  <iframe id="content" src=""></iframe>
+
+  <script>
+    const params = new URLSearchParams(window.location.search);
+    const id = params.get('id');
+
+    if (id) {
+      fetch(`https://video-dashboard-backend.onrender.com/api/redirect/${id}`)
+        .then(response => {
+          if (!response.redirected) throw new Error("لم يتم إعادة التوجيه");
+          document.getElementById("content").src = response.url;
+        })
+        .catch(() => {
+          document.body.innerHTML = '<h2 style="text-align:center; margin-top:20%;">❌ حدث خطأ أثناء تحميل الرابط</h2>';
+        });
+    } else {
+      document.body.innerHTML = '<h2 style="text-align:center; margin-top:20%;">❌ لا يوجد رابط</h2>';
+    }
+  </script>
+</body>
+</html>
