@@ -10,6 +10,19 @@
       padding: 20px;
       font-family: 'Segoe UI', sans-serif;
     }
+    .header-row {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      position: relative;
+    }
+    .header-row h3 {
+      margin: 0 auto;
+    }
+    .dashboard-btn {
+      position: absolute;
+      left: 0;
+    }
     .video-card {
       background: white;
       border-radius: 12px;
@@ -65,22 +78,14 @@
       cursor: pointer;
       margin-top: 6px;
     }
-    /* زر لوحة التحكم بمحاذاة يسار العنوان */
-    .header-controls {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 20px;
-    }
   </style>
 </head>
 <body>
-  <div class="container">
-    <div class="header-controls">
+  <div class="container text-center">
+    <div class="header-row mb-4">
       <h3>اختر القسم لعرض الفيديوهات</h3>
-      <button class="btn btn-warning" onclick="requestDashboardAccess()">🔐 لوحة التحكم</button>
+      <button class="btn btn-warning dashboard-btn" onclick="requestDashboardAccess()">🔐 لوحة التحكم</button>
     </div>
-
     <select id="departmentSelect" class="form-select mb-3">
       <option value="">-- اختر القسم --</option>
     </select>
@@ -223,17 +228,7 @@ function requestDashboardAccess() {
 
   modalEl.addEventListener('shown.bs.modal', () => {
     const passwordInput = document.getElementById('dashboardPassword');
-    passwordInput.value = '';
     passwordInput.focus();
-
-    passwordInput.addEventListener('keydown', function(e) {
-      if (e.key === 'Enter') {
-        document.getElementById('confirmDashboardAccess').click();
-      }
-      if (e.key === 'Escape') {
-        modal.hide();
-      }
-    });
   });
 
   document.getElementById('confirmDashboardAccess').onclick = async () => {
@@ -257,10 +252,9 @@ function requestDashboardAccess() {
   };
 }
 
-// فتح أو إغلاق المودال باستخدام F8
+// تفعيل زر F8 لفتح/إغلاق نافذة كلمة المرور
 document.addEventListener('keydown', (e) => {
   if (e.key === 'F8') {
-    e.preventDefault();
     const modalEl = document.getElementById('passwordModal');
     const modalInstance = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
     if (modalEl.classList.contains('show')) {
