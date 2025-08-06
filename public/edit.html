@@ -81,29 +81,6 @@
     <div id="videoContainer" class="video-grid"></div>
   </div>
 
-  <!-- نافذة عرض الوصف مع العنوان وأزرار التنقل -->
-  <div class="modal fade" id="descModal" tabindex="-1">
-    <div class="modal-dialog modal-lg">
-      <div class="modal-content">
-        <div class="modal-header">
-          <!-- عنوان الفيديو -->
-          <h5 class="modal-title" id="descTitle"></h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-        </div>
-        <!-- هنا سيتم وضع الوصف -->
-        <div class="modal-body" id="descContent" style="white-space: pre-wrap; text-align: justify;"></div>
-        <div class="modal-footer d-flex justify-content-between">
-          <!-- زر السابق -->
-          <button class="btn btn-secondary" id="prevBtn">⬅ السابق</button>
-          <!-- زر عرض الفيديو -->
-          <button class="btn btn-primary" id="viewVideoBtn">🎬 عرض الفيديو</button>
-          <!-- زر التالي -->
-          <button class="btn btn-secondary" id="nextBtn">التالي ➡</button>
-        </div>
-      </div>
-    </div>
-  </div>
-
   <!-- نافذة تعديل الفيديو -->
   <div class="modal fade" id="editModal" tabindex="-1">
     <div class="modal-dialog modal-lg">
@@ -136,10 +113,6 @@
 <script>
 const API_BASE = 'https://video-dashboard-backend.onrender.com';
 let videos = [];
-let currentSectionVideos = [];
-let currentIndex = 0;
-
-// محرر النصوص Quill
 let quill = new Quill('#editor', {
   theme: 'snow',
   modules: {
@@ -153,24 +126,20 @@ let quill = new Quill('#editor', {
   }
 });
 
-// جلب الفيديوهات من الخادم
 async function fetchVideos() {
   const res = await fetch(`${API_BASE}/api/videos`);
   videos = await res.json();
   populateDepartmentOptions();
 }
 
-// ملء قائمة الأقسام
 function populateDepartmentOptions() {
   const departmentCounts = videos.reduce((acc, video) => {
     const dep = video.department;
     acc[dep] = (acc[dep] || 0) + 1;
     return acc;
   }, {});
-
   const departmentSelect = document.getElementById('departmentSelect');
   departmentSelect.innerHTML = '<option value="">-- اختر القسم --</option>';
-
   Object.entries(departmentCounts).forEach(([dept, count]) => {
     const option = document.createElement('option');
     option.value = dept;
@@ -179,47 +148,46 @@ function populateDepartmentOptions() {
   });
 }
 
-// عرض الفيديوهات
 function renderVideos() {
   const department = document.getElementById('departmentSelect').value;
   const query = document.getElementById('searchInput').value.trim().toLowerCase();
   const container = document.getElementById('videoContainer');
   container.innerHTML = '';
-
   if (!department) return;
 
-  currentSectionVideos = videos.filter(v =>
+  const filtered = videos.filter(v =>
     v.department?.trim().toLowerCase() === department.trim().toLowerCase() &&
     (v.title?.toLowerCase().includes(query) || v.description?.toLowerCase().includes(query))
   );
 
-  if (currentSectionVideos.length === 0) {
+  if (filtered.length === 0) {
     container.innerHTML = '<p class="text-muted">🚫 لا توجد فيديوهات مطابقة</p>';
     return;
   }
 
-  currentSectionVideos.forEach((video, index) => {
+  filtered.forEach(video => {
     const card = document.createElement('div');
     card.className = 'video-card';
 
-    // عنوان الفيديو مع النص "عنوان الفيديو:"
     const title = `<div class="video-title">عنوان الفيديو: ${video.title}</div>`;
-    // الوصف مع النص "وصف الفيديو:" والنقر لعرض النافذة
-    const description = `<div class="video-description" onclick="showDescription(${index})">وصف الفيديو: ${video.description}</div><br>`;
+    const description = `<div class="video-description">وصف الفيديو: ${video.description}</div><br>`;
 
-    // معاينة الفيديو
-    const link = video.url || '';
+    const link = video.link || video.url || '';
     let media = '';
     if (link.includes('youtube.com') || link.includes('youtu.be')) {
       media = `<iframe src="https://www.youtube.com/embed/${extractYouTubeID(link)}" allowfullscreen></iframe>`;
+    } else if (link.includes('drive.google.com/file/d/')) {
+      const match = link.match(/\/file\/d\/(.*?)(\/|$)/);
+      if (match) {
+        media = `<iframe src="https://drive.google.com/file/d/${match[1]}/preview" allowfullscreen></iframe>`;
+      } else {
+        media = `<video controls src="${link}"></video>`;
+      }
     } else {
       media = `<video controls src="${link}"></video>`;
     }
 
-    // زر عرض الفيديو في نافذة منبثقة
     const popout = `<button class="popout-button" onclick="window.open('${link}', '_blank', 'width=800,height=600')">عرض الفيديو</button>`;
-
-    // أزرار تعديل وحذف
     const actions = `
       <div class="action-buttons">
         <button class="btn btn-warning btn-sm" onclick="openEditModal('${video._id}')">تعديل</button>
@@ -232,40 +200,11 @@ function renderVideos() {
   });
 }
 
-// استخراج ID من رابط يوتيوب
 function extractYouTubeID(url) {
   const match = url.match(/[?&]v=([^&#]*)|youtu\.be\/([^&#]*)/);
   return match ? (match[1] || match[2]) : '';
 }
 
-// عرض الوصف داخل النافذة
-function showDescription(index) {
-  currentIndex = index;
-  const video = currentSectionVideos[index];
-  document.getElementById('descTitle').textContent = video.title;
-  document.getElementById('descContent').innerHTML = video.description;
-  document.getElementById('viewVideoBtn').onclick = () => {
-    window.open(video.url, '_blank', 'width=800,height=600');
-  };
-  const modal = new bootstrap.Modal(document.getElementById('descModal'));
-  modal.show();
-}
-
-// التنقل للسابق
-document.getElementById('prevBtn').addEventListener('click', () => {
-  if (currentIndex > 0) {
-    showDescription(currentIndex - 1);
-  }
-});
-
-// التنقل للتالي
-document.getElementById('nextBtn').addEventListener('click', () => {
-  if (currentIndex < currentSectionVideos.length - 1) {
-    showDescription(currentIndex + 1);
-  }
-});
-
-// فتح نافذة تعديل الفيديو
 function openEditModal(id) {
   const video = videos.find(v => v._id === id);
   document.getElementById('editId').value = video._id;
@@ -277,7 +216,6 @@ function openEditModal(id) {
   modal.show();
 }
 
-// حفظ التعديل
 async function saveEdit() {
   const id = document.getElementById('editId').value;
   const updated = {
@@ -296,7 +234,6 @@ async function saveEdit() {
   bootstrap.Modal.getInstance(document.getElementById('editModal')).hide();
 }
 
-// حذف الفيديو
 async function deleteVideo(id) {
   if (!confirm('❌ هل أنت متأكد من حذف هذا الفيديو؟')) return;
   await fetch(`${API_BASE}/api/videos/${id}`, { method: 'DELETE' });
@@ -304,14 +241,12 @@ async function deleteVideo(id) {
   fetchVideos();
 }
 
-// أحداث التغيير في الفلاتر
 document.getElementById('departmentSelect').addEventListener('change', () => {
   document.getElementById('searchInput').disabled = false;
   renderVideos();
 });
 document.getElementById('searchInput').addEventListener('input', renderVideos);
 
-// تحميل البيانات عند فتح الصفحة
 fetchVideos();
 </script>
 </body>
