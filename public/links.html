@@ -26,11 +26,17 @@
       from { text-shadow: 0 0 5px #0d6efd; }
       to { text-shadow: 0 0 15px #0d6efd; }
     }
+    .page-icon {
+      display: block;
+      margin: 0 auto 15px auto;
+      max-height: 120px;
+    }
   </style>
 </head>
 <body>
-  <div class="container mt-4">
-    <h2 class="mb-4 text-center">إدارة الروابط</h2>
+  <div class="container mt-4 text-center">
+    <img src="https://app.iu.edu.jo/cf/images/iu.png" alt="Icon" class="page-icon">
+    <h2 class="mb-4">إدارة الروابط</h2>
 
     <div class="text-center mb-3">
       <button class="btn btn-primary" onclick="openPasswordModal('add')">➕ إضافة رابط جديد</button>
@@ -41,15 +47,13 @@
         <thead class="table-dark">
           <tr>
             <th>#</th>
-            <th>اسم الرابط</th>
             <th>وصف</th>
             <th>الرابط</th>
-            <th>تاريخ الإضافة</th>
             <th>إجراءات</th>
           </tr>
         </thead>
         <tbody id="linksTableBody">
-          <tr><td colspan="6">جارٍ التحميل...</td></tr>
+          <tr><td colspan="4">جارٍ التحميل...</td></tr>
         </tbody>
       </table>
     </div>
@@ -123,8 +127,23 @@ function openPasswordModal(action, id = null) {
   editId = id;
   const modal = new bootstrap.Modal(document.getElementById('passwordModal'));
   modal.show();
-  document.getElementById('actionPassword').focus();
+  setTimeout(() => document.getElementById('actionPassword').focus(), 200);
 }
+
+document.getElementById('actionPassword').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') {
+    document.getElementById('confirmPasswordBtn').click();
+  }
+});
+
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'F8') {
+    const modalEl = document.getElementById('passwordModal');
+    if (modalEl.classList.contains('show')) {
+      bootstrap.Modal.getInstance(modalEl).hide();
+    }
+  }
+});
 
 document.getElementById('confirmPasswordBtn').addEventListener('click', async () => {
   const password = document.getElementById('actionPassword').value.trim();
@@ -179,17 +198,15 @@ async function fetchLinks() {
   const tbody = document.getElementById('linksTableBody');
   tbody.innerHTML = '';
   if (!linksData.length) {
-    tbody.innerHTML = '<tr><td colspan="6">لا توجد روابط</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="4">لا توجد روابط</td></tr>';
     return;
   }
   linksData.forEach((link, index) => {
     const tr = document.createElement('tr');
     tr.innerHTML = `
       <td>${index + 1}</td>
-      <td>${link.name}</td>
       <td>${link.description || ''}</td>
       <td><a href="${link.link}" target="_blank">${link.linkText}</a></td>
-      <td>${new Date(link.dateAdded).toLocaleString()}</td>
       <td>
         <button class="btn btn-sm btn-warning" onclick="openPasswordModal('edit','${link._id}')">✏️ تعديل</button>
         <button class="btn btn-sm btn-danger" onclick="openPasswordModal('delete','${link._id}')">🗑️ حذف</button>
