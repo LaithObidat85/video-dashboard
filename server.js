@@ -179,6 +179,17 @@ app.delete('/api/links/:id', async (req, res) => {
   }
 });
 
+// 🔗 إعادة توجيه لفتح الروابط بدون كشف الرابط الأصلي
+app.get('/go/:id', async (req, res) => {
+  try {
+    const link = await Link.findById(req.params.id);
+    if (!link) return res.status(404).send('❌ الرابط غير موجود');
+    res.redirect(link.link);
+  } catch (err) {
+    res.status(500).send('❌ خطأ في فتح الرابط');
+  }
+});
+
 // ====== إدارة النسخ الاحتياطية ======
 app.post('/api/backups/create', async (req, res) => {
   try {
