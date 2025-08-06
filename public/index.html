@@ -65,19 +65,14 @@
       cursor: pointer;
       margin-top: 6px;
     }
-    /* الزر الثابت */
-    .dashboard-btn-fixed {
-      position: fixed;
-      top: 20px;
-      left: 20px;
-      z-index: 1050;
-    }
   </style>
 </head>
 <body>
   <div class="container text-center">
     <h3 class="mb-4">اختر القسم لعرض الفيديوهات</h3>
-    <button class="btn btn-warning dashboard-btn-fixed" onclick="requestDashboardAccess()">🔐 لوحة التحكم</button>
+    <div class="mb-3 d-flex justify-content-center gap-3">
+      <button class="btn btn-warning" onclick="requestDashboardAccess()">🔐 لوحة التحكم</button>
+    </div>
     <select id="departmentSelect" class="form-select mb-3">
       <option value="">-- اختر القسم --</option>
     </select>
@@ -104,7 +99,7 @@ let videos = [];
 
 async function fetchVideos() {
   try {
-    const res = await fetch(`${API_BASE}/api/videos`);
+    const res = await fetch(${API_BASE}/api/videos);
     videos = await res.json();
     populateDepartmentOptions();
   } catch (err) {
@@ -137,25 +132,25 @@ function renderVideos() {
     const card = document.createElement('div');
     card.className = 'video-card';
 
-    const title = `<div class="video-title">عنوان الفيديو: ${video.title}</div>`;
-    const description = `<div class="video-description" onclick="showDescription('${escapeHtml(video.title)}', '${escapeHtml(video.description)}')">وصف الفيديو: ${video.description}</div>`;
+    const title = <div class="video-title">عنوان الفيديو: ${video.title}</div>;
+    const description = <div class="video-description" onclick="showDescription('${escapeHtml(video.title)}', '${escapeHtml(video.description)}')">وصف الفيديو: ${video.description}</div>;
 
     const link = video.link || video.url || '';
     let media = '';
     if (link.includes('youtube.com') || link.includes('youtu.be')) {
-      media = `<iframe src="https://www.youtube.com/embed/${extractYouTubeID(link)}" allowfullscreen></iframe>`;
+      media = <iframe src="https://www.youtube.com/embed/${extractYouTubeID(link)}" allowfullscreen></iframe>;
     } else if (link.includes('drive.google.com/file/d/')) {
       const match = link.match(/\/file\/d\/(.*?)(\/|$)/);
       if (match) {
-        media = `<iframe src="https://drive.google.com/file/d/${match[1]}/preview" allowfullscreen></iframe>`;
+        media = <iframe src="https://drive.google.com/file/d/${match[1]}/preview" allowfullscreen></iframe>;
       } else {
-        media = `<video controls src="${link}"></video>`;
+        media = <video controls src="${link}"></video>;
       }
     } else {
-      media = `<video controls src="${link}"></video>`;
+      media = <video controls src="${link}"></video>;
     }
 
-    const popout = `<button class="popout-button" onclick="window.open('${link}', '_blank', 'width=800,height=600')">عرض الفيديو</button>`;
+    const popout = <button class="popout-button" onclick="window.open('${link}', '_blank', 'width=800,height=600')">عرض الفيديو</button>;
 
     card.innerHTML = title + description + media + popout;
     container.appendChild(card);
@@ -189,14 +184,14 @@ function populateDepartmentOptions() {
   Object.entries(departmentCounts).forEach(([dept, count]) => {
     const option = document.createElement('option');
     option.value = dept;
-    option.textContent = `${dept} (${count})`;
+    option.textContent = ${dept} (${count});
     departmentSelect.appendChild(option);
   });
 }
 
 async function requestDashboardAccess() {
   try {
-    const response = await fetch(`${API_BASE}/api/verify-password`, {
+    const response = await fetch(${API_BASE}/api/verify-password, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ password: prompt("🔐 من فضلك أدخل كلمة المرور للوصول إلى لوحة التحكم:") })
