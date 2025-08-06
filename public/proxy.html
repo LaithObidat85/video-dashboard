@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
@@ -24,10 +23,11 @@
     const id = params.get('id');
 
     if (id) {
-      fetch(`https://video-dashboard-backend.onrender.com/api/redirect/${id}`)
-        .then(response => {
-          if (!response.redirected) throw new Error("لم يتم إعادة التوجيه");
-          document.getElementById("content").src = response.url;
+      fetch(`https://video-dashboard-backend.onrender.com/api/proxy/${id}`)
+        .then(response => response.json())
+        .then(data => {
+          if (!data.link) throw new Error("❌ الرابط غير متوفر");
+          document.getElementById("content").src = data.link;
         })
         .catch(() => {
           document.body.innerHTML = '<h2 style="text-align:center; margin-top:20%;">❌ حدث خطأ أثناء تحميل الرابط</h2>';
