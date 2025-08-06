@@ -65,14 +65,22 @@
       cursor: pointer;
       margin-top: 6px;
     }
+    /* زر لوحة التحكم بمحاذاة يسار العنوان */
+    .header-controls {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
   </style>
 </head>
 <body>
-  <div class="container text-center">
-    <h3 class="mb-4">اختر القسم لعرض الفيديوهات</h3>
-    <div class="mb-3 d-flex justify-content-center gap-3">
+  <div class="container">
+    <div class="header-controls">
+      <h3>اختر القسم لعرض الفيديوهات</h3>
       <button class="btn btn-warning" onclick="requestDashboardAccess()">🔐 لوحة التحكم</button>
     </div>
+
     <select id="departmentSelect" class="form-select mb-3">
       <option value="">-- اختر القسم --</option>
     </select>
@@ -82,7 +90,7 @@
 
   <!-- نافذة عرض الوصف -->
   <div class="modal fade" id="descModal" tabindex="-1">
-    <div class="modal-dialog modal-lg">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
       <div class="modal-content">
         <div class="modal-header">
           <h5 class="modal-title" id="descTitle"></h5>
@@ -93,13 +101,32 @@
     </div>
   </div>
 
+  <!-- نافذة كلمة المرور -->
+  <div class="modal fade" id="passwordModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">🔐 الدخول إلى لوحة التحكم</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <input type="password" id="dashboardPassword" class="form-control" placeholder="أدخل كلمة المرور" lang="en">
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+          <button type="button" class="btn btn-primary" id="confirmDashboardAccess">دخول</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
 <script>
 const API_BASE = 'https://video-dashboard-backend.onrender.com';
 let videos = [];
 
 async function fetchVideos() {
   try {
-    const res = await fetch(${API_BASE}/api/videos);
+    const res = await fetch(`${API_BASE}/api/videos`);
     videos = await res.json();
     populateDepartmentOptions();
   } catch (err) {
@@ -132,25 +159,25 @@ function renderVideos() {
     const card = document.createElement('div');
     card.className = 'video-card';
 
-    const title = <div class="video-title">عنوان الفيديو: ${video.title}</div>;
-    const description = <div class="video-description" onclick="showDescription('${escapeHtml(video.title)}', '${escapeHtml(video.description)}')">وصف الفيديو: ${video.description}</div>;
+    const title = `<div class="video-title">عنوان الفيديو: ${video.title}</div>`;
+    const description = `<div class="video-description" onclick="showDescription('${escapeHtml(video.title)}', '${escapeHtml(video.description)}')">وصف الفيديو: ${video.description}</div>`;
 
     const link = video.link || video.url || '';
     let media = '';
     if (link.includes('youtube.com') || link.includes('youtu.be')) {
-      media = <iframe src="https://www.youtube.com/embed/${extractYouTubeID(link)}" allowfullscreen></iframe>;
+      media = `<iframe src="https://www.youtube.com/embed/${extractYouTubeID(link)}" allowfullscreen></iframe>`;
     } else if (link.includes('drive.google.com/file/d/')) {
       const match = link.match(/\/file\/d\/(.*?)(\/|$)/);
       if (match) {
-        media = <iframe src="https://drive.google.com/file/d/${match[1]}/preview" allowfullscreen></iframe>;
+        media = `<iframe src="https://drive.google.com/file/d/${match[1]}/preview" allowfullscreen></iframe>`;
       } else {
-        media = <video controls src="${link}"></video>;
+        media = `<video controls src="${link}"></video>`;
       }
     } else {
-      media = <video controls src="${link}"></video>;
+      media = `<video controls src="${link}"></video>`;
     }
 
-    const popout = <button class="popout-button" onclick="window.open('${link}', '_blank', 'width=800,height=600')">عرض الفيديو</button>;
+    const popout = `<button class="popout-button" onclick="window.open('${link}', '_blank', 'width=800,height=600')">عرض الفيديو</button>`;
 
     card.innerHTML = title + description + media + popout;
     container.appendChild(card);
@@ -184,27 +211,65 @@ function populateDepartmentOptions() {
   Object.entries(departmentCounts).forEach(([dept, count]) => {
     const option = document.createElement('option');
     option.value = dept;
-    option.textContent = ${dept} (${count});
+    option.textContent = `${dept} (${count})`;
     departmentSelect.appendChild(option);
   });
 }
 
-async function requestDashboardAccess() {
-  try {
-    const response = await fetch(${API_BASE}/api/verify-password, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ password: prompt("🔐 من فضلك أدخل كلمة المرور للوصول إلى لوحة التحكم:") })
+function requestDashboardAccess() {
+  const modalEl = document.getElementById('passwordModal');
+  const modal = new bootstrap.Modal(modalEl);
+  modal.show();
+
+  modalEl.addEventListener('shown.bs.modal', () => {
+    const passwordInput = document.getElementById('dashboardPassword');
+    passwordInput.value = '';
+    passwordInput.focus();
+
+    passwordInput.addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') {
+        document.getElementById('confirmDashboardAccess').click();
+      }
+      if (e.key === 'Escape') {
+        modal.hide();
+      }
     });
-    if (response.ok) {
-      window.location.href = 'dashboard.html';
-    } else {
-      alert('❌ كلمة المرور غير صحيحة');
+  });
+
+  document.getElementById('confirmDashboardAccess').onclick = async () => {
+    const password = document.getElementById('dashboardPassword').value.trim();
+    if (!password) return;
+    try {
+      const response = await fetch(`${API_BASE}/api/verify-password`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password })
+      });
+      if (response.ok) {
+        modal.hide();
+        window.location.href = 'dashboard.html';
+      } else {
+        alert('❌ كلمة المرور غير صحيحة');
+      }
+    } catch (err) {
+      alert('❌ حدث خطأ في الاتصال بالخادم');
     }
-  } catch (err) {
-    alert('❌ حدث خطأ في الاتصال بالخادم');
-  }
+  };
 }
+
+// فتح أو إغلاق المودال باستخدام F8
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'F8') {
+    e.preventDefault();
+    const modalEl = document.getElementById('passwordModal');
+    const modalInstance = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
+    if (modalEl.classList.contains('show')) {
+      modalInstance.hide();
+    } else {
+      requestDashboardAccess();
+    }
+  }
+});
 
 document.getElementById('departmentSelect').addEventListener('change', () => {
   document.getElementById('searchInput').disabled = false;
