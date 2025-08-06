@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
@@ -36,6 +35,9 @@
       white-space: nowrap;
       cursor: pointer;
       margin: 2px 0 10px 0;
+    }
+    .video-description + br {
+      line-height: 1.5;
     }
     .video-grid {
       display: flex;
@@ -80,6 +82,19 @@
     </select>
     <input id="searchInput" class="form-control mb-4" type="text" placeholder="ابحث بعنوان أو وصف الفيديو..." disabled>
     <div id="videoContainer" class="video-grid"></div>
+  </div>
+
+  <!-- Modal عرض الوصف -->
+  <div class="modal fade" id="descModal" tabindex="-1">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">وصف الفيديو</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body" id="descContent" style="white-space: pre-wrap; text-align: justify;"></div>
+      </div>
+    </div>
   </div>
 
   <!-- نافذة تعديل الفيديو -->
@@ -143,10 +158,8 @@ function populateDepartmentOptions() {
     acc[dep] = (acc[dep] || 0) + 1;
     return acc;
   }, {});
-
   const departmentSelect = document.getElementById('departmentSelect');
   departmentSelect.innerHTML = '<option value="">-- اختر القسم --</option>';
-
   Object.entries(departmentCounts).forEach(([dept, count]) => {
     const option = document.createElement('option');
     option.value = dept;
@@ -160,7 +173,6 @@ function renderVideos() {
   const query = document.getElementById('searchInput').value.trim().toLowerCase();
   const container = document.getElementById('videoContainer');
   container.innerHTML = '';
-
   if (!department) return;
 
   const filtered = videos.filter(v =>
@@ -177,20 +189,25 @@ function renderVideos() {
     const card = document.createElement('div');
     card.className = 'video-card';
 
-    const title = `<div class="video-title">${video.title}</div>`;
-    const description = `<div class="video-description" data-fulltext="${video.description}">${video.description}</div>`;
+    const title = `<div class="video-title"><strong>عنوان الفيديو:</strong> ${video.title}</div>`;
+    const description = `<div class="video-description" onclick="showDescription('${escapeHtml(video.description)}')"><strong>وصف الفيديو:</strong> ${video.description}</div><br>`;
 
     const link = video.url || '';
     let media = '';
-
     if (link.includes('youtube.com') || link.includes('youtu.be')) {
       media = `<iframe src="https://www.youtube.com/embed/${extractYouTubeID(link)}" allowfullscreen></iframe>`;
-    } else {
+    } else if (link.includes('drive.google.com/file/d/')) {
+      const match = link.match(/\/file\/d\/(.*?)(\/|$)/);
+      if (match) {
+        media = `<iframe src="https://drive.google.com/file/d/${match[1]}/preview" allowfullscreen></iframe>`;
+      }
+    } else if (link) {
       media = `<video controls src="${link}"></video>`;
+    } else {
+      media = `<p class="text-muted">🚫 لا يوجد معاينة</p>`;
     }
 
     const popout = `<button class="popout-button" onclick="window.open('${link}', '_blank', 'width=800,height=600')">عرض الفيديو</button>`;
-
     const actions = `
       <div class="action-buttons">
         <button class="btn btn-warning btn-sm" onclick="openEditModal('${video._id}')">تعديل</button>
@@ -203,9 +220,19 @@ function renderVideos() {
   });
 }
 
+function escapeHtml(text) {
+  return text?.replace(/"/g, '&quot;').replace(/'/g, '&#39;') || '';
+}
+
 function extractYouTubeID(url) {
   const match = url.match(/[?&]v=([^&#]*)|youtu\.be\/([^&#]*)/);
   return match ? (match[1] || match[2]) : '';
+}
+
+function showDescription(desc) {
+  document.getElementById('descContent').innerHTML = `<strong>وصف الفيديو:</strong> ${desc}`;
+  const modal = new bootstrap.Modal(document.getElementById('descModal'));
+  modal.show();
 }
 
 function openEditModal(id) {
