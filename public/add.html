@@ -59,19 +59,31 @@ const API_BASE = 'https://video-dashboard-backend.onrender.com';
 function updatePreview() {
   const link = document.getElementById('url').value.trim();
   const preview = document.getElementById('preview');
-  if (!link) { preview.innerHTML = ''; return; }
+  if (!link) { 
+    preview.innerHTML = ''; 
+    return; 
+  }
 
   let embedUrl = null;
+
+  // YouTube
   if (link.includes("youtube.com/watch?v=")) {
     const videoId = link.split("v=")[1].split("&")[0];
     embedUrl = `https://www.youtube.com/embed/${videoId}`;
+
+  // Google Drive
   } else if (link.includes("drive.google.com/file/d/")) {
     const match = link.match(/\/file\/d\/(.*?)(\/|$)/);
     if (match) embedUrl = `https://drive.google.com/file/d/${match[1]}/preview`;
+
+  // SharePoint / OneDrive Stream
+  } else if (link.includes("sharepoint.com/") && link.includes("/stream.aspx")) {
+    embedUrl = link;
   }
 
-  preview.innerHTML = embedUrl ? `<iframe src="${embedUrl}" allowfullscreen></iframe>` 
-                               : `<div class="alert alert-warning">⚠️ لا يمكن عرض هذا الرابط داخل المعاينة.</div>`;
+  preview.innerHTML = embedUrl 
+    ? `<iframe src="${embedUrl}" allowfullscreen></iframe>` 
+    : `<div class="alert alert-warning">⚠️ لا يمكن عرض هذا الرابط داخل المعاينة.</div>`;
 }
 
 // جلب الأقسام من قاعدة البيانات
