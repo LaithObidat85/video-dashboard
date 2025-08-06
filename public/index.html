@@ -71,7 +71,6 @@
       height: 200px;
       border-radius: 6px;
     }
-    /* كلاس خاص بـ SharePoint */
     .sharepoint-frame {
       width: 100%;
       height: 200px;
@@ -179,6 +178,8 @@ function renderVideos() {
 
     let media = '';
     const link = video.link || video.url || '';
+    let popoutLink = link;
+
     if (link.includes('youtube.com') || link.includes('youtu.be')) {
       media = `<iframe src="https://www.youtube.com/embed/${extractYouTubeID(link)}" allowfullscreen></iframe>`;
     } else if (link.includes('drive.google.com/file/d/')) {
@@ -186,11 +187,13 @@ function renderVideos() {
       media = match ? `<iframe src="https://drive.google.com/file/d/${match[1]}/preview" allowfullscreen></iframe>` : `<video controls src="${link}"></video>`;
     } else if (link.includes("sharepoint.com/") && link.includes("/embed.aspx")) {
       media = `<iframe class="sharepoint-frame" src="${link}" allowfullscreen></iframe>`;
+      popoutLink = link;
     } else if (link.includes("sharepoint.com/") && link.includes("/stream.aspx")) {
       const uniqueIdMatch = link.match(/UniqueId=([a-zA-Z0-9\-]+)/);
       if (uniqueIdMatch) {
         const embedUrl = `https://ymkh-my.sharepoint.com/personal/laith_obaidat_iu_edu_jo/_layouts/15/embed.aspx?UniqueId=${uniqueIdMatch[1]}&embed=%7B%22ust%22%3Atrue%7D&referrer=StreamWebApp&referrerScenario=EmbedDialog.Create`;
         media = `<iframe class="sharepoint-frame" src="${embedUrl}" allowfullscreen></iframe>`;
+        popoutLink = embedUrl;
       } else {
         media = `<video controls src="${link}"></video>`;
       }
@@ -198,7 +201,7 @@ function renderVideos() {
       media = `<video controls src="${link}"></video>`;
     }
 
-    const popout = `<button class="popout-button" onclick="window.open('${link}', '_blank', 'width=800,height=600')">عرض الفيديو</button>`;
+    const popout = `<button class="popout-button" onclick="window.open('${popoutLink}', '_blank', 'width=800,height=600')">عرض الفيديو</button>`;
     card.innerHTML = title + description + media + popout;
     container.appendChild(card);
   });
