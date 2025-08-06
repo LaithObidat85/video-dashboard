@@ -4,83 +4,114 @@
   <meta charset="UTF-8">
   <title>روابط</title>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.rtl.min.css">
-  <style>
-    body {
-      background-color: #f4f6fb;
-      font-family: 'Segoe UI', sans-serif;
-      padding: 20px;
-    }
-    .link-card {
-      background: white;
-      border-radius: 12px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-      padding: 15px;
-      margin-bottom: 20px;
-    }
-    .link-title {
-      font-weight: bold;
-      font-size: 1.2rem;
-      color: #0d6efd;
-    }
-    .link-description {
-      margin: 5px 0 10px;
-      color: #555;
-    }
-    iframe {
-      width: 100%;
-      height: 400px;
-      border: none;
-      border-radius: 8px;
-    }
-  </style>
 </head>
 <body>
+  <div class="container mt-4">
+    <h2 class="mb-4 text-center">إدارة الروابط</h2>
 
-  <div class="container">
-    <h2 class="text-center mb-4">📌 قائمة الروابط</h2>
-    <div id="linksContainer"></div>
+    <!-- زر إضافة رابط -->
+    <div class="text-center mb-3">
+      <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addLinkModal">➕ إضافة رابط جديد</button>
+    </div>
+
+    <!-- جدول عرض الروابط -->
+    <div class="table-responsive">
+      <table class="table table-bordered table-hover text-center align-middle">
+        <thead class="table-dark">
+          <tr>
+            <th>اسم الرابط</th>
+            <th>وصف</th>
+            <th>الرابط</th>
+            <th>تاريخ الإضافة</th>
+          </tr>
+        </thead>
+        <tbody id="linksTableBody">
+          <tr><td colspan="4">جارٍ التحميل...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- نافذة إضافة رابط جديد -->
+  <div class="modal fade" id="addLinkModal" tabindex="-1">
+    <div class="modal-dialog modal-fullscreen">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">➕ إضافة رابط جديد</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <form id="addLinkForm">
+            <div class="mb-3">
+              <label class="form-label">اسم الرابط</label>
+              <input type="text" class="form-control" name="name" required>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">الوصف</label>
+              <textarea class="form-control" name="description"></textarea>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">الرابط</label>
+              <input type="url" class="form-control" name="link" required>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">النص الظاهر للرابط</label>
+              <input type="text" class="form-control" name="linkText" required>
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+          <button type="button" class="btn btn-primary" id="saveLinkBtn">حفظ</button>
+        </div>
+      </div>
+    </div>
   </div>
 
 <script>
 const API_BASE = 'https://video-dashboard-backend.onrender.com';
 
+// عرض الروابط في الجدول
 async function fetchLinks() {
-  try {
-    const res = await fetch(`${API_BASE}/api/links`);
-    const links = await res.json();
-    renderLinks(links);
-  } catch (err) {
-    console.error('خطأ في جلب الروابط:', err);
-  }
-}
-
-function renderLinks(links) {
-  const container = document.getElementById('linksContainer');
-  container.innerHTML = '';
-
+  const res = await fetch(`${API_BASE}/api/links`);
+  const links = await res.json();
+  const tbody = document.getElementById('linksTableBody');
+  tbody.innerHTML = '';
   if (!links.length) {
-    container.innerHTML = '<p class="text-muted text-center">لا توجد روابط متاحة</p>';
+    tbody.innerHTML = '<tr><td colspan="4">لا توجد روابط</td></tr>';
     return;
   }
-
   links.forEach(link => {
-    const card = document.createElement('div');
-    card.className = 'link-card';
-
-    const title = `<div class="link-title">${link.name}</div>`;
-    const desc = `<div class="link-description">${link.description || ''}</div>`;
-
-    let preview = '';
-    if (link.link.includes('docs.google.com') || link.link.includes('drive.google.com')) {
-      preview = `<iframe src="${link.link}" allowfullscreen></iframe>`;
-    } else {
-      preview = `<a href="${link.link}" target="_blank" class="btn btn-primary">فتح الرابط</a>`;
-    }
-
-    card.innerHTML = title + desc + preview;
-    container.appendChild(card);
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${link.name}</td>
+      <td>${link.description || ''}</td>
+      <td><a href="${link.link}" target="_blank">${link.linkText}</a></td>
+      <td>${new Date(link.dateAdded).toLocaleString()}</td>
+    `;
+    tbody.appendChild(tr);
   });
 }
+
+// حفظ رابط جديد
+document.getElementById('saveLinkBtn').addEventListener('click', async () => {
+  const form = document.getElementById('addLinkForm');
+  const data = Object.fromEntries(new FormData(form).entries());
+
+  const res = await fetch(`${API_BASE}/api/links`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data)
+  });
+
+  if (res.ok) {
+    form.reset();
+    bootstrap.Modal.getInstance(document.getElementById('addLinkModal')).hide();
+    fetchLinks();
+  } else {
+    alert('❌ فشل في إضافة الرابط');
+  }
+});
 
 fetchLinks();
 </script>
