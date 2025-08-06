@@ -50,11 +50,12 @@
             <th>#</th>
             <th>وصف</th>
             <th>الرابط</th>
+            <th>محمي؟</th> <!-- ✅ العمود الجديد -->
             <th>إجراءات</th>
           </tr>
         </thead>
         <tbody id="linksTableBody">
-          <tr><td colspan="4">جارٍ التحميل...</td></tr>
+          <tr><td colspan="5">جارٍ التحميل...</td></tr>
         </tbody>
       </table>
     </div>
@@ -106,7 +107,6 @@
               <label class="form-label">النص الظاهر للرابط</label>
               <input type="text" class="form-control" name="linkText" required>
             </div>
-            <!-- ✅ الخيار الجديد -->
             <div class="mb-3 form-check">
               <input type="checkbox" class="form-check-input" name="requiresPassword" id="requiresPassword">
               <label class="form-check-label" for="requiresPassword">يتطلب كلمة مرور لفتح الرابط</label>
@@ -127,6 +127,7 @@
 const API_BASE = 'https://video-dashboard-backend.onrender.com';
 let pendingAction = null;
 let editId = null;
+let linksData = [];
 
 function openPasswordModal(action, id = null) {
   pendingAction = action;
@@ -208,15 +209,13 @@ document.getElementById('confirmPasswordBtn').addEventListener('click', async ()
   }
 });
 
-let linksData = [];
-
 async function fetchLinks() {
   const res = await fetch(`${API_BASE}/api/links`);
   linksData = await res.json();
   const tbody = document.getElementById('linksTableBody');
   tbody.innerHTML = '';
   if (!linksData.length) {
-    tbody.innerHTML = '<tr><td colspan="4">لا توجد روابط</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="5">لا توجد روابط</td></tr>';
     return;
   }
   linksData.forEach((link, index) => {
@@ -229,8 +228,8 @@ async function fetchLinks() {
       <td>${index + 1}</td>
       <td>${link.description || ''}</td>
       <td>${linkHtml}</td>
+      <td>${lockIcon}</td>
       <td>
-        ${lockIcon}
         <button class="btn btn-sm btn-warning" onclick="openPasswordModal('edit','${link._id}')">✏️ تعديل</button>
         <button class="btn btn-sm btn-danger" onclick="openPasswordModal('delete','${link._id}')">🗑️ حذف</button>
       </td>
@@ -242,7 +241,7 @@ async function fetchLinks() {
 document.getElementById('saveLinkBtn').addEventListener('click', async () => {
   const form = document.getElementById('addLinkForm');
   const data = Object.fromEntries(new FormData(form).entries());
-  data.requiresPassword = document.getElementById('requiresPassword').checked; // ✅ حفظ القيمة
+  data.requiresPassword = document.getElementById('requiresPassword').checked;
   const method = data.id ? 'PUT' : 'POST';
   const url = data.id ? `${API_BASE}/api/links/${data.id}` : `${API_BASE}/api/links`;
 
