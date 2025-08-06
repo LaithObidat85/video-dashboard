@@ -5,28 +5,10 @@
   <title>إضافة فيديو</title>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.rtl.min.css">
   <style>
-    body {
-      padding: 30px;
-      background-color: #f2f4f8;
-      font-family: 'Segoe UI', sans-serif;
-    }
-    .form-section {
-      background: white;
-      padding: 20px;
-      border-radius: 12px;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
-      max-width: 600px;
-      margin: auto;
-    }
-    #preview {
-      margin-top: 20px;
-      position: relative;
-    }
-    iframe, video {
-      width: 100%;
-      height: 360px;
-      border: none;
-    }
+    body { padding: 30px; background-color: #f2f4f8; font-family: 'Segoe UI', sans-serif; }
+    .form-section { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 2px 6px rgba(0,0,0,0.1); max-width: 600px; margin: auto; }
+    #preview { margin-top: 20px; position: relative; }
+    iframe, video { width: 100%; height: 360px; border: none; }
   </style>
 </head>
 <body>
@@ -46,22 +28,18 @@
         <input type="url" class="form-control" id="url" required oninput="updatePreview()">
       </div>
       <div id="preview"></div>
+
+      <!-- قسم اختيار أو إدارة الأقسام -->
       <div class="mb-3 mt-3">
         <label class="form-label">القسم</label>
-        <select class="form-select" id="department" required>
-          <option value="">-- اختر القسم --</option>
-          <option>قسم المساقات الخدمية</option>
-          <option>قسم اللغة العربية</option>
-          <option>قسم اللغة الانجليزية</option>
-          <option>قسم الترجمة</option>
-          <option>قسم علم النفس</option>
-          <option>نظام ملف المادة</option>
-          <option>نظام المخرجات التعليمية (الواصفات)</option>
-          <option>نظام السيرة الذاتية</option>
-          <option>صفحة الموظف</option>
-          <option>البوابة الالكترونية</option>
-        </select>
+        <div class="d-flex gap-2">
+          <select class="form-select" id="department" required></select>
+          <button type="button" class="btn btn-success" onclick="addDepartmentPrompt()">➕</button>
+          <button type="button" class="btn btn-warning" onclick="editDepartmentPrompt()">✏️</button>
+          <button type="button" class="btn btn-danger" onclick="deleteDepartment()">🗑️</button>
+        </div>
       </div>
+
       <div class="d-grid">
         <button type="submit" class="btn btn-primary">إضافة الفيديو</button>
       </div>
@@ -76,48 +54,84 @@
   </div>
 
 <script>
+const API_BASE = 'https://video-dashboard-backend.onrender.com';
+
 function updatePreview() {
   const link = document.getElementById('url').value.trim();
   const preview = document.getElementById('preview');
-
-  if (link === "") {
-    preview.innerHTML = '';
-    return;
-  }
+  if (!link) { preview.innerHTML = ''; return; }
 
   let embedUrl = null;
-
   if (link.includes("youtube.com/watch?v=")) {
     const videoId = link.split("v=")[1].split("&")[0];
     embedUrl = `https://www.youtube.com/embed/${videoId}`;
   } else if (link.includes("drive.google.com/file/d/")) {
     const match = link.match(/\/file\/d\/(.*?)(\/|$)/);
-    if (match) {
-      const fileId = match[1];
-      embedUrl = `https://drive.google.com/file/d/${fileId}/preview`;
-    }
+    if (match) embedUrl = `https://drive.google.com/file/d/${match[1]}/preview`;
   }
 
-  if (embedUrl) {
-    preview.innerHTML = `<iframe src="${embedUrl}" allowfullscreen></iframe>`;
-  } else {
-    preview.innerHTML = `<div class="alert alert-warning">⚠️ لا يمكن عرض هذا الرابط داخل المعاينة.</div>`;
-  }
+  preview.innerHTML = embedUrl ? `<iframe src="${embedUrl}" allowfullscreen></iframe>` 
+                               : `<div class="alert alert-warning">⚠️ لا يمكن عرض هذا الرابط داخل المعاينة.</div>`;
 }
 
-const API_BASE = 'https://video-dashboard-backend.onrender.com';
+// جلب الأقسام من قاعدة البيانات
+async function loadDepartments() {
+  const res = await fetch(`${API_BASE}/api/departments`);
+  const departments = await res.json();
+  const select = document.getElementById('department');
+  select.innerHTML = '<option value="">-- اختر القسم --</option>';
+  departments.forEach(dep => {
+    const opt = document.createElement('option');
+    opt.value = dep.name;
+    opt.textContent = dep.name;
+    opt.dataset.id = dep._id;
+    select.appendChild(opt);
+  });
+}
 
-document.getElementById('videoForm').addEventListener('submit', async function(e) {
+// إضافة قسم جديد
+async function addDepartmentPrompt() {
+  const name = prompt("🆕 أدخل اسم القسم الجديد:");
+  if (!name) return;
+  const res = await fetch(`${API_BASE}/api/departments`, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name })
+  });
+  if (res.ok) loadDepartments();
+}
+
+// تعديل القسم الحالي
+async function editDepartmentPrompt() {
+  const select = document.getElementById('department');
+  const selected = select.options[select.selectedIndex];
+  if (!selected || !selected.dataset.id) return alert("❌ اختر القسم أولاً");
+  const newName = prompt("✏️ أدخل الاسم الجديد للقسم:", selected.value);
+  if (!newName) return;
+  const res = await fetch(`${API_BASE}/api/departments/${selected.dataset.id}`, {
+    method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: newName })
+  });
+  if (res.ok) loadDepartments();
+}
+
+// حذف القسم الحالي
+async function deleteDepartment() {
+  const select = document.getElementById('department');
+  const selected = select.options[select.selectedIndex];
+  if (!selected || !selected.dataset.id) return alert("❌ اختر القسم أولاً");
+  if (!confirm(`⚠️ هل تريد حذف القسم "${selected.value}"؟`)) return;
+  const res = await fetch(`${API_BASE}/api/departments/${selected.dataset.id}`, { method: 'DELETE' });
+  if (res.ok) loadDepartments();
+}
+
+// إضافة الفيديو
+document.getElementById('videoForm').addEventListener('submit', async e => {
   e.preventDefault();
-
   const title = document.getElementById('title').value;
   const url = document.getElementById('url').value;
   const description = document.getElementById('description').value;
   const department = document.getElementById('department').value;
 
   const response = await fetch(`${API_BASE}/api/videos`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ title, link: url, url, description, department })
   });
 
@@ -126,10 +140,13 @@ document.getElementById('videoForm').addEventListener('submit', async function(e
     document.getElementById('confirmation').classList.remove('d-none');
     document.getElementById('videoForm').reset();
     document.getElementById('preview').innerHTML = '';
+    loadDepartments();
   } else {
     alert('حدث خطأ أثناء الإضافة.');
   }
 });
+
+loadDepartments();
 </script>
 </body>
 </html>
