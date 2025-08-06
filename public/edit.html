@@ -58,6 +58,12 @@
       height: 200px;
       border-radius: 6px;
     }
+    /* الكلاس الجديد لروابط SharePoint */
+    .sharepoint-frame {
+      width: 100%;
+      height: 200px;
+      border-radius: 6px;
+    }
     .popout-button {
       background-color: #0d6efd;
       color: white;
@@ -153,7 +159,6 @@ let quill = new Quill('#editor', {
   }
 });
 
-// جلب الأقسام من قاعدة البيانات
 async function fetchDepartments() {
   try {
     const res = await fetch(`${API_BASE}/api/departments`);
@@ -163,7 +168,6 @@ async function fetchDepartments() {
   }
 }
 
-// تعبئة قائمة الأقسام
 function populateDeptSelect(selectElement, selectedValue = '') {
   selectElement.innerHTML = '<option value="">-- اختر القسم --</option>';
   departments.forEach(dep => {
@@ -233,12 +237,12 @@ function renderVideos() {
         media = `<video controls src="${link}"></video>`;
       }
     } else if (link.includes("sharepoint.com/") && link.includes("/embed.aspx")) {
-      media = `<iframe src="${link}" allowfullscreen></iframe>`;
+      media = `<iframe class="sharepoint-frame" src="${link}" allowfullscreen></iframe>`;
     } else if (link.includes("sharepoint.com/") && link.includes("/stream.aspx")) {
       const uniqueIdMatch = link.match(/UniqueId=([a-zA-Z0-9\-]+)/);
       if (uniqueIdMatch) {
         const embedUrl = `https://ymkh-my.sharepoint.com/personal/laith_obaidat_iu_edu_jo/_layouts/15/embed.aspx?UniqueId=${uniqueIdMatch[1]}&embed=%7B%22ust%22%3Atrue%7D&referrer=StreamWebApp&referrerScenario=EmbedDialog.Create`;
-        media = `<iframe src="${embedUrl}" allowfullscreen></iframe>`;
+        media = `<iframe class="sharepoint-frame" src="${embedUrl}" allowfullscreen></iframe>`;
       } else {
         media = `<video controls src="${link}"></video>`;
       }
