@@ -187,13 +187,16 @@ function renderVideos() {
       media = match ? `<iframe src="https://drive.google.com/file/d/${match[1]}/preview" allowfullscreen></iframe>` : `<video controls src="${link}"></video>`;
     } else if (link.includes("sharepoint.com/") && link.includes("/embed.aspx")) {
       media = `<iframe class="sharepoint-frame" src="${link}" allowfullscreen></iframe>`;
-      popoutLink = link;
+      const uniqueIdMatch = link.match(/UniqueId=([a-zA-Z0-9\-]+)/);
+      if (uniqueIdMatch) {
+        popoutLink = `https://ymkh-my.sharepoint.com/personal/laith_obaidat_iu_edu_jo/_layouts/15/stream.aspx?UniqueId=${uniqueIdMatch[1]}`;
+      }
     } else if (link.includes("sharepoint.com/") && link.includes("/stream.aspx")) {
       const uniqueIdMatch = link.match(/UniqueId=([a-zA-Z0-9\-]+)/);
       if (uniqueIdMatch) {
         const embedUrl = `https://ymkh-my.sharepoint.com/personal/laith_obaidat_iu_edu_jo/_layouts/15/embed.aspx?UniqueId=${uniqueIdMatch[1]}&embed=%7B%22ust%22%3Atrue%7D&referrer=StreamWebApp&referrerScenario=EmbedDialog.Create`;
         media = `<iframe class="sharepoint-frame" src="${embedUrl}" allowfullscreen></iframe>`;
-        popoutLink = link; // ✅ الآن الزر يفتح رابط stream الأصلي
+        popoutLink = link;
       } else {
         media = `<video controls src="${link}"></video>`;
       }
