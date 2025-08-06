@@ -102,7 +102,7 @@
           <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
         </div>
         <div class="modal-body">
-          <input type="password" id="dashboardPassword" class="form-control" placeholder="أدخل كلمة المرور">
+          <input type="password" id="dashboardPassword" class="form-control" placeholder="Enter password" style="ime-mode:disabled;" autocomplete="off">
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
@@ -212,9 +212,13 @@ function requestDashboardAccess() {
   const modal = new bootstrap.Modal(document.getElementById('passwordModal'));
   modal.show();
   const passwordInput = document.getElementById('dashboardPassword');
-  setTimeout(() => passwordInput.focus(), 300);
 
-  // عند الضغط على Enter
+  // تفعيل المؤشر مباشرة وضبط اللغة للإنجليزية
+  setTimeout(() => {
+    passwordInput.focus();
+    passwordInput.setAttribute('lang', 'en');
+  }, 300);
+
   passwordInput.addEventListener('keydown', function(e) {
     if (e.key === 'Enter') {
       document.getElementById('confirmDashboardAccess').click();
