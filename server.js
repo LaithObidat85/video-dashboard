@@ -234,6 +234,16 @@ app.post('/api/backups/restore/:id', async (req, res) => {
     res.status(500).json({ message: '❌ فشل في الاسترجاع', error: err.message });
   }
 });
+// ✅ فتح الرابط عبر الخادم لحجب الرابط الحقيقي
+app.get('/api/open/:id', async (req, res) => {
+  try {
+    const link = await Link.findById(req.params.id);
+    if (!link) return res.status(404).send('الرابط غير موجود');
+    res.redirect(link.link);
+  } catch (err) {
+    res.status(500).send('حدث خطأ أثناء محاولة فتح الرابط');
+  }
+});
 
 // ▶️ تشغيل الخادم
 app.listen(PORT, () => {
