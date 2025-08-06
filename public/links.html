@@ -217,7 +217,7 @@ document.getElementById('confirmPasswordBtn').addEventListener('click', async ()
     }
     else if (pendingAction === 'openLink') {
       const link = linksData.find(l => l._id === editId);
-      if (link) window.open(link.link, '_blank');
+      if (link) window.open(`${API_BASE}/api/redirect/${link._id}`, '_blank');
     }
     else if (pendingAction === 'dashboard') {
       window.location.href = 'dashboard.html';
@@ -241,9 +241,10 @@ async function fetchLinks() {
   }
   linksData.forEach((link, index) => {
     const lockIcon = link.requiresPassword ? '🔒' : '';
+    const secureLink = `${API_BASE}/api/redirect/${link._id}`;
     const linkHtml = link.requiresPassword 
       ? `<a href="#" onclick="openPasswordModal('openLink','${link._id}')">${link.linkText}</a>` 
-      : `<a href="#" onclick="openInModal('${link.link}')">${link.linkText}</a>`;
+      : `<a href="#" onclick="openInModal('${secureLink}')">${link.linkText}</a>`;
     const tr = document.createElement('tr');
     tr.innerHTML = `
       <td>${index + 1}</td>
