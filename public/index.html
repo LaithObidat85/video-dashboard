@@ -193,7 +193,7 @@ function renderVideos() {
       if (uniqueIdMatch) {
         const embedUrl = `https://ymkh-my.sharepoint.com/personal/laith_obaidat_iu_edu_jo/_layouts/15/embed.aspx?UniqueId=${uniqueIdMatch[1]}&embed=%7B%22ust%22%3Atrue%7D&referrer=StreamWebApp&referrerScenario=EmbedDialog.Create`;
         media = `<iframe class="sharepoint-frame" src="${embedUrl}" allowfullscreen></iframe>`;
-        popoutLink = embedUrl;
+        popoutLink = embedUrl; // ✅ زر عرض الفيديو يستخدم رابط المعاينة
       } else {
         media = `<video controls src="${link}"></video>`;
       }
