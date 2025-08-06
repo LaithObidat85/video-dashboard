@@ -13,61 +13,48 @@
     .video-card {
       background: white;
       border-radius: 12px;
-      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-      padding: 10px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+      padding: 12px;
       margin: 5px;
       width: 300px;
       display: flex;
       flex-direction: column;
       justify-content: flex-start;
-      height: auto;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    .video-card:hover {
+      transform: scale(1.02);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
     }
     .video-title {
       font-weight: bold;
-      margin: 0;
+      margin-bottom: 6px;
+      min-height: 48px;
+      overflow: hidden;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
     }
     .video-description {
-      height: 20px;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
+      color: #0d6efd;
       cursor: pointer;
-      margin: 2px 0 10px 0;
-    }
-    .video-description:hover::after {
-      content: attr(data-fulltext);
-      position: fixed;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      background: white;
-      color: black;
-      padding: 20px;
-      border: 1px solid #ccc;
-      border-radius: 8px;
-      box-shadow: 0 0 15px rgba(0,0,0,0.3);
-      white-space: pre-wrap;
-      font-size: 1.1rem;
-      text-align: justify;
-      direction: rtl;
-      max-width: 500px;
-      z-index: 1050;
+      min-height: 40px;
+      overflow: hidden;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      margin-bottom: 8px;
     }
     .video-grid {
       display: flex;
       flex-wrap: wrap;
       justify-content: center;
-      gap: 10px;
+      gap: 15px;
     }
     video, iframe {
       width: 100%;
       height: 200px;
-      margin: 0;
-    }
-    .video-duration {
-      font-size: 0.85rem;
-      color: #555;
-      margin: 2px 0;
+      border-radius: 6px;
     }
     .popout-button {
       background-color: #0d6efd;
@@ -76,12 +63,7 @@
       padding: 6px 12px;
       border-radius: 5px;
       cursor: pointer;
-      margin: 5px 0 0 0;
-    }
-    @media (max-width: 576px) {
-      .video-card {
-        width: 90%;
-      }
+      margin-top: 6px;
     }
   </style>
 </head>
@@ -99,6 +81,19 @@
     <div id="videoContainer" class="video-grid"></div>
     <div class="text-center mt-4">
       <a href="index.html" class="btn btn-secondary">الرجوع إلى فهرس الأقسام</a>
+    </div>
+  </div>
+
+  <!-- نافذة عرض الوصف -->
+  <div class="modal fade" id="descModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="descTitle"></h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body" id="descContent" style="white-space: pre-wrap; text-align: justify;"></div>
+      </div>
     </div>
   </div>
 
@@ -128,7 +123,6 @@ function renderVideos() {
     const dep = v.department?.trim().toLowerCase();
     const title = v.title?.toLowerCase() || '';
     const desc = v.description?.toLowerCase() || '';
-    const link = v.link || v.url || '';
     const matchesQuery = title.includes(query) || desc.includes(query);
     return dep === department.trim().toLowerCase() && matchesQuery;
   });
@@ -142,30 +136,33 @@ function renderVideos() {
     const card = document.createElement('div');
     card.className = 'video-card';
 
-    const title = `<div class="video-title">${video.title}</div>`;
-    const description = `<div class="video-description" data-fulltext="${video.description}">${video.description}</div>`;
+    const title = `<div class="video-title">عنوان الفيديو: ${video.title}</div>`;
+    const description = `<div class="video-description" onclick="showDescription('${escapeHtml(video.title)}', '${escapeHtml(video.description)}')">وصف الفيديو: ${video.description}</div>`;
 
     const link = video.link || video.url || '';
     let media = '';
-
     if (link.includes('youtube.com') || link.includes('youtu.be')) {
       media = `<iframe src="https://www.youtube.com/embed/${extractYouTubeID(link)}" allowfullscreen></iframe>`;
     } else if (link.includes('drive.google.com/file/d/')) {
       const match = link.match(/\/file\/d\/(.*?)(\/|$)/);
       if (match) {
-        const fileId = match[1];
-        media = `<iframe src="https://drive.google.com/file/d/${fileId}/preview" allowfullscreen></iframe>`;
+        media = `<iframe src="https://drive.google.com/file/d/${match[1]}/preview" allowfullscreen></iframe>`;
       } else {
-        media = `<video controls src="${link}" onloadedmetadata="this.nextElementSibling.textContent = formatDuration(this.duration)"></video><div class="video-duration"></div>`;
+        media = `<video controls src="${link}"></video>`;
       }
     } else {
-      media = `<video controls src="${link}" onloadedmetadata="this.nextElementSibling.textContent = formatDuration(this.duration)"></video><div class="video-duration"></div>`;
+      media = `<video controls src="${link}"></video>`;
     }
 
-    const popout = `<button class="popout-button" onclick="window.open('${link}', '_blank', 'width=800,height=600')">انقر لعرض الفيديو</button>`;
+    const popout = `<button class="popout-button" onclick="window.open('${link}', '_blank', 'width=800,height=600')">عرض الفيديو</button>`;
+
     card.innerHTML = title + description + media + popout;
     container.appendChild(card);
   });
+}
+
+function escapeHtml(text) {
+  return text?.replace(/"/g, '&quot;').replace(/'/g, '&#39;') || '';
 }
 
 function extractYouTubeID(url) {
@@ -173,10 +170,11 @@ function extractYouTubeID(url) {
   return match ? (match[1] || match[2]) : '';
 }
 
-function formatDuration(seconds) {
-  const minutes = Math.floor(seconds / 60);
-  const secs = Math.floor(seconds % 60);
-  return `${minutes}:${secs.toString().padStart(2, '0')}`;
+function showDescription(title, desc) {
+  document.getElementById('descTitle').textContent = title;
+  document.getElementById('descContent').innerHTML = desc;
+  const modal = new bootstrap.Modal(document.getElementById('descModal'));
+  modal.show();
 }
 
 function populateDepartmentOptions() {
@@ -185,25 +183,9 @@ function populateDepartmentOptions() {
     acc[dep] = (acc[dep] || 0) + 1;
     return acc;
   }, {});
-
   const departmentSelect = document.getElementById('departmentSelect');
   departmentSelect.innerHTML = '<option value="">-- اختر القسم --</option>';
-
-  const departments = [
-    "قسم المساقات الخدمية",
-    "قسم اللغة العربية",
-    "قسم اللغة الانجليزية",
-    "قسم الترجمة",
-    "قسم علم النفس",
-    "نظام ملف المادة",
-    "نظام المخرجات التعليمية (الواصفات)",
-    "نظام السيرة الذاتية",
-    "صفحة الموظف",
-    "البوابة الالكترونية"
-  ];
-
-  departments.forEach(dept => {
-    const count = departmentCounts[dept] || 0;
+  Object.entries(departmentCounts).forEach(([dept, count]) => {
     const option = document.createElement('option');
     option.value = dept;
     option.textContent = `${dept} (${count})`;
@@ -236,5 +218,6 @@ document.getElementById('searchInput').addEventListener('input', renderVideos);
 
 fetchVideos();
 </script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
