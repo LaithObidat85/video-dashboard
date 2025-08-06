@@ -10,16 +10,18 @@
       padding: 20px;
       font-family: 'Segoe UI', sans-serif;
     }
-    .header-row {
+    .header-controls {
       display: flex;
       justify-content: center;
       align-items: center;
       position: relative;
     }
-    .header-row h3 {
-      margin: 0 auto;
+    .header-controls h3 {
+      flex: 1;
+      text-align: center;
+      margin: 0;
     }
-    .dashboard-btn {
+    .header-controls button {
       position: absolute;
       left: 0;
     }
@@ -82,9 +84,9 @@
 </head>
 <body>
   <div class="container text-center">
-    <div class="header-row mb-4">
+    <div class="header-controls mb-4">
+      <button class="btn btn-warning" onclick="requestDashboardAccess()">🔐 لوحة التحكم</button>
       <h3>اختر القسم لعرض الفيديوهات</h3>
-      <button class="btn btn-warning dashboard-btn" onclick="requestDashboardAccess()">🔐 لوحة التحكم</button>
     </div>
     <select id="departmentSelect" class="form-select mb-3">
       <option value="">-- اختر القسم --</option>
@@ -95,7 +97,7 @@
 
   <!-- نافذة عرض الوصف -->
   <div class="modal fade" id="descModal" tabindex="-1">
-    <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-dialog modal-lg">
       <div class="modal-content">
         <div class="modal-header">
           <h5 class="modal-title" id="descTitle"></h5>
@@ -128,6 +130,7 @@
 <script>
 const API_BASE = 'https://video-dashboard-backend.onrender.com';
 let videos = [];
+let passwordModal;
 
 async function fetchVideos() {
   try {
@@ -151,8 +154,7 @@ function renderVideos() {
     const dep = v.department?.trim().toLowerCase();
     const title = v.title?.toLowerCase() || '';
     const desc = v.description?.toLowerCase() || '';
-    const matchesQuery = title.includes(query) || desc.includes(query);
-    return dep === department.trim().toLowerCase() && matchesQuery;
+    return dep === department.trim().toLowerCase() && (title.includes(query) || desc.includes(query));
   });
 
   if (filtered.length === 0) {
@@ -167,23 +169,18 @@ function renderVideos() {
     const title = `<div class="video-title">عنوان الفيديو: ${video.title}</div>`;
     const description = `<div class="video-description" onclick="showDescription('${escapeHtml(video.title)}', '${escapeHtml(video.description)}')">وصف الفيديو: ${video.description}</div>`;
 
-    const link = video.link || video.url || '';
     let media = '';
+    const link = video.link || video.url || '';
     if (link.includes('youtube.com') || link.includes('youtu.be')) {
       media = `<iframe src="https://www.youtube.com/embed/${extractYouTubeID(link)}" allowfullscreen></iframe>`;
     } else if (link.includes('drive.google.com/file/d/')) {
       const match = link.match(/\/file\/d\/(.*?)(\/|$)/);
-      if (match) {
-        media = `<iframe src="https://drive.google.com/file/d/${match[1]}/preview" allowfullscreen></iframe>`;
-      } else {
-        media = `<video controls src="${link}"></video>`;
-      }
+      media = match ? `<iframe src="https://drive.google.com/file/d/${match[1]}/preview" allowfullscreen></iframe>` : `<video controls src="${link}"></video>`;
     } else {
       media = `<video controls src="${link}"></video>`;
     }
 
     const popout = `<button class="popout-button" onclick="window.open('${link}', '_blank', 'width=800,height=600')">عرض الفيديو</button>`;
-
     card.innerHTML = title + description + media + popout;
     container.appendChild(card);
   });
@@ -201,14 +198,12 @@ function extractYouTubeID(url) {
 function showDescription(title, desc) {
   document.getElementById('descTitle').textContent = title;
   document.getElementById('descContent').innerHTML = desc;
-  const modal = new bootstrap.Modal(document.getElementById('descModal'));
-  modal.show();
+  new bootstrap.Modal(document.getElementById('descModal')).show();
 }
 
 function populateDepartmentOptions() {
   const departmentCounts = videos.reduce((acc, video) => {
-    const dep = video.department;
-    acc[dep] = (acc[dep] || 0) + 1;
+    acc[video.department] = (acc[video.department] || 0) + 1;
     return acc;
   }, {});
   const departmentSelect = document.getElementById('departmentSelect');
@@ -223,13 +218,20 @@ function populateDepartmentOptions() {
 
 function requestDashboardAccess() {
   const modalEl = document.getElementById('passwordModal');
-  const modal = new bootstrap.Modal(modalEl);
-  modal.show();
+  passwordModal = new bootstrap.Modal(modalEl);
 
   modalEl.addEventListener('shown.bs.modal', () => {
-    const passwordInput = document.getElementById('dashboardPassword');
-    passwordInput.focus();
+    const input = document.getElementById('dashboardPassword');
+    input.value = ''; // مسح المحتوى
+    input.focus();    // تركيز المؤشر
   });
+
+  passwordModal.show();
+
+  document.getElementById('dashboardPassword').onkeydown = e => {
+    if (e.key === 'Enter') document.getElementById('confirmDashboardAccess').click();
+    if (e.key === 'Escape') passwordModal.hide();
+  };
 
   document.getElementById('confirmDashboardAccess').onclick = async () => {
     const password = document.getElementById('dashboardPassword').value.trim();
@@ -241,24 +243,23 @@ function requestDashboardAccess() {
         body: JSON.stringify({ password })
       });
       if (response.ok) {
-        modal.hide();
+        passwordModal.hide();
         window.location.href = 'dashboard.html';
       } else {
         alert('❌ كلمة المرور غير صحيحة');
       }
-    } catch (err) {
+    } catch {
       alert('❌ حدث خطأ في الاتصال بالخادم');
     }
   };
 }
 
-// تفعيل زر F8 لفتح/إغلاق نافذة كلمة المرور
-document.addEventListener('keydown', (e) => {
+// فتح وإغلاق المودال بالضغط على F8
+document.addEventListener('keydown', e => {
   if (e.key === 'F8') {
     const modalEl = document.getElementById('passwordModal');
-    const modalInstance = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
     if (modalEl.classList.contains('show')) {
-      modalInstance.hide();
+      passwordModal.hide();
     } else {
       requestDashboardAccess();
     }
