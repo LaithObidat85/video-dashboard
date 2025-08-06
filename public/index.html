@@ -1,3 +1,4 @@
+```html
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
@@ -190,20 +191,35 @@ function populateDepartmentOptions() {
 }
 
 async function requestDashboardAccess() {
-  try {
+  const passwordInput = document.createElement('input');
+  passwordInput.type = 'password';
+  passwordInput.placeholder = 'أدخل كلمة المرور';
+  passwordInput.classList.add('form-control', 'mb-2');
+
+  const confirmBtn = document.createElement('button');
+  confirmBtn.textContent = 'دخول';
+  confirmBtn.classList.add('btn', 'btn-primary');
+
+  const modalDiv = document.createElement('div');
+  modalDiv.classList.add('p-3');
+  modalDiv.appendChild(passwordInput);
+  modalDiv.appendChild(confirmBtn);
+
+  const modal = new bootstrap.Modal(document.createElement('div'));
+  document.body.appendChild(modalDiv);
+
+  confirmBtn.onclick = async () => {
     const response = await fetch(`${API_BASE}/api/verify-password`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ password: prompt("🔐 من فضلك أدخل كلمة المرور للوصول إلى لوحة التحكم:") })
+      body: JSON.stringify({ password: passwordInput.value })
     });
     if (response.ok) {
       window.location.href = 'dashboard.html';
     } else {
       alert('❌ كلمة المرور غير صحيحة');
     }
-  } catch (err) {
-    alert('❌ حدث خطأ في الاتصال بالخادم');
-  }
+  };
 }
 
 document.getElementById('departmentSelect').addEventListener('change', () => {
@@ -217,3 +233,4 @@ fetchVideos();
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
+```
