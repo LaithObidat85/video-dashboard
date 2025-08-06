@@ -42,15 +42,15 @@ const departmentSchema = new mongoose.Schema({
 });
 const Department = mongoose.model('Department', departmentSchema);
 
-// نموذج بيانات الملفات
-const fileSchema = new mongoose.Schema({
-  name: { type: String, required: true },
-  description: String,
-  link: { type: String, required: true },
-  linkText: { type: String, required: true },
+// نموذج بيانات الروابط
+const linkSchema = new mongoose.Schema({
+  name: { type: String, required: true },        // اسم الرابط
+  description: String,                           // وصف الرابط
+  link: { type: String, required: true },        // رابط الملف أو المستند
+  linkText: { type: String, required: true },    // النص الذي يعرض للمستخدم
   dateAdded: { type: Date, default: Date.now }
 });
-const File = mongoose.model('File', fileSchema);
+const Link = mongoose.model('Link', linkSchema);
 
 app.use(bodyParser.json());
 app.use(express.static(path.join(__dirname, 'public')));
@@ -63,8 +63,6 @@ app.post('/api/verify-password', (req, res) => {
 });
 
 // ====== إدارة الأقسام ======
-
-// جلب الأقسام
 app.get('/api/departments', async (req, res) => {
   try {
     const deps = await Department.find().sort({ name: 1 });
@@ -74,7 +72,6 @@ app.get('/api/departments', async (req, res) => {
   }
 });
 
-// إضافة قسم جديد
 app.post('/api/departments', async (req, res) => {
   try {
     const dep = new Department({ name: req.body.name });
@@ -85,7 +82,6 @@ app.post('/api/departments', async (req, res) => {
   }
 });
 
-// تعديل قسم
 app.put('/api/departments/:id', async (req, res) => {
   try {
     const dep = await Department.findByIdAndUpdate(req.params.id, { name: req.body.name }, { new: true });
@@ -95,7 +91,6 @@ app.put('/api/departments/:id', async (req, res) => {
   }
 });
 
-// حذف قسم
 app.delete('/api/departments/:id', async (req, res) => {
   try {
     await Department.findByIdAndDelete(req.params.id);
@@ -106,8 +101,6 @@ app.delete('/api/departments/:id', async (req, res) => {
 });
 
 // ====== إدارة الفيديوهات ======
-
-// 📥 جلب الفيديوهات
 app.get('/api/videos', async (req, res) => {
   try {
     const videos = await Video.find().sort({ dateAdded: -1 });
@@ -117,7 +110,6 @@ app.get('/api/videos', async (req, res) => {
   }
 });
 
-// ➕ إضافة فيديو
 app.post('/api/videos', async (req, res) => {
   try {
     const video = new Video(req.body);
@@ -128,7 +120,6 @@ app.post('/api/videos', async (req, res) => {
   }
 });
 
-// ✏️ تعديل فيديو
 app.put('/api/videos/:id', async (req, res) => {
   try {
     const updated = await Video.findByIdAndUpdate(req.params.id, req.body, { new: true });
@@ -139,7 +130,6 @@ app.put('/api/videos/:id', async (req, res) => {
   }
 });
 
-// 🗑️ حذف فيديو
 app.delete('/api/videos/:id', async (req, res) => {
   try {
     const deleted = await Video.findByIdAndDelete(req.params.id);
@@ -150,32 +140,45 @@ app.delete('/api/videos/:id', async (req, res) => {
   }
 });
 
-// ====== إدارة الملفات ======
-
-// جلب الملفات
-app.get('/api/files', async (req, res) => {
+// ====== إدارة الروابط ======
+app.get('/api/links', async (req, res) => {
   try {
-    const files = await File.find().sort({ dateAdded: -1 });
-    res.json(files);
+    const links = await Link.find().sort({ dateAdded: -1 });
+    res.json(links);
   } catch (err) {
-    res.status(500).json({ message: '❌ خطأ في جلب الملفات' });
+    res.status(500).json({ message: '❌ خطأ في جلب الروابط' });
   }
 });
 
-// إضافة ملف
-app.post('/api/files', async (req, res) => {
+app.post('/api/links', async (req, res) => {
   try {
-    const file = new File(req.body);
-    await file.save();
-    res.status(201).json(file);
+    const link = new Link(req.body);
+    await link.save();
+    res.status(201).json(link);
   } catch (err) {
-    res.status(400).json({ message: '❌ خطأ في إضافة الملف', error: err.message });
+    res.status(400).json({ message: '❌ خطأ في إضافة الرابط', error: err.message });
+  }
+});
+
+app.put('/api/links/:id', async (req, res) => {
+  try {
+    const updated = await Link.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    res.json(updated);
+  } catch (err) {
+    res.status(400).json({ message: '❌ خطأ في تعديل الرابط', error: err.message });
+  }
+});
+
+app.delete('/api/links/:id', async (req, res) => {
+  try {
+    await Link.findByIdAndDelete(req.params.id);
+    res.json({ message: '🗑️ تم حذف الرابط بنجاح' });
+  } catch (err) {
+    res.status(400).json({ message: '❌ خطأ في الحذف', error: err.message });
   }
 });
 
 // ====== إدارة النسخ الاحتياطية ======
-
-// 📦 إنشاء نسخة احتياطية داخل MongoDB
 app.post('/api/backups/create', async (req, res) => {
   try {
     const videos = await Video.find();
@@ -187,7 +190,6 @@ app.post('/api/backups/create', async (req, res) => {
   }
 });
 
-// 📂 عرض النسخ الاحتياطية
 app.get('/api/backups', async (req, res) => {
   try {
     const backups = await Backup.find().sort({ date: -1 });
@@ -197,7 +199,6 @@ app.get('/api/backups', async (req, res) => {
   }
 });
 
-// 🗑️ حذف نسخة احتياطية
 app.delete('/api/backups/:id', async (req, res) => {
   try {
     await Backup.findByIdAndDelete(req.params.id);
@@ -207,7 +208,6 @@ app.delete('/api/backups/:id', async (req, res) => {
   }
 });
 
-// ⬇️ تنزيل نسخة احتياطية كـ JSON
 app.get('/api/backups/download/:id', async (req, res) => {
   try {
     const backup = await Backup.findById(req.params.id);
@@ -220,7 +220,6 @@ app.get('/api/backups/download/:id', async (req, res) => {
   }
 });
 
-// 🔄 استرجاع نسخة احتياطية إلى Collection الفيديوهات
 app.post('/api/backups/restore/:id', async (req, res) => {
   try {
     const backup = await Backup.findById(req.params.id);
