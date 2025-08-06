@@ -177,24 +177,6 @@ async function fetchVideos() {
   }
 }
 
-// ✅ تعديل: جلب الأقسام مباشرة من API الأقسام وليس من الفيديوهات
-async function populateDepartmentOptions() {
-  try {
-    const depRes = await fetch(`${API_BASE}/api/departments`);
-    const departments = await depRes.json();
-    const departmentSelect = document.getElementById('departmentSelect');
-    departmentSelect.innerHTML = '<option value="">-- اختر القسم --</option>';
-    departments.forEach(dep => {
-      const option = document.createElement('option');
-      option.value = dep.name;
-      option.textContent = dep.name;
-      departmentSelect.appendChild(option);
-    });
-  } catch (err) {
-    console.error('فشل تحميل الأقسام:', err);
-  }
-}
-
 function renderVideos() {
   const department = document.getElementById('departmentSelect').value;
   const query = document.getElementById('searchInput').value.trim().toLowerCase();
@@ -269,6 +251,21 @@ function showDescription(title, desc) {
   document.getElementById('descTitle').textContent = title;
   document.getElementById('descContent').innerHTML = desc;
   new bootstrap.Modal(document.getElementById('descModal')).show();
+}
+
+function populateDepartmentOptions() {
+  const departmentCounts = videos.reduce((acc, video) => {
+    acc[video.department] = (acc[video.department] || 0) + 1;
+    return acc;
+  }, {});
+  const departmentSelect = document.getElementById('departmentSelect');
+  departmentSelect.innerHTML = '<option value="">-- اختر القسم --</option>';
+  Object.entries(departmentCounts).forEach(([dept, count]) => {
+    const option = document.createElement('option');
+    option.value = dept;
+    option.textContent = `${dept} (${count})`;
+    departmentSelect.appendChild(option);
+  });
 }
 
 function requestDashboardAccess() {
