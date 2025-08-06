@@ -91,30 +91,27 @@
     }
     footer {
       text-align: center;
-      margin-top: auto;
-      padding: 10px 0;
-    }
-    .dev-signature {
+      margin-top: 20px;
       font-weight: bold;
-      font-size: 1.2rem;
-      opacity: 0;
-      animation: fadeIn 2s ease forwards, glowColors 3s ease-in-out infinite alternate;
+      color: #333;
+      animation: glow 1.5s infinite alternate;
     }
-    @keyframes fadeIn {
-      to { opacity: 1; }
-    }
-    @keyframes glowColors {
-      0%   { text-shadow: 0 0 5px #ff0000, 0 0 15px #ff0000; color: #ff0000; }
-      25%  { text-shadow: 0 0 5px #00ff00, 0 0 15px #00ff00; color: #00aa00; }
-      50%  { text-shadow: 0 0 5px #0000ff, 0 0 15px #0000ff; color: #0000ff; }
-      75%  { text-shadow: 0 0 5px #ff00ff, 0 0 15px #ff00ff; color: #aa00aa; }
-      100% { text-shadow: 0 0 5px #ffaa00, 0 0 15px #ffaa00; color: #aa5500; }
+    @keyframes glow {
+      from { text-shadow: 0 0 5px #999; }
+      to { text-shadow: 0 0 15px #666; }
     }
   </style>
 </head>
 <body>
   <div class="container text-center">
+    <br>
+    <img src="https://app.iu.edu.jo/cf/images/iu.png" alt="IU Logo" width="120">
+    <br><br>
     <h3>اختر القسم لعرض الفيديوهات</h3>
+    <div class="header-controls mb-4 mt-3">
+      <button class="btn btn-warning" onclick="requestDashboardAccess()">🔐 لوحة التحكم</button>
+      <a href="https://video-dashboard-backend.onrender.com/links.html" class="btn btn-info">🔗 روابط مهمة</a>
+    </div>
     <select id="departmentSelect" class="form-select mb-3">
       <option value="">-- اختر القسم --</option>
     </select>
@@ -122,15 +119,8 @@
     <div id="videoContainer" class="video-grid"></div>
   </div>
 
-  <div class="container text-center mb-3">
-    <div class="d-flex justify-content-center gap-2">
-      <button class="btn btn-warning" onclick="requestDashboardAccess()">🔐 لوحة التحكم</button>
-      <a href="https://video-dashboard-backend.onrender.com/links.html" class="btn btn-info">🔗 روابط مهمة</a>
-    </div>
-  </div>
-
   <footer>
-    <div class="dev-signature">برمجة وتطوير: ليث عبيدات</div>
+    برمجة وتطوير: ليث عبيدات
   </footer>
 
   <!-- نافذة عرض الوصف -->
