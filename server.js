@@ -48,6 +48,7 @@ const linkSchema = new mongoose.Schema({
   description: String,                           // وصف الرابط
   link: { type: String, required: true },        // رابط الملف أو المستند
   linkText: { type: String, required: true },    // النص الذي يعرض للمستخدم
+  requiresPassword: { type: Boolean, default: false }, // 🔐 يحدد ما إذا كان الرابط يتطلب كلمة مرور
   dateAdded: { type: Date, default: Date.now }
 });
 const Link = mongoose.model('Link', linkSchema);
