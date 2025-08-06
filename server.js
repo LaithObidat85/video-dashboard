@@ -42,6 +42,16 @@ const departmentSchema = new mongoose.Schema({
 });
 const Department = mongoose.model('Department', departmentSchema);
 
+// نموذج بيانات الملفات
+const fileSchema = new mongoose.Schema({
+  name: { type: String, required: true },
+  description: String,
+  link: { type: String, required: true },
+  linkText: { type: String, required: true },
+  dateAdded: { type: Date, default: Date.now }
+});
+const File = mongoose.model('File', fileSchema);
+
 app.use(bodyParser.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
@@ -137,6 +147,29 @@ app.delete('/api/videos/:id', async (req, res) => {
     res.json({ message: '✅ تم حذف الفيديو' });
   } catch (err) {
     res.status(400).json({ message: 'خطأ في الحذف', error: err.message });
+  }
+});
+
+// ====== إدارة الملفات ======
+
+// جلب الملفات
+app.get('/api/files', async (req, res) => {
+  try {
+    const files = await File.find().sort({ dateAdded: -1 });
+    res.json(files);
+  } catch (err) {
+    res.status(500).json({ message: '❌ خطأ في جلب الملفات' });
+  }
+});
+
+// إضافة ملف
+app.post('/api/files', async (req, res) => {
+  try {
+    const file = new File(req.body);
+    await file.save();
+    res.status(201).json(file);
+  } catch (err) {
+    res.status(400).json({ message: '❌ خطأ في إضافة الملف', error: err.message });
   }
 });
 
