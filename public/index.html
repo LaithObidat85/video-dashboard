@@ -91,31 +91,27 @@
     }
     footer {
       text-align: center;
-      margin-top: 20px;
+      margin-top: 10px;
       font-weight: bold;
       color: #333;
       font-size: 1.1rem;
-      text-shadow: 1px 1px 2px #aaa;
-      animation: fadeIn 2s ease-in-out infinite alternate;
+      animation: glow 1.5s infinite alternate;
     }
-    @keyframes fadeIn {
-      from { opacity: 0.6; }
-      to { opacity: 1; }
+    @keyframes glow {
+      from { color: #333; text-shadow: none; }
+      to { color: #0d6efd; text-shadow: 0 0 10px #0d6efd; }
+    }
+    .bottom-buttons {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      margin-bottom: 10px;
     }
   </style>
 </head>
 <body>
   <div class="container text-center">
-    <div class="header-controls mb-4">
-      <button class="btn btn-warning" onclick="requestDashboardAccess()">🔐 لوحة التحكم</button>
-      <a href="https://video-dashboard-backend.onrender.com/links.html" class="btn btn-info">🔗 روابط مهمة</a>
-    </div>
-
-    <!-- الأيقونة فوق العنوان -->
-    <div class="mb-2">
-      <img src="https://app.iu.edu.jo/cf/images/iu.png" alt="IU Icon" style="width: 120px; height: auto;">
-    </div>
-
+    <img src="https://app.iu.edu.jo/cf/images/iu.png" alt="شعار" style="width:120px; display:block; margin:0 auto 10px auto;">
     <h3>اختر القسم لعرض الفيديوهات</h3>
 
     <select id="departmentSelect" class="form-select mb-3">
@@ -123,6 +119,11 @@
     </select>
     <input id="searchInput" class="form-control mb-4" type="text" placeholder="ابحث بعنوان أو وصف الفيديو..." disabled>
     <div id="videoContainer" class="video-grid"></div>
+  </div>
+
+  <div class="bottom-buttons">
+    <button class="btn btn-warning" onclick="requestDashboardAccess()">🔐 لوحة التحكم</button>
+    <a href="https://video-dashboard-backend.onrender.com/links.html" class="btn btn-info">🔗 روابط مهمة</a>
   </div>
 
   <footer>
