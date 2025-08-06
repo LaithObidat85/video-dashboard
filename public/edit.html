@@ -31,7 +31,7 @@
     .video-title {
       font-weight: bold;
       margin-bottom: 6px;
-      min-height: 48px; /* ثابت لارتفاع العنوان */
+      min-height: 48px;
       overflow: hidden;
       display: -webkit-box;
       -webkit-line-clamp: 2;
@@ -40,7 +40,7 @@
     .video-description {
       color: #0d6efd;
       cursor: pointer;
-      min-height: 40px; /* ثابت لارتفاع الوصف */
+      min-height: 40px;
       overflow: hidden;
       display: -webkit-box;
       -webkit-line-clamp: 2;
@@ -55,7 +55,7 @@
     }
     video, iframe {
       width: 100%;
-      height: 200px; /* موحد لجميع المعاينات */
+      height: 200px;
       border-radius: 6px;
     }
     .popout-button {
@@ -122,7 +122,9 @@
           <label class="mt-3">رابط الفيديو</label>
           <input type="text" class="form-control mb-2" id="editUrl">
           <label>القسم</label>
-          <input type="text" class="form-control mb-2" id="editDept">
+          <select class="form-select mb-2" id="editDeptSelect" required>
+            <option value="">-- اختر القسم --</option>
+          </select>
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إغلاق</button>
@@ -137,6 +139,7 @@
 <script>
 const API_BASE = 'https://video-dashboard-backend.onrender.com';
 let videos = [];
+let departments = [];
 let quill = new Quill('#editor', {
   theme: 'snow',
   modules: {
@@ -149,6 +152,28 @@ let quill = new Quill('#editor', {
     ]
   }
 });
+
+// جلب الأقسام من قاعدة البيانات
+async function fetchDepartments() {
+  try {
+    const res = await fetch(`${API_BASE}/api/departments`);
+    departments = await res.json();
+  } catch (err) {
+    console.error('فشل تحميل الأقسام:', err);
+  }
+}
+
+// تعبئة قائمة الأقسام
+function populateDeptSelect(selectElement, selectedValue = '') {
+  selectElement.innerHTML = '<option value="">-- اختر القسم --</option>';
+  departments.forEach(dep => {
+    const option = document.createElement('option');
+    option.value = dep.name;
+    option.textContent = dep.name;
+    if (dep.name === selectedValue) option.selected = true;
+    selectElement.appendChild(option);
+  });
+}
 
 async function fetchVideos() {
   const res = await fetch(`${API_BASE}/api/videos`);
@@ -240,13 +265,14 @@ function showDescription(title, desc) {
   modal.show();
 }
 
-function openEditModal(id) {
+async function openEditModal(id) {
+  await fetchDepartments();
   const video = videos.find(v => v._id === id);
   document.getElementById('editId').value = video._id;
   document.getElementById('editTitle').value = video.title;
   document.getElementById('editUrl').value = video.url;
-  document.getElementById('editDept').value = video.department || '';
   quill.root.innerHTML = video.description || '';
+  populateDeptSelect(document.getElementById('editDeptSelect'), video.department);
   const modal = new bootstrap.Modal(document.getElementById('editModal'));
   modal.show();
 }
@@ -257,7 +283,7 @@ async function saveEdit() {
     title: document.getElementById('editTitle').value,
     description: quill.root.innerHTML,
     url: document.getElementById('editUrl').value,
-    department: document.getElementById('editDept').value
+    department: document.getElementById('editDeptSelect').value
   };
   await fetch(`${API_BASE}/api/videos/${id}`, {
     method: 'PUT',
