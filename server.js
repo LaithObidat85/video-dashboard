@@ -242,6 +242,30 @@ app.get('/api/proxy/:id', async (req, res) => {
   }
 });
 
+// ✅ إعادة توجيه حسب ID أو URL
+app.get('/api/redirect/:value', async (req, res) => {
+  const { value } = req.params;
+
+  try {
+    let url;
+
+    // إذا القيمة تشبه ObjectId من MongoDB
+    if (/^[0-9a-fA-F]{24}$/.test(value)) {
+      const linkDoc = await Link.findById(value);
+      if (!linkDoc) return res.status(404).send('❌ الرابط غير موجود');
+      url = linkDoc.link;
+    } else {
+      // إذا أرسلت URL مباشرة
+      url = decodeURIComponent(value);
+    }
+
+    return res.redirect(url);
+  } catch (err) {
+    console.error(err);
+    res.status(500).send('❌ خطأ في إعادة التوجيه');
+  }
+});
+
 // ▶️ تشغيل الخادم
 app.listen(PORT, () => {
   console.log(`🚀 الخادم يعمل على: http://localhost:${PORT}`);
