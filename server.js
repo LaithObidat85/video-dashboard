@@ -17,7 +17,7 @@ mongoose.connect(MONGO_URI, {
 .then(() => console.log('✅ Connected to MongoDB Atlas'))
 .catch(err => console.error('❌ MongoDB connection error:', err));
 
-// ====== النماذج ======
+// ====== نماذج البيانات ======
 const videoSchema = new mongoose.Schema({
   title: { type: String, required: true },
   url: { type: String, required: true },
@@ -48,79 +48,14 @@ const linkSchema = new mongoose.Schema({
 });
 const Link = mongoose.model('Link', linkSchema);
 
-// ====== كلمات المرور ======
-const passwordSchema = new mongoose.Schema({
-  section: { type: String, required: true, unique: true },
-  password: { type: String, required: true }
-});
-const Password = mongoose.model('sitepasswords', passwordSchema); // اسم collection الجديد
-
 app.use(bodyParser.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
-// ✅ التحقق من كلمة المرور للوحة التحكم
-app.post('/api/verify-password', async (req, res) => {
-  const { section, password } = req.body;
-  try {
-    const record = await Password.findOne({ section });
-    if (record && record.password === password) {
-      return res.sendStatus(200);
-    }
-    return res.sendStatus(403);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-// ✅ إدارة كلمات المرور
-app.get('/api/passwords', async (req, res) => {
-  try {
-    const passwords = await Password.find();
-    res.json(passwords);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-app.post('/api/passwords', async (req, res) => {
-  try {
-    const pass = new Password(req.body);
-    await pass.save();
-    res.status(201).json(pass);
-  } catch (err) {
-    res.status(400).json({ error: err.message });
-  }
-});
-
-app.put('/api/passwords/:id', async (req, res) => {
-  try {
-    const updated = await Password.findByIdAndUpdate(req.params.id, req.body, { new: true });
-    res.json(updated);
-  } catch (err) {
-    res.status(400).json({ error: err.message });
-  }
-});
-
-app.delete('/api/passwords/:id', async (req, res) => {
-  try {
-    await Password.findByIdAndDelete(req.params.id);
-    res.json({ message: 'تم حذف كلمة المرور' });
-  } catch (err) {
-    res.status(400).json({ error: err.message });
-  }
-});
-
-// ✅ التحقق من كلمة مرور قسم أو رابط
-app.post('/api/check-section-password', async (req, res) => {
-  const { section, password } = req.body;
-  try {
-    const record = await Password.findOne({ section });
-    if (!record) return res.status(404).json({ error: 'القسم غير موجود' });
-    if (record.password === password) return res.sendStatus(200);
-    return res.sendStatus(403);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
+// ✅ التحقق من كلمة المرور
+app.post('/api/verify-password', (req, res) => {
+  const { password } = req.body;
+  if (password === process.env.DASHBOARD_PASSWORD) return res.sendStatus(200);
+  else return res.sendStatus(403);
 });
 
 // ====== إدارة الأقسام ======
@@ -221,13 +156,7 @@ app.post('/api/links', async (req, res) => {
   }
 });
 
-// تعديل أو حذف الروابط مع تحقق من كلمة المرور من قاعدة البيانات
 app.put('/api/links/:id', async (req, res) => {
-  const { sectionPassword } = req.body;
-  const passRecord = await Password.findOne({ section: 'links' });
-  if (!passRecord || passRecord.password !== sectionPassword) {
-    return res.status(403).json({ message: '❌ كلمة المرور غير صحيحة' });
-  }
   try {
     const updated = await Link.findByIdAndUpdate(req.params.id, req.body, { new: true });
     res.json(updated);
@@ -237,11 +166,6 @@ app.put('/api/links/:id', async (req, res) => {
 });
 
 app.delete('/api/links/:id', async (req, res) => {
-  const { sectionPassword } = req.body;
-  const passRecord = await Password.findOne({ section: 'links' });
-  if (!passRecord || passRecord.password !== sectionPassword) {
-    return res.status(403).json({ message: '❌ كلمة المرور غير صحيحة' });
-  }
   try {
     await Link.findByIdAndDelete(req.params.id);
     res.json({ message: '🗑️ تم حذف الرابط بنجاح' });
@@ -250,15 +174,94 @@ app.delete('/api/links/:id', async (req, res) => {
   }
 });
 
-// ✅ حل مشكلة Cannot GET /api/redirect/:id
-app.get('/api/redirect/:id', async (req, res) => {
+// ====== إدارة النسخ الاحتياطية ======
+app.post('/api/backups/create', async (req, res) => {
+  try {
+    const videos = await Video.find();
+    const backup = new Backup({ data: videos });
+    await backup.save();
+    res.json({ message: '✅ تم إنشاء النسخة الاحتياطية' });
+  } catch (err) {
+    res.status(500).json({ message: '❌ فشل في إنشاء النسخة', error: err.message });
+  }
+});
+
+app.get('/api/backups', async (req, res) => {
+  try {
+    const backups = await Backup.find().sort({ date: -1 });
+    res.json(backups);
+  } catch (err) {
+    res.status(500).json({ message: '❌ فشل في جلب النسخ' });
+  }
+});
+
+app.delete('/api/backups/:id', async (req, res) => {
+  try {
+    await Backup.findByIdAndDelete(req.params.id);
+    res.json({ message: '🗑️ تم حذف النسخة' });
+  } catch (err) {
+    res.status(500).json({ message: '❌ فشل في الحذف', error: err.message });
+  }
+});
+
+app.get('/api/backups/download/:id', async (req, res) => {
+  try {
+    const backup = await Backup.findById(req.params.id);
+    if (!backup) return res.status(404).json({ message: '❌ النسخة غير موجودة' });
+    res.setHeader('Content-Disposition', `attachment; filename=backup-${backup.date.toISOString()}.json`);
+    res.setHeader('Content-Type', 'application/json');
+    res.send(JSON.stringify(backup.data, null, 2));
+  } catch (err) {
+    res.status(500).json({ message: '❌ فشل في التنزيل' });
+  }
+});
+
+app.post('/api/backups/restore/:id', async (req, res) => {
+  try {
+    const backup = await Backup.findById(req.params.id);
+    if (!backup) return res.status(404).json({ message: '❌ النسخة غير موجودة' });
+
+    await Video.deleteMany({});
+    await Video.insertMany(backup.data);
+
+    res.json({ message: '♻️ تم الاسترجاع بنجاح' });
+  } catch (err) {
+    res.status(500).json({ message: '❌ فشل في الاسترجاع', error: err.message });
+  }
+});
+
+// ✅ تحميل الرابط كمحتوى (لصفحة proxy)
+app.get('/api/proxy/:id', async (req, res) => {
   try {
     const link = await Link.findById(req.params.id);
-    if (!link) {
-      return res.status(404).send('❌ الرابط غير موجود');
-    }
-    res.redirect(link.link);
+    if (!link) return res.status(404).json({ error: 'الرابط غير موجود' });
+
+    res.json({ link: link.link });
   } catch (err) {
+    res.status(500).json({ error: 'فشل في جلب الرابط' });
+  }
+});
+
+// ✅ إعادة توجيه حسب ID أو URL
+app.get('/api/redirect/:value', async (req, res) => {
+  const { value } = req.params;
+
+  try {
+    let url;
+
+    // إذا القيمة تشبه ObjectId من MongoDB
+    if (/^[0-9a-fA-F]{24}$/.test(value)) {
+      const linkDoc = await Link.findById(value);
+      if (!linkDoc) return res.status(404).send('❌ الرابط غير موجود');
+      url = linkDoc.link;
+    } else {
+      // إذا أرسلت URL مباشرة
+      url = decodeURIComponent(value);
+    }
+
+    return res.redirect(url);
+  } catch (err) {
+    console.error(err);
     res.status(500).send('❌ خطأ في إعادة التوجيه');
   }
 });
