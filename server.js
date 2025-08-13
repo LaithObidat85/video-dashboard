@@ -51,8 +51,10 @@ const Link = mongoose.model('Link', linkSchema);
 // ====== نموذج لكلمات المرور ======
 const passwordSchema = new mongoose.Schema({
   section: { type: String, required: true, unique: true }, // اسم الجزء المرتبط بكلمة المرور
-  password: { type: String, required: true }
-});
+  password: { type: String, required: true },
+  dateAdded: { type: Date, default: Date.now } // تاريخ الإضافة تلقائياً
+}, { collection: 'sitepasswords' }); // اسم الـ collection في MongoDB
+
 const Password = mongoose.model('Password', passwordSchema);
 
 app.use(bodyParser.json());
