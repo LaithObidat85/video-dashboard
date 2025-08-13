@@ -48,59 +48,71 @@ const linkSchema = new mongoose.Schema({
 });
 const Link = mongoose.model('Link', linkSchema);
 
-// ✅ نموذج كلمات المرور
+// ====== نموذج لكلمات المرور ======
 const passwordSchema = new mongoose.Schema({
-  section: { type: String, required: true, unique: true },
-  password: { type: String, required: true },
-  dateAdded: { type: Date, default: Date.now }
+  section: { type: String, required: true, unique: true }, // اسم الجزء المرتبط بكلمة المرور
+  password: { type: String, required: true }
 });
-const SitePassword = mongoose.model('SitePassword', passwordSchema);
+const Password = mongoose.model('Password', passwordSchema);
 
 app.use(bodyParser.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
-// ✅ التحقق من كلمة المرور
+// ✅ التحقق من كلمة المرور العامة للوحة التحكم
 app.post('/api/verify-password', (req, res) => {
   const { password } = req.body;
   if (password === process.env.DASHBOARD_PASSWORD) return res.sendStatus(200);
   else return res.sendStatus(403);
 });
 
-// ====== إدارة كلمات المرور ======
+// ✅ إدارة كلمات المرور (إضافة/تعديل/حذف/عرض)
 app.get('/api/passwords', async (req, res) => {
   try {
-    const passwords = await SitePassword.find().sort({ dateAdded: -1 });
+    const passwords = await Password.find();
     res.json(passwords);
   } catch (err) {
-    res.status(500).json({ message: '❌ خطأ في جلب كلمات المرور' });
+    res.status(500).json({ error: err.message });
   }
 });
 
 app.post('/api/passwords', async (req, res) => {
   try {
-    const pw = new SitePassword(req.body);
-    await pw.save();
-    res.status(201).json(pw);
+    const pass = new Password(req.body);
+    await pass.save();
+    res.status(201).json(pass);
   } catch (err) {
-    res.status(400).json({ message: '❌ خطأ في إضافة كلمة المرور', error: err.message });
+    res.status(400).json({ error: err.message });
   }
 });
 
 app.put('/api/passwords/:id', async (req, res) => {
   try {
-    const updated = await SitePassword.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    const updated = await Password.findByIdAndUpdate(req.params.id, req.body, { new: true });
     res.json(updated);
   } catch (err) {
-    res.status(400).json({ message: '❌ خطأ في تعديل كلمة المرور', error: err.message });
+    res.status(400).json({ error: err.message });
   }
 });
 
 app.delete('/api/passwords/:id', async (req, res) => {
   try {
-    await SitePassword.findByIdAndDelete(req.params.id);
-    res.json({ message: '🗑️ تم حذف كلمة المرور بنجاح' });
+    await Password.findByIdAndDelete(req.params.id);
+    res.json({ message: 'تم حذف كلمة المرور' });
   } catch (err) {
-    res.status(400).json({ message: '❌ خطأ في الحذف', error: err.message });
+    res.status(400).json({ error: err.message });
+  }
+});
+
+// ✅ التحقق من كلمة مرور قسم معين
+app.post('/api/check-section-password', async (req, res) => {
+  const { section, password } = req.body;
+  try {
+    const record = await Password.findOne({ section });
+    if (!record) return res.status(404).json({ error: 'القسم غير موجود' });
+    if (record.password === password) return res.sendStatus(200);
+    return res.sendStatus(403);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
   }
 });
 
