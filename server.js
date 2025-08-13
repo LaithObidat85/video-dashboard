@@ -60,10 +60,10 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 // ✅ التحقق من كلمة المرور للوحة التحكم
 app.post('/api/verify-password', async (req, res) => {
-  const { password } = req.body;
+  const { section, password } = req.body; // ← إضافة section مع password
   try {
-    const dashboardPass = await Password.findOne({ section: 'dashboard' });
-    if (dashboardPass && dashboardPass.password === password) {
+    const record = await Password.findOne({ section }); // ← البحث حسب القسم المرسل
+    if (record && record.password === password) {
       return res.sendStatus(200);
     }
     return res.sendStatus(403);
@@ -71,6 +71,7 @@ app.post('/api/verify-password', async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
+
 
 // ✅ إدارة كلمات المرور
 app.get('/api/passwords', async (req, res) => {
