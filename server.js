@@ -51,12 +51,16 @@ const Link = mongoose.model('Link', linkSchema);
 app.use(bodyParser.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
-// ✅ التحقق من كلمة المرور
+// ✅ التحقق من كلمة المرور - يسمح بكلمتين: واحدة للوحة التحكم وأخرى لصفحة عرض الروابط
 app.post('/api/verify-password', (req, res) => {
   const { password } = req.body;
-  if (password === process.env.DASHBOARD_PASSWORD) return res.sendStatus(200);
+  const isDashboard = password === process.env.DASHBOARD_PASSWORD;
+  const isLinks = password === process.env.LINKS_PAGE_PASSWORD;
+
+  if (isDashboard || isLinks) return res.sendStatus(200);
   else return res.sendStatus(403);
 });
+
 
 // ====== إدارة الأقسام ======
 app.get('/api/departments', async (req, res) => {
