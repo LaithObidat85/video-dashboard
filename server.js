@@ -48,6 +48,14 @@ const linkSchema = new mongoose.Schema({
 });
 const Link = mongoose.model('Link', linkSchema);
 
+// ✅ نموذج كلمات المرور
+const passwordSchema = new mongoose.Schema({
+  section: { type: String, required: true, unique: true },
+  password: { type: String, required: true },
+  dateAdded: { type: Date, default: Date.now }
+});
+const SitePassword = mongoose.model('SitePassword', passwordSchema);
+
 app.use(bodyParser.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
@@ -56,6 +64,44 @@ app.post('/api/verify-password', (req, res) => {
   const { password } = req.body;
   if (password === process.env.DASHBOARD_PASSWORD) return res.sendStatus(200);
   else return res.sendStatus(403);
+});
+
+// ====== إدارة كلمات المرور ======
+app.get('/api/passwords', async (req, res) => {
+  try {
+    const passwords = await SitePassword.find().sort({ dateAdded: -1 });
+    res.json(passwords);
+  } catch (err) {
+    res.status(500).json({ message: '❌ خطأ في جلب كلمات المرور' });
+  }
+});
+
+app.post('/api/passwords', async (req, res) => {
+  try {
+    const pw = new SitePassword(req.body);
+    await pw.save();
+    res.status(201).json(pw);
+  } catch (err) {
+    res.status(400).json({ message: '❌ خطأ في إضافة كلمة المرور', error: err.message });
+  }
+});
+
+app.put('/api/passwords/:id', async (req, res) => {
+  try {
+    const updated = await SitePassword.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    res.json(updated);
+  } catch (err) {
+    res.status(400).json({ message: '❌ خطأ في تعديل كلمة المرور', error: err.message });
+  }
+});
+
+app.delete('/api/passwords/:id', async (req, res) => {
+  try {
+    await SitePassword.findByIdAndDelete(req.params.id);
+    res.json({ message: '🗑️ تم حذف كلمة المرور بنجاح' });
+  } catch (err) {
+    res.status(400).json({ message: '❌ خطأ في الحذف', error: err.message });
+  }
 });
 
 // ====== إدارة الأقسام ======
