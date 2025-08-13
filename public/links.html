@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
@@ -39,8 +40,8 @@
     <h2 class="mb-4">إدارة الروابط</h2>
 
     <div class="text-center mb-3 d-flex justify-content-center gap-2">
-      <button class="btn btn-primary" onclick="openPasswordModal('add')">➕ إضافة رابط جديد</button>
-      <button class="btn btn-warning" onclick="requestDashboardAccess()">🔐 لوحة التحكم</button>
+      <button class="btn btn-primary" onclick="openPasswordModal('add', 'links')">➕ إضافة رابط جديد</button>
+      <button class="btn btn-warning" onclick="openPasswordModal('dashboard', 'dashboard')">🔐 لوحة التحكم</button>
     </div>
 
     <div class="table-responsive">
@@ -137,157 +138,5 @@
   </div>
 
   <footer>برمجة وتطوير: ليث عبيدات</footer>
-
-<script>
-const API_BASE = 'https://video-dashboard-backend.onrender.com';
-let pendingAction = null;
-let editId = null;
-let linksData = [];
-
-function openPasswordModal(action, id = null) {
-  pendingAction = action;
-  editId = id;
-  const modal = new bootstrap.Modal(document.getElementById('passwordModal'));
-  modal.show();
-  setTimeout(() => document.getElementById('actionPassword').focus(), 200);
-}
-
-function openInModal(link) {
-  const iframe = document.getElementById('linkFrame');
-  iframe.src = link;
-  new bootstrap.Modal(document.getElementById('viewLinkModal')).show();
-}
-
-function requestDashboardAccess() {
-  openPasswordModal('dashboard');
-}
-
-document.getElementById('actionPassword').addEventListener('keydown', (e) => {
-  if (e.key === 'Enter') {
-    document.getElementById('confirmPasswordBtn').click();
-  }
-});
-
-document.addEventListener('keydown', (e) => {
-  if (e.key === 'F8') {
-    const modalEl = document.getElementById('passwordModal');
-    if (modalEl.classList.contains('show')) {
-      bootstrap.Modal.getInstance(modalEl).hide();
-    }
-  }
-});
-
-document.getElementById('confirmPasswordBtn').addEventListener('click', async () => {
-  const password = document.getElementById('actionPassword').value.trim();
-  if (!password) return;
-
-  const res = await fetch(`${API_BASE}/api/verify-password`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ password })
-  });
-
-  if (res.ok) {
-    bootstrap.Modal.getInstance(document.getElementById('passwordModal')).hide();
-
-    if (pendingAction === 'add') {
-      document.getElementById('modalTitle').textContent = '➕ إضافة رابط جديد';
-      document.getElementById('addLinkForm').reset();
-      document.getElementById('linkId').value = '';
-      new bootstrap.Modal(document.getElementById('addLinkModal')).show();
-    } 
-    else if (pendingAction === 'edit') {
-      const link = linksData.find(l => l._id === editId);
-      if (link) {
-        document.getElementById('modalTitle').textContent = '✏️ تعديل رابط';
-        document.querySelector('[name="name"]').value = link.name;
-        document.querySelector('[name="description"]').value = link.description || '';
-        document.querySelector('[name="link"]').value = link.link;
-        document.querySelector('[name="linkText"]').value = link.linkText;
-        document.getElementById('requiresPassword').checked = link.requiresPassword || false;
-        document.getElementById('linkId').value = link._id;
-        new bootstrap.Modal(document.getElementById('addLinkModal')).show();
-      }
-    }
-    else if (pendingAction === 'delete') {
-      if (confirm('❌ هل أنت متأكد من الحذف؟')) {
-        await fetch(`${API_BASE}/api/links/${editId}`, { method: 'DELETE' });
-        fetchLinks();
-      }
-    }
-    else if (pendingAction === 'openLink') {
-      const link = linksData.find(l => l._id === editId);
-      if (link) {
-        const secureLink = `${API_BASE}/api/redirect/${encodeURIComponent(link._id || link.link)}`;
-        openInModal(secureLink);
-      }
-    }
-    else if (pendingAction === 'dashboard') {
-      window.location.href = 'dashboard.html';
-    }
-
-    pendingAction = null;
-    editId = null;
-  } else {
-    alert('❌ كلمة المرور غير صحيحة');
-  }
-});
-
-async function fetchLinks() {
-  const res = await fetch(`${API_BASE}/api/links`);
-  linksData = await res.json();
-  const tbody = document.getElementById('linksTableBody');
-  tbody.innerHTML = '';
-  if (!linksData.length) {
-    tbody.innerHTML = '<tr><td colspan="5">لا توجد روابط</td></tr>';
-    return;
-  }
-  linksData.forEach((link, index) => {
-    const lockIcon = link.requiresPassword ? '🔒' : '';
-    const secureLink = `${API_BASE}/api/redirect/${encodeURIComponent(link._id || link.link)}`;
-    const linkHtml = link.requiresPassword 
-      ? `<a href="#" onclick="openPasswordModal('openLink','${link._id}')">${link.linkText}</a>` 
-      : `<a href="#" onclick="window.open('${secureLink}', '_blank')">${link.linkText}</a>`;
-    const tr = document.createElement('tr');
-    tr.innerHTML = `
-      <td>${index + 1}</td>
-      <td>${link.description || ''}</td>
-      <td>${linkHtml}</td>
-      <td>${lockIcon}</td>
-      <td>
-        <button class="btn btn-sm btn-warning" onclick="openPasswordModal('edit','${link._id}')">✏️ تعديل</button>
-        <button class="btn btn-sm btn-danger" onclick="openPasswordModal('delete','${link._id}')">🗑️ حذف</button>
-      </td>
-    `;
-    tbody.appendChild(tr);
-  });
-}
-
-document.getElementById('saveLinkBtn').addEventListener('click', async () => {
-  const form = document.getElementById('addLinkForm');
-  const data = Object.fromEntries(new FormData(form).entries());
-  data.requiresPassword = document.getElementById('requiresPassword').checked;
-  const method = data.id ? 'PUT' : 'POST';
-  const url = data.id ? `${API_BASE}/api/links/${data.id}` : `${API_BASE}/api/links`;
-
-  const res = await fetch(url, {
-    method,
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(data)
-  });
-
-  if (res.ok) {
-    form.reset();
-    bootstrap.Modal.getInstance(document.getElementById('addLinkModal')).hide();
-    fetchLinks();
-  } else {
-    alert('❌ فشل العملية');
-  }
-});
-
-fetchLinks();
-</script>
-
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
