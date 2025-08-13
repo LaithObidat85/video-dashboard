@@ -60,9 +60,9 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 // ✅ التحقق من كلمة المرور للوحة التحكم
 app.post('/api/verify-password', async (req, res) => {
-  const { section, password } = req.body; // ← إضافة section مع password
+  const { section, password } = req.body;
   try {
-    const record = await Password.findOne({ section }); // ← البحث حسب القسم المرسل
+    const record = await Password.findOne({ section });
     if (record && record.password === password) {
       return res.sendStatus(200);
     }
@@ -71,7 +71,6 @@ app.post('/api/verify-password', async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
-
 
 // ✅ إدارة كلمات المرور
 app.get('/api/passwords', async (req, res) => {
@@ -248,6 +247,19 @@ app.delete('/api/links/:id', async (req, res) => {
     res.json({ message: '🗑️ تم حذف الرابط بنجاح' });
   } catch (err) {
     res.status(400).json({ message: '❌ خطأ في الحذف', error: err.message });
+  }
+});
+
+// ✅ حل مشكلة Cannot GET /api/redirect/:id
+app.get('/api/redirect/:id', async (req, res) => {
+  try {
+    const link = await Link.findById(req.params.id);
+    if (!link) {
+      return res.status(404).send('❌ الرابط غير موجود');
+    }
+    res.redirect(link.link);
+  } catch (err) {
+    res.status(500).send('❌ خطأ في إعادة التوجيه');
   }
 });
 
