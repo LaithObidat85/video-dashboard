@@ -32,6 +32,9 @@
       margin: 0 auto 15px auto;
       max-height: 120px;
     }
+    .hidden-column {
+      display: none;
+    }
   </style>
 </head>
 <body>
@@ -42,17 +45,18 @@
     <div class="text-center mb-3 d-flex justify-content-center gap-2">
       <button class="btn btn-primary" onclick="openPasswordModal('add')">➕ إضافة رابط جديد</button>
       <button class="btn btn-warning" onclick="requestDashboardAccess()">🔐 لوحة التحكم</button>
+      <button class="btn btn-info" onclick="openPasswordModal('showActions')">⚙️ إظهار عمود الإجراءات</button>
     </div>
 
     <div class="table-responsive">
-      <table class="table table-bordered table-hover text-center align-middle">
+      <table class="table table-bordered table-hover text-center align-middle" id="linksTable">
         <thead class="table-dark">
           <tr>
             <th>#</th>
             <th>وصف</th>
             <th>الرابط</th>
             <th>محمي؟</th>
-            <th>إجراءات</th>
+            <th class="actions-col hidden-column">إجراءات</th>
           </tr>
         </thead>
         <tbody id="linksTableBody">
@@ -226,6 +230,13 @@ document.getElementById('confirmPasswordBtn').addEventListener('click', async ()
     else if (pendingAction === 'dashboard') {
       window.location.href = 'dashboard.html';
     }
+    else if (pendingAction === 'showActions') {
+      document.querySelectorAll('.actions-col').forEach(col => col.classList.remove('hidden-column'));
+      document.querySelectorAll('#linksTableBody tr').forEach(row => {
+        const actionsCell = row.querySelector('.actions-cell');
+        if (actionsCell) actionsCell.classList.remove('hidden-column');
+      });
+    }
 
     pendingAction = null;
     editId = null;
@@ -255,7 +266,7 @@ async function fetchLinks() {
       <td>${link.description || ''}</td>
       <td>${linkHtml}</td>
       <td>${lockIcon}</td>
-      <td>
+      <td class="actions-cell hidden-column">
         <button class="btn btn-sm btn-warning" onclick="openPasswordModal('edit','${link._id}')">✏️ تعديل</button>
         <button class="btn btn-sm btn-danger" onclick="openPasswordModal('delete','${link._id}')">🗑️ حذف</button>
       </td>
