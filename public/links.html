@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
@@ -290,31 +289,5 @@ fetchLinks();
 </script>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-
-<script>
-document.addEventListener("DOMContentLoaded", async () => {
-  const tbody = document.getElementById("linksTableBody");
-  try {
-    const res = await fetch("/api/links");
-    const links = await res.json();
-    if (links.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="5">لا توجد روابط</td></tr>';
-      return;
-    }
-    tbody.innerHTML = links.map((link, index) => `
-      <tr>
-        <td>${index + 1}</td>
-        <td>${link.description || ''}</td>
-        <td><a href="/api/redirect/${link._id}" target="_blank">${link.linkText}</a></td>
-        <td>${link.requiresPassword ? '✅' : '❌'}</td>
-        <td>—</td>
-      </tr>
-    `).join('');
-  } catch (err) {
-    tbody.innerHTML = '<tr><td colspan="5">❌ خطأ في تحميل الروابط</td></tr>';
-  }
-});
-</script>
-
 </body>
 </html>
