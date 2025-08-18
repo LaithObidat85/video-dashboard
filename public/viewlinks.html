@@ -76,27 +76,33 @@
 const API_BASE = 'https://video-dashboard-backend.onrender.com';
 let linksData = [];
 
-function openInModal(link) {
+// فتح الرابط في iframe
+function openInIframe(id) {
   const iframe = document.getElementById('linkFrame');
-  iframe.src = link;
+  iframe.src = `${API_BASE}/api/redirect/${encodeURIComponent(id)}`;
   new bootstrap.Modal(document.getElementById('viewLinkModal')).show();
 }
 
+// جلب الروابط
 async function fetchLinks() {
   const res = await fetch(`${API_BASE}/api/links`);
   linksData = await res.json();
   const tbody = document.getElementById('linksTableBody');
   tbody.innerHTML = '';
+
   if (!linksData.length) {
     tbody.innerHTML = '<tr><td colspan="4">لا توجد روابط</td></tr>';
     return;
   }
+
   linksData.forEach((link, index) => {
     const lockIcon = link.requiresPassword ? '🔒' : '';
-    const secureLink = `${API_BASE}/api/redirect/${encodeURIComponent(link._id || link.link)}`;
-    const linkHtml = link.requiresPassword 
-      ? `<a href="/auth/login">🔐 ${link.linkText}</a>` 
-      : `<a href="#" onclick="openInModal('${secureLink}')">${link.linkText}</a>`;
+    const secureLink = `${API_BASE}/api/redirect/${encodeURIComponent(link._id)}`;
+
+    const linkHtml = link.requiresPassword
+      ? `<a href="/auth/login?id=${link._id}">🔐 ${link.linkText}</a>`
+      : `<a href="${secureLink}" target="_blank">🔗 ${link.linkText}</a>`;
+
     const tr = document.createElement('tr');
     tr.innerHTML = `
       <td>${index + 1}</td>
@@ -106,6 +112,13 @@ async function fetchLinks() {
     `;
     tbody.appendChild(tr);
   });
+
+  // إذا رجع من تسجيل الدخول مع id → افتح الرابط داخل iframe
+  const params = new URLSearchParams(window.location.search);
+  const id = params.get('id');
+  if (id) {
+    openInIframe(id);
+  }
 }
 
 fetchLinks();
