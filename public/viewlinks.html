@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
@@ -56,7 +55,7 @@
     </div>
   </div>
 
-  <!-- نافذة كلمة المرور -->
+  <!-- نافذة كلمة المرور (باقية كما هي لكن لم تعد تُستخدم للروابط المحمية) -->
   <div class="modal fade" id="passwordModal" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content">
@@ -168,7 +167,7 @@ async function fetchLinks() {
     const lockIcon = link.requiresPassword ? '🔒' : '';
     const secureLink = `${API_BASE}/api/redirect/${encodeURIComponent(link._id || link.link)}`;
     const linkHtml = link.requiresPassword 
-      ? `<a href="#" onclick="openPasswordModal('openLink','${link._id}')">${link.linkText}</a>` 
+      ? `<a href="/auth/login">🔐 ${link.linkText}</a>` 
       : `<a href="#" onclick="window.open('${secureLink}', '_blank')">${link.linkText}</a>`;
     const tr = document.createElement('tr');
     tr.innerHTML = `
