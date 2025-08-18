@@ -50,7 +50,9 @@ const Link = mongoose.model('Link', linkSchema);
 
 // Middleware
 app.use(bodyParser.json());
-app.use(express.static(path.join(__dirname)));
+
+// ✅ تعديل هنا فقط: تقديم الصفحات من مجلد "public"
+app.use(express.static(path.join(__dirname, 'public')));
 
 // ====== API: جلب الروابط ======
 app.get('/api/links', async (req, res) => {
