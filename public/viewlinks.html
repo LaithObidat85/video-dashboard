@@ -55,25 +55,6 @@
     </div>
   </div>
 
-  <!-- نافذة كلمة المرور (باقية كما هي لكن لم تعد تُستخدم للروابط المحمية) -->
-  <div class="modal fade" id="passwordModal" tabindex="-1">
-    <div class="modal-dialog modal-dialog-centered">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title">🔐 أدخل كلمة المرور</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-        </div>
-        <div class="modal-body">
-          <input type="password" id="actionPassword" class="form-control" placeholder="Enter password" lang="en">
-        </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
-          <button type="button" class="btn btn-primary" id="confirmPasswordBtn">تأكيد</button>
-        </div>
-      </div>
-    </div>
-  </div>
-
   <!-- نافذة عرض الرابط -->
   <div class="modal fade" id="viewLinkModal" tabindex="-1">
     <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
@@ -93,66 +74,13 @@
 
 <script>
 const API_BASE = 'https://video-dashboard-backend.onrender.com';
-let pendingAction = null;
-let editId = null;
 let linksData = [];
-
-function openPasswordModal(action, id = null) {
-  pendingAction = action;
-  editId = id;
-  const modal = new bootstrap.Modal(document.getElementById('passwordModal'));
-  modal.show();
-  setTimeout(() => document.getElementById('actionPassword').focus(), 200);
-}
 
 function openInModal(link) {
   const iframe = document.getElementById('linkFrame');
   iframe.src = link;
   new bootstrap.Modal(document.getElementById('viewLinkModal')).show();
 }
-
-document.getElementById('actionPassword').addEventListener('keydown', (e) => {
-  if (e.key === 'Enter') {
-    document.getElementById('confirmPasswordBtn').click();
-  }
-});
-
-document.addEventListener('keydown', (e) => {
-  if (e.key === 'F8') {
-    const modalEl = document.getElementById('passwordModal');
-    if (modalEl.classList.contains('show')) {
-      bootstrap.Modal.getInstance(modalEl).hide();
-    }
-  }
-});
-
-document.getElementById('confirmPasswordBtn').addEventListener('click', async () => {
-  const password = document.getElementById('actionPassword').value.trim();
-  if (!password) return;
-
-  const res = await fetch(`${API_BASE}/api/verify-password`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ password })
-  });
-
-  if (res.ok) {
-    bootstrap.Modal.getInstance(document.getElementById('passwordModal')).hide();
-
-    if (pendingAction === 'openLink') {
-      const link = linksData.find(l => l._id === editId);
-      if (link) {
-        const secureLink = `${API_BASE}/api/redirect/${encodeURIComponent(link._id || link.link)}`;
-        openInModal(secureLink);
-      }
-    }
-
-    pendingAction = null;
-    editId = null;
-  } else {
-    alert('❌ كلمة المرور غير صحيحة');
-  }
-});
 
 async function fetchLinks() {
   const res = await fetch(`${API_BASE}/api/links`);
@@ -168,7 +96,7 @@ async function fetchLinks() {
     const secureLink = `${API_BASE}/api/redirect/${encodeURIComponent(link._id || link.link)}`;
     const linkHtml = link.requiresPassword 
       ? `<a href="/auth/login">🔐 ${link.linkText}</a>` 
-      : `<a href="#" onclick="window.open('${secureLink}', '_blank')">${link.linkText}</a>`;
+      : `<a href="#" onclick="openInModal('${secureLink}')">${link.linkText}</a>`;
     const tr = document.createElement('tr');
     tr.innerHTML = `
       <td>${index + 1}</td>
