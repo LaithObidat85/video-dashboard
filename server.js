@@ -5,6 +5,10 @@ const path = require('path');
 const bodyParser = require('body-parser');
 require('dotenv').config();
 
+const passport = require('passport');
+const OIDCStrategy = require('passport-azure-ad').OIDCStrategy;
+const session = require('express-session');
+
 const app = express();
 const PORT = process.env.PORT || 3000;
 
@@ -51,8 +55,48 @@ const Link = mongoose.model('Link', linkSchema);
 // Middleware
 app.use(bodyParser.json());
 
-// ✅ تعديل هنا فقط: تقديم الصفحات من مجلد "public"
+// ✅ تقديم الملفات من مجلد public
 app.use(express.static(path.join(__dirname, 'public')));
+
+// ====== تهيئة الجلسات والمصادقة ======
+app.use(session({ secret: 'secret123', resave: false, saveUninitialized: true }));
+app.use(passport.initialize());
+app.use(passport.session());
+
+passport.serializeUser((user, done) => done(null, user));
+passport.deserializeUser((obj, done) => done(null, obj));
+
+// إعداد Azure AD OIDC Strategy
+passport.use(new OIDCStrategy({
+    identityMetadata: `https://login.microsoftonline.com/${process.env.TENANT_ID}/v2.0/.well-known/openid-configuration`,
+    clientID: process.env.CLIENT_ID,
+    responseType: 'code',
+    responseMode: 'query',
+    redirectUrl: 'https://video-dashboard-backend.onrender.com/auth/callback',
+    clientSecret: process.env.CLIENT_SECRET,
+    allowHttpForRedirectUrl: false,
+    validateIssuer: true,
+    passReqToCallback: false,
+    scope: ['profile', 'email', 'openid']
+}, (iss, sub, profile, accessToken, refreshToken, done) => {
+    const email = profile._json.preferred_username || '';
+    if (!email.endsWith('@iu.edu.jo')) {
+        return done(null, false, { message: '❌ يجب أن يكون البريد @iu.edu.jo' });
+    }
+    return done(null, profile);
+}));
+
+// ====== مسارات تسجيل الدخول ======
+app.get('/auth/login',
+    passport.authenticate('azuread-openidconnect', { failureRedirect: '/' })
+);
+
+app.get('/auth/callback',
+    passport.authenticate('azuread-openidconnect', { failureRedirect: '/' }),
+    (req, res) => {
+        res.redirect('/viewlinks.html');
+    }
+);
 
 // ====== API: جلب الروابط ======
 app.get('/api/links', async (req, res) => {
