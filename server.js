@@ -5,6 +5,11 @@ const path = require('path');
 const bodyParser = require('body-parser');
 require('dotenv').config();
 
+// 🆕 إضافات المصادقة مع مايكروسوفت
+const passport = require('passport');
+const session = require('express-session');
+const OIDCStrategy = require('passport-azure-ad').OIDCStrategy;
+
 const app = express();
 const PORT = process.env.PORT || 3000;
 
@@ -51,7 +56,52 @@ const Link = mongoose.model('Link', linkSchema);
 app.use(bodyParser.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
-// ✅ التحقق من كلمة المرور - يسمح بكلمتين: واحدة للوحة التحكم وأخرى لصفحة عرض الروابط
+// 🆕 إعداد الجلسات + Passport
+app.use(session({
+  secret: 'verysecretkey',
+  resave: false,
+  saveUninitialized: false
+}));
+app.use(passport.initialize());
+app.use(passport.session());
+
+// 🆕 استراتيجية مايكروسوفت OAuth
+passport.use(new OIDCStrategy({
+    identityMetadata: 'https://login.microsoftonline.com/common/v2.0/.well-known/openid-configuration',
+    clientID: process.env.CLIENT_ID,
+    clientSecret: process.env.CLIENT_SECRET,
+    responseType: 'code',
+    responseMode: 'query',
+    redirectUrl: 'https://video-dashboard-backend.onrender.com/auth/callback',
+    scope: ['profile', 'email', 'openid']
+  },
+  function(iss, sub, profile, accessToken, refreshToken, done) {
+    if (profile._json.preferred_username.endsWith('@iu.edu.jo')) {
+      return done(null, profile);
+    }
+    return done(null, false, { message: '❌ يجب الدخول ببريد جامعي' });
+  }
+));
+
+passport.serializeUser((user, done) => done(null, user));
+passport.deserializeUser((obj, done) => done(null, obj));
+
+// 🆕 مسارات تسجيل الدخول
+app.get('/auth/login', passport.authenticate('azuread-openidconnect'));
+
+app.get('/auth/callback',
+  passport.authenticate('azuread-openidconnect', { failureRedirect: '/' }),
+  (req, res) => {
+    res.redirect('/links.html');
+  }
+);
+
+function ensureAuthenticated(req, res, next) {
+  if (req.isAuthenticated()) return next();
+  res.redirect('/auth/login');
+}
+
+// ✅ التحقق من كلمة المرور - (بقي كما هو للوحة التحكم فقط)
 app.post('/api/verify-password', (req, res) => {
   const { password } = req.body;
   const isDashboard = password === process.env.DASHBOARD_PASSWORD;
@@ -60,7 +110,6 @@ app.post('/api/verify-password', (req, res) => {
   if (isDashboard || isLinks) return res.sendStatus(200);
   else return res.sendStatus(403);
 });
-
 
 // ====== إدارة الأقسام ======
 app.get('/api/departments', async (req, res) => {
@@ -234,35 +283,19 @@ app.post('/api/backups/restore/:id', async (req, res) => {
   }
 });
 
-// ✅ تحميل الرابط كمحتوى (لصفحة proxy)
-app.get('/api/proxy/:id', async (req, res) => {
-  try {
-    const link = await Link.findById(req.params.id);
-    if (!link) return res.status(404).json({ error: 'الرابط غير موجود' });
-
-    res.json({ link: link.link });
-  } catch (err) {
-    res.status(500).json({ error: 'فشل في جلب الرابط' });
-  }
-});
-
-// ✅ إعادة توجيه حسب ID أو URL
-app.get('/api/redirect/:value', async (req, res) => {
+// ✅ إعادة التوجيه مع حماية مايكروسوفت
+app.get('/api/redirect/:value', ensureAuthenticated, async (req, res) => {
   const { value } = req.params;
 
   try {
     let url;
-
-    // إذا القيمة تشبه ObjectId من MongoDB
     if (/^[0-9a-fA-F]{24}$/.test(value)) {
       const linkDoc = await Link.findById(value);
       if (!linkDoc) return res.status(404).send('❌ الرابط غير موجود');
       url = linkDoc.link;
     } else {
-      // إذا أرسلت URL مباشرة
       url = decodeURIComponent(value);
     }
-
     return res.redirect(url);
   } catch (err) {
     console.error(err);
