@@ -66,9 +66,9 @@ app.use(passport.session());
 passport.serializeUser((user, done) => done(null, user));
 passport.deserializeUser((obj, done) => done(null, obj));
 
-// إعداد Azure AD OIDC Strategy باستخدام common endpoint
+// إعداد Azure AD OIDC Strategy
 passport.use(new OIDCStrategy({
-    identityMetadata: `https://login.microsoftonline.com/common/v2.0/.well-known/openid-configuration`,
+    identityMetadata: `https://login.microsoftonline.com/${process.env.TENANT_ID}/v2.0/.well-known/openid-configuration`,
     clientID: process.env.CLIENT_ID,
     responseType: 'code',
     responseMode: 'query',
@@ -87,15 +87,23 @@ passport.use(new OIDCStrategy({
 }));
 
 // ====== مسارات تسجيل الدخول ======
-app.get('/auth/login',
-    passport.authenticate('azuread-openidconnect', { failureRedirect: '/' })
-);
+app.get('/auth/login', (req, res, next) => {
+  if (req.query.id) {
+    req.session.linkId = req.query.id;
+  }
+  passport.authenticate('azuread-openidconnect', { failureRedirect: '/' })(req, res, next);
+});
 
 app.get('/auth/callback',
-    passport.authenticate('azuread-openidconnect', { failureRedirect: '/' }),
-    (req, res) => {
-        res.redirect('/viewlinks.html');
+  passport.authenticate('azuread-openidconnect', { failureRedirect: '/' }),
+  (req, res) => {
+    if (req.session.linkId) {
+      const id = req.session.linkId;
+      req.session.linkId = null;
+      return res.redirect(`/viewlinks.html?id=${id}`);
     }
+    res.redirect('/viewlinks.html');
+  }
 );
 
 // ====== API: جلب الروابط ======
