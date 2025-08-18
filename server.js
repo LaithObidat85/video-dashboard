@@ -66,9 +66,9 @@ app.use(passport.session());
 passport.serializeUser((user, done) => done(null, user));
 passport.deserializeUser((obj, done) => done(null, obj));
 
-// إعداد Azure AD OIDC Strategy
+// إعداد Azure AD OIDC Strategy باستخدام common endpoint
 passport.use(new OIDCStrategy({
-    identityMetadata: `https://login.microsoftonline.com/${process.env.TENANT_ID}/v2.0/.well-known/openid-configuration`,
+    identityMetadata: `https://login.microsoftonline.com/common/v2.0/.well-known/openid-configuration`,
     clientID: process.env.CLIENT_ID,
     responseType: 'code',
     responseMode: 'query',
