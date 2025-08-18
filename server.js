@@ -10,8 +10,16 @@ const passport = require('passport');
 const session = require('express-session');
 const OIDCStrategy = require('passport-azure-ad').OIDCStrategy;
 
+// 🆕 إضافات cors و morgan
+const cors = require('cors');
+const morgan = require('morgan');
+
 const app = express();
 const PORT = process.env.PORT || 3000;
+
+// ✅ تفعيل cors و morgan
+app.use(cors());
+app.use(morgan('dev'));
 
 // الاتصال بـ MongoDB Atlas
 const MONGO_URI = process.env.MONGO_URI;
