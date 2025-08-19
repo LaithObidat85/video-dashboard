@@ -52,7 +52,7 @@
       transform: translateY(-50%);
       color: #666;
       font-size: 18px;
-      pointer-events: none;
+      cursor: pointer;
     }
     .btn {
       background: #0067b8;
@@ -63,6 +63,7 @@
       border-radius: 4px;
       cursor: pointer;
       font-size: 16px;
+      margin-top: 10px;
     }
     .btn:hover {
       background: #005a9e;
@@ -99,6 +100,7 @@
       </div>
       <div id="emailError" class="error-msg">❌ يجب إدخال بريد ينتهي بـ @iu.edu.jo</div>
       <button class="btn" onclick="validateEmail()">التالي</button>
+      <button class="btn" onclick="goBackLinks()">رجوع</button>
     </div>
     
     <!-- خطوة إدخال كلمة المرور -->
@@ -110,6 +112,7 @@
       <input type="hidden" id="hiddenEmail" name="email">
       <input type="hidden" id="linkId" name="id">
       <button type="submit" class="btn">تسجيل الدخول</button>
+      <button type="button" class="btn" onclick="backToEmail()">رجوع</button>
       <a href="#" class="footer-link">هل نسيت كلمة المرور؟</a>
     </form>
   </div>
@@ -140,6 +143,16 @@
     function togglePassword() {
       const p = document.getElementById('password');
       p.type = p.type === 'password' ? 'text' : 'password';
+    }
+
+    function goBackLinks() {
+      window.location.href = "https://video-dashboard-backend.onrender.com/viewlinks.html";
+    }
+
+    function backToEmail() {
+      document.getElementById('step-password').style.display = 'none';
+      document.getElementById('step-email').style.display = 'block';
+      document.getElementById('title').innerText = "تسجيل الدخول باستخدام بريدك الجامعي";
     }
   </script>
 </body>
