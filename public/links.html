@@ -21,14 +21,23 @@
       background: #fff;
       z-index: 2;
     }
+    /* ✅ توسيع الأعمدة المطلوبة */
+    .table th:nth-child(4), .table td:nth-child(4) { width: 250px; } /* عمود الرابط */
+    .table th:nth-child(5), .table td:nth-child(5) { width: 200px; } /* عمود نص الرابط */
+    .table th:nth-child(7), .table td:nth-child(7) { width: 180px; } /* عمود الإجراءات */
   </style>
 </head>
 <body>
   <div class="container">
     <h2 class="mb-4 text-center">إدارة الروابط</h2>
 
-    <!-- ✅ النموذج -->
-    <form id="addLinkForm" class="card card-body mb-4">
+    <!-- ✅ زر إضافة رابط جديد -->
+    <div class="text-end mb-3">
+      <button class="btn btn-primary" id="showFormBtn">➕ إضافة رابط جديد</button>
+    </div>
+
+    <!-- ✅ النموذج (مخفي في البداية) -->
+    <form id="addLinkForm" class="card card-body mb-4" style="display:none;">
       <input type="hidden" id="id" name="id">
       <div class="mb-3">
         <label class="form-label">الاسم</label>
@@ -50,7 +59,10 @@
         <input type="checkbox" id="requiresPassword" name="requiresPassword" class="form-check-input">
         <label for="requiresPassword" class="form-check-label">يتطلب كلمة مرور</label>
       </div>
-      <button type="button" id="saveBtn" class="btn btn-success">💾 حفظ</button>
+      <div class="d-flex gap-2">
+        <button type="button" id="saveBtn" class="btn btn-success">💾 حفظ</button>
+        <button type="button" id="cancelBtn" class="btn btn-secondary">❌ إلغاء</button>
+      </div>
     </form>
 
     <!-- ✅ جدول عرض الروابط -->
@@ -84,7 +96,7 @@
             <td>${index + 1}</td> <!-- رقم متسلسل -->
             <td>${link.name || ''}</td>
             <td>${link.description || ''}</td>
-            <td><a href="${link.link}" target="_blank">🔗 فتح</a></td>
+            <td><a href="${link.link}" target="_blank">🔗 ${link.link}</a></td>
             <td>${link.linkText}</td>
             <td>${link.requiresPassword ? 'نعم' : 'لا'}</td>
             <td>
@@ -103,6 +115,7 @@
       document.getElementById('link').value = link.link;
       document.getElementById('linkText').value = link.linkText;
       document.getElementById('requiresPassword').checked = link.requiresPassword;
+      document.getElementById('addLinkForm').style.display = 'block';
     }
 
     async function deleteLink(id) {
@@ -112,7 +125,7 @@
       else alert('❌ فشل في الحذف');
     }
 
-    // ✅ زر الحفظ (إضافة / تعديل) مع تعديل id الفارغ
+    // ✅ زر الحفظ (إضافة / تعديل)
     document.getElementById('saveBtn').addEventListener('click', async () => {
       const form = document.getElementById('addLinkForm');
       const data = Object.fromEntries(new FormData(form).entries());
@@ -137,9 +150,21 @@
         loadLinks();
         form.reset();
         document.getElementById('id').value = '';
+        form.style.display = 'none';
       } else {
         alert('❌ فشل العملية');
       }
+    });
+
+    // ✅ زر إلغاء
+    document.getElementById('cancelBtn').addEventListener('click', () => {
+      document.getElementById('addLinkForm').reset();
+      document.getElementById('addLinkForm').style.display = 'none';
+    });
+
+    // ✅ زر إظهار النموذج
+    document.getElementById('showFormBtn').addEventListener('click', () => {
+      document.getElementById('addLinkForm').style.display = 'block';
     });
 
     loadLinks();
