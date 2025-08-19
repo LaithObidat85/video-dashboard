@@ -14,6 +14,13 @@
     .card {
       margin-bottom: 20px;
     }
+    /* ✅ تثبيت العمود الأول (رقم متسلسل) */
+    .table th:first-child, .table td:first-child {
+      position: sticky;
+      right: 0;
+      background: #fff;
+      z-index: 2;
+    }
   </style>
 </head>
 <body>
@@ -47,19 +54,22 @@
     </form>
 
     <!-- ✅ جدول عرض الروابط -->
-    <table class="table table-bordered table-striped">
-      <thead>
-        <tr>
-          <th>الاسم</th>
-          <th>الوصف</th>
-          <th>الرابط</th>
-          <th>نص الرابط</th>
-          <th>كلمة مرور؟</th>
-          <th>إجراءات</th>
-        </tr>
-      </thead>
-      <tbody id="linksTable"></tbody>
-    </table>
+    <div class="table-responsive">
+      <table class="table table-bordered table-striped">
+        <thead>
+          <tr>
+            <th>#</th> <!-- العمود الجديد -->
+            <th>الاسم</th>
+            <th>الوصف</th>
+            <th>الرابط</th>
+            <th>نص الرابط</th>
+            <th>كلمة مرور؟</th>
+            <th>إجراءات</th>
+          </tr>
+        </thead>
+        <tbody id="linksTable"></tbody>
+      </table>
+    </div>
   </div>
 
   <script>
@@ -68,9 +78,10 @@
       const data = await res.json();
       const table = document.getElementById('linksTable');
       table.innerHTML = '';
-      data.forEach(link => {
+      data.forEach((link, index) => {
         table.innerHTML += `
           <tr>
+            <td>${index + 1}</td> <!-- رقم متسلسل -->
             <td>${link.name || ''}</td>
             <td>${link.description || ''}</td>
             <td><a href="${link.link}" target="_blank">🔗 فتح</a></td>
