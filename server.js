@@ -192,40 +192,59 @@ app.get('/api/links', async (req, res) => {
     const links = await Link.find().sort({ dateAdded: -1 });
     res.json(links);
   } catch (err) {
-    res.status(500).json({ message: '❌ خطأ في جلب الروابط' });
+    console.error("❌ خطأ في جلب الروابط:", err.message);
+    res.status(500).json({ message: '❌ خطأ في جلب الروابط', error: err.message });
   }
 });
 
 app.post('/api/links', async (req, res) => {
   try {
-    console.log("📩 البيانات المستلمة:", req.body);  // ✅ يطبع البيانات القادمة من الواجهة
+    console.log("📩 البيانات المستلمة:", req.body);
+
+    // ✅ حذف أي id مرسل من الواجهة حتى لا يسبب مشاكل
+    if ('id' in req.body) {
+      delete req.body.id;
+    }
 
     const link = new Link(req.body);
     await link.save();
 
     res.status(201).json(link);
   } catch (err) {
-    console.error("❌ خطأ عند إضافة الرابط:", err.message); // ✅ يطبع السبب الحقيقي في الكونسول
+    console.error("❌ خطأ عند إضافة الرابط:", err.message);
     res.status(400).json({ message: '❌ خطأ في إضافة الرابط', error: err.message });
   }
 });
 
-
-
 app.put('/api/links/:id', async (req, res) => {
   try {
+    console.log("✏️ تحديث الرابط:", req.params.id, "بالبيانات:", req.body);
+
+    // ✅ ضمان عدم تعديل الـ _id بالخطأ
+    if ('id' in req.body) {
+      delete req.body.id;
+    }
+    if ('_id' in req.body) {
+      delete req.body._id;
+    }
+
     const updated = await Link.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    if (!updated) return res.status(404).json({ message: '❌ الرابط غير موجود' });
     res.json(updated);
   } catch (err) {
+    console.error("❌ خطأ في تعديل الرابط:", err.message);
     res.status(400).json({ message: '❌ خطأ في تعديل الرابط', error: err.message });
   }
 });
 
 app.delete('/api/links/:id', async (req, res) => {
   try {
+    console.log("🗑️ حذف الرابط:", req.params.id);
+
     await Link.findByIdAndDelete(req.params.id);
     res.json({ message: '🗑️ تم حذف الرابط بنجاح' });
   } catch (err) {
+    console.error("❌ خطأ في الحذف:", err.message);
     res.status(400).json({ message: '❌ خطأ في الحذف', error: err.message });
   }
 });
