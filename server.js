@@ -1,13 +1,9 @@
-// server.js
 const express = require('express');
 const mongoose = require('mongoose');
 const path = require('path');
 const bodyParser = require('body-parser');
-require('dotenv').config();
-
-const passport = require('passport');
-const OIDCStrategy = require('passport-azure-ad').OIDCStrategy;
 const session = require('express-session');
+require('dotenv').config();
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -22,27 +18,6 @@ mongoose.connect(MONGO_URI, {
 .catch(err => console.error('❌ MongoDB connection error:', err));
 
 // ====== نماذج البيانات ======
-const videoSchema = new mongoose.Schema({
-  title: { type: String, required: true },
-  url: { type: String, required: true },
-  department: { type: String, required: true },
-  description: String,
-  dateAdded: { type: Date, default: Date.now }
-});
-const Video = mongoose.model('Video', videoSchema);
-
-const backupSchema = new mongoose.Schema({
-  date: { type: Date, default: Date.now },
-  data: Array
-});
-const Backup = mongoose.model('Backup', backupSchema);
-
-const departmentSchema = new mongoose.Schema({
-  name: { type: String, required: true, unique: true }
-});
-const Department = mongoose.model('Department', departmentSchema);
-
-// ✅ نموذج جديد للروابط
 const linkSchema = new mongoose.Schema({
   linkText: { type: String, required: true },
   link: { type: String, required: true },
@@ -53,48 +28,39 @@ const linkSchema = new mongoose.Schema({
 const Link = mongoose.model('Link', linkSchema);
 
 // Middleware
+app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
-// ====== تهيئة الجلسات والمصادقة ======
-app.use(session({ secret: 'secret123', resave: false, saveUninitialized: true }));
-app.use(passport.initialize());
-app.use(passport.session());
-
-passport.serializeUser((user, done) => done(null, user));
-passport.deserializeUser((obj, done) => done(null, obj));
-
-// إعداد Azure AD OIDC Strategy
-passport.use(new OIDCStrategy({
-    identityMetadata: `https://login.microsoftonline.com/${process.env.TENANT_ID}/v2.0/.well-known/openid-configuration`,
-    clientID: process.env.CLIENT_ID,
-    responseType: 'code',
-    responseMode: 'query',
-    redirectUrl: 'https://video-dashboard-backend.onrender.com/auth/callback',
-    clientSecret: process.env.CLIENT_SECRET,
-    allowHttpForRedirectUrl: false,
-    validateIssuer: true,
-    passReqToCallback: false,
-    scope: ['profile', 'email', 'openid']
-}, (iss, sub, profile, accessToken, refreshToken, done) => {
-    const email = profile._json.preferred_username || '';
-    if (!email.endsWith('@iu.edu.jo')) {
-        return done(null, false, { message: '❌ يجب أن يكون البريد @iu.edu.jo' });
-    }
-    return done(null, profile);
+app.use(session({
+  secret: 'secret123',
+  resave: false,
+  saveUninitialized: true
 }));
 
-// ====== مسارات تسجيل الدخول ======
-app.get('/auth/login',
-    passport.authenticate('azuread-openidconnect', { failureRedirect: '/' })
-);
+// ====== صفحة تسجيل الدخول ======
+app.get('/auth/login', (req, res) => {
+  const linkId = req.query.id || '';
+  res.sendFile(path.join(__dirname, 'public', 'login.html'));
+});
 
-app.get('/auth/callback',
-    passport.authenticate('azuread-openidconnect', { failureRedirect: '/' }),
-    (req, res) => {
-        res.redirect('/viewlinks.html');
-    }
-);
+// ====== معالجة تسجيل الدخول ======
+app.post('/auth/login', (req, res) => {
+  const { email, password, id } = req.body;
+  if (email && email.endsWith('@iu.edu.jo')) {
+    req.session.user = { email };
+    return res.redirect(`/protected?id=${id}`);
+  } else {
+    return res.send('❌ يجب إدخال بريد ينتهي بـ @iu.edu.jo');
+  }
+});
+
+// ====== تسجيل الخروج ======
+app.get('/auth/logout', (req, res) => {
+  req.session.destroy(() => {
+    res.redirect('/viewlinks.html');
+  });
+});
 
 // ====== API: جلب الروابط ======
 app.get('/api/links', async (req, res) => {
@@ -125,7 +91,7 @@ app.get('/protected', async (req, res) => {
 
   const linkId = req.query.id;
   if (!linkId) {
-    return res.redirect('/auth/login'); // لو id غير موجود → رجّعه على صفحة تسجيل الدخول
+    return res.redirect('/auth/login');
   }
 
   try {
