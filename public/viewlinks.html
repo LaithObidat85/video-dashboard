@@ -5,6 +5,7 @@
   <title>عرض الروابط</title>
   <link rel="icon" type="image/png" href="https://www.dropbox.com/scl/fi/f283e4rvv5cf9x12a1cic/my-website-logo.png?rlkey=yia776im7klypy27af32m0scy&e=1&st=vhaprvzh&dl=1">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.rtl.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
   <style>
     body {
       background: linear-gradient(to right, #e0eafc, #cfdef3);
@@ -35,15 +36,15 @@
     .top-bar {
       position: fixed;
       top: 0;
-      right: 0; /* تم التغيير لليمين */
+      right: 0;
       width: 100%;
       background: #0d6efd;
       padding: 10px;
-      text-align: right; /* تم التغيير ليكون على اليمين */
+      text-align: right;
       z-index: 1000;
     }
     .container {
-      margin-top: 70px; /* حتى لا يتداخل المحتوى مع الشريط */
+      margin-top: 70px;
     }
   </style>
 </head>
@@ -90,13 +91,16 @@ async function fetchLinks() {
     return;
   }
   linksData.forEach((link, index) => {
-    const lockIcon = link.requiresPassword ? '🔒' : '';
+    const lockIcon = link.requiresPassword 
+      ? '<i class="bi bi-lock-fill text-danger fs-4"></i>'   // قفل أحمر
+      : '<i class="bi bi-unlock-fill text-success fs-4"></i>'; // قفل أخضر
+
     const secureLink = link.requiresPassword
       ? `/auth/login?id=${link._id}`
       : `${API_BASE}/api/redirect/${encodeURIComponent(link._id)}`;
-    const linkHtml = link.requiresPassword
-      ? `<a href="${secureLink}" target="_blank">${link.linkText}</a>` <!-- فتح تبويب جديد -->
-      : `<a href="${secureLink}" target="_blank">${link.linkText}</a>`;
+
+    const linkHtml = `<a href="${secureLink}" target="_blank">${link.linkText}</a>`;
+
     const tr = document.createElement('tr');
     tr.innerHTML = `
       <td>${index + 1}</td>
