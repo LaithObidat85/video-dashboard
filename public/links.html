@@ -16,7 +16,7 @@
       margin-bottom: 20px;
     }
     .table th, .table td {
-      white-space: nowrap; /* ✅ احتواء تلقائي */
+      white-space: nowrap;
       vertical-align: middle;
     }
     .table th:first-child, .table td:first-child {
@@ -25,11 +25,11 @@
       background: #fff;
       z-index: 2;
     }
-    .table th:nth-child(5), .table td:nth-child(5) { width: 120px; text-align: center; }
-    .table th:nth-child(6), .table td:nth-child(6) { width: 220px; } /* ✅ زيادة عرض عمود الإجراءات */
+    .table th:nth-child(4), .table td:nth-child(4) { width: 120px; text-align: center; }
+    .table th:nth-child(5), .table td:nth-child(5) { width: 220px; }
     .action-buttons {
       display: flex;
-      gap: 8px; /* ✅ مسافة بين الأزرار */
+      gap: 8px;
       justify-content: center;
     }
   </style>
@@ -44,10 +44,6 @@
 
     <form id="addLinkForm" class="card card-body mb-4" style="display:none;">
       <input type="hidden" id="id" name="id">
-      <div class="mb-3">
-        <label class="form-label">الاسم</label>
-        <input type="text" id="name" name="name" class="form-control" required>
-      </div>
       <div class="mb-3">
         <label class="form-label">الوصف</label>
         <textarea id="description" name="description" class="form-control"></textarea>
@@ -75,7 +71,6 @@
         <thead>
           <tr>
             <th>#</th>
-            <th>الاسم</th>
             <th>الوصف</th>
             <th>نص الرابط</th>
             <th>محمي؟</th>
@@ -97,7 +92,6 @@
         table.innerHTML += `
           <tr>
             <td>${index + 1}</td>
-            <td>${link.name || ''}</td>
             <td>${link.description || ''}</td>
             <td><a href="${link.link}" target="_blank">🔗 ${link.linkText}</a></td>
             <td>${link.requiresPassword 
@@ -116,7 +110,6 @@
 
     function editLink(link) {
       document.getElementById('id').value = link._id;
-      document.getElementById('name').value = link.name;
       document.getElementById('description').value = link.description;
       document.getElementById('link').value = link.link;
       document.getElementById('linkText').value = link.linkText;
