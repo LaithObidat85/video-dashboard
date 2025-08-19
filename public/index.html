@@ -111,69 +111,115 @@
 </head>
 <body>
 
+  <!--  القائمة -->
+<!-- استدعاء مكتبة Bootstrap Icons -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
 
-<nav class="navbar navbar-expand-lg sticky-top shadow-sm" 
-     style="background: linear-gradient(90deg, #0d6efd, #004085);">
+<nav id="mainNavbar" class="navbar navbar-expand-lg sticky-top shadow-sm" 
+     style="background: linear-gradient(to right, #0d6efd, #0b5ed7); transition: box-shadow 0.3s ease;">
   <div class="container-fluid">
-    <!-- الروابط أولاً من اليمين -->
+    
+    <!-- الروابط -->
     <div class="collapse navbar-collapse" id="navbarContent">
       <ul class="navbar-nav mb-2 mb-lg-0">
         <li class="nav-item">
-          <a class="nav-link text-white fw-semibold px-3 hover-link" href="#" onclick="requestDashboardAccess()">🔐 لوحة التحكم</a>
+          <a class="nav-link text-white fw-semibold position-relative" href="#" onclick="requestDashboardAccess()">
+            <i class="bi bi-shield-lock-fill fs-5"></i> لوحة التحكم
+          </a>
         </li>
         <li class="nav-item">
-          <a class="nav-link text-white fw-semibold px-3 hover-link" href="https://video-dashboard-backend.onrender.com/viewlinks.html">🔗 روابط مهمة</a>
+          <a class="nav-link text-white fw-semibold position-relative" href="https://video-dashboard-backend.onrender.com/viewlinks.html">
+            <i class="bi bi-link-45deg fs-5"></i> روابط مهمة
+          </a>
         </li>
       </ul>
     </div>
 
-    <!-- الشعار أقصى اليسار -->
-    <a class="navbar-brand brand-box text-white fw-bold fs-5 ms-auto" href="#">
-      Laith Obidat
+    <!-- العنوان -->
+    <a class="navbar-brand text-white fw-bold ms-auto d-flex align-items-center" href="#">
+      <i class="bi bi-collection-play-fill fs-4 me-1"></i> Video Dashboard
     </a>
 
     <!-- زر القائمة للجوال -->
-    <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navbarContent">
+    <button class="navbar-toggler text-white border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navbarContent">
       <span class="navbar-toggler-icon"></span>
+    </button>
+
+    <!-- زر الوضع ليلي/نهاري -->
+    <button id="themeToggle" class="btn btn-sm btn-outline-light ms-2">
+      <i class="bi bi-moon-stars-fill"></i>
     </button>
   </div>
 </nav>
 
 <style>
-  /* تأثير عند المرور على الروابط */
-  .hover-link {
-    transition: color 0.3s, text-shadow 0.3s;
+  /* تحسين حالة Hover */
+  .navbar-nav .nav-link {
+    transition: color 0.3s ease, background 0.3s ease;
+    padding: 8px 12px;
+    border-radius: 5px;
   }
-  .hover-link:hover {
-    color: #ffdd57 !important;
-    text-shadow: 0 0 8px rgba(255, 221, 87, 0.8);
-  }
-
-  /* شعار داخل صندوق نصف شفاف */
-  .brand-box {
+  .navbar-nav .nav-link:hover {
     background: rgba(255, 255, 255, 0.15);
-    backdrop-filter: blur(8px);
-    padding: 6px 14px;
-    border-radius: 12px;
-    transition: transform 0.3s, box-shadow 0.3s;
-  }
-  .brand-box:hover {
-    transform: scale(1.08);
-    box-shadow: 0 0 12px rgba(255, 215, 0, 0.6);
   }
 
-  /* تخصيص أيقونة القائمة للجوال */
-  .navbar-toggler {
-    background-color: rgba(255,255,255,0.25);
-    border-radius: 6px;
+  /* خط متحرك تحت الروابط */
+  .navbar-nav .nav-link::after {
+    content: '';
+    position: absolute;
+    width: 0;
+    height: 2px;
+    left: 0;
+    bottom: 0;
+    background: white;
+    transition: width 0.3s ease;
   }
-  .navbar-toggler-icon {
-    filter: invert(1); /* يجعلها بيضاء */
+  .navbar-nav .nav-link:hover::after,
+  .navbar-nav .nav-link.active::after {
+    width: 100%;
+  }
+
+  /* ظل يظهر عند التمرير */
+  .scrolled {
+    box-shadow: 0 4px 10px rgba(0,0,0,0.2) !important;
+  }
+
+  /* الوضع الليلي */
+  body.dark-mode {
+    background: #121212 !important;
+    color: #eaeaea !important;
+  }
+  body.dark-mode nav {
+    background: linear-gradient(to right, #222, #000) !important;
   }
 </style>
 
+<script>
+  // إضافة/إزالة الظل عند التمرير
+  window.addEventListener('scroll', function () {
+    const navbar = document.getElementById('mainNavbar');
+    if (window.scrollY > 20) {
+      navbar.classList.add('scrolled');
+    } else {
+      navbar.classList.remove('scrolled');
+    }
+  });
+
+  // تبديل الوضع ليلي/نهاري
+  const themeToggle = document.getElementById('themeToggle');
+  themeToggle.addEventListener('click', () => {
+    document.body.classList.toggle('dark-mode');
+    const icon = themeToggle.querySelector("i");
+    if (document.body.classList.contains("dark-mode")) {
+      icon.classList.replace("bi-moon-stars-fill", "bi-brightness-high-fill");
+    } else {
+      icon.classList.replace("bi-brightness-high-fill", "bi-moon-stars-fill");
+    }
+  });
+</script>
 
 
+  <!-- انتهت القائمة -->
 
   
   <div class="container text-center">
