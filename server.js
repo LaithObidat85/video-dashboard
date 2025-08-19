@@ -1,147 +1,102 @@
-// server.js
-const express = require('express');
-const mongoose = require('mongoose');
-const path = require('path');
-const bodyParser = require('body-parser');
-require('dotenv').config();
-
-const passport = require('passport');
-const OIDCStrategy = require('passport-azure-ad').OIDCStrategy;
-const session = require('express-session');
-
-const app = express();
-const PORT = process.env.PORT || 3000;
-
-// الاتصال بـ MongoDB Atlas
-const MONGO_URI = process.env.MONGO_URI;
-mongoose.connect(MONGO_URI, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true
-})
-.then(() => console.log('✅ Connected to MongoDB Atlas'))
-.catch(err => console.error('❌ MongoDB connection error:', err));
-
-// ====== نماذج البيانات ======
-const videoSchema = new mongoose.Schema({
-  title: { type: String, required: true },
-  url: { type: String, required: true },
-  department: { type: String, required: true },
-  description: String,
-  dateAdded: { type: Date, default: Date.now }
-});
-const Video = mongoose.model('Video', videoSchema);
-
-const backupSchema = new mongoose.Schema({
-  date: { type: Date, default: Date.now },
-  data: Array
-});
-const Backup = mongoose.model('Backup', backupSchema);
-
-const departmentSchema = new mongoose.Schema({
-  name: { type: String, required: true, unique: true }
-});
-const Department = mongoose.model('Department', departmentSchema);
-
-// ✅ نموذج جديد للروابط
-const linkSchema = new mongoose.Schema({
-  linkText: { type: String, required: true },
-  link: { type: String, required: true },
-  description: String,
-  requiresPassword: { type: Boolean, default: false },
-  dateAdded: { type: Date, default: Date.now }
-});
-const Link = mongoose.model('Link', linkSchema);
-
-// Middleware
-app.use(bodyParser.json());
-app.use(express.static(path.join(__dirname, 'public')));
-
-// ====== تهيئة الجلسات والمصادقة ======
-app.use(session({ secret: 'secret123', resave: false, saveUninitialized: true }));
-app.use(passport.initialize());
-app.use(passport.session());
-
-passport.serializeUser((user, done) => done(null, user));
-passport.deserializeUser((obj, done) => done(null, obj));
-
-// إعداد Azure AD OIDC Strategy
-passport.use(new OIDCStrategy({
-    identityMetadata: `https://login.microsoftonline.com/${process.env.TENANT_ID}/v2.0/.well-known/openid-configuration`,
-    clientID: process.env.CLIENT_ID,
-    responseType: 'code',
-    responseMode: 'query',
-    redirectUrl: 'https://video-dashboard-backend.onrender.com/auth/callback',
-    clientSecret: process.env.CLIENT_SECRET,
-    allowHttpForRedirectUrl: false,
-    validateIssuer: true,
-    passReqToCallback: false,
-    scope: ['profile', 'email', 'openid']
-}, (iss, sub, profile, accessToken, refreshToken, done) => {
-    const email = profile._json.preferred_username || '';
-    if (!email.endsWith('@iu.edu.jo')) {
-        return done(null, false, { message: '❌ يجب أن يكون البريد @iu.edu.jo' });
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <title>عرض الروابط</title>
+  <link rel="icon" type="image/png" href="https://www.dropbox.com/scl/fi/f283e4rvv5cf9x12a1cic/my-website-logo.png?rlkey=yia776im7klypy27af32m0scy&e=1&st=vhaprvzh&dl=1">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.rtl.min.css">
+  <style>
+    body {
+      background: linear-gradient(to right, #e0eafc, #cfdef3);
+      padding: 20px;
+      font-family: 'Segoe UI', sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
     }
-    return done(null, profile);
-}));
-
-// ====== مسارات تسجيل الدخول ======
-app.get('/auth/login',
-    passport.authenticate('azuread-openidconnect', { failureRedirect: '/' })
-);
-
-app.get('/auth/callback',
-    passport.authenticate('azuread-openidconnect', { failureRedirect: '/' }),
-    (req, res) => {
-        res.redirect('/viewlinks.html');
+    footer {
+      text-align: center;
+      margin-top: auto;
+      font-weight: bold;
+      color: #333;
+      font-size: 1.1rem;
+      animation: glow 2s infinite alternate;
     }
-);
+    @keyframes glow {
+      from { text-shadow: 0 0 5px #0d6efd; }
+      to { text-shadow: 0 0 15px #0d6efd; }
+    }
+    .page-icon {
+      display: block;
+      margin: 0 auto 15px auto;
+      max-height: 120px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container mt-4 text-center">
+    <img src="https://www.dropbox.com/scl/fi/oyzy2tgfu9ky706mxdo2r/my-website-logo2.png?rlkey=8dqbogpfme5xlttdnululptlo&e=1&st=7kv0fd0c&dl=1" alt="Icon" class="page-icon">
+    <h2 class="mb-4">عرض الروابط</h2>
 
-// ====== API: جلب الروابط ======
-app.get('/api/links', async (req, res) => {
-  try {
-    const links = await Link.find().sort({ dateAdded: -1 });
-    res.json(links);
-  } catch (err) {
-    console.error('❌ Error fetching links:', err);
-    res.status(500).json({ error: 'خطأ في جلب الروابط' });
+    <!-- زر تسجيل خروج -->
+    <div class="mb-3">
+      <a href="/auth/logout" class="btn btn-danger">🚪 تسجيل الخروج</a>
+    </div>
+
+    <div class="table-responsive">
+      <table class="table table-bordered table-hover text-center align-middle">
+        <thead class="table-dark">
+          <tr>
+            <th>#</th>
+            <th>وصف</th>
+            <th>الرابط</th>
+            <th>محمي؟</th>
+          </tr>
+        </thead>
+        <tbody id="linksTableBody">
+          <tr><td colspan="4">جارٍ التحميل...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <footer>برمجة وتطوير: ليث عبيدات</footer>
+
+<script>
+const API_BASE = 'https://video-dashboard-backend.onrender.com';
+let linksData = [];
+
+async function fetchLinks() {
+  const res = await fetch(`${API_BASE}/api/links`);
+  linksData = await res.json();
+  const tbody = document.getElementById('linksTableBody');
+  tbody.innerHTML = '';
+  if (!linksData.length) {
+    tbody.innerHTML = '<tr><td colspan="4">لا توجد روابط</td></tr>';
+    return;
   }
-});
+  linksData.forEach((link, index) => {
+    const lockIcon = link.requiresPassword ? '🔒' : '';
+    const secureLink = link.requiresPassword
+      ? `/auth/login?id=${link._id}`
+      : `${API_BASE}/api/redirect/${encodeURIComponent(link._id)}`;
+    const linkHtml = link.requiresPassword
+      ? `<a href="${secureLink}">🔐 ${link.linkText}</a>`
+      : `<a href="${secureLink}" target="_blank">${link.linkText}</a>`;
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${index + 1}</td>
+      <td>${link.description || ''}</td>
+      <td>${linkHtml}</td>
+      <td>${lockIcon}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
 
-// ====== API: إعادة التوجيه للرابط ======
-app.get('/api/redirect/:id', async (req, res) => {
-  try {
-    const link = await Link.findById(req.params.id);
-    if (!link) return res.status(404).send('الرابط غير موجود');
-    res.redirect(link.link);
-  } catch (err) {
-    console.error('❌ Redirect error:', err);
-    res.status(500).send('خطأ في إعادة التوجيه');
-  }
-});
+fetchLinks();
+</script>
 
-// ====== صفحة الروابط المحمية داخل iframe ======
-app.get('/protected', async (req, res) => {
-  if (!req.session.user) return res.redirect('/auth/login');
-
-  const linkId = req.query.id;
-  if (!linkId) {
-    return res.redirect('/auth/login'); // لو id غير موجود → رجّعه على صفحة تسجيل الدخول
-  }
-
-  try {
-    const link = await Link.findById(linkId);
-    if (!link) return res.send('❌ الرابط غير موجود');
-
-    res.send(`
-      <iframe src="${link.link}" style="width:100%;height:100vh;border:none;"></iframe>
-    `);
-  } catch (err) {
-    console.error('❌ Error in /protected:', err.message);
-    res.redirect('/auth/login');
-  }
-});
-
-// ====== تشغيل السيرفر ======
-app.listen(PORT, () => {
-  console.log(`🚀 Server running on port ${PORT}`);
-});
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
