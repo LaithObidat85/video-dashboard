@@ -69,7 +69,9 @@ function renderBackups() {
 
   backups.forEach((b, index) => {
     const dateText = new Date(b.date).toLocaleString('ar-EG', { dateStyle: 'full', timeStyle: 'short' });
-    const sizeKB = (JSON.stringify(b.data).length / 1024).toFixed(2);
+    const sizeKB = (
+      (JSON.stringify(b.videos || []).length + JSON.stringify(b.links || []).length) / 1024
+    ).toFixed(2);
     totalSize += parseFloat(sizeKB);
 
     const card = document.createElement('div');
