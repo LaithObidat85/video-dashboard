@@ -185,6 +185,47 @@ app.delete('/api/videos/:id', async (req, res) => {
   }
 });
 
+// ====== إدارة الروابط ======
+app.get('/api/links', async (req, res) => {
+  try {
+    const links = await Link.find().sort({ dateAdded: -1 });
+    res.json(links);
+  } catch (err) {
+    res.status(500).json({ message: '❌ خطأ في قراءة الروابط', error: err.message });
+  }
+});
+
+app.post('/api/links', async (req, res) => {
+  try {
+    const link = new Link(req.body);
+    await link.save();
+    res.status(201).json(link);
+  } catch (err) {
+    res.status(400).json({ message: '❌ خطأ في إضافة الرابط', error: err.message });
+  }
+});
+
+app.put('/api/links/:id', async (req, res) => {
+  try {
+    const updated = await Link.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    if (!updated) return res.status(404).json({ message: '❌ الرابط غير موجود' });
+    res.json(updated);
+  } catch (err) {
+    res.status(400).json({ message: '❌ خطأ في التعديل', error: err.message });
+  }
+});
+
+app.delete('/api/links/:id', async (req, res) => {
+  try {
+    const deleted = await Link.findByIdAndDelete(req.params.id);
+    if (!deleted) return res.status(404).json({ message: '❌ الرابط غير موجود' });
+    res.json({ message: '✅ تم حذف الرابط' });
+  } catch (err) {
+    res.status(400).json({ message: '❌ خطأ في الحذف', error: err.message });
+  }
+});
+
+
 // ====== إدارة النسخ الاحتياطية ======
 app.post('/api/backups/create', async (req, res) => {
   try {
