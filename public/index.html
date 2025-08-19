@@ -112,29 +112,66 @@
 <body>
 
 
-  <nav class="navbar navbar-expand-lg sticky-top" style="background: linear-gradient(to right, #0d6efd, #0b5ed7);">
+<nav class="navbar navbar-expand-lg sticky-top shadow-sm" 
+     style="background: linear-gradient(90deg, #0d6efd, #004085);">
   <div class="container-fluid">
     <!-- الروابط أولاً من اليمين -->
     <div class="collapse navbar-collapse" id="navbarContent">
       <ul class="navbar-nav mb-2 mb-lg-0">
         <li class="nav-item">
-          <a class="nav-link text-white fw-semibold" href="#" onclick="requestDashboardAccess()">🔐 لوحة التحكم</a>
+          <a class="nav-link text-white fw-semibold px-3 hover-link" href="#" onclick="requestDashboardAccess()">🔐 لوحة التحكم</a>
         </li>
         <li class="nav-item">
-          <a class="nav-link text-white fw-semibold" href="https://video-dashboard-backend.onrender.com/viewlinks.html">🔗 روابط مهمة</a>
+          <a class="nav-link text-white fw-semibold px-3 hover-link" href="https://video-dashboard-backend.onrender.com/viewlinks.html">🔗 روابط مهمة</a>
         </li>
       </ul>
     </div>
 
-    <!-- العنوان أقصى اليسار -->
-    <a class="navbar-brand text-white fw-bold ms-auto" href="#">Laith Obidat</a>
+    <!-- الشعار أقصى اليسار -->
+    <a class="navbar-brand brand-box text-white fw-bold fs-5 ms-auto" href="#">
+      Laith Obidat
+    </a>
 
     <!-- زر القائمة للجوال -->
-    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarContent">
+    <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navbarContent">
       <span class="navbar-toggler-icon"></span>
     </button>
   </div>
 </nav>
+
+<style>
+  /* تأثير عند المرور على الروابط */
+  .hover-link {
+    transition: color 0.3s, text-shadow 0.3s;
+  }
+  .hover-link:hover {
+    color: #ffdd57 !important;
+    text-shadow: 0 0 8px rgba(255, 221, 87, 0.8);
+  }
+
+  /* شعار داخل صندوق نصف شفاف */
+  .brand-box {
+    background: rgba(255, 255, 255, 0.15);
+    backdrop-filter: blur(8px);
+    padding: 6px 14px;
+    border-radius: 12px;
+    transition: transform 0.3s, box-shadow 0.3s;
+  }
+  .brand-box:hover {
+    transform: scale(1.08);
+    box-shadow: 0 0 12px rgba(255, 215, 0, 0.6);
+  }
+
+  /* تخصيص أيقونة القائمة للجوال */
+  .navbar-toggler {
+    background-color: rgba(255,255,255,0.25);
+    border-radius: 6px;
+  }
+  .navbar-toggler-icon {
+    filter: invert(1); /* يجعلها بيضاء */
+  }
+</style>
+
 
 
 
