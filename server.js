@@ -107,13 +107,18 @@ app.get('/protected', async (req, res) => {
   }
 });
 
-// ====== API: التحقق من كلمة مرور لوحة التحكم ======
-app.post('/api/verify-password', (req, res) => {
-  const { password } = req.body;
-  if (password === process.env.DASHBOARD_PASSWORD) {
-    return res.sendStatus(200); // نجاح
-  } else {
-    return res.sendStatus(401); // كلمة المرور غير صحيحة
+// ====== API: جلب الأقسام من قاعدة البيانات ======
+app.get('/api/departments', async (req, res) => {
+  try {
+    const Department = mongoose.model('Department', new mongoose.Schema({
+      name: { type: String, required: true }
+    }), 'departments'); // اسم الـ Collection = departments
+
+    const departments = await Department.find().sort({ name: 1 });
+    res.json(departments);
+  } catch (err) {
+    console.error('❌ Error fetching departments:', err);
+    res.status(500).json({ error: 'خطأ في جلب الأقسام' });
   }
 });
 
