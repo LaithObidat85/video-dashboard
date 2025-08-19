@@ -164,6 +164,28 @@ app.post('/api/videos', async (req, res) => {
   }
 });
 
+app.put('/api/videos/:id', async (req, res) => {
+  try {
+    const updated = await Video.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    if (!updated) return res.status(404).json({ message: 'الفيديو غير موجود' });
+    res.json(updated);
+  } catch (err) {
+    res.status(400).json({ message: 'خطأ في التعديل', error: err.message });
+  }
+});
+
+app.delete('/api/videos/:id', async (req, res) => {
+  try {
+    const deleted = await Video.findByIdAndDelete(req.params.id);
+    if (!deleted) return res.status(404).json({ message: 'الفيديو غير موجود' });
+    res.json({ message: '✅ تم حذف الفيديو' });
+  } catch (err) {
+    res.status(400).json({ message: 'خطأ في الحذف', error: err.message });
+  }
+});
+
+
+
 // ====== إدارة الروابط ======
 app.get('/api/links', async (req, res) => {
   try {
