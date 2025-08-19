@@ -5,6 +5,8 @@ const path = require('path');
 const bodyParser = require('body-parser');
 require('dotenv').config();
 
+const passport = require('passport');
+const OIDCStrategy = require('passport-azure-ad').OIDCStrategy;
 const session = require('express-session');
 
 const app = express();
@@ -20,6 +22,27 @@ mongoose.connect(MONGO_URI, {
 .catch(err => console.error('❌ MongoDB connection error:', err));
 
 // ====== نماذج البيانات ======
+const videoSchema = new mongoose.Schema({
+  title: { type: String, required: true },
+  url: { type: String, required: true },
+  department: { type: String, required: true },
+  description: String,
+  dateAdded: { type: Date, default: Date.now }
+});
+const Video = mongoose.model('Video', videoSchema);
+
+const backupSchema = new mongoose.Schema({
+  date: { type: Date, default: Date.now },
+  data: Array
+});
+const Backup = mongoose.model('Backup', backupSchema);
+
+const departmentSchema = new mongoose.Schema({
+  name: { type: String, required: true, unique: true }
+});
+const Department = mongoose.model('Department', departmentSchema);
+
+// ✅ نموذج جديد للروابط
 const linkSchema = new mongoose.Schema({
   linkText: { type: String, required: true },
   link: { type: String, required: true },
@@ -32,49 +55,46 @@ const Link = mongoose.model('Link', linkSchema);
 // Middleware
 app.use(bodyParser.json());
 app.use(express.static(path.join(__dirname, 'public')));
+
+// ====== تهيئة الجلسات والمصادقة ======
 app.use(session({ secret: 'secret123', resave: false, saveUninitialized: true }));
+app.use(passport.initialize());
+app.use(passport.session());
 
-// ====== تسجيل الدخول البسيط ======
-app.get('/auth/login', (req, res) => {
-  res.send(`
-    <form method="post" action="/auth/verify" style="max-width:400px;margin:50px auto;font-family:sans-serif;">
-      <h3>🔐 تسجيل الدخول</h3>
-      <input type="email" name="email" placeholder="البريد الجامعي" required style="width:100%;margin:5px 0;padding:8px;">
-      <input type="password" name="password" placeholder="كلمة المرور" style="width:100%;margin:5px 0;padding:8px;">
-      <button type="submit" style="width:100%;padding:10px;">دخول</button>
-    </form>
-  `);
-});
+passport.serializeUser((user, done) => done(null, user));
+passport.deserializeUser((obj, done) => done(null, obj));
 
-app.use(bodyParser.urlencoded({ extended: true }));
+// إعداد Azure AD OIDC Strategy
+passport.use(new OIDCStrategy({
+    identityMetadata: `https://login.microsoftonline.com/${process.env.TENANT_ID}/v2.0/.well-known/openid-configuration`,
+    clientID: process.env.CLIENT_ID,
+    responseType: 'code',
+    responseMode: 'query',
+    redirectUrl: 'https://video-dashboard-backend.onrender.com/auth/callback',
+    clientSecret: process.env.CLIENT_SECRET,
+    allowHttpForRedirectUrl: false,
+    validateIssuer: true,
+    passReqToCallback: false,
+    scope: ['profile', 'email', 'openid']
+}, (iss, sub, profile, accessToken, refreshToken, done) => {
+    const email = profile._json.preferred_username || '';
+    if (!email.endsWith('@iu.edu.jo')) {
+        return done(null, false, { message: '❌ يجب أن يكون البريد @iu.edu.jo' });
+    }
+    return done(null, profile);
+}));
 
-app.post('/auth/verify', (req, res) => {
-  const { email } = req.body;
-  if (email && email.endsWith('@iu.edu.jo')) {
-    req.session.user = { email };
-    const linkId = req.query.id || '';
-    return res.redirect(`/protected?id=${linkId}`);
-  }
-  return res.send('❌ يجب تسجيل الدخول باستخدام بريد جامعي @iu.edu.jo');
-});
+// ====== مسارات تسجيل الدخول ======
+app.get('/auth/login',
+    passport.authenticate('azuread-openidconnect', { failureRedirect: '/' })
+);
 
-// ✅ تسجيل الخروج
-app.get('/auth/logout', (req, res) => {
-  req.session.destroy(() => {
-    res.redirect('/auth/login');
-  });
-});
-
-// صفحة الروابط المحمية داخل iframe
-app.get('/protected', async (req, res) => {
-  if (!req.session.user) return res.redirect('/auth/login');
-  const linkId = req.query.id;
-  const link = await Link.findById(linkId);
-  if (!link) return res.send('❌ الرابط غير موجود');
-  res.send(`
-    <iframe src="${link.link}" style="width:100%;height:100vh;border:none;"></iframe>
-  `);
-});
+app.get('/auth/callback',
+    passport.authenticate('azuread-openidconnect', { failureRedirect: '/' }),
+    (req, res) => {
+        res.redirect('/viewlinks.html');
+    }
+);
 
 // ====== API: جلب الروابط ======
 app.get('/api/links', async (req, res) => {
@@ -87,7 +107,7 @@ app.get('/api/links', async (req, res) => {
   }
 });
 
-// ====== API: إعادة التوجيه ======
+// ====== API: إعادة التوجيه للرابط ======
 app.get('/api/redirect/:id', async (req, res) => {
   try {
     const link = await Link.findById(req.params.id);
@@ -96,6 +116,28 @@ app.get('/api/redirect/:id', async (req, res) => {
   } catch (err) {
     console.error('❌ Redirect error:', err);
     res.status(500).send('خطأ في إعادة التوجيه');
+  }
+});
+
+// ====== صفحة الروابط المحمية داخل iframe ======
+app.get('/protected', async (req, res) => {
+  if (!req.session.user) return res.redirect('/auth/login');
+
+  const linkId = req.query.id;
+  if (!linkId) {
+    return res.redirect('/auth/login'); // لو id غير موجود → رجّعه على صفحة تسجيل الدخول
+  }
+
+  try {
+    const link = await Link.findById(linkId);
+    if (!link) return res.send('❌ الرابط غير موجود');
+
+    res.send(`
+      <iframe src="${link.link}" style="width:100%;height:100vh;border:none;"></iframe>
+    `);
+  } catch (err) {
+    console.error('❌ Error in /protected:', err.message);
+    res.redirect('/auth/login');
   }
 });
 
