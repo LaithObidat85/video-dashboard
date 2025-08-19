@@ -122,6 +122,66 @@ app.get('/api/departments', async (req, res) => {
   }
 });
 
+// ============================================================================================== Laith ======================
+
+// ====== إدارة النسخ الاحتياطية ======
+app.post('/api/backups/create', async (req, res) => {
+  try {
+    const videos = await Video.find();
+    const backup = new Backup({ data: videos });
+    await backup.save();
+    res.json({ message: '✅ تم إنشاء النسخة الاحتياطية' });
+  } catch (err) {
+    res.status(500).json({ message: '❌ فشل في إنشاء النسخة', error: err.message });
+  }
+});
+
+app.get('/api/backups', async (req, res) => {
+  try {
+    const backups = await Backup.find().sort({ date: -1 });
+    res.json(backups);
+  } catch (err) {
+    res.status(500).json({ message: '❌ فشل في جلب النسخ' });
+  }
+});
+
+app.delete('/api/backups/:id', async (req, res) => {
+  try {
+    await Backup.findByIdAndDelete(req.params.id);
+    res.json({ message: '🗑️ تم حذف النسخة' });
+  } catch (err) {
+    res.status(500).json({ message: '❌ فشل في الحذف', error: err.message });
+  }
+});
+
+app.get('/api/backups/download/:id', async (req, res) => {
+  try {
+    const backup = await Backup.findById(req.params.id);
+    if (!backup) return res.status(404).json({ message: '❌ النسخة غير موجودة' });
+    res.setHeader('Content-Disposition', `attachment; filename=backup-${backup.date.toISOString()}.json`);
+    res.setHeader('Content-Type', 'application/json');
+    res.send(JSON.stringify(backup.data, null, 2));
+  } catch (err) {
+    res.status(500).json({ message: '❌ فشل في التنزيل' });
+  }
+});
+
+app.post('/api/backups/restore/:id', async (req, res) => {
+  try {
+    const backup = await Backup.findById(req.params.id);
+    if (!backup) return res.status(404).json({ message: '❌ النسخة غير موجودة' });
+
+    await Video.deleteMany({});
+    await Video.insertMany(backup.data);
+
+    res.json({ message: '♻️ تم الاسترجاع بنجاح' });
+  } catch (err) {
+    res.status(500).json({ message: '❌ فشل في الاسترجاع', error: err.message });
+  }
+});
+
+
+
 // ====== تشغيل السيرفر ======
 app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
