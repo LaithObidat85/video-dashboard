@@ -21,9 +21,9 @@
       background: #fff;
       z-index: 2;
     }
-    /* ✅ توسيع الأعمدة المطلوبة */
-    .table th:nth-child(4), .table td:nth-child(4) { width: 250px; } /* عمود الرابط */
-    .table th:nth-child(5), .table td:nth-child(5) { width: 200px; } /* عمود نص الرابط */
+    /* ✅ تعديل الأعمدة */
+    .table th:nth-child(5), .table td:nth-child(5) { width: 200px; } /* نص الرابط */
+    .table th:nth-child(6), .table td:nth-child(6) { width: 100px; text-align: center; } /* محمي */
     .table th:nth-child(7), .table td:nth-child(7) { width: 180px; } /* عمود الإجراءات */
   </style>
 </head>
@@ -70,12 +70,11 @@
       <table class="table table-bordered table-striped">
         <thead>
           <tr>
-            <th>#</th> <!-- العمود الجديد -->
+            <th>#</th>
             <th>الاسم</th>
             <th>الوصف</th>
-            <th>الرابط</th>
             <th>نص الرابط</th>
-            <th>كلمة مرور؟</th>
+            <th>محمي؟</th>
             <th>إجراءات</th>
           </tr>
         </thead>
@@ -93,12 +92,11 @@
       data.forEach((link, index) => {
         table.innerHTML += `
           <tr>
-            <td>${index + 1}</td> <!-- رقم متسلسل -->
+            <td>${index + 1}</td>
             <td>${link.name || ''}</td>
             <td>${link.description || ''}</td>
-            <td><a href="${link.link}" target="_blank">🔗 ${link.link}</a></td>
-            <td>${link.linkText}</td>
-            <td>${link.requiresPassword ? 'نعم' : 'لا'}</td>
+            <td><a href="${link.link}" target="_blank">🔗 ${link.linkText}</a></td>
+            <td>${link.requiresPassword ? '🔒' : '🔓'}</td>
             <td>
               <button class="btn btn-warning btn-sm" onclick='editLink(${JSON.stringify(link)})'>✏️ تعديل</button>
               <button class="btn btn-danger btn-sm" onclick="deleteLink('${link._id}')">🗑️ حذف</button>
@@ -131,7 +129,6 @@
       const data = Object.fromEntries(new FormData(form).entries());
       data.requiresPassword = document.getElementById('requiresPassword').checked;
 
-      // ✅ لا ترسل id إذا كان فارغ
       if (!data.id) {
         delete data.id;
       }
