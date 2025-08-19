@@ -35,11 +35,11 @@
     .top-bar {
       position: fixed;
       top: 0;
-      left: 0;
+      right: 0; /* تم التغيير لليمين */
       width: 100%;
       background: #0d6efd;
       padding: 10px;
-      text-align: left;
+      text-align: right; /* تم التغيير ليكون على اليمين */
       z-index: 1000;
     }
     .container {
@@ -95,7 +95,7 @@ async function fetchLinks() {
       ? `/auth/login?id=${link._id}`
       : `${API_BASE}/api/redirect/${encodeURIComponent(link._id)}`;
     const linkHtml = link.requiresPassword
-      ? `<a href="${secureLink}">${link.linkText}</a>`
+      ? `<a href="${secureLink}" target="_blank">${link.linkText}</a>` <!-- فتح تبويب جديد -->
       : `<a href="${secureLink}" target="_blank">${link.linkText}</a>`;
     const tr = document.createElement('tr');
     tr.innerHTML = `
