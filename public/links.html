@@ -5,6 +5,8 @@
   <title>إدارة الروابط</title>
   <link rel="icon" type="image/png" href="https://www.dropbox.com/scl/fi/f283e4rvv5cf9x12a1cic/my-website-logo.png?rlkey=yia776im7klypy27af32m0scy&e=1&st=vhaprvzh&dl=1">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.rtl.min.css">
+  <!-- ✅ مكتبة أيقونات Bootstrap -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
   <style>
     body {
       background: linear-gradient(to right, #e0eafc, #cfdef3);
@@ -14,29 +16,25 @@
     .card {
       margin-bottom: 20px;
     }
-    /* ✅ تثبيت العمود الأول (رقم متسلسل) */
     .table th:first-child, .table td:first-child {
       position: sticky;
       right: 0;
       background: #fff;
       z-index: 2;
     }
-    /* ✅ تعديل الأعمدة */
-    .table th:nth-child(5), .table td:nth-child(5) { width: 200px; } /* نص الرابط */
-    .table th:nth-child(6), .table td:nth-child(6) { width: 100px; text-align: center; } /* محمي */
-    .table th:nth-child(7), .table td:nth-child(7) { width: 180px; } /* عمود الإجراءات */
+    .table th:nth-child(5), .table td:nth-child(5) { width: 200px; }
+    .table th:nth-child(6), .table td:nth-child(6) { width: 100px; text-align: center; }
+    .table th:nth-child(7), .table td:nth-child(7) { width: 180px; }
   </style>
 </head>
 <body>
   <div class="container">
     <h2 class="mb-4 text-center">إدارة الروابط</h2>
 
-    <!-- ✅ زر إضافة رابط جديد -->
     <div class="text-end mb-3">
       <button class="btn btn-primary" id="showFormBtn">➕ إضافة رابط جديد</button>
     </div>
 
-    <!-- ✅ النموذج (مخفي في البداية) -->
     <form id="addLinkForm" class="card card-body mb-4" style="display:none;">
       <input type="hidden" id="id" name="id">
       <div class="mb-3">
@@ -65,7 +63,6 @@
       </div>
     </form>
 
-    <!-- ✅ جدول عرض الروابط -->
     <div class="table-responsive">
       <table class="table table-bordered table-striped">
         <thead>
@@ -96,7 +93,7 @@
             <td>${link.name || ''}</td>
             <td>${link.description || ''}</td>
             <td><a href="${link.link}" target="_blank">🔗 ${link.linkText}</a></td>
-            <td>${link.requiresPassword ? '🔒' : '🔓'}</td>
+            <td>${link.requiresPassword ? '<i class="bi bi-lock-fill text-danger"></i>' : '<i class="bi bi-unlock-fill text-success"></i>'}</td>
             <td>
               <button class="btn btn-warning btn-sm" onclick='editLink(${JSON.stringify(link)})'>✏️ تعديل</button>
               <button class="btn btn-danger btn-sm" onclick="deleteLink('${link._id}')">🗑️ حذف</button>
@@ -123,7 +120,6 @@
       else alert('❌ فشل في الحذف');
     }
 
-    // ✅ زر الحفظ (إضافة / تعديل)
     document.getElementById('saveBtn').addEventListener('click', async () => {
       const form = document.getElementById('addLinkForm');
       const data = Object.fromEntries(new FormData(form).entries());
@@ -153,13 +149,11 @@
       }
     });
 
-    // ✅ زر إلغاء
     document.getElementById('cancelBtn').addEventListener('click', () => {
       document.getElementById('addLinkForm').reset();
       document.getElementById('addLinkForm').style.display = 'none';
     });
 
-    // ✅ زر إظهار النموذج
     document.getElementById('showFormBtn').addEventListener('click', () => {
       document.getElementById('addLinkForm').style.display = 'block';
     });
