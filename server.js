@@ -198,13 +198,18 @@ app.get('/api/links', async (req, res) => {
 
 app.post('/api/links', async (req, res) => {
   try {
+    console.log("📩 البيانات المستلمة:", req.body);  // ✅ يطبع البيانات القادمة من الواجهة
+
     const link = new Link(req.body);
     await link.save();
+
     res.status(201).json(link);
   } catch (err) {
+    console.error("❌ خطأ عند إضافة الرابط:", err.message); // ✅ يطبع السبب الحقيقي في الكونسول
     res.status(400).json({ message: '❌ خطأ في إضافة الرابط', error: err.message });
   }
 });
+
 
 
 app.put('/api/links/:id', async (req, res) => {
