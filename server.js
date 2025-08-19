@@ -207,6 +207,16 @@ app.post('/api/backups/create', async (req, res) => {
   }
 });
 
+app.get('/api/backups', async (req, res) => {
+  try {
+    const backups = await Backup.find().sort({ date: -1 });
+    res.json(backups);
+  } catch (err) {
+    res.status(500).json({ message: '❌ فشل في جلب النسخ' });
+  }
+});
+
+
 // ====== تسجيل الدخول (من الكود الثاني) ======
 app.get('/auth/login', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'login.html'));
