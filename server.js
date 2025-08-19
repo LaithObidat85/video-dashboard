@@ -107,6 +107,16 @@ app.get('/protected', async (req, res) => {
   }
 });
 
+// ====== API: التحقق من كلمة مرور لوحة التحكم ======
+app.post('/api/verify-password', (req, res) => {
+  const { password } = req.body;
+  if (password === process.env.DASHBOARD_PASSWORD) {
+    return res.sendStatus(200); // نجاح
+  } else {
+    return res.sendStatus(401); // كلمة المرور غير صحيحة
+  }
+});
+
 // ====== تشغيل السيرفر ======
 app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
