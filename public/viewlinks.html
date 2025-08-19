@@ -31,17 +31,31 @@
       margin: 0 auto 15px auto;
       max-height: 120px;
     }
+    /* شريط علوي مثبت */
+    .top-bar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      background: #0d6efd;
+      padding: 10px;
+      text-align: left;
+      z-index: 1000;
+    }
+    .container {
+      margin-top: 70px; /* حتى لا يتداخل المحتوى مع الشريط */
+    }
   </style>
 </head>
 <body>
+  <!-- زر الرئيسية مثبت أعلى الصفحة -->
+  <div class="top-bar">
+    <a href="https://video-dashboard-backend.onrender.com/" class="btn btn-light">🏠 الرئيسية</a>
+  </div>
+
   <div class="container mt-4 text-center">
     <img src="https://www.dropbox.com/scl/fi/oyzy2tgfu9ky706mxdo2r/my-website-logo2.png?rlkey=8dqbogpfme5xlttdnululptlo&e=1&st=7kv0fd0c&dl=1" alt="Icon" class="page-icon">
     <h2 class="mb-4">عرض الروابط</h2>
-
-    <!-- زر تسجيل خروج -->
-    <div class="mb-3">
-      <a href="/auth/logout" class="btn btn-danger">🚪 تسجيل الخروج</a>
-    </div>
 
     <div class="table-responsive">
       <table class="table table-bordered table-hover text-center align-middle">
@@ -81,7 +95,7 @@ async function fetchLinks() {
       ? `/auth/login?id=${link._id}`
       : `${API_BASE}/api/redirect/${encodeURIComponent(link._id)}`;
     const linkHtml = link.requiresPassword
-      ? `<a href="${secureLink}">🔐 ${link.linkText}</a>`
+      ? `<a href="${secureLink}">${link.linkText}</a>`
       : `<a href="${secureLink}" target="_blank">${link.linkText}</a>`;
     const tr = document.createElement('tr');
     tr.innerHTML = `
