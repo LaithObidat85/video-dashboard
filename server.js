@@ -1,3 +1,4 @@
+// server.js
 const express = require('express');
 const mongoose = require('mongoose');
 const path = require('path');
@@ -17,112 +18,182 @@ mongoose.connect(MONGO_URI, {
 .then(() => console.log('✅ Connected to MongoDB Atlas'))
 .catch(err => console.error('❌ MongoDB connection error:', err));
 
-// ====== نماذج البيانات ======
-const linkSchema = new mongoose.Schema({
-  linkText: { type: String, required: true },
-  link: { type: String, required: true },
+// ====== النماذج (Models) ======
+const videoSchema = new mongoose.Schema({
+  title: { type: String, required: true },
+  url: { type: String, required: true },
+  department: { type: String, required: true },
   description: String,
+  dateAdded: { type: Date, default: Date.now }
+});
+const Video = mongoose.model('Video', videoSchema);
+
+const backupSchema = new mongoose.Schema({
+  date: { type: Date, default: Date.now },
+  data: Array
+});
+const Backup = mongoose.model('Backup', backupSchema);
+
+const departmentSchema = new mongoose.Schema({
+  name: { type: String, required: true, unique: true }
+});
+const Department = mongoose.model('Department', departmentSchema);
+
+const linkSchema = new mongoose.Schema({
+  name: { type: String },
+  description: String,
+  link: { type: String, required: true },
+  linkText: { type: String, required: true },
   requiresPassword: { type: Boolean, default: false },
   dateAdded: { type: Date, default: Date.now }
 });
 const Link = mongoose.model('Link', linkSchema);
 
+const passwordSchema = new mongoose.Schema({
+  section: { type: String, required: true, unique: true },
+  password: { type: String, required: true }
+});
+const Password = mongoose.model('Password', passwordSchema);
+
 // Middleware
-app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, 'public')));
 
 app.use(session({
-  secret: 'secret123',
+  secret: 'secret123', // استبدله بـ قيمة من env لاحقًا
   resave: false,
   saveUninitialized: true
 }));
 
-// ====== صفحة تسجيل الدخول ======
-app.get('/auth/login', (req, res) => {
-  const linkId = req.query.id || '';
-  res.sendFile(path.join(__dirname, 'public', 'login.html'));
+// ✅ التحقق من كلمة المرور العامة للوحة التحكم
+app.post('/api/verify-password', (req, res) => {
+  const { password } = req.body;
+  if (password === process.env.DASHBOARD_PASSWORD) return res.sendStatus(200);
+  else return res.sendStatus(403);
 });
 
-// ====== معالجة تسجيل الدخول ======
-app.post('/auth/login', (req, res) => {
-  const { email, password, id } = req.body;
-  if (email && email.endsWith('@iu.edu.jo')) {
-    req.session.user = { email };
-    return res.redirect(`/protected?id=${id}`);
-  } else {
-    return res.send('❌ يجب إدخال بريد ينتهي بـ @iu.edu.jo');
+// ✅ إدارة كلمات المرور (CRUD)
+app.get('/api/passwords', async (req, res) => {
+  try {
+    const passwords = await Password.find();
+    res.json(passwords);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
   }
 });
 
-// ====== تسجيل الخروج ======
-app.get('/auth/logout', (req, res) => {
-  req.session.destroy(() => {
-    res.redirect('/viewlinks.html');
-  });
+app.post('/api/passwords', async (req, res) => {
+  try {
+    const pass = new Password(req.body);
+    await pass.save();
+    res.status(201).json(pass);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
 });
 
-// ====== API: جلب الروابط ======
+app.put('/api/passwords/:id', async (req, res) => {
+  try {
+    const updated = await Password.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    res.json(updated);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+app.delete('/api/passwords/:id', async (req, res) => {
+  try {
+    await Password.findByIdAndDelete(req.params.id);
+    res.json({ message: 'تم حذف كلمة المرور' });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+// ✅ التحقق من كلمة مرور قسم معين
+app.post('/api/check-section-password', async (req, res) => {
+  const { section, password } = req.body;
+  try {
+    const record = await Password.findOne({ section });
+    if (!record) return res.status(404).json({ error: 'القسم غير موجود' });
+    if (record.password === password) return res.sendStatus(200);
+    return res.sendStatus(403);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ====== إدارة الأقسام ======
+app.get('/api/departments', async (req, res) => {
+  try {
+    const deps = await Department.find().sort({ name: 1 });
+    res.json(deps);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/departments', async (req, res) => {
+  try {
+    const dep = new Department({ name: req.body.name });
+    await dep.save();
+    res.status(201).json(dep);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+// ====== إدارة الفيديوهات ======
+app.get('/api/videos', async (req, res) => {
+  try {
+    const videos = await Video.find().sort({ dateAdded: -1 });
+    res.json(videos);
+  } catch (err) {
+    res.status(500).json({ message: 'خطأ في قراءة الفيديوهات' });
+  }
+});
+
+app.post('/api/videos', async (req, res) => {
+  try {
+    const video = new Video(req.body);
+    await video.save();
+    res.status(201).json(video);
+  } catch (err) {
+    res.status(400).json({ message: 'خطأ في إضافة الفيديو', error: err.message });
+  }
+});
+
+// ====== إدارة الروابط ======
 app.get('/api/links', async (req, res) => {
   try {
     const links = await Link.find().sort({ dateAdded: -1 });
     res.json(links);
   } catch (err) {
-    console.error('❌ Error fetching links:', err);
-    res.status(500).json({ error: 'خطأ في جلب الروابط' });
+    res.status(500).json({ message: '❌ خطأ في جلب الروابط' });
   }
 });
 
-// ====== API: إعادة التوجيه للرابط ======
+app.post('/api/links', async (req, res) => {
+  try {
+    const link = new Link(req.body);
+    await link.save();
+    res.status(201).json(link);
+  } catch (err) {
+    res.status(400).json({ message: '❌ خطأ في إضافة الرابط', error: err.message });
+  }
+});
+
+// ✅ إعادة التوجيه
 app.get('/api/redirect/:id', async (req, res) => {
   try {
     const link = await Link.findById(req.params.id);
-    if (!link) return res.status(404).send('الرابط غير موجود');
+    if (!link) return res.status(404).send('❌ الرابط غير موجود');
     res.redirect(link.link);
   } catch (err) {
-    console.error('❌ Redirect error:', err);
-    res.status(500).send('خطأ في إعادة التوجيه');
+    res.status(500).send('❌ خطأ في إعادة التوجيه');
   }
 });
-
-// ====== صفحة الروابط المحمية داخل iframe ======
-app.get('/protected', async (req, res) => {
-  if (!req.session.user) return res.redirect('/auth/login');
-
-  const linkId = req.query.id;
-  if (!linkId) {
-    return res.redirect('/auth/login');
-  }
-
-  try {
-    const link = await Link.findById(linkId);
-    if (!link) return res.send('❌ الرابط غير موجود');
-
-    res.send(`
-      <iframe src="${link.link}" style="width:100%;height:100vh;border:none;"></iframe>
-    `);
-  } catch (err) {
-    console.error('❌ Error in /protected:', err.message);
-    res.redirect('/auth/login');
-  }
-});
-
-// ====== API: جلب الأقسام من قاعدة البيانات ======
-app.get('/api/departments', async (req, res) => {
-  try {
-    const Department = mongoose.model('Department', new mongoose.Schema({
-      name: { type: String, required: true }
-    }), 'departments'); // اسم الـ Collection = departments
-
-    const departments = await Department.find().sort({ name: 1 });
-    res.json(departments);
-  } catch (err) {
-    console.error('❌ Error fetching departments:', err);
-    res.status(500).json({ error: 'خطأ في جلب الأقسام' });
-  }
-});
-
-// ============================================================================================== Laith ======================
 
 // ====== إدارة النسخ الاحتياطية ======
 app.post('/api/backups/create', async (req, res) => {
@@ -136,53 +207,44 @@ app.post('/api/backups/create', async (req, res) => {
   }
 });
 
-app.get('/api/backups', async (req, res) => {
-  try {
-    const backups = await Backup.find().sort({ date: -1 });
-    res.json(backups);
-  } catch (err) {
-    res.status(500).json({ message: '❌ فشل في جلب النسخ' });
+// ====== تسجيل الدخول (من الكود الثاني) ======
+app.get('/auth/login', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'login.html'));
+});
+
+app.post('/auth/login', (req, res) => {
+  const { email, password, id } = req.body;
+  if (email && email.endsWith('@iu.edu.jo')) {
+    req.session.user = { email };
+    return res.redirect(`/protected?id=${id}`);
+  } else {
+    return res.send('❌ يجب إدخال بريد ينتهي بـ @iu.edu.jo');
   }
 });
 
-app.delete('/api/backups/:id', async (req, res) => {
+app.get('/auth/logout', (req, res) => {
+  req.session.destroy(() => {
+    res.redirect('/viewlinks.html');
+  });
+});
+
+// ====== صفحة الروابط المحمية ======
+app.get('/protected', async (req, res) => {
+  if (!req.session.user) return res.redirect('/auth/login');
+  const linkId = req.query.id;
+  if (!linkId) return res.redirect('/auth/login');
+
   try {
-    await Backup.findByIdAndDelete(req.params.id);
-    res.json({ message: '🗑️ تم حذف النسخة' });
+    const link = await Link.findById(linkId);
+    if (!link) return res.send('❌ الرابط غير موجود');
+
+    res.send(`<iframe src="${link.link}" style="width:100%;height:100vh;border:none;"></iframe>`);
   } catch (err) {
-    res.status(500).json({ message: '❌ فشل في الحذف', error: err.message });
+    res.redirect('/auth/login');
   }
 });
 
-app.get('/api/backups/download/:id', async (req, res) => {
-  try {
-    const backup = await Backup.findById(req.params.id);
-    if (!backup) return res.status(404).json({ message: '❌ النسخة غير موجودة' });
-    res.setHeader('Content-Disposition', `attachment; filename=backup-${backup.date.toISOString()}.json`);
-    res.setHeader('Content-Type', 'application/json');
-    res.send(JSON.stringify(backup.data, null, 2));
-  } catch (err) {
-    res.status(500).json({ message: '❌ فشل في التنزيل' });
-  }
-});
-
-app.post('/api/backups/restore/:id', async (req, res) => {
-  try {
-    const backup = await Backup.findById(req.params.id);
-    if (!backup) return res.status(404).json({ message: '❌ النسخة غير موجودة' });
-
-    await Video.deleteMany({});
-    await Video.insertMany(backup.data);
-
-    res.json({ message: '♻️ تم الاسترجاع بنجاح' });
-  } catch (err) {
-    res.status(500).json({ message: '❌ فشل في الاسترجاع', error: err.message });
-  }
-});
-
-
-
-// ====== تشغيل السيرفر ======
+// ▶️ تشغيل الخادم
 app.listen(PORT, () => {
-  console.log(`🚀 Server running on port ${PORT}`);
+  console.log(`🚀 الخادم يعمل على: http://localhost:${PORT}`);
 });
