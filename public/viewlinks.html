@@ -35,8 +35,13 @@
 </head>
 <body>
   <div class="container mt-4 text-center">
-   <img src="https://www.dropbox.com/scl/fi/oyzy2tgfu9ky706mxdo2r/my-website-logo2.png?rlkey=8dqbogpfme5xlttdnululptlo&e=1&st=7kv0fd0c&dl=1" alt="Icon" class="page-icon">
+    <img src="https://www.dropbox.com/scl/fi/oyzy2tgfu9ky706mxdo2r/my-website-logo2.png?rlkey=8dqbogpfme5xlttdnululptlo&e=1&st=7kv0fd0c&dl=1" alt="Icon" class="page-icon">
     <h2 class="mb-4">عرض الروابط</h2>
+
+    <!-- زر تسجيل خروج -->
+    <div class="mb-3">
+      <a href="/auth/logout" class="btn btn-danger">🚪 تسجيل الخروج</a>
+    </div>
 
     <div class="table-responsive">
       <table class="table table-bordered table-hover text-center align-middle">
@@ -55,32 +60,11 @@
     </div>
   </div>
 
-  <!-- نافذة عرض الرابط -->
-  <div class="modal fade" id="viewLinkModal" tabindex="-1">
-    <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title">📄 عرض الرابط</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-        </div>
-        <div class="modal-body p-0" style="height: 80vh;">
-          <iframe id="linkFrame" src="" width="100%" height="100%" frameborder="0" allowfullscreen></iframe>
-        </div>
-      </div>
-    </div>
-  </div>
-
   <footer>برمجة وتطوير: ليث عبيدات</footer>
 
 <script>
 const API_BASE = 'https://video-dashboard-backend.onrender.com';
 let linksData = [];
-
-function openInModal(link) {
-  const iframe = document.getElementById('linkFrame');
-  iframe.src = link;
-  new bootstrap.Modal(document.getElementById('viewLinkModal')).show();
-}
 
 async function fetchLinks() {
   const res = await fetch(`${API_BASE}/api/links`);
@@ -93,9 +77,11 @@ async function fetchLinks() {
   }
   linksData.forEach((link, index) => {
     const lockIcon = link.requiresPassword ? '🔒' : '';
-    const secureLink = `${API_BASE}/api/redirect/${encodeURIComponent(link._id || link.link)}`;
-    const linkHtml = link.requiresPassword 
-      ? `<a href="#" onclick="openInModal('${secureLink}')">🔐 ${link.linkText}</a>` 
+    const secureLink = link.requiresPassword
+      ? `/auth/login?id=${link._id}`
+      : `${API_BASE}/api/redirect/${encodeURIComponent(link._id)}`;
+    const linkHtml = link.requiresPassword
+      ? `<a href="${secureLink}">🔐 ${link.linkText}</a>`
       : `<a href="${secureLink}" target="_blank">${link.linkText}</a>`;
     const tr = document.createElement('tr');
     tr.innerHTML = `
