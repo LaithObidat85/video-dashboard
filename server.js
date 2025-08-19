@@ -206,6 +206,26 @@ app.post('/api/links', async (req, res) => {
   }
 });
 
+app.put('/api/links/:id', async (req, res) => {
+  try {
+    const updated = await Link.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    res.json(updated);
+  } catch (err) {
+    res.status(400).json({ message: '❌ خطأ في تعديل الرابط', error: err.message });
+  }
+});
+
+app.delete('/api/links/:id', async (req, res) => {
+  try {
+    await Link.findByIdAndDelete(req.params.id);
+    res.json({ message: '🗑️ تم حذف الرابط بنجاح' });
+  } catch (err) {
+    res.status(400).json({ message: '❌ خطأ في الحذف', error: err.message });
+  }
+});
+
+
+
 // ✅ إعادة التوجيه
 app.get('/api/redirect/:id', async (req, res) => {
   try {
