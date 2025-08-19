@@ -30,7 +30,8 @@ const Video = mongoose.model('Video', videoSchema);
 
 const backupSchema = new mongoose.Schema({
   date: { type: Date, default: Date.now },
-  data: Array
+  videos: Array,
+  links: Array
 });
 const Backup = mongoose.model('Backup', backupSchema);
 
@@ -186,66 +187,72 @@ app.delete('/api/videos/:id', async (req, res) => {
 
 
 
-// ====== إدارة الروابط ======
-app.get('/api/links', async (req, res) => {
+// ====== إدارة النسخ الاحتياطية ======
+app.post('/api/backups/create', async (req, res) => {
   try {
-    const links = await Link.find().sort({ dateAdded: -1 });
-    res.json(links);
+    const videos = await Video.find();
+    const links = await Link.find();
+
+    const backup = new Backup({ videos, links });
+    await backup.save();
+
+    res.json({ message: '✅ تم إنشاء النسخة الاحتياطية (فيديوهات + روابط)' });
   } catch (err) {
-    console.error("❌ خطأ في جلب الروابط:", err.message);
-    res.status(500).json({ message: '❌ خطأ في جلب الروابط', error: err.message });
+    res.status(500).json({ message: '❌ فشل في إنشاء النسخة', error: err.message });
   }
 });
 
-app.post('/api/links', async (req, res) => {
+app.get('/api/backups', async (req, res) => {
   try {
-    console.log("📩 البيانات المستلمة:", req.body);
-
-    // ✅ حذف أي id مرسل من الواجهة حتى لا يسبب مشاكل
-    if ('id' in req.body) {
-      delete req.body.id;
-    }
-
-    const link = new Link(req.body);
-    await link.save();
-
-    res.status(201).json(link);
+    const backups = await Backup.find().sort({ date: -1 });
+    res.json(backups);
   } catch (err) {
-    console.error("❌ خطأ عند إضافة الرابط:", err.message);
-    res.status(400).json({ message: '❌ خطأ في إضافة الرابط', error: err.message });
+    res.status(500).json({ message: '❌ فشل في جلب النسخ', error: err.message });
   }
 });
 
-app.put('/api/links/:id', async (req, res) => {
+app.delete('/api/backups/:id', async (req, res) => {
   try {
-    console.log("✏️ تحديث الرابط:", req.params.id, "بالبيانات:", req.body);
-
-    // ✅ ضمان عدم تعديل الـ _id بالخطأ
-    if ('id' in req.body) {
-      delete req.body.id;
-    }
-    if ('_id' in req.body) {
-      delete req.body._id;
-    }
-
-    const updated = await Link.findByIdAndUpdate(req.params.id, req.body, { new: true });
-    if (!updated) return res.status(404).json({ message: '❌ الرابط غير موجود' });
-    res.json(updated);
+    await Backup.findByIdAndDelete(req.params.id);
+    res.json({ message: '🗑️ تم حذف النسخة' });
   } catch (err) {
-    console.error("❌ خطأ في تعديل الرابط:", err.message);
-    res.status(400).json({ message: '❌ خطأ في تعديل الرابط', error: err.message });
+    res.status(500).json({ message: '❌ فشل في الحذف', error: err.message });
   }
 });
 
-app.delete('/api/links/:id', async (req, res) => {
+app.get('/api/backups/download/:id', async (req, res) => {
   try {
-    console.log("🗑️ حذف الرابط:", req.params.id);
+    const backup = await Backup.findById(req.params.id);
+    if (!backup) return res.status(404).json({ message: '❌ النسخة غير موجودة' });
 
-    await Link.findByIdAndDelete(req.params.id);
-    res.json({ message: '🗑️ تم حذف الرابط بنجاح' });
+    res.setHeader('Content-Disposition', `attachment; filename=backup-${backup.date.toISOString()}.json`);
+    res.setHeader('Content-Type', 'application/json');
+    res.send(JSON.stringify(backup, null, 2));
   } catch (err) {
-    console.error("❌ خطأ في الحذف:", err.message);
-    res.status(400).json({ message: '❌ خطأ في الحذف', error: err.message });
+    res.status(500).json({ message: '❌ فشل في التنزيل', error: err.message });
+  }
+});
+
+app.post('/api/backups/restore/:id', async (req, res) => {
+  try {
+    const backup = await Backup.findById(req.params.id);
+    if (!backup) return res.status(404).json({ message: '❌ النسخة غير موجودة' });
+
+    // ✅ استرجاع الفيديوهات
+    await Video.deleteMany({});
+    if (backup.videos && backup.videos.length > 0) {
+      await Video.insertMany(backup.videos);
+    }
+
+    // ✅ استرجاع الروابط
+    await Link.deleteMany({});
+    if (backup.links && backup.links.length > 0) {
+      await Link.insertMany(backup.links);
+    }
+
+    res.json({ message: '♻️ تم الاسترجاع بنجاح (فيديوهات + روابط)' });
+  } catch (err) {
+    res.status(500).json({ message: '❌ فشل في الاسترجاع', error: err.message });
   }
 });
 
