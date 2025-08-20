@@ -162,12 +162,27 @@
     }
   });
 
-  // ✅ تحميل نافذة تسجيل الدخول كما في dashboard.html
-  fetch("login-modal.html")
-    .then(res => res.text())
-    .then(html => {
-      document.getElementById("loginModalContainer").innerHTML = html;
+ // ✅ تحميل نافذة تسجيل الدخول كما في dashboard.html
+fetch("login-modal.html")
+  .then(res => res.text())
+  .then(html => {
+    document.getElementById("loginModalContainer").innerHTML = html;
+
+    // ✅ تشغيل أي سكربت داخل login-modal.html
+    const scripts = document
+      .getElementById("loginModalContainer")
+      .querySelectorAll("script");
+    scripts.forEach((script) => {
+      const newScript = document.createElement("script");
+      if (script.src) {
+        newScript.src = script.src;
+      } else {
+        newScript.textContent = script.textContent;
+      }
+      document.body.appendChild(newScript);
     });
+  });
+
 
   async function fetchDepartments() {
     try {
