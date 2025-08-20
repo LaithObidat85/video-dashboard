@@ -82,7 +82,8 @@
       .then(html => {
         document.getElementById("loginModalContainer").innerHTML = html;
 
-        const passwordModal = new bootstrap.Modal(document.getElementById("passwordModal"), {
+        const passwordModalEl = document.getElementById("passwordModal");
+        const passwordModal = new bootstrap.Modal(passwordModalEl, {
           backdrop: 'static',
           keyboard: false
         });
@@ -100,9 +101,12 @@
           });
         }
 
-        // ✅ المؤشر داخل خانة كلمة المرور مباشرة
         const passwordInput = document.getElementById("dashboardPassword");
-        passwordInput.focus();
+
+        // ✅ التركيز يتم بعد فتح المودال بالكامل
+        passwordModalEl.addEventListener("shown.bs.modal", () => {
+          passwordInput.focus();
+        });
 
         // ✅ وظيفة التحقق
         async function verifyPassword() {
