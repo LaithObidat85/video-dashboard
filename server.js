@@ -95,6 +95,7 @@ app.get('/dashboard.html', requireDashboardAuth('dashboard.html'));
 app.get('/edit.html', requireDashboardAuth('edit.html'));
 app.get('/links.html', requireDashboardAuth('links.html'));
 app.get('/backups.html', requireDashboardAuth('backups.html'));
+app.get('/add.html', requireDashboardAuth('add.html'));
 
 // ✅ إدارة كلمات المرور (CRUD)
 app.get('/api/passwords', async (req, res) => {
