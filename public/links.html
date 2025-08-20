@@ -26,7 +26,7 @@
       z-index: 2;
     }
     .table th:nth-child(4), .table td:nth-child(4) { width: 120px; text-align: center; }
-    .table th:nth-child(5), .table td:nth-child(5) { width: 220px; }
+    .table th:nth-child(5), .table td:nth-child(5) { width: 260px; }
     .action-buttons {
       display: flex;
       gap: 8px;
@@ -106,6 +106,8 @@
               <div class="action-buttons">
                 <button class="btn btn-warning btn-sm" onclick='editLink(${JSON.stringify(link)})'>✏️ تعديل</button>
                 <button class="btn btn-danger btn-sm" onclick="deleteLink('${link._id}')">🗑️ حذف</button>
+                <button class="btn btn-info btn-sm" onclick="moveLink('${link._id}','up')">⬆️ رفع</button>
+                <button class="btn btn-secondary btn-sm" onclick="moveLink('${link._id}','down')">⬇️ خفض</button>
               </div>
             </td>
           </tr>
@@ -127,6 +129,19 @@
       const res = await fetch(`/api/links/${id}`, { method: 'DELETE' });
       if (res.ok) loadLinks();
       else alert('❌ فشل في الحذف');
+    }
+
+    async function moveLink(id, direction) {
+      const res = await fetch(`/api/links/${id}/move`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ direction })
+      });
+      if (res.ok) {
+        loadLinks();
+      } else {
+        alert('❌ لم يتم النقل');
+      }
     }
 
     document.getElementById('saveBtn').addEventListener('click', async () => {
