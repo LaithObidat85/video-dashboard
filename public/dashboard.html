@@ -92,6 +92,10 @@
           }
           document.body.appendChild(newScript);
         });
+
+        // ✅ فتح الموديل تلقائياً بعد تحميله
+        const passwordModal = new bootstrap.Modal(document.getElementById("passwordModal"));
+        passwordModal.show();
       });
   </script>
 </body>
