@@ -88,6 +88,18 @@ app.get('/api/check-session', (req, res) => {
   }
 });
 
+// ✅ تسجيل الخروج (مسح الجلسة)
+app.post('/api/logout', (req, res) => {
+  req.session.destroy(err => {
+    if (err) {
+      return res.status(500).json({ success: false, message: "خطأ في تسجيل الخروج" });
+    }
+    res.clearCookie('connect.sid');
+    return res.json({ success: true });
+  });
+});
+
+
 // ✅ حماية الوصول إلى الصفحات الإدارية
 function requireDashboardAuth(page) {
   return (req, res) => {
