@@ -63,7 +63,6 @@
           <a href="index.html">الرئيسية</a>
         </div>
       </div>
-      <!-- ✅ القسم الجديد -->
       <div class="col-md-4">
         <div class="dashboard-card">
           <div class="card-icon">🔗</div>
@@ -73,29 +72,35 @@
     </div>
   </div>
 
-  <!-- ✅ استدعاء نافذة تسجيل الدخول -->
+  <!-- ✅ استدعاء كود نافذة تسجيل الدخول -->
   <div id="loginModalContainer"></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
   <script>
+    // تحميل login-modal.html داخل الصفحة
     fetch("login-modal.html")
       .then(res => res.text())
       .then(html => {
-        const container = document.getElementById("loginModalContainer");
-        container.innerHTML = html;
+        document.getElementById("loginModalContainer").innerHTML = html;
 
-        // ✅ تشغيل السكربتات داخل login-modal.html
-        container.querySelectorAll("script").forEach(oldScript => {
-          const newScript = document.createElement("script");
-          if (oldScript.src) {
-            newScript.src = oldScript.src;
-          } else {
-            newScript.textContent = oldScript.textContent;
-          }
-          document.body.appendChild(newScript);
-        });
-
-        // ✅ فتح الموديل تلقائياً بعد تحميله
+        // بعد تحميل المودال وتكوينه
         const passwordModal = new bootstrap.Modal(document.getElementById("passwordModal"));
         passwordModal.show();
+
+        document.getElementById("confirmDashboardAccess").addEventListener("click", async function () {
+          const password = document.getElementById("dashboardPassword").value;
+          const res = await fetch("/api/verify-password", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ password })
+          });
+
+          if (res.status === 200) {
+            passwordModal.hide();
+          } else {
+            alert("❌ كلمة المرور غير صحيحة");
+          }
+        });
       });
   </script>
 </body>
