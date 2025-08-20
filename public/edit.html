@@ -162,26 +162,62 @@
     }
   });
 
- // ✅ تحميل نافذة تسجيل الدخول كما في dashboard.html
+// ✅ تحميل نافذة تسجيل الدخول كما في dashboard.html
 fetch("login-modal.html")
   .then(res => res.text())
   .then(html => {
     document.getElementById("loginModalContainer").innerHTML = html;
 
-    // ✅ تشغيل أي سكربت داخل login-modal.html
-    const scripts = document
-      .getElementById("loginModalContainer")
-      .querySelectorAll("script");
-    scripts.forEach((script) => {
-      const newScript = document.createElement("script");
-      if (script.src) {
-        newScript.src = script.src;
-      } else {
-        newScript.textContent = script.textContent;
+    const passwordModal = new bootstrap.Modal(document.getElementById("passwordModal"), {
+      backdrop: 'static',
+      keyboard: false
+    });
+
+    const passwordInput = document.getElementById("dashboardPassword");
+    const submitPassword = document.getElementById("submitPassword");
+    const closeModal = document.querySelector("#passwordModal .btn-close");
+
+    // إخفاء زر الإغلاق
+    if (closeModal) closeModal.style.display = "none";
+
+    // إظهار نافذة تسجيل الدخول عند فتح الصفحة
+    passwordModal.show();
+    passwordInput.focus();
+
+    // عند الضغط على إدخال أو زر الدخول
+    function tryLogin() {
+      const password = passwordInput.value.trim();
+      fetch(`${API_BASE}/api/verify-password`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ password })
+      })
+        .then(res => res.json())
+        .then(data => {
+          if (data.success) {
+            passwordModal.hide();
+          } else {
+            alert("❌ كلمة المرور غير صحيحة");
+            passwordInput.value = "";
+            passwordInput.focus();
+          }
+        })
+        .catch(() => alert("⚠️ خطأ في الاتصال بالخادم"));
+    }
+
+    passwordInput.addEventListener("keypress", e => {
+      if (e.key === "Enter") tryLogin();
+    });
+    submitPassword.addEventListener("click", tryLogin);
+
+    // عند إغلاق النافذة => توجيه إلى dashboard.html
+    document.getElementById("passwordModal").addEventListener("hidden.bs.modal", () => {
+      if (!sessionStorage.getItem("isLoggedIn")) {
+        window.location.href = "dashboard.html";
       }
-      document.body.appendChild(newScript);
     });
   });
+
 
 
   async function fetchDepartments() {
