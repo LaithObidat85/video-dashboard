@@ -168,6 +168,33 @@ app.post('/api/departments', async (req, res) => {
   }
 });
 
+// تعديل قسم
+app.put('/api/departments/:id', async (req, res) => {
+  try {
+    const updated = await Department.findByIdAndUpdate(
+      req.params.id,
+      { name: req.body.name },
+      { new: true }
+    );
+    if (!updated) return res.status(404).json({ message: '❌ القسم غير موجود' });
+    res.json(updated);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+// حذف قسم
+app.delete('/api/departments/:id', async (req, res) => {
+  try {
+    const deleted = await Department.findByIdAndDelete(req.params.id);
+    if (!deleted) return res.status(404).json({ message: '❌ القسم غير موجود' });
+    res.json({ message: '🗑️ تم حذف القسم' });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+
 // ====== إدارة الفيديوهات ======
 app.get('/api/videos', async (req, res) => {
   try {
