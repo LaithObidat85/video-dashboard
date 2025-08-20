@@ -64,19 +64,21 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.use(session({
   secret: 'secret123', // استبدله بـ قيمة من env لاحقًا
   resave: false,
-  saveUninitialized: true
+  saveUninitialized: true,
+  cookie: { maxAge: 10 * 60 * 1000 } // ⏰ صلاحية الجلسة 10 دقائق
 }));
 
-// ✅ التحقق من كلمة المرور العامة للوحة التحكم
+
 app.post('/api/verify-password', (req, res) => {
   const { password } = req.body;
   if (password === process.env.DASHBOARD_PASSWORD) {
-    req.session.dashboardAuth = true; // حفظ الجلسة
-    return res.sendStatus(200);
+    req.session.dashboardAuth = true;
+    return res.json({ success: true });   // ✅ JSON
   } else {
-    return res.sendStatus(403);
+    return res.status(403).json({ success: false });  // ✅ JSON
   }
 });
+
 
 // ✅ حماية الوصول إلى dashboard.html
 app.get('/dashboard.html', (req, res) => {
