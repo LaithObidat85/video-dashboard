@@ -182,7 +182,10 @@ fetch("login-modal.html")
 
     // إظهار نافذة تسجيل الدخول عند فتح الصفحة
     passwordModal.show();
-    passwordInput.focus();
+document.getElementById("passwordModal").addEventListener("shown.bs.modal", () => {
+  passwordInput.focus();
+});
+
 
     // عند الضغط على إدخال أو زر الدخول
     function tryLogin() {
@@ -194,9 +197,11 @@ fetch("login-modal.html")
       })
         .then(res => res.json())
         .then(data => {
-          if (data.success) {
-            passwordModal.hide();
-          } else {
+         if (data.success) {
+  sessionStorage.setItem("isLoggedIn", "true");
+  passwordModal.hide();
+}
+ else {
             alert("❌ كلمة المرور غير صحيحة");
             passwordInput.value = "";
             passwordInput.focus();
