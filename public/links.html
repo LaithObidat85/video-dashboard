@@ -175,7 +175,8 @@
       .then(html => {
         document.getElementById("loginModalContainer").innerHTML = html;
 
-        const passwordModal = new bootstrap.Modal(document.getElementById("passwordModal"), {
+        const passwordModalEl = document.getElementById("passwordModal");
+        const passwordModal = new bootstrap.Modal(passwordModalEl, {
           backdrop: 'static',
           keyboard: false
         });
@@ -194,7 +195,11 @@
         }
 
         const passwordInput = document.getElementById("dashboardPassword");
-        passwordInput.focus();
+
+        // ✅ ضمان التركيز بعد فتح النافذة بالكامل
+        passwordModalEl.addEventListener("shown.bs.modal", function () {
+          passwordInput.focus();
+        });
 
         async function verifyPassword() {
           const password = passwordInput.value;
