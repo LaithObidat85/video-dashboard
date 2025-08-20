@@ -4,13 +4,13 @@
     <div class="modal-content">
       <div class="modal-header">
         <h5 class="modal-title">🔐 الدخول إلى لوحة التحكم</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        <!-- ❌ تمت إزالة زر الإغلاق -->
       </div>
       <div class="modal-body">
-        <input type="password" id="dashboardPassword" class="form-control" placeholder="أدخل كلمة المرور" lang="en">
+        <input type="password" id="dashboardPassword" class="form-control" placeholder="أدخل كلمة المرور" lang="en" autofocus>
       </div>
       <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+        <button type="button" class="btn btn-secondary" id="cancelBtn">إلغاء</button>
         <button type="button" class="btn btn-primary" id="confirmDashboardAccess">دخول</button>
       </div>
     </div>
@@ -19,11 +19,22 @@
 
 <script>
 document.addEventListener("DOMContentLoaded", function () {
-  const passwordModal = new bootstrap.Modal(document.getElementById("passwordModal"));
+  const passwordModal = new bootstrap.Modal(document.getElementById("passwordModal"), {
+    backdrop: 'static',
+    keyboard: false
+  });
   passwordModal.show();
 
-  document.getElementById("confirmDashboardAccess").addEventListener("click", async function () {
-    const password = document.getElementById("dashboardPassword").value;
+  const passwordInput = document.getElementById("dashboardPassword");
+  const confirmBtn = document.getElementById("confirmDashboardAccess");
+  const cancelBtn = document.getElementById("cancelBtn");
+
+  // ✅ تركيز المؤشر تلقائياً
+  passwordInput.focus();
+
+  // ✅ وظيفة التحقق
+  async function verifyPassword() {
+    const password = passwordInput.value;
     const res = await fetch("/api/verify-password", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -31,10 +42,27 @@ document.addEventListener("DOMContentLoaded", function () {
     });
 
     if (res.status === 200) {
-      passwordModal.hide(); 
+      passwordModal.hide();
     } else {
       alert("❌ كلمة المرور غير صحيحة");
+      passwordInput.value = "";
+      passwordInput.focus();
     }
+  }
+
+  // عند الضغط على زر دخول
+  confirmBtn.addEventListener("click", verifyPassword);
+
+  // ✅ عند الضغط على Enter
+  passwordInput.addEventListener("keydown", function (e) {
+    if (e.key === "Enter") {
+      verifyPassword();
+    }
+  });
+
+  // ✅ عند الضغط على زر إلغاء → العودة للرئيسية
+  cancelBtn.addEventListener("click", function () {
+    window.location.href = "index.html";
   });
 });
 </script>
