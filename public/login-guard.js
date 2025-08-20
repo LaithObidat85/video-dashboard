@@ -1,7 +1,7 @@
 // login-guard.js
 
 // ⏱️ المدة المسموح بها قبل إعادة طلب كلمة المرور (بالثواني)
-const LOGIN_TIMEOUT = 600; // 600 ثانية = 10 دقائق
+const LOGIN_TIMEOUT = 3600; //   60 دقيقة  
 
 async function setupLoginGuard() {
   // ✅ تحقق إذا كان فيه جلسة دخول سارية
