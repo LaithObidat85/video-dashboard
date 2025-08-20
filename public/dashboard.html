@@ -59,9 +59,8 @@
       </div>
       <div class="col-md-4">
         <div class="dashboard-card">
-        <div class="card-icon">🏠</div> 
+          <div class="card-icon">🏠</div> 
           <a href="index.html">الرئيسية</a>
-
         </div>
       </div>
       <!-- ✅ القسم الجديد -->
@@ -73,16 +72,27 @@
       </div>
     </div>
   </div>
+
+  <!-- ✅ استدعاء نافذة تسجيل الدخول -->
+  <div id="loginModalContainer"></div>
+  <script>
+    fetch("login-modal.html")
+      .then(res => res.text())
+      .then(html => {
+        const container = document.getElementById("loginModalContainer");
+        container.innerHTML = html;
+
+        // ✅ تشغيل السكربتات داخل login-modal.html
+        container.querySelectorAll("script").forEach(oldScript => {
+          const newScript = document.createElement("script");
+          if (oldScript.src) {
+            newScript.src = oldScript.src;
+          } else {
+            newScript.textContent = oldScript.textContent;
+          }
+          document.body.appendChild(newScript);
+        });
+      });
+  </script>
 </body>
-<!-- استدعاء نافذة تسجيل الدخول -->
-<div id="loginModalContainer"></div>
-<script>
-  fetch("login-modal.html")
-    .then(res => res.text())
-    .then(html => {
-      document.getElementById("loginModalContainer").innerHTML = html;
-    });
-</script>
-
-
 </html>
