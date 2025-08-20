@@ -1,0 +1,40 @@
+<!-- نافذة تسجيل الدخول -->
+<div class="modal fade" id="passwordModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">🔐 الدخول إلى لوحة التحكم</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <input type="password" id="dashboardPassword" class="form-control" placeholder="أدخل كلمة المرور" lang="en">
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+        <button type="button" class="btn btn-primary" id="confirmDashboardAccess">دخول</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  const passwordModal = new bootstrap.Modal(document.getElementById("passwordModal"));
+  passwordModal.show();
+
+  document.getElementById("confirmDashboardAccess").addEventListener("click", async function () {
+    const password = document.getElementById("dashboardPassword").value;
+    const res = await fetch("/api/verify-password", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ password })
+    });
+
+    if (res.status === 200) {
+      passwordModal.hide(); 
+    } else {
+      alert("❌ كلمة المرور غير صحيحة");
+    }
+  });
+});
+</script>
