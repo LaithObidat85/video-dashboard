@@ -68,27 +68,33 @@ app.use(session({
   cookie: { maxAge: 10 * 60 * 1000 } // ⏰ صلاحية الجلسة 10 دقائق
 }));
 
-
+// ✅ التحقق من كلمة المرور وتفعيل الجلسة
 app.post('/api/verify-password', (req, res) => {
   const { password } = req.body;
   if (password === process.env.DASHBOARD_PASSWORD) {
     req.session.dashboardAuth = true;
-    return res.json({ success: true });   // ✅ JSON
+    return res.json({ success: true });
   } else {
-    return res.status(403).json({ success: false });  // ✅ JSON
+    return res.status(403).json({ success: false });
   }
 });
 
+// ✅ حماية الوصول إلى الصفحات الإدارية
+function requireDashboardAuth(page) {
+  return (req, res) => {
+    if (req.session && req.session.dashboardAuth) {
+      return res.sendFile(path.join(__dirname, 'public', page));
+    } else {
+      // يعرض نفس الصفحة، وسيظهر فيها login-modal
+      return res.sendFile(path.join(__dirname, 'public', page));
+    }
+  };
+}
 
-// ✅ حماية الوصول إلى dashboard.html
-app.get('/dashboard.html', (req, res) => {
-  if (req.session && req.session.dashboardAuth) {
-    return res.sendFile(path.join(__dirname, 'public', 'dashboard.html'));
-  } else {
-    // يعرض نفس الصفحة، وسيظهر فيها login-modal تلقائياً
-    return res.sendFile(path.join(__dirname, 'public', 'dashboard.html'));
-  }
-});
+app.get('/dashboard.html', requireDashboardAuth('dashboard.html'));
+app.get('/edit.html', requireDashboardAuth('edit.html'));
+app.get('/links.html', requireDashboardAuth('links.html'));
+app.get('/backups.html', requireDashboardAuth('backups.html'));
 
 // ✅ إدارة كلمات المرور (CRUD)
 app.get('/api/passwords', async (req, res) => {
