@@ -76,4 +76,28 @@
     </div>
   </div>
 </body>
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  // عرض نافذة تسجيل الدخول مباشرة عند فتح الصفحة
+  const passwordModal = new bootstrap.Modal(document.getElementById("passwordModal"));
+  passwordModal.show();
+
+  // عند الضغط على زر دخول
+  document.getElementById("confirmDashboardAccess").addEventListener("click", async function () {
+    const password = document.getElementById("dashboardPassword").value;
+    const res = await fetch("/api/verify-password", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ password })
+    });
+
+    if (res.status === 200) {
+      passwordModal.hide(); // إخفاء النافذة عند نجاح الدخول
+    } else {
+      alert("❌ كلمة المرور غير صحيحة");
+    }
+  });
+});
+</script>
+
 </html>
