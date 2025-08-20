@@ -172,6 +172,13 @@ async function requestDashboardAccess() {
       } else { alert('❌ كلمة المرور غير صحيحة'); }
     } catch { alert('❌ حدث خطأ في الاتصال بالخادم'); }
   };
+
+  // ✅ دعم مفتاح Enter في حقل كلمة المرور
+  document.getElementById('dashboardPassword').addEventListener('keydown', function (e) {
+    if (e.key === "Enter") {
+      document.getElementById('confirmDashboardAccess').click();
+    }
+  });
 }
 
 async function fetchVideos() {
