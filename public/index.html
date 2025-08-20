@@ -3,8 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <title>الرئيسية</title>
-<link rel="icon" type="image/png" href="https://www.dropbox.com/scl/fi/f283e4rvv5cf9x12a1cic/my-website-logo.png?rlkey=yia776im7klypy27af32m0scy&e=1&st=vhaprvzh&dl=1">
+  <link rel="icon" type="image/png" href="https://www.dropbox.com/scl/fi/f283e4rvv5cf9x12a1cic/my-website-logo.png?rlkey=yia776im7klypy27af32m0scy&e=1&st=vhaprvzh&dl=1">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.rtl.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
   <style>
     body {
       background: linear-gradient(to right, #e0eafc, #cfdef3);
@@ -15,111 +16,33 @@
       flex-direction: column;
       justify-content: space-between;
     }
-    .header-controls {
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      position: relative;
-      gap: 10px;
-    }
-    .header-controls h3 {
-      flex: 1;
-      text-align: center;
-      margin: 0;
-    }
-    .video-card {
-      background: white;
-      border-radius: 12px;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
-      padding: 12px;
-      margin: 5px;
-      width: 300px;
-      display: flex;
-      flex-direction: column;
-      justify-content: flex-start;
-      transition: transform 0.2s ease, box-shadow 0.2s ease;
-    }
-    .video-card:hover {
-      transform: scale(1.02);
-      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-    }
-    .video-title {
-      font-weight: bold;
-      margin-bottom: 6px;
-      min-height: 48px;
-      overflow: hidden;
-      display: -webkit-box;
-      -webkit-line-clamp: 2;
-      -webkit-box-orient: vertical;
-    }
-    .video-description {
-      color: #0d6efd;
-      cursor: pointer;
-      min-height: 40px;
-      overflow: hidden;
-      display: -webkit-box;
-      -webkit-line-clamp: 2;
-      -webkit-box-orient: vertical;
-      margin-bottom: 8px;
-    }
-    .video-grid {
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: center;
-      gap: 15px;
-    }
-    video, iframe {
-      width: 100%;
-      height: 200px;
-      border-radius: 6px;
-    }
-    .sharepoint-frame {
-      width: 100%;
-      height: 200px;
-      border-radius: 6px;
-      display: block;
-      object-fit: cover;
-    }
-    .popout-button {
-      background-color: #0d6efd;
-      color: white;
-      border: none;
-      padding: 6px 12px;
-      border-radius: 5px;
-      cursor: pointer;
-      margin-top: 6px;
-    }
-    footer {
-      text-align: center;
-      margin-top: 10px;
-      font-weight: bold;
-      color: #333;
-      font-size: 1.1rem;
-      animation: glow 1.5s infinite alternate;
-    }
-    @keyframes glow {
-      from { color: #333; text-shadow: none; }
-      to { color: #0d6efd; text-shadow: 0 0 10px #0d6efd; }
-    }
-    .bottom-buttons {
-      display: flex;
-      justify-content: center;
-      gap: 10px;
-      margin-bottom: 10px;
-    }
+    .header-controls {display:flex;justify-content:center;align-items:center;position:relative;gap:10px;}
+    .header-controls h3 {flex:1;text-align:center;margin:0;}
+    .video-card {background:white;border-radius:12px;box-shadow:0 2px 6px rgba(0,0,0,0.1);padding:12px;margin:5px;width:300px;display:flex;flex-direction:column;justify-content:flex-start;transition:transform 0.2s ease, box-shadow 0.2s ease;}
+    .video-card:hover {transform:scale(1.02);box-shadow:0 4px 12px rgba(0,0,0,0.15);}
+    .video-title {font-weight:bold;margin-bottom:6px;min-height:48px;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;}
+    .video-description {color:#0d6efd;cursor:pointer;min-height:40px;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;margin-bottom:8px;}
+    .video-grid {display:flex;flex-wrap:wrap;justify-content:center;gap:15px;}
+    video,iframe {width:100%;height:200px;border-radius:6px;}
+    .sharepoint-frame {width:100%;height:200px;border-radius:6px;display:block;object-fit:cover;}
+    .popout-button {background-color:#0d6efd;color:white;border:none;padding:6px 12px;border-radius:5px;cursor:pointer;margin-top:6px;}
+    footer {text-align:center;margin-top:10px;font-weight:bold;color:#333;font-size:1.1rem;animation:glow 1.5s infinite alternate;}
+    @keyframes glow {from{color:#333;text-shadow:none;}to{color:#0d6efd;text-shadow:0 0 10px #0d6efd;}}
+    .bottom-buttons {display:flex;justify-content:center;gap:10px;margin-bottom:10px;}
+    .navbar-nav .nav-link {transition:color 0.3s ease, background 0.3s ease;padding:8px 12px;border-radius:5px;}
+    .navbar-nav .nav-link:hover {background:rgba(255,255,255,0.15);}
+    .navbar-nav .nav-link::after {content:'';position:absolute;width:0;height:2px;left:0;bottom:0;background:white;transition:width 0.3s ease;}
+    .navbar-nav .nav-link:hover::after,.navbar-nav .nav-link.active::after {width:100%;}
+    .scrolled {box-shadow:0 4px 10px rgba(0,0,0,0.2)!important;}
+    body.dark-mode {background:#121212!important;color:#eaeaea!important;}
+    body.dark-mode nav {background:linear-gradient(to right,#222,#000)!important;}
   </style>
 </head>
 <body>
 
- <!--  القائمة -->
-<!-- استدعاء مكتبة Bootstrap Icons -->
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
-
 <nav id="mainNavbar" class="navbar navbar-expand-lg sticky-top shadow-sm" 
      style="background: linear-gradient(to right, #0d6efd, #0b5ed7); transition: box-shadow 0.3s ease;">
   <div class="container-fluid">
-    
-    <!-- الروابط -->
     <div class="collapse navbar-collapse" id="navbarContent">
       <ul class="navbar-nav mb-2 mb-lg-0">
         <li class="nav-item">
@@ -132,311 +55,163 @@
             <i class="bi bi-link-45deg fs-5"></i> روابط مهمة
           </a>
         </li>
+        <li class="nav-item" id="logoutNavItem" style="display:none;">
+          <a class="nav-link text-white fw-semibold position-relative" href="#" onclick="logout()">
+            <i class="bi bi-box-arrow-right fs-5"></i> تسجيل الخروج
+          </a>
+        </li>
       </ul>
     </div>
-
-    <!-- العنوان -->
     <a class="navbar-brand text-white fw-bold ms-auto d-flex align-items-center" href="#">
       <i class="bi bi-collection-play-fill fs-4 me-1"></i> Video Dashboard
     </a>
-
-    <!-- زر القائمة للجوال -->
     <button class="navbar-toggler text-white border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navbarContent">
       <span class="navbar-toggler-icon"></span>
     </button>
-
-    <!-- زر الوضع ليلي/نهاري -->
     <button id="themeToggle" class="btn btn-sm btn-outline-light ms-2">
       <i class="bi bi-moon-stars-fill"></i>
     </button>
   </div>
 </nav>
 
-<style>
-  /* تحسين حالة Hover */
-  .navbar-nav .nav-link {
-    transition: color 0.3s ease, background 0.3s ease;
-    padding: 8px 12px;
-    border-radius: 5px;
-  }
-  .navbar-nav .nav-link:hover {
-    background: rgba(255, 255, 255, 0.15);
-  }
+<div class="container text-center">
+  <h3>اختر القسم لعرض الفيديوهات</h3>
+  <select id="departmentSelect" class="form-select mb-3">
+    <option value="">-- اختر القسم --</option>
+  </select>
+  <input id="searchInput" class="form-control mb-4" type="text" placeholder="ابحث بعنوان أو وصف الفيديو..." disabled>
+  <div id="videoContainer" class="video-grid"></div>
+</div>
 
-  /* خط متحرك تحت الروابط */
-  .navbar-nav .nav-link::after {
-    content: '';
-    position: absolute;
-    width: 0;
-    height: 2px;
-    left: 0;
-    bottom: 0;
-    background: white;
-    transition: width 0.3s ease;
-  }
-  .navbar-nav .nav-link:hover::after,
-  .navbar-nav .nav-link.active::after {
-    width: 100%;
-  }
+<footer>برمجة وتطوير: ليث عبيدات</footer>
 
-  /* ظل يظهر عند التمرير */
-  .scrolled {
-    box-shadow: 0 4px 10px rgba(0,0,0,0.2) !important;
-  }
-
-  /* الوضع الليلي */
-  body.dark-mode {
-    background: #121212 !important;
-    color: #eaeaea !important;
-  }
-  body.dark-mode nav {
-    background: linear-gradient(to right, #222, #000) !important;
-  }
-</style>
-
-<script>
-  // إضافة/إزالة الظل عند التمرير
-  window.addEventListener('scroll', function () {
-    const navbar = document.getElementById('mainNavbar');
-    if (window.scrollY > 20) {
-      navbar.classList.add('scrolled');
-    } else {
-      navbar.classList.remove('scrolled');
-    }
-  });
-
-  // تبديل الوضع ليلي/نهاري
-  const themeToggle = document.getElementById('themeToggle');
-  themeToggle.addEventListener('click', () => {
-    document.body.classList.toggle('dark-mode');
-    const icon = themeToggle.querySelector("i");
-    if (document.body.classList.contains("dark-mode")) {
-      icon.classList.replace("bi-moon-stars-fill", "bi-brightness-high-fill");
-    } else {
-      icon.classList.replace("bi-brightness-high-fill", "bi-moon-stars-fill");
-    }
-  });
-</script>
-
-
-
-  <!-- انتهت القائمة -->
-
-  
-  <div class="container text-center">
-  
-    <h3>اختر القسم لعرض الفيديوهات</h3>
-
-    <select id="departmentSelect" class="form-select mb-3">
-      <option value="">-- اختر القسم --</option>
-    </select>
-    <input id="searchInput" class="form-control mb-4" type="text" placeholder="ابحث بعنوان أو وصف الفيديو..." disabled>
-    <div id="videoContainer" class="video-grid"></div>
+<!-- نافذة عرض الوصف -->
+<div class="modal fade" id="descModal" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="descTitle"></h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body" id="descContent" style="white-space: pre-wrap; text-align: justify;"></div>
+    </div>
   </div>
+</div>
 
-  <div class="bottom-buttons">
- <!--   <button class="btn btn-warning" onclick="requestDashboardAccess()">🔐 لوحة التحكم</button>
-    <a href="https://video-dashboard-backend.onrender.com/viewlinks.html" class="btn btn-info">🔗 روابط مهمة</a>
-  </div> -->
-
-  <footer>
-    برمجة وتطوير: ليث عبيدات
-  </footer>
-
-  <!-- نافذة عرض الوصف -->
-  <div class="modal fade" id="descModal" tabindex="-1">
-    <div class="modal-dialog modal-lg">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title" id="descTitle"></h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-        </div>
-        <div class="modal-body" id="descContent" style="white-space: pre-wrap; text-align: justify;"></div>
+<!-- نافذة كلمة المرور -->
+<div class="modal fade" id="passwordModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">🔐 الدخول إلى لوحة التحكم</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <input type="password" id="dashboardPassword" class="form-control" placeholder="أدخل كلمة المرور" lang="en">
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+        <button type="button" class="btn btn-primary" id="confirmDashboardAccess">دخول</button>
       </div>
     </div>
   </div>
-
-  <!-- نافذة كلمة المرور -->
-  <div class="modal fade" id="passwordModal" tabindex="-1">
-    <div class="modal-dialog modal-dialog-centered">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title">🔐 الدخول إلى لوحة التحكم</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-        </div>
-        <div class="modal-body">
-          <input type="password" id="dashboardPassword" class="form-control" placeholder="أدخل كلمة المرور" lang="en">
-        </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
-          <button type="button" class="btn btn-primary" id="confirmDashboardAccess">دخول</button>
-        </div>
-      </div>
-    </div>
-  </div>
+</div>
 
 <script>
 const API_BASE = 'https://video-dashboard-backend.onrender.com';
 let videos = [];
 let passwordModal;
 
-async function fetchVideos() {
+async function checkSessionStatus() {
   try {
-    const res = await fetch(`${API_BASE}/api/videos`);
-    videos = await res.json();
-    populateDepartmentOptions();
-  } catch (err) {
-    console.error('فشل تحميل الفيديوهات:', err);
-  }
-}
-
-function renderVideos() {
-  const department = document.getElementById('departmentSelect').value;
-  const query = document.getElementById('searchInput').value.trim().toLowerCase();
-  const container = document.getElementById('videoContainer');
-  container.innerHTML = '';
-
-  if (!department) return;
-
-  const filtered = videos.filter(v => {
-    const dep = v.department?.trim().toLowerCase();
-    const title = v.title?.toLowerCase() || '';
-    const desc = v.description?.toLowerCase() || '';
-    return dep === department.trim().toLowerCase() && (title.includes(query) || desc.includes(query));
-  });
-
-  if (filtered.length === 0) {
-    container.innerHTML = '<p class="text-muted">🚫 لا توجد فيديوهات مطابقة للبحث</p>';
-    return;
-  }
-
-  filtered.forEach(video => {
-    const card = document.createElement('div');
-    card.className = 'video-card';
-
-    const title = `<div class="video-title">عنوان الفيديو: ${video.title}</div>`;
-    const description = `<div class="video-description" onclick="showDescription('${escapeHtml(video.title)}', '${escapeHtml(video.description)}')">وصف الفيديو: ${video.description}</div>`;
-
-    let media = '';
-    const link = video.link || video.url || '';
-    let popoutLink = link;
-
-    if (link.includes('youtube.com') || link.includes('youtu.be')) {
-      media = `<iframe src="https://www.youtube.com/embed/${extractYouTubeID(link)}" allowfullscreen></iframe>`;
-    } else if (link.includes('drive.google.com/file/d/')) {
-      const match = link.match(/\/file\/d\/(.*?)(\/|$)/);
-      media = match ? `<iframe src="https://drive.google.com/file/d/${match[1]}/preview" allowfullscreen></iframe>` : `<video controls src="${link}"></video>`;
-    } else if (link.includes("sharepoint.com/") && link.includes("/embed.aspx")) {
-      media = `<iframe class="sharepoint-frame" src="${link}" allowfullscreen></iframe>`;
-      const uniqueIdMatch = link.match(/UniqueId=([a-zA-Z0-9\-]+)/);
-      if (uniqueIdMatch) {
-        popoutLink = `https://ymkh-my.sharepoint.com/personal/laith_obaidat_iu_edu_jo/_layouts/15/stream.aspx?UniqueId=${uniqueIdMatch[1]}`;
-      }
-    } else if (link.includes("sharepoint.com/") && link.includes("/stream.aspx")) {
-      const uniqueIdMatch = link.match(/UniqueId=([a-zA-Z0-9\-]+)/);
-      if (uniqueIdMatch) {
-        const embedUrl = `https://ymkh-my.sharepoint.com/personal/laith_obaidat_iu_edu_jo/_layouts/15/embed.aspx?UniqueId=${uniqueIdMatch[1]}&embed=%7B%22ust%22%3Atrue%7D&referrer=StreamWebApp&referrerScenario=EmbedDialog.Create`;
-        media = `<iframe class="sharepoint-frame" src="${embedUrl}" allowfullscreen></iframe>`;
-        popoutLink = link;
-      } else {
-        media = `<video controls src="${link}"></video>`;
-      }
+    const res = await fetch(`${API_BASE}/api/check-session`);
+    const data = await res.json();
+    if (data.authenticated) {
+      document.getElementById("logoutNavItem").style.display = "block";
     } else {
-      media = `<video controls src="${link}"></video>`;
+      document.getElementById("logoutNavItem").style.display = "none";
     }
-
-    const popout = `<button class="popout-button" onclick="window.open('${popoutLink}', '_blank', 'width=800,height=600')">عرض الفيديو</button>`;
-    card.innerHTML = title + description + media + popout;
-    container.appendChild(card);
-  });
+  } catch (err) { console.error("خطأ في التحقق من الجلسة:", err); }
 }
 
-function escapeHtml(text) {
-  return text?.replace(/"/g, '&quot;').replace(/'/g, '&#39;') || '';
+async function logout() {
+  try {
+    await fetch(`${API_BASE}/api/logout`, { method: "POST" });
+    sessionStorage.removeItem("loggedInAt");
+    document.getElementById("logoutNavItem").style.display = "none";
+    alert("تم تسجيل الخروج بنجاح ✅");
+  } catch (err) { alert("❌ حدث خطأ أثناء تسجيل الخروج"); }
 }
 
-function extractYouTubeID(url) {
-  const match = url.match(/[?&]v=([^&#]*)|youtu\.be\/([^&#]*)/);
-  return match ? (match[1] || match[2]) : '';
-}
+async function requestDashboardAccess() {
+  try {
+    const res = await fetch(`${API_BASE}/api/check-session`);
+    const data = await res.json();
+    if (data.authenticated) { window.location.href = 'dashboard.html'; return; }
+  } catch (err) { console.error("خطأ في التحقق من الجلسة:", err); }
 
-function showDescription(title, desc) {
-  document.getElementById('descTitle').textContent = title;
-  document.getElementById('descContent').innerHTML = desc;
-  new bootstrap.Modal(document.getElementById('descModal')).show();
-}
-
-function populateDepartmentOptions() {
-  const departmentCounts = videos.reduce((acc, video) => {
-    acc[video.department] = (acc[video.department] || 0) + 1;
-    return acc;
-  }, {});
-  const departmentSelect = document.getElementById('departmentSelect');
-  departmentSelect.innerHTML = '<option value="">-- اختر القسم --</option>';
-  Object.entries(departmentCounts).forEach(([dept, count]) => {
-    const option = document.createElement('option');
-    option.value = dept;
-    option.textContent = `${dept} (${count})`;
-    departmentSelect.appendChild(option);
-  });
-}
-
-function requestDashboardAccess() {
   const modalEl = document.getElementById('passwordModal');
   passwordModal = new bootstrap.Modal(modalEl);
-
   modalEl.addEventListener('shown.bs.modal', () => {
-    const input = document.getElementById('dashboardPassword');
-    input.value = '';
-    input.focus();
+    const input = document.getElementById('dashboardPassword'); input.value=''; input.focus();
   });
-
   passwordModal.show();
-
-  document.getElementById('dashboardPassword').onkeydown = e => {
-    if (e.key === 'Enter') document.getElementById('confirmDashboardAccess').click();
-    if (e.key === 'Escape') passwordModal.hide();
-  };
 
   document.getElementById('confirmDashboardAccess').onclick = async () => {
     const password = document.getElementById('dashboardPassword').value.trim();
     if (!password) return;
     try {
       const response = await fetch(`${API_BASE}/api/verify-password`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ password })
       });
       if (response.ok) {
+        sessionStorage.setItem("loggedInAt", Date.now().toString());
         passwordModal.hide();
         window.location.href = 'dashboard.html';
-      } else {
-        alert('❌ كلمة المرور غير صحيحة');
-      }
-    } catch {
-      alert('❌ حدث خطأ في الاتصال بالخادم');
-    }
+      } else { alert('❌ كلمة المرور غير صحيحة'); }
+    } catch { alert('❌ حدث خطأ في الاتصال بالخادم'); }
   };
 }
 
-document.addEventListener('keydown', e => {
-  if (e.key === 'F8') {
-    const modalEl = document.getElementById('passwordModal');
-    if (modalEl.classList.contains('show')) {
-      passwordModal.hide();
-    } else {
-      requestDashboardAccess();
-    }
-  }
-});
+async function fetchVideos() {
+  try {const res=await fetch(`${API_BASE}/api/videos`);videos=await res.json();populateDepartmentOptions();}
+  catch (err) {console.error('فشل تحميل الفيديوهات:',err);}
+}
 
-document.getElementById('departmentSelect').addEventListener('change', () => {
-  document.getElementById('searchInput').disabled = false;
-  renderVideos();
-});
-document.getElementById('searchInput').addEventListener('input', renderVideos);
+function renderVideos() {
+  const dep=document.getElementById('departmentSelect').value;
+  const q=document.getElementById('searchInput').value.trim().toLowerCase();
+  const c=document.getElementById('videoContainer');c.innerHTML='';
+  if(!dep)return;
+  const filtered=videos.filter(v=>{const d=v.department?.trim().toLowerCase();const t=v.title?.toLowerCase()||'';const desc=v.description?.toLowerCase()||'';return d===dep.trim().toLowerCase()&&(t.includes(q)||desc.includes(q));});
+  if(filtered.length===0){c.innerHTML='<p class="text-muted">🚫 لا توجد فيديوهات مطابقة للبحث</p>';return;}
+  filtered.forEach(video=>{
+    const card=document.createElement('div');card.className='video-card';
+    const title=`<div class="video-title">عنوان الفيديو: ${video.title}</div>`;
+    const desc=`<div class="video-description" onclick="showDescription('${escapeHtml(video.title)}','${escapeHtml(video.description)}')">وصف الفيديو: ${video.description}</div>`;
+    let media='';const link=video.link||video.url||'';let pop=link;
+    if(link.includes('youtube.com')||link.includes('youtu.be')){media=`<iframe src="https://www.youtube.com/embed/${extractYouTubeID(link)}" allowfullscreen></iframe>`;}
+    else if(link.includes('drive.google.com/file/d/')){const m=link.match(/\/file\/d\/(.*?)(\/|$)/);media=m?`<iframe src="https://drive.google.com/file/d/${m[1]}/preview" allowfullscreen></iframe>`:`<video controls src="${link}"></video>`;}
+    else if(link.includes("sharepoint.com/")&&link.includes("/embed.aspx")){media=`<iframe class="sharepoint-frame" src="${link}" allowfullscreen></iframe>`;const m=link.match(/UniqueId=([a-zA-Z0-9\-]+)/);if(m)pop=`https://ymkh-my.sharepoint.com/personal/laith_obaidat_iu_edu_jo/_layouts/15/stream.aspx?UniqueId=${m[1]}`;}
+    else if(link.includes("sharepoint.com/")&&link.includes("/stream.aspx")){const m=link.match(/UniqueId=([a-zA-Z0-9\-]+)/);if(m){const e=`https://ymkh-my.sharepoint.com/personal/laith_obaidat_iu_edu_jo/_layouts/15/embed.aspx?UniqueId=${m[1]}&embed=%7B%22ust%22%3Atrue%7D&referrer=StreamWebApp&referrerScenario=EmbedDialog.Create`;media=`<iframe class="sharepoint-frame" src="${e}" allowfullscreen></iframe>`;pop=link;}else{media=`<video controls src="${link}"></video>`;}}
+    else{media=`<video controls src="${link}"></video>`;}
+    const btn=`<button class="popout-button" onclick="window.open('${pop}','_blank','width=800,height=600')">عرض الفيديو</button>`;
+    card.innerHTML=title+desc+media+btn;c.appendChild(card);
+  });
+}
+function escapeHtml(t){return t?.replace(/"/g,'&quot;').replace(/'/g,'&#39;')||'';}
+function extractYouTubeID(u){const m=u.match(/[?&]v=([^&#]*)|youtu\.be\/([^&#]*)/);return m?(m[1]||m[2]):'';}
+function showDescription(t,d){document.getElementById('descTitle').textContent=t;document.getElementById('descContent').innerHTML=d;new bootstrap.Modal(document.getElementById('descModal')).show();}
+function populateDepartmentOptions(){const counts=videos.reduce((a,v)=>{a[v.department]=(a[v.department]||0)+1;return a;},{});const sel=document.getElementById('departmentSelect');sel.innerHTML='<option value="">-- اختر القسم --</option>';Object.entries(counts).forEach(([dep,c])=>{const o=document.createElement('option');o.value=dep;o.textContent=`${dep} (${c})`;sel.appendChild(o);});}
 
-fetchVideos();
+document.getElementById('departmentSelect').addEventListener('change',()=>{document.getElementById('searchInput').disabled=false;renderVideos();});
+document.getElementById('searchInput').addEventListener('input',renderVideos);
+document.addEventListener("DOMContentLoaded",()=>{checkSessionStatus();fetchVideos();});
+
+// Navbar scroll + theme toggle
+window.addEventListener('scroll',()=>{const nav=document.getElementById('mainNavbar');if(window.scrollY>20)nav.classList.add('scrolled');else nav.classList.remove('scrolled');});
+document.getElementById('themeToggle').addEventListener('click',()=>{document.body.classList.toggle('dark-mode');const icon=document.querySelector("#themeToggle i");if(document.body.classList.contains("dark-mode")){icon.classList.replace("bi-moon-stars-fill","bi-brightness-high-fill");}else{icon.classList.replace("bi-brightness-high-fill","bi-moon-stars-fill");}});
 </script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
