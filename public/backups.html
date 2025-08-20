@@ -45,10 +45,13 @@
     <div id="backupList"></div>
   </div>
 
-  <!-- ✅ استدعاء نافذة تسجيل الدخول -->
+  <!-- ✅ مودال تسجيل الدخول سيتم تحميله هنا -->
   <div id="loginModalContainer"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<!-- ✅ استدعاء الحماية -->
+<script src="login-guard.js"></script>
+
 <script>
 let backups = [];
 
@@ -133,68 +136,13 @@ async function restoreBackup(id) {
   alert(result.message || 'تم استرجاع النسخة الاحتياطية');
 }
 
-// ✅ استدعاء نافذة تسجيل الدخول مثل dashboard
-fetch("login-modal.html")
-  .then(res => res.text())
-  .then(html => {
-    document.getElementById("loginModalContainer").innerHTML = html;
-
-    const passwordModalEl = document.getElementById("passwordModal");
-    const passwordModal = new bootstrap.Modal(passwordModalEl, {
-      backdrop: 'static',
-      keyboard: false
-    });
-    passwordModal.show();
-
-    // إخفاء زر الإغلاق العلوي ✖
-    document.querySelectorAll("#passwordModal .btn-close")
-      .forEach(btn => btn.style.display = "none");
-
-    // زر إلغاء → العودة للرئيسية
-    const cancelBtn = document.querySelector("#passwordModal .btn-secondary");
-    if (cancelBtn) {
-      cancelBtn.addEventListener("click", () => {
-        window.location.href = "index.html";
-      });
-    }
-
-    const passwordInput = document.getElementById("dashboardPassword");
-
-    // ✅ التركيز يتم بعد فتح المودال بالكامل
-    passwordModalEl.addEventListener("shown.bs.modal", () => {
-      passwordInput.focus();
-    });
-
-    // ✅ وظيفة التحقق
-    async function verifyPassword() {
-      const password = passwordInput.value;
-      const res = await fetch("/api/verify-password", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ password })
-      });
-
-      if (res.status === 200) {
-        passwordModal.hide();
-        fetchBackups(); // جلب البيانات بعد تسجيل الدخول
-      } else {
-        alert("❌ كلمة المرور غير صحيحة");
-        passwordInput.value = "";
-        passwordInput.focus();
-      }
-    }
-
-    // عند الضغط على زر دخول
-    document.getElementById("confirmDashboardAccess")
-      .addEventListener("click", verifyPassword);
-
-    // ✅ عند الضغط على Enter
-    passwordInput.addEventListener("keydown", function (e) {
-      if (e.key === "Enter") {
-        verifyPassword();
-      }
-    });
-  });
+// ✅ عند نجاح تسجيل الدخول → نفذ fetchBackups
+document.addEventListener("DOMContentLoaded", () => {
+  setTimeout(() => {
+    // بعد تحقق login-guard.js من كلمة المرور
+    fetchBackups();
+  }, 500);
+});
 </script>
 </body>
 </html>
