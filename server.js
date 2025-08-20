@@ -70,8 +70,22 @@ app.use(session({
 // ✅ التحقق من كلمة المرور العامة للوحة التحكم
 app.post('/api/verify-password', (req, res) => {
   const { password } = req.body;
-  if (password === process.env.DASHBOARD_PASSWORD) return res.sendStatus(200);
-  else return res.sendStatus(403);
+  if (password === process.env.DASHBOARD_PASSWORD) {
+    req.session.dashboardAuth = true; // حفظ الجلسة
+    return res.sendStatus(200);
+  } else {
+    return res.sendStatus(403);
+  }
+});
+
+// ✅ حماية الوصول إلى dashboard.html
+app.get('/dashboard.html', (req, res) => {
+  if (req.session && req.session.dashboardAuth) {
+    return res.sendFile(path.join(__dirname, 'public', 'dashboard.html'));
+  } else {
+    // يعرض نفس الصفحة، وسيظهر فيها login-modal تلقائياً
+    return res.sendFile(path.join(__dirname, 'public', 'dashboard.html'));
+  }
 });
 
 // ✅ إدارة كلمات المرور (CRUD)
@@ -224,7 +238,6 @@ app.delete('/api/links/:id', async (req, res) => {
     res.status(400).json({ message: '❌ خطأ في الحذف', error: err.message });
   }
 });
-
 
 // ====== إدارة النسخ الاحتياطية ======
 app.post('/api/backups/create', async (req, res) => {
