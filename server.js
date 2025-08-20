@@ -46,7 +46,8 @@ const linkSchema = new mongoose.Schema({
   link: { type: String, required: true },
   linkText: { type: String, required: true },
   requiresPassword: { type: Boolean, default: false },
-  dateAdded: { type: Date, default: Date.now }
+  dateAdded: { type: Date, default: Date.now },
+  order: { type: Number, default: 0 } // ✅ ترتيب الرابط
 });
 const Link = mongoose.model('Link', linkSchema);
 
@@ -99,14 +100,12 @@ app.post('/api/logout', (req, res) => {
   });
 });
 
-
 // ✅ حماية الوصول إلى الصفحات الإدارية
 function requireDashboardAuth(page) {
   return (req, res) => {
     if (req.session && req.session.dashboardAuth) {
       return res.sendFile(path.join(__dirname, 'public', page));
     } else {
-      // يعرض نفس الصفحة، وسيظهر فيها login-modal
       return res.sendFile(path.join(__dirname, 'public', page));
     }
   };
@@ -258,7 +257,7 @@ app.delete('/api/videos/:id', async (req, res) => {
 // ====== إدارة الروابط ======
 app.get('/api/links', async (req, res) => {
   try {
-    const links = await Link.find().sort({ dateAdded: -1 });
+    const links = await Link.find().sort({ order: 1 }); // ✅ ترتيب حسب order
     res.json(links);
   } catch (err) {
     res.status(500).json({ message: '❌ خطأ في قراءة الروابط', error: err.message });
@@ -267,7 +266,8 @@ app.get('/api/links', async (req, res) => {
 
 app.post('/api/links', async (req, res) => {
   try {
-    const link = new Link(req.body);
+    const count = await Link.countDocuments();
+    const link = new Link({ ...req.body, order: count }); // ✅ يوضع في آخر ترتيب
     await link.save();
     res.status(201).json(link);
   } catch (err) {
@@ -289,9 +289,45 @@ app.delete('/api/links/:id', async (req, res) => {
   try {
     const deleted = await Link.findByIdAndDelete(req.params.id);
     if (!deleted) return res.status(404).json({ message: '❌ الرابط غير موجود' });
+
+    // ✅ تحديث ترتيب باقي الروابط بعد الحذف
+    const links = await Link.find().sort({ order: 1 });
+    for (let i = 0; i < links.length; i++) {
+      links[i].order = i;
+      await links[i].save();
+    }
+
     res.json({ message: '✅ تم حذف الرابط' });
   } catch (err) {
     res.status(400).json({ message: '❌ خطأ في الحذف', error: err.message });
+  }
+});
+
+// ✅ تحريك الرابط (رفع/خفض)
+app.post('/api/links/:id/move', async (req, res) => {
+  const { direction } = req.body;
+  try {
+    const link = await Link.findById(req.params.id);
+    if (!link) return res.status(404).json({ message: '❌ الرابط غير موجود' });
+
+    const links = await Link.find().sort({ order: 1 });
+    const index = links.findIndex(l => l.id === link.id);
+
+    if (direction === 'up' && index > 0) {
+      const prev = links[index - 1];
+      [link.order, prev.order] = [prev.order, link.order];
+      await link.save();
+      await prev.save();
+    } else if (direction === 'down' && index < links.length - 1) {
+      const next = links[index + 1];
+      [link.order, next.order] = [next.order, link.order];
+      await link.save();
+      await next.save();
+    }
+
+    res.json({ message: '✅ تم النقل' });
+  } catch (err) {
+    res.status(500).json({ message: '❌ خطأ في النقل', error: err.message });
   }
 });
 
