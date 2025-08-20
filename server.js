@@ -79,6 +79,15 @@ app.post('/api/verify-password', (req, res) => {
   }
 });
 
+// ✅ تحقق من حالة الجلسة
+app.get('/api/check-session', (req, res) => {
+  if (req.session && req.session.dashboardAuth) {
+    return res.json({ authenticated: true });
+  } else {
+    return res.json({ authenticated: false });
+  }
+});
+
 // ✅ حماية الوصول إلى الصفحات الإدارية
 function requireDashboardAuth(page) {
   return (req, res) => {
@@ -193,7 +202,6 @@ app.delete('/api/departments/:id', async (req, res) => {
     res.status(400).json({ error: err.message });
   }
 });
-
 
 // ====== إدارة الفيديوهات ======
 app.get('/api/videos', async (req, res) => {
