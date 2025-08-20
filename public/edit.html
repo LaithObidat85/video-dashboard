@@ -190,7 +190,7 @@ document.getElementById("passwordModal").addEventListener("shown.bs.modal", () =
     // عند الضغط على إدخال أو زر الدخول
     function tryLogin() {
       const password = passwordInput.value.trim();
-      fetch(`${API_BASE}/api/verify-password`, {
+      fetch("/api/verify-password", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ password })
@@ -214,6 +214,13 @@ document.getElementById("passwordModal").addEventListener("shown.bs.modal", () =
       if (e.key === "Enter") tryLogin();
     });
     submitPassword.addEventListener("click", tryLogin);
+// عند الضغط على زر إلغاء => توجيه إلى dashboard.html
+const cancelBtn = document.getElementById("cancelBtn");
+if (cancelBtn) {
+  cancelBtn.addEventListener("click", () => {
+    window.location.href = "dashboard.html";
+  });
+}
 
     // عند إغلاق النافذة => توجيه إلى dashboard.html
     document.getElementById("passwordModal").addEventListener("hidden.bs.modal", () => {
