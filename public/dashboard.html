@@ -82,7 +82,6 @@
       .then(html => {
         document.getElementById("loginModalContainer").innerHTML = html;
 
-        // إعداد المودال ليظهر مباشرة
         const passwordModal = new bootstrap.Modal(document.getElementById("passwordModal"), {
           backdrop: 'static',
           keyboard: false
@@ -93,7 +92,7 @@
         document.querySelectorAll("#passwordModal .btn-close")
           .forEach(btn => btn.style.display = "none");
 
-        // زر إلغاء يوجه لصفحة index.html
+        // زر إلغاء → العودة للرئيسية
         const cancelBtn = document.querySelector("#passwordModal .btn-secondary");
         if (cancelBtn) {
           cancelBtn.addEventListener("click", () => {
@@ -101,9 +100,13 @@
           });
         }
 
-        // تحقق من كلمة المرور عند الضغط على دخول
-        document.getElementById("confirmDashboardAccess").addEventListener("click", async function () {
-          const password = document.getElementById("dashboardPassword").value;
+        // ✅ المؤشر داخل خانة كلمة المرور مباشرة
+        const passwordInput = document.getElementById("dashboardPassword");
+        passwordInput.focus();
+
+        // ✅ وظيفة التحقق
+        async function verifyPassword() {
+          const password = passwordInput.value;
           const res = await fetch("/api/verify-password", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -111,9 +114,22 @@
           });
 
           if (res.status === 200) {
-            passwordModal.hide(); // ✅ الدخول فقط عند نجاح التحقق
+            passwordModal.hide();
           } else {
             alert("❌ كلمة المرور غير صحيحة");
+            passwordInput.value = "";
+            passwordInput.focus();
+          }
+        }
+
+        // عند الضغط على زر دخول
+        document.getElementById("confirmDashboardAccess")
+          .addEventListener("click", verifyPassword);
+
+        // ✅ عند الضغط على Enter
+        passwordInput.addEventListener("keydown", function (e) {
+          if (e.key === "Enter") {
+            verifyPassword();
           }
         });
       });
