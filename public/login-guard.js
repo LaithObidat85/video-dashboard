@@ -1,5 +1,20 @@
 // login-guard.js
+
+// ⏱️ المدة المسموح بها قبل إعادة طلب كلمة المرور (بالثواني)
+const LOGIN_TIMEOUT = 600; // 600 ثانية = 10 دقائق
+
 async function setupLoginGuard() {
+  // ✅ تحقق إذا كان فيه جلسة دخول سارية
+  const loggedInAt = sessionStorage.getItem("loggedInAt");
+  if (loggedInAt) {
+    const now = Date.now();
+    const diff = (now - parseInt(loggedInAt, 10)) / 1000; // بالثواني
+    if (diff < LOGIN_TIMEOUT) { 
+      return; // لا تطلب كلمة المرور
+    }
+  }
+
+  // 🛑 إذا لا توجد جلسة → أظهر المودال
   const container = document.createElement("div");
   document.body.appendChild(container);
 
@@ -41,6 +56,8 @@ async function setupLoginGuard() {
     });
 
     if (res.status === 200) {
+      // ✅ حفظ وقت الدخول
+      sessionStorage.setItem("loggedInAt", Date.now().toString());
       passwordModal.hide();
     } else {
       alert("❌ كلمة المرور غير صحيحة");
@@ -59,5 +76,5 @@ async function setupLoginGuard() {
   });
 }
 
-// ✅ عند تحميل الصفحة نفعل الحماية
+// ✅ عند تحميل الصفحة نفذ الحماية
 document.addEventListener("DOMContentLoaded", setupLoginGuard);
