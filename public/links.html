@@ -103,13 +103,14 @@
                 ? '<i class="bi bi-lock-fill text-danger fs-4"></i>' 
                 : '<i class="bi bi-unlock-fill text-success fs-4"></i>'}</td>
             <td>
-              <div class="action-buttons">
-                <button class="btn btn-warning btn-sm" onclick='editLink(${JSON.stringify(link)})'>✏️ تعديل</button>
-                <button class="btn btn-danger btn-sm" onclick="deleteLink('${link._id}')">🗑️ حذف</button>
-                <button class="btn btn-info btn-sm" onclick="moveLink('${link._id}','up')">⬆️ رفع</button>
-                <button class="btn btn-secondary btn-sm" onclick="moveLink('${link._id}','down')">⬇️ خفض</button>
-              </div>
-            </td>
+  <div class="action-buttons">
+    <i class="bi bi-pencil-square text-warning fs-5" style="cursor:pointer;" onclick='editLink(${JSON.stringify(link)})'></i>
+    <i class="bi bi-trash-fill text-danger fs-5" style="cursor:pointer;" onclick="deleteLink('${link._id}')"></i>
+    <i class="bi bi-arrow-up-circle-fill text-info fs-5" style="cursor:pointer;" onclick="moveLink('${link._id}','up')"></i>
+    <i class="bi bi-arrow-down-circle-fill text-secondary fs-5" style="cursor:pointer;" onclick="moveLink('${link._id}','down')"></i>
+  </div>
+</td>
+
           </tr>
         `;
       });
