@@ -77,14 +77,14 @@ app.use(session({
   cookie: { maxAge: 10 * 60 * 1000 }
 }));
 
-// ✅ التحقق من كلمة المرور لكل قسم او صفحة في للوحة التحكم من قاعدة البيانات
+// ✅ التحقق من كلمة المرور لكل قسم أو صفحة
 app.post("/api/verify-password", async (req, res) => {
   const { section, password } = req.body;
 
   try {
-    const record = await Password.findOne({ section }); // ✅ يبحث عن القسم المطلوب
+    const record = await Password.findOne({ section });
     if (record && record.password === password) {
-      req.session[`${section}Auth`] = true; // ✅ جلسة خاصة بكل قسم
+      req.session[`${section}Auth`] = true; // جلسة خاصة بكل قسم
       return res.json({ success: true });
     } else {
       return res.status(403).json({ success: false, message: "❌ كلمة المرور غير صحيحة" });
@@ -94,43 +94,42 @@ app.post("/api/verify-password", async (req, res) => {
   }
 });
 
-
-// ✅ تحقق من حالة الجلسة
-app.get('/api/check-session', (req, res) => {
-  if (req.session && req.session.dashboardAuth) {
+// ✅ تحقق من حالة الجلسة (لكل قسم)
+app.get('/api/check-session/:section', (req, res) => {
+  const { section } = req.params;
+  if (req.session && req.session[`${section}Auth`]) {
     return res.json({ authenticated: true });
   } else {
     return res.json({ authenticated: false });
   }
 });
 
-// ✅ تسجيل الخروج
-app.post('/api/logout', (req, res) => {
-  req.session.destroy(err => {
-    if (err) {
-      return res.status(500).json({ success: false, message: "خطأ في تسجيل الخروج" });
-    }
-    res.clearCookie('connect.sid');
-    return res.json({ success: true });
-  });
+// ✅ تسجيل الخروج (لكل الأقسام)
+app.post('/api/logout/:section', (req, res) => {
+  const { section } = req.params;
+  if (req.session) {
+    req.session[`${section}Auth`] = false;
+  }
+  return res.json({ success: true });
 });
 
-// ✅ حماية الصفحات
-function requireDashboardAuth(page) {
+// ✅ حماية الصفحات حسب القسم
+function requireSectionAuth(section, page) {
   return (req, res) => {
-    if (req.session && req.session.dashboardAuth) {
+    if (req.session && req.session[`${section}Auth`]) {
       return res.sendFile(path.join(__dirname, 'public', page));
     } else {
-      return res.sendFile(path.join(__dirname, 'public', 'index.html')); // توجيه لصفحة تسجيل الدخول
+      return res.sendFile(path.join(__dirname, 'public', 'index.html'));
     }
   };
 }
 
-app.get('/dashboard.html', requireDashboardAuth('dashboard.html'));
-app.get('/edit.html', requireDashboardAuth('edit.html'));
-app.get('/links.html', requireDashboardAuth('links.html'));
-app.get('/backups.html', requireDashboardAuth('backups.html'));
-app.get('/add.html', requireDashboardAuth('add.html'));
+app.get('/dashboard.html', requireSectionAuth('dashboard', 'dashboard.html'));
+app.get('/edit.html', requireSectionAuth('edit', 'edit.html'));
+app.get('/links.html', requireSectionAuth('links', 'links.html'));
+app.get('/backups.html', requireSectionAuth('backups', 'backups.html'));
+app.get('/add.html', requireSectionAuth('add', 'add.html'));
+app.get('/index.html', requireSectionAuth('index', 'index.html'));
 
 // ✅ إدارة كلمات المرور
 app.get('/api/passwords', async (req, res) => {
@@ -170,7 +169,7 @@ app.delete('/api/passwords/:id', async (req, res) => {
   }
 });
 
-// ✅ التحقق من كلمة مرور قسم
+// ✅ التحقق من كلمة مرور قسم (للاستخدام المباشر)
 app.post('/api/check-section-password', async (req, res) => {
   const { section, password } = req.body;
   try {
