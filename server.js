@@ -464,13 +464,14 @@ app.post('/api/change-password', async (req, res) => {
     const serviceId = process.env.RENDER_SERVICE_ID; // ضع الـ Service ID من Render
     const apiKey = process.env.RENDER_API_KEY;       // ضع API Key في Env
 
-    await axios.patch(
-      `https://api.render.com/v1/services/${serviceId}/env-vars`,
-      [
-        { key: "DASHBOARD_PASSWORD", value: newPassword }
-      ],
-      { headers: { "Authorization": `Bearer ${apiKey}`, "Content-Type": "application/json" } }
-    );
+
+await axios.put(
+  `https://api.render.com/v1/services/${serviceId}/env-vars`,
+  [
+    { key: "DASHBOARD_PASSWORD", value: newPassword }
+  ],
+  { headers: { "Authorization": `Bearer ${apiKey}`, "Content-Type": "application/json" } }
+);
 
     res.json({ success: true, message: "✅ تم تحديث كلمة المرور، سيتم إعادة تشغيل الخادم" });
   } catch (err) {
