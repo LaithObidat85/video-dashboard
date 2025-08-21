@@ -453,6 +453,7 @@ app.get('/protected', async (req, res) => {
 
 // ✅ ✅ ✅ تحديث كلمة المرور (PATCH لمتغير واحد فقط)
 // ✅ تحديث كلمة المرور
+// ✅ تحديث كلمة المرور فقط دون المساس بالباقي
 app.post('/api/change-password', async (req, res) => {
   const { currentPassword, newPassword } = req.body;
 
@@ -464,30 +465,10 @@ app.post('/api/change-password', async (req, res) => {
     const serviceId = process.env.RENDER_SERVICE_ID;
     const apiKey = process.env.RENDER_API_KEY;
 
-    // 1️⃣ جلب جميع المتغيرات الحالية
-    const existingVars = await axios.get(
-      `https://api.render.com/v1/services/${serviceId}/env-vars`,
-      {
-        headers: { "Authorization": `Bearer ${apiKey}` }
-      }
-    );
-
-    // 2️⃣ تعديل قيمة DASHBOARD_PASSWORD فقط
-    const updatedVars = existingVars.data.map(v =>
-      v.key === "DASHBOARD_PASSWORD"
-        ? { ...v, value: newPassword }
-        : v
-    );
-
-    // إذا لم يكن موجود من قبل → نضيفه
-    if (!updatedVars.find(v => v.key === "DASHBOARD_PASSWORD")) {
-      updatedVars.push({ key: "DASHBOARD_PASSWORD", value: newPassword });
-    }
-
-    // 3️⃣ إرسال المصفوفة الكاملة
+    // ✅ تحديث متغير واحد فقط مباشرة
     await axios.put(
-      `https://api.render.com/v1/services/${serviceId}/env-vars`,
-      updatedVars,
+      `https://api.render.com/v1/services/${serviceId}/env-vars/DASHBOARD_PASSWORD`,
+      { value: newPassword },
       {
         headers: {
           "Authorization": `Bearer ${apiKey}`,
@@ -496,7 +477,7 @@ app.post('/api/change-password', async (req, res) => {
       }
     );
 
-    res.json({ success: true, message: "✅ تم تحديث كلمة المرور فقط مع الحفاظ على باقي المتغيرات" });
+    res.json({ success: true, message: "✅ تم تحديث كلمة المرور فقط" });
   } catch (err) {
     res.status(500).json({
       success: false,
@@ -505,6 +486,7 @@ app.post('/api/change-password', async (req, res) => {
     });
   }
 });
+
 
 
 // ▶️ تشغيل الخادم
