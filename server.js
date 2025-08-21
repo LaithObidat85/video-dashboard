@@ -452,6 +452,7 @@ app.get('/protected', async (req, res) => {
 });
 
 // ✅ ✅ ✅ تحديث كلمة المرور (PATCH لمتغير واحد فقط)
+// ✅ تحديث كلمة المرور
 app.post('/api/change-password', async (req, res) => {
   const { currentPassword, newPassword } = req.body;
 
@@ -464,14 +465,25 @@ app.post('/api/change-password', async (req, res) => {
     const apiKey = process.env.RENDER_API_KEY;
 
     await axios.patch(
-      `https://api.render.com/v1/services/${serviceId}/env-vars/DASHBOARD_PASSWORD`,
-      { value: newPassword },
-      { headers: { "Authorization": `Bearer ${apiKey}`, "Content-Type": "application/json" } }
+      `https://api.render.com/v1/services/${serviceId}/env-vars`,
+      [
+        { key: "DASHBOARD_PASSWORD", value: newPassword }
+      ],
+      {
+        headers: {
+          "Authorization": `Bearer ${apiKey}`,
+          "Content-Type": "application/json"
+        }
+      }
     );
 
     res.json({ success: true, message: "✅ تم تحديث كلمة المرور فقط، وسيُعاد تشغيل الخادم" });
   } catch (err) {
-    res.status(500).json({ success: false, message: "❌ خطأ أثناء تحديث كلمة المرور", error: err.message });
+    res.status(500).json({
+      success: false,
+      message: "❌ خطأ أثناء تحديث كلمة المرور",
+      error: err.message
+    });
   }
 });
 
