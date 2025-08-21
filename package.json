@@ -9,6 +9,7 @@
   },
   "dependencies": {
     "express": "^4.19.2",
+    "axios": "^1.7.7",
     "mongoose": "^7.6.3",
     "dotenv": "^16.4.5",
     "cors": "^2.8.5",
