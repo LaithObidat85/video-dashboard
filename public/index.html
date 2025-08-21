@@ -179,7 +179,9 @@ async function requestDashboardAccess() {
     if (!password) return;
 
     // 🆕 تحديد القسم الحالي
-    const section = getSectionName();
+    // 🛠️ بما أن الزر خاص بلوحة التحكم → نحدد القسم "dashboard" مباشرة
+    const section = "dashboard";
+
 
     try {
       const response = await fetch(`${API_BASE}/api/verify-password`, {
