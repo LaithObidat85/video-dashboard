@@ -89,6 +89,8 @@ function getSectionName() {
   if (path.includes("backups.html")) return "backups";
   if (path.includes("add.html")) return "add";
   if (path.includes("edit.html")) return "edit";
+  if (path.includes("index.html")) return "index";
+  if (path.includes("#")) return "index";
   return "general"; // افتراضي
 }
 
