@@ -83,16 +83,21 @@ async function setupLoginGuard() {
 // 🔹 دالة تحدد اسم القسم حسب الصفحة
 function getSectionName() {
   const path = window.location.pathname;
+
   if (path.includes("dashboard.html")) return "dashboard";
   if (path.includes("links.html")) return "links";
   if (path.includes("viewlinks.html")) return "viewlinks";
   if (path.includes("backups.html")) return "backups";
   if (path.includes("add.html")) return "add";
   if (path.includes("edit.html")) return "edit";
-  if (path.includes("index.html")) return "index";
-  if (path.includes("#")) return "index";
+
+  // 🆕 معالجة الصفحة الرئيسية
+  if (path === "/" || path.endsWith("index.html") || window.location.hash) return "index";
+
   return "general"; // افتراضي
 }
+
+
 
 // ✅ عند تحميل الصفحة نفذ الحماية
 document.addEventListener("DOMContentLoaded", setupLoginGuard);
