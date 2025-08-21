@@ -4,7 +4,7 @@ const mongoose = require('mongoose');
 const path = require('path');
 const bodyParser = require('body-parser');
 const session = require('express-session');
-const axios = require('axios'); // ✅ جديد لإرسال الطلب لـ Render API
+const axios = require('axios'); // ✅ لإرسال الطلب لـ Render API
 const cors = require('cors');   // ✅ استدعاء مكتبة CORS
 require('dotenv').config();
 
@@ -451,8 +451,7 @@ app.get('/protected', async (req, res) => {
   }
 });
 
-
-// ✅ ✅ ✅ إضافة تغيير كلمة المرور
+// ✅ ✅ ✅ تحديث كلمة المرور (PATCH لمتغير واحد فقط)
 app.post('/api/change-password', async (req, res) => {
   const { currentPassword, newPassword } = req.body;
 
@@ -461,24 +460,20 @@ app.post('/api/change-password', async (req, res) => {
   }
 
   try {
-    const serviceId = process.env.RENDER_SERVICE_ID; // ضع الـ Service ID من Render
-    const apiKey = process.env.RENDER_API_KEY;       // ضع API Key في Env
+    const serviceId = process.env.RENDER_SERVICE_ID;
+    const apiKey = process.env.RENDER_API_KEY;
 
+    await axios.patch(
+      `https://api.render.com/v1/services/${serviceId}/env-vars/DASHBOARD_PASSWORD`,
+      { value: newPassword },
+      { headers: { "Authorization": `Bearer ${apiKey}`, "Content-Type": "application/json" } }
+    );
 
-await axios.put(
-  `https://api.render.com/v1/services/${serviceId}/env-vars`,
-  [
-    { key: "DASHBOARD_PASSWORD", value: newPassword }
-  ],
-  { headers: { "Authorization": `Bearer ${apiKey}`, "Content-Type": "application/json" } }
-);
-
-    res.json({ success: true, message: "✅ تم تحديث كلمة المرور، سيتم إعادة تشغيل الخادم" });
+    res.json({ success: true, message: "✅ تم تحديث كلمة المرور فقط، وسيُعاد تشغيل الخادم" });
   } catch (err) {
     res.status(500).json({ success: false, message: "❌ خطأ أثناء تحديث كلمة المرور", error: err.message });
   }
 });
-
 
 // ▶️ تشغيل الخادم
 app.listen(PORT, () => {
