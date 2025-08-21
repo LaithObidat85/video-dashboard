@@ -77,14 +77,14 @@ app.use(session({
   cookie: { maxAge: 10 * 60 * 1000 }
 }));
 
-// ✅ التحقق من كلمة المرور للوحة التحكم من قاعدة البيانات
-app.post('/api/verify-password', async (req, res) => {
-  const { password } = req.body;
+// ✅ التحقق من كلمة المرور لكل قسم او صفحة في للوحة التحكم من قاعدة البيانات
+app.post("/api/verify-password", async (req, res) => {
+  const { section, password } = req.body;
 
   try {
-    const record = await Password.findOne({ section: "dashboard" });
+    const record = await Password.findOne({ section }); // ✅ يبحث عن القسم المطلوب
     if (record && record.password === password) {
-      req.session.dashboardAuth = true;
+      req.session[`${section}Auth`] = true; // ✅ جلسة خاصة بكل قسم
       return res.json({ success: true });
     } else {
       return res.status(403).json({ success: false, message: "❌ كلمة المرور غير صحيحة" });
@@ -93,6 +93,7 @@ app.post('/api/verify-password', async (req, res) => {
     return res.status(500).json({ success: false, message: "❌ خطأ في التحقق" });
   }
 });
+
 
 // ✅ تحقق من حالة الجلسة
 app.get('/api/check-session', (req, res) => {
