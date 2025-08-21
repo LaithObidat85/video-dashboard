@@ -464,7 +464,7 @@ app.post('/api/change-password', async (req, res) => {
     const serviceId = process.env.RENDER_SERVICE_ID;
     const apiKey = process.env.RENDER_API_KEY;
 
-    await axios.patch(
+    await axios.put(
       `https://api.render.com/v1/services/${serviceId}/env-vars`,
       [
         { key: "DASHBOARD_PASSWORD", value: newPassword }
