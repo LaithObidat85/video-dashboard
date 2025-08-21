@@ -129,6 +129,7 @@ app.get('/edit.html', requireSectionAuth('edit', 'edit.html'));
 app.get('/links.html', requireSectionAuth('links', 'links.html'));
 app.get('/backups.html', requireSectionAuth('backups', 'backups.html'));
 app.get('/add.html', requireSectionAuth('add', 'add.html'));
+app.get('/passwords.html', requireSectionAuth('passwords', 'passwords.html'));
 app.get('/index.html', requireSectionAuth('index', 'index.html'));
 
 // ✅ إدارة كلمات المرور
