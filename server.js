@@ -4,8 +4,7 @@ const mongoose = require('mongoose');
 const path = require('path');
 const bodyParser = require('body-parser');
 const session = require('express-session');
-const axios = require('axios'); // ✅ لإرسال الطلب لـ Render API
-const cors = require('cors');   // ✅ استدعاء مكتبة CORS
+const cors = require('cors');
 require('dotenv').config();
 
 const app = express();
@@ -78,35 +77,20 @@ app.use(session({
   cookie: { maxAge: 10 * 60 * 1000 }
 }));
 
-// ✅ دالة مساعدة لجلب كلمة المرور من Render API
-async function getDashboardPassword() {
-  const serviceId = process.env.RENDER_SERVICE_ID;
-  const apiKey = process.env.RENDER_API_KEY;
-
-  const response = await axios.get(
-    `https://api.render.com/v1/services/${serviceId}/env-vars`,
-    { headers: { Authorization: `Bearer ${apiKey}` } }
-  );
-
-  const vars = response.data;
-  const passVar = vars.find(v => v.key === "DASHBOARD_PASSWORD");
-  return passVar ? passVar.value : null;
-}
-
-// ✅ التحقق من كلمة المرور وتفعيل الجلسة
+// ✅ التحقق من كلمة المرور للوحة التحكم من قاعدة البيانات
 app.post('/api/verify-password', async (req, res) => {
   const { password } = req.body;
 
   try {
-    const storedPassword = await getDashboardPassword();
-    if (password === storedPassword) {
+    const record = await Password.findOne({ section: "dashboard" });
+    if (record && record.password === password) {
       req.session.dashboardAuth = true;
       return res.json({ success: true });
     } else {
-      return res.status(403).json({ success: false });
+      return res.status(403).json({ success: false, message: "❌ كلمة المرور غير صحيحة" });
     }
   } catch (err) {
-    return res.status(500).json({ success: false, message: "❌ خطأ في جلب كلمة المرور" });
+    return res.status(500).json({ success: false, message: "❌ خطأ في التحقق" });
   }
 });
 
@@ -136,7 +120,7 @@ function requireDashboardAuth(page) {
     if (req.session && req.session.dashboardAuth) {
       return res.sendFile(path.join(__dirname, 'public', page));
     } else {
-      return res.sendFile(path.join(__dirname, 'public', page));
+      return res.sendFile(path.join(__dirname, 'public', 'index.html')); // توجيه لصفحة تسجيل الدخول
     }
   };
 }
@@ -469,41 +453,6 @@ app.get('/protected', async (req, res) => {
     res.send(`<iframe src="${link.link}" style="width:100%;height:100vh;border:none;"></iframe>`);
   } catch (err) {
     res.redirect('/auth/login');
-  }
-});
-
-// ✅ تحديث كلمة المرور عبر Render API مباشرة
-app.post('/api/change-password', async (req, res) => {
-  const { currentPassword, newPassword } = req.body;
-
-  try {
-    const storedPassword = await getDashboardPassword();
-    if (currentPassword !== storedPassword) {
-      return res.status(403).json({ success: false, message: '❌ كلمة المرور الحالية غير صحيحة' });
-    }
-
-    const serviceId = process.env.RENDER_SERVICE_ID;
-    const apiKey = process.env.RENDER_API_KEY;
-
-    // تحديث قيمة DASHBOARD_PASSWORD
-    await axios.put(
-      `https://api.render.com/v1/services/${serviceId}/env-vars/DASHBOARD_PASSWORD`,
-      { value: newPassword },
-      {
-        headers: {
-          "Authorization": `Bearer ${apiKey}`,
-          "Content-Type": "application/json"
-        }
-      }
-    );
-
-    res.json({ success: true, message: "✅ تم تحديث كلمة المرور فقط" });
-  } catch (err) {
-    res.status(500).json({
-      success: false,
-      message: "❌ خطأ أثناء تحديث كلمة المرور",
-      error: err.message
-    });
   }
 });
 
