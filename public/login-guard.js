@@ -89,6 +89,7 @@ function getSectionName() {
   if (path.includes("viewlinks.html")) return "viewlinks";
   if (path.includes("backups.html")) return "backups";
   if (path.includes("add.html")) return "add";
+  if (path.includes("passwords.html")) return "passwords";
   if (path.includes("edit.html")) return "edit";
 
   // 🆕 معالجة الصفحة الرئيسية
