@@ -78,14 +78,35 @@ app.use(session({
   cookie: { maxAge: 10 * 60 * 1000 }
 }));
 
+// ✅ دالة مساعدة لجلب كلمة المرور من Render API
+async function getDashboardPassword() {
+  const serviceId = process.env.RENDER_SERVICE_ID;
+  const apiKey = process.env.RENDER_API_KEY;
+
+  const response = await axios.get(
+    `https://api.render.com/v1/services/${serviceId}/env-vars`,
+    { headers: { Authorization: `Bearer ${apiKey}` } }
+  );
+
+  const vars = response.data;
+  const passVar = vars.find(v => v.key === "DASHBOARD_PASSWORD");
+  return passVar ? passVar.value : null;
+}
+
 // ✅ التحقق من كلمة المرور وتفعيل الجلسة
-app.post('/api/verify-password', (req, res) => {
+app.post('/api/verify-password', async (req, res) => {
   const { password } = req.body;
-  if (password === process.env.DASHBOARD_PASSWORD) {
-    req.session.dashboardAuth = true;
-    return res.json({ success: true });
-  } else {
-    return res.status(403).json({ success: false });
+
+  try {
+    const storedPassword = await getDashboardPassword();
+    if (password === storedPassword) {
+      req.session.dashboardAuth = true;
+      return res.json({ success: true });
+    } else {
+      return res.status(403).json({ success: false });
+    }
+  } catch (err) {
+    return res.status(500).json({ success: false, message: "❌ خطأ في جلب كلمة المرور" });
   }
 });
 
@@ -451,21 +472,20 @@ app.get('/protected', async (req, res) => {
   }
 });
 
-// ✅ ✅ ✅ تحديث كلمة المرور (PATCH لمتغير واحد فقط)
-// ✅ تحديث كلمة المرور
-// ✅ تحديث كلمة المرور فقط دون المساس بالباقي
+// ✅ تحديث كلمة المرور عبر Render API مباشرة
 app.post('/api/change-password', async (req, res) => {
   const { currentPassword, newPassword } = req.body;
 
-  if (currentPassword !== process.env.DASHBOARD_PASSWORD) {
-    return res.status(403).json({ success: false, message: '❌ كلمة المرور الحالية غير صحيحة' });
-  }
-
   try {
+    const storedPassword = await getDashboardPassword();
+    if (currentPassword !== storedPassword) {
+      return res.status(403).json({ success: false, message: '❌ كلمة المرور الحالية غير صحيحة' });
+    }
+
     const serviceId = process.env.RENDER_SERVICE_ID;
     const apiKey = process.env.RENDER_API_KEY;
 
-    // ✅ تحديث متغير واحد فقط مباشرة
+    // تحديث قيمة DASHBOARD_PASSWORD
     await axios.put(
       `https://api.render.com/v1/services/${serviceId}/env-vars/DASHBOARD_PASSWORD`,
       { value: newPassword },
@@ -486,8 +506,6 @@ app.post('/api/change-password', async (req, res) => {
     });
   }
 });
-
-
 
 // ▶️ تشغيل الخادم
 app.listen(PORT, () => {
