@@ -4,6 +4,7 @@ const mongoose = require('mongoose');
 const path = require('path');
 const bodyParser = require('body-parser');
 const session = require('express-session');
+const axios = require('axios'); // ✅ جديد لإرسال الطلب لـ Render API
 require('dotenv').config();
 
 const app = express();
@@ -47,7 +48,7 @@ const linkSchema = new mongoose.Schema({
   linkText: { type: String, required: true },
   requiresPassword: { type: Boolean, default: false },
   dateAdded: { type: Date, default: Date.now },
-  order: { type: Number, default: 0 } // ✅ ترتيب الرابط
+  order: { type: Number, default: 0 }
 });
 const Link = mongoose.model('Link', linkSchema);
 
@@ -66,7 +67,7 @@ app.use(session({
   secret: 'secret123', // استبدله بـ قيمة من env لاحقًا
   resave: false,
   saveUninitialized: true,
-  cookie: { maxAge: 10 * 60 * 1000 } // ⏰ صلاحية الجلسة 10 دقائق
+  cookie: { maxAge: 10 * 60 * 1000 }
 }));
 
 // ✅ التحقق من كلمة المرور وتفعيل الجلسة
@@ -89,7 +90,7 @@ app.get('/api/check-session', (req, res) => {
   }
 });
 
-// ✅ تسجيل الخروج (مسح الجلسة)
+// ✅ تسجيل الخروج
 app.post('/api/logout', (req, res) => {
   req.session.destroy(err => {
     if (err) {
@@ -100,7 +101,7 @@ app.post('/api/logout', (req, res) => {
   });
 });
 
-// ✅ حماية الوصول إلى الصفحات الإدارية
+// ✅ حماية الصفحات
 function requireDashboardAuth(page) {
   return (req, res) => {
     if (req.session && req.session.dashboardAuth) {
@@ -117,7 +118,7 @@ app.get('/links.html', requireDashboardAuth('links.html'));
 app.get('/backups.html', requireDashboardAuth('backups.html'));
 app.get('/add.html', requireDashboardAuth('add.html'));
 
-// ✅ إدارة كلمات المرور (CRUD)
+// ✅ إدارة كلمات المرور
 app.get('/api/passwords', async (req, res) => {
   try {
     const passwords = await Password.find();
@@ -155,7 +156,7 @@ app.delete('/api/passwords/:id', async (req, res) => {
   }
 });
 
-// ✅ التحقق من كلمة مرور قسم معين
+// ✅ التحقق من كلمة مرور قسم
 app.post('/api/check-section-password', async (req, res) => {
   const { section, password } = req.body;
   try {
@@ -188,7 +189,6 @@ app.post('/api/departments', async (req, res) => {
   }
 });
 
-// تعديل قسم
 app.put('/api/departments/:id', async (req, res) => {
   try {
     const updated = await Department.findByIdAndUpdate(
@@ -203,7 +203,6 @@ app.put('/api/departments/:id', async (req, res) => {
   }
 });
 
-// حذف قسم
 app.delete('/api/departments/:id', async (req, res) => {
   try {
     const deleted = await Department.findByIdAndDelete(req.params.id);
@@ -257,7 +256,7 @@ app.delete('/api/videos/:id', async (req, res) => {
 // ====== إدارة الروابط ======
 app.get('/api/links', async (req, res) => {
   try {
-    const links = await Link.find().sort({ order: 1 }); // ✅ ترتيب حسب order
+    const links = await Link.find().sort({ order: 1 });
     res.json(links);
   } catch (err) {
     res.status(500).json({ message: '❌ خطأ في قراءة الروابط', error: err.message });
@@ -267,7 +266,7 @@ app.get('/api/links', async (req, res) => {
 app.post('/api/links', async (req, res) => {
   try {
     const count = await Link.countDocuments();
-    const link = new Link({ ...req.body, order: count }); // ✅ يوضع في آخر ترتيب
+    const link = new Link({ ...req.body, order: count });
     await link.save();
     res.status(201).json(link);
   } catch (err) {
@@ -290,7 +289,6 @@ app.delete('/api/links/:id', async (req, res) => {
     const deleted = await Link.findByIdAndDelete(req.params.id);
     if (!deleted) return res.status(404).json({ message: '❌ الرابط غير موجود' });
 
-    // ✅ تحديث ترتيب باقي الروابط بعد الحذف
     const links = await Link.find().sort({ order: 1 });
     for (let i = 0; i < links.length; i++) {
       links[i].order = i;
@@ -303,7 +301,6 @@ app.delete('/api/links/:id', async (req, res) => {
   }
 });
 
-// ✅ تحريك الرابط (رفع/خفض)
 app.post('/api/links/:id/move', async (req, res) => {
   const { direction } = req.body;
   try {
@@ -382,13 +379,11 @@ app.post('/api/backups/restore/:id', async (req, res) => {
     const backup = await Backup.findById(req.params.id);
     if (!backup) return res.status(404).json({ message: '❌ النسخة غير موجودة' });
 
-    // ✅ استرجاع الفيديوهات
     await Video.deleteMany({});
     if (backup.videos && backup.videos.length > 0) {
       await Video.insertMany(backup.videos);
     }
 
-    // ✅ استرجاع الروابط
     await Link.deleteMany({});
     if (backup.links && backup.links.length > 0) {
       await Link.insertMany(backup.links);
@@ -411,7 +406,7 @@ app.get('/api/redirect/:id', async (req, res) => {
   }
 });
 
-// ====== تسجيل الدخول (من الكود الثاني) ======
+// ====== تسجيل الدخول ======
 app.get('/auth/login', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'login.html'));
 });
@@ -447,6 +442,34 @@ app.get('/protected', async (req, res) => {
     res.redirect('/auth/login');
   }
 });
+
+
+// ✅ ✅ ✅ إضافة تغيير كلمة المرور
+app.post('/api/change-password', async (req, res) => {
+  const { currentPassword, newPassword } = req.body;
+
+  if (currentPassword !== process.env.DASHBOARD_PASSWORD) {
+    return res.status(403).json({ success: false, message: '❌ كلمة المرور الحالية غير صحيحة' });
+  }
+
+  try {
+    const serviceId = process.env.RENDER_SERVICE_ID; // ضع الـ Service ID من Render
+    const apiKey = process.env.RENDER_API_KEY;       // ضع API Key في Env
+
+    await axios.patch(
+      `https://api.render.com/v1/services/${serviceId}/env-vars`,
+      [
+        { key: "DASHBOARD_PASSWORD", value: newPassword }
+      ],
+      { headers: { "Authorization": `Bearer ${apiKey}`, "Content-Type": "application/json" } }
+    );
+
+    res.json({ success: true, message: "✅ تم تحديث كلمة المرور، سيتم إعادة تشغيل الخادم" });
+  } catch (err) {
+    res.status(500).json({ success: false, message: "❌ خطأ أثناء تحديث كلمة المرور", error: err.message });
+  }
+});
+
 
 // ▶️ تشغيل الخادم
 app.listen(PORT, () => {
