@@ -4,11 +4,19 @@ const mongoose = require('mongoose');
 const path = require('path');
 const bodyParser = require('body-parser');
 const session = require('express-session');
-const axios = require('axios'); // ✅ جديد لإرسال الطلب لـ Render API --
+const axios = require('axios'); // ✅ جديد لإرسال الطلب لـ Render API
+const cors = require('cors');   // ✅ استدعاء مكتبة CORS
 require('dotenv').config();
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+
+// ✅ تفعيل CORS للسماح بالطلبات القادمة من GitHub Pages
+app.use(cors({
+  origin: "https://laithobidat85.github.io", // رابط GitHub Pages عندك
+  methods: ["GET", "POST", "PUT", "DELETE"],
+  credentials: true
+}));
 
 // الاتصال بـ MongoDB Atlas
 const MONGO_URI = process.env.MONGO_URI;
