@@ -188,28 +188,38 @@ async function requestDashboardAccess() {
   });
   passwordModal.show();
 
-  document.getElementById('confirmDashboardAccess').onclick = async () => {
-    const password = document.getElementById('dashboardPassword').value.trim();
-    if (!password) return;
+ document.getElementById('confirmDashboardAccess').onclick = async () => {
+  const passwordInput = document.getElementById('dashboardPassword');
+  const password = passwordInput.value.trim();
+  if (!password) return;
 
-    try {
-      const response = await fetch(`${API_BASE}/api/verify-password`, {
-        method: 'POST', 
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ section, password })
-      });
-      if (response.ok) {
-        sessionStorage.setItem("loggedInAt_" + section, Date.now().toString());
-        passwordModal.hide();
-        window.location.href = section + '.html';
-      } else { 
-        alert('❌ كلمة المرور غير صحيحة'); 
-      }
-    } catch { 
-      alert('❌ حدث خطأ في الاتصال بالخادم'); 
+  try {
+    const response = await fetch(`${API_BASE}/api/verify-password`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ section, password })
+    });
+
+    if (response.ok) {
+      sessionStorage.setItem("loggedInAt_" + section, Date.now().toString());
+      passwordModal.hide();
+      window.location.href = section + '.html';
+    } else { 
+      alert('❌ كلمة المرور غير صحيحة'); 
+      passwordInput.value = "";   // 🆕 يمسح الحقل
+      passwordInput.focus();      // 🆕 يرجع الفوكس للحقل
     }
-  };
-}
+  } catch { 
+    alert('❌ حدث خطأ في الاتصال بالخادم'); 
+  }
+};
+
+// 🆕 استماع لمفتاح Enter داخل حقل كلمة المرور
+document.getElementById('dashboardPassword').addEventListener("keydown", (e) => {
+  if (e.key === "Enter") {
+    document.getElementById('confirmDashboardAccess').click();
+  }
+});
 
 
 async function fetchVideos() {
