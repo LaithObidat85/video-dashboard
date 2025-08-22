@@ -15,56 +15,96 @@
       display: flex;
       flex-direction: column;
       justify-content: space-between;
+      transition: background 0.4s ease, color 0.4s ease;
     }
-    .header-controls {display:flex;justify-content:center;align-items:center;position:relative;gap:10px;}
-    .header-controls h3 {flex:1;text-align:center;margin:0;}
-    .video-card {background:white;border-radius:12px;box-shadow:0 2px 6px rgba(0,0,0,0.1);padding:12px;margin:5px;width:300px;display:flex;flex-direction:column;justify-content:flex-start;transition:transform 0.2s ease, box-shadow 0.2s ease;}
-    .video-card:hover {transform:scale(1.02);box-shadow:0 4px 12px rgba(0,0,0,0.15);}
-    .video-title {font-weight:bold;margin-bottom:6px;min-height:48px;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;}
-    .video-description {color:#0d6efd;cursor:pointer;min-height:40px;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;margin-bottom:8px;}
-    .video-grid {display:flex;flex-wrap:wrap;justify-content:center;gap:15px;}
-    video,iframe {width:100%;height:200px;border-radius:6px;}
-    .sharepoint-frame {width:100%;height:200px;border-radius:6px;display:block;object-fit:cover;}
-    .popout-button {background-color:#0d6efd;color:white;border:none;padding:6px 12px;border-radius:5px;cursor:pointer;margin-top:6px;}
-    footer {text-align:center;margin-top:10px;font-weight:bold;color:#333;font-size:1.1rem;animation:glow 1.5s infinite alternate;}
-    @keyframes glow {from{color:#333;text-shadow:none;}to{color:#0d6efd;text-shadow:0 0 10px #0d6efd;}}
-    .bottom-buttons {display:flex;justify-content:center;gap:10px;margin-bottom:10px;}
-    .navbar-nav .nav-link {transition:color 0.3s ease, background 0.3s ease;padding:8px 12px;border-radius:5px;}
-    .navbar-nav .nav-link:hover {background:rgba(255,255,255,0.15);}
+    /* تحسين النافبار */
+    nav {
+      backdrop-filter: blur(8px);
+      background: rgba(13,110,253,0.9)!important;
+      border-radius: 0 0 12px 12px;
+    }
+    .navbar-nav .nav-link {transition: all 0.3s ease;padding:8px 14px;border-radius:6px;position:relative;}
+    .navbar-nav .nav-link:hover {background:rgba(255,255,255,0.15);transform:translateY(-2px);}
     .navbar-nav .nav-link::after {content:'';position:absolute;width:0;height:2px;left:0;bottom:0;background:white;transition:width 0.3s ease;}
     .navbar-nav .nav-link:hover::after,.navbar-nav .nav-link.active::after {width:100%;}
-    .scrolled {box-shadow:0 4px 10px rgba(0,0,0,0.2)!important;}
-    body.dark-mode {background:#121212!important;color:#eaeaea!important;}
-    body.dark-mode nav {background:linear-gradient(to right,#222,#000)!important;}
-    /* Toast في منتصف الصفحة */
+    .scrolled {box-shadow:0 4px 12px rgba(0,0,0,0.25)!important;}
+
+    /* بطاقات الفيديو */
+    .video-card {background:white;border-radius:15px;box-shadow:0 4px 12px rgba(0,0,0,0.12);padding:14px;margin:8px;width:300px;
+      display:flex;flex-direction:column;justify-content:flex-start;transition:transform 0.3s ease, box-shadow 0.3s ease;}
+    .video-card:hover {transform:translateY(-6px) scale(1.03);box-shadow:0 8px 20px rgba(0,0,0,0.18);}
+    .video-title {font-weight:bold;margin-bottom:6px;min-height:48px;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;}
+    .video-description {color:#0d6efd;cursor:pointer;min-height:40px;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;margin-bottom:8px;}
+
+    /* تحسين الإدخالات */
+    select, input[type="text"] {
+      border-radius: 10px!important;
+      border: 2px solid #0d6efd!important;
+      transition: all 0.3s ease;
+    }
+    select:focus, input[type="text"]:focus {
+      box-shadow:0 0 8px rgba(13,110,253,0.6)!important;
+      transform: scale(1.02);
+    }
+
+    /* أزرار الفيديو */
+    .popout-button {background:linear-gradient(to right,#0d6efd,#0b5ed7);color:white;border:none;padding:8px 14px;border-radius:8px;cursor:pointer;margin-top:6px;transition:all 0.3s ease;}
+    .popout-button:hover {background:linear-gradient(to right,#0b5ed7,#084298);transform:scale(1.05);}
+
+    /* Toast محسّن */
     .toast-container {
       position: fixed;
-      top: 35%;
+      top: 30%;
       left: 50%;
       transform: translate(-50%, -50%);
       z-index: 2000;
+      animation: fadeIn 0.5s ease;
     }
+    @keyframes fadeIn {from{opacity:0;transform:translate(-50%,-40%);}to{opacity:1;transform:translate(-50%,-50%);}}
+
+    /* Footer */
+    footer {text-align:center;margin-top:10px;font-weight:bold;color:#333;font-size:1.1rem;animation:glow 1.5s infinite alternate;}
+    @keyframes glow {from{color:#333;text-shadow:none;}to{color:#0d6efd;text-shadow:0 0 10px #0d6efd;}}
+
+    /* Spinner */
+    #loadingSpinner {
+      display:none;
+      position:fixed;
+      top:50%;left:50%;
+      transform:translate(-50%,-50%);
+      z-index:3000;
+    }
+
+    /* الوضع الداكن */
+    body.dark-mode {background:#121212!important;color:#eaeaea!important;}
+    body.dark-mode nav {background:rgba(34,34,34,0.95)!important;}
+    body.dark-mode .video-card {background:#1e1e1e;color:#ddd;}
+    body.dark-mode .video-description {color:#9bbcff;}
   </style>
 </head>
 <body>
 
-<nav id="mainNavbar" class="navbar navbar-expand-lg sticky-top shadow-sm" 
-     style="background: linear-gradient(to right, #0d6efd, #0b5ed7); transition: box-shadow 0.3s ease;">
+<!-- Spinner -->
+<div id="loadingSpinner" class="spinner-border text-primary" role="status">
+  <span class="visually-hidden">Loading...</span>
+</div>
+
+<nav id="mainNavbar" class="navbar navbar-expand-lg sticky-top shadow-sm">
   <div class="container-fluid">
     <div class="collapse navbar-collapse" id="navbarContent">
       <ul class="navbar-nav mb-2 mb-lg-0">
         <li class="nav-item">
-          <a class="nav-link text-white fw-semibold position-relative" href="#" onclick="requestDashboardAccess()">
+          <a class="nav-link text-white fw-semibold" href="#" onclick="requestDashboardAccess()">
             <i class="bi bi-shield-lock-fill fs-5"></i> لوحة التحكم
           </a>
         </li>
         <li class="nav-item">
-          <a class="nav-link text-white fw-semibold position-relative" href="https://video-dashboard-backend.onrender.com/viewlinks.html">
+          <a class="nav-link text-white fw-semibold" href="https://video-dashboard-backend.onrender.com/viewlinks.html">
             <i class="bi bi-link-45deg fs-5"></i> روابط مهمة
           </a>
         </li>
         <li class="nav-item" id="logoutNavItem" style="display:none;">
-          <a class="nav-link text-white fw-semibold position-relative" href="#" onclick="logout()">
+          <a class="nav-link text-white fw-semibold" href="#" onclick="logout()">
             <i class="bi bi-box-arrow-right fs-5"></i> تسجيل الخروج
           </a>
         </li>
@@ -83,11 +123,11 @@
 </nav>
 
 <div class="container text-center">
-  <h3>اختر القسم لعرض الفيديوهات</h3>
+  <h3 class="my-3 fw-bold">🎥 اختر القسم لعرض الفيديوهات</h3>
   <select id="departmentSelect" class="form-select mb-3">
     <option value="">-- اختر القسم --</option>
   </select>
-  <input id="searchInput" class="form-control mb-4" type="text" placeholder="ابحث بعنوان أو وصف الفيديو..." disabled>
+  <input id="searchInput" class="form-control mb-4" type="text" placeholder="🔍 ابحث بعنوان أو وصف الفيديو..." disabled>
   <div id="videoContainer" class="video-grid"></div>
 </div>
 
@@ -95,7 +135,7 @@
 
 <!-- نافذة عرض الوصف -->
 <div class="modal fade" id="descModal" tabindex="-1">
-  <div class="modal-dialog modal-lg">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
     <div class="modal-content">
       <div class="modal-header">
         <h5 class="modal-title" id="descTitle"></h5>
@@ -231,11 +271,13 @@ async function requestDashboardAccess() {
 // جلب الفيديوهات
 async function fetchVideos() {
   try {
+    document.getElementById("loadingSpinner").style.display="block";
     const res = await fetch(`${API_BASE}/api/videos`);
     videos = await res.json();
     populateDepartmentOptions();
   }
   catch (err) { console.error('فشل تحميل الفيديوهات:', err); }
+  finally {document.getElementById("loadingSpinner").style.display="none";}
 }
 
 // عرض الفيديوهات
