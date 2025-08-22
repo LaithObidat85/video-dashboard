@@ -36,6 +36,7 @@
     .scrolled {box-shadow:0 4px 10px rgba(0,0,0,0.2)!important;}
     body.dark-mode {background:#121212!important;color:#eaeaea!important;}
     body.dark-mode nav {background:linear-gradient(to right,#222,#000)!important;}
+    .toast-container {position:fixed;top:20px;left:50%;transform:translateX(-50%);z-index:9999;}
   </style>
 </head>
 <body>
@@ -85,6 +86,9 @@
 
 <footer>برمجة وتطوير: ليث عبيدات</footer>
 
+<!-- Toast Container -->
+<div class="toast-container" id="toastContainer"></div>
+
 <!-- نافذة عرض الوصف -->
 <div class="modal fade" id="descModal" tabindex="-1">
   <div class="modal-dialog modal-lg">
@@ -119,202 +123,32 @@
 
 <script>
 const API_BASE = 'https://video-dashboard-backend.onrender.com';
-let videos = [];
-let passwordModal;
 
-// 🆕 دالة لتحديد القسم الحالي من اسم الصفحة
-function getSectionName() {
-  const path = window.location.pathname;
-  if (path.includes("dashboard.html")) return "dashboard";
-  if (path.includes("links.html")) return "links";
-  if (path.includes("viewlinks.html")) return "viewlinks";
-  if (path.includes("backups.html")) return "backups";
-  if (path.includes("add.html")) return "add";
-  if (path.includes("edit.html")) return "edit";
-  return "general"; // افتراضي إذا لم ينطبق أي شيء
+// دالة عرض Toast
+function showToast(message, type="success") {
+  const toast = document.createElement('div');
+  toast.className = `toast align-items-center text-bg-${type} border-0 mb-2`;
+  toast.setAttribute('role', 'alert');
+  toast.innerHTML = `
+    <div class="d-flex">
+      <div class="toast-body">${message}</div>
+      <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+    </div>`;
+  document.getElementById('toastContainer').appendChild(toast);
+  new bootstrap.Toast(toast, { delay: 2500 }).show();
 }
 
-async function checkSessionStatus() {
-  try {
-    const res = await fetch(`${API_BASE}/api/check-session`);
-    const data = await res.json();
-    if (data.authenticated) {
-      document.getElementById("logoutNavItem").style.display = "block";
-    } else {
-      document.getElementById("logoutNavItem").style.display = "none";
-    }
-  } catch (err) { console.error("خطأ في التحقق من الجلسة:", err); }
-}
-
+// تسجيل الخروج باستخدام Toast
 async function logout() {
   try {
     await fetch(`${API_BASE}/api/logout`, { method: "POST" });
-    sessionStorage.clear(); // 🆕 تنظيف كل الجلسات
+    sessionStorage.clear(); 
     document.getElementById("logoutNavItem").style.display = "none";
-    alert("تم تسجيل الخروج بنجاح ✅");
-  } catch (err) { alert("❌ حدث خطأ أثناء تسجيل الخروج"); }
-}
-
-async function requestDashboardAccess() {
-  const section = "dashboard"; // الزر خاص بلوحة التحكم فقط
-
-  // 1️⃣ تحقق أولاً من التخزين المحلي (sessionStorage)
-  if (sessionStorage.getItem("loggedInAt_" + section)) {
-    window.location.href = section + ".html";
-    return;
-  }
-
-  // 2️⃣ تحقق من السيرفر (في حال تم تسجيل الدخول من نافذة أخرى بنفس البراوزر)
-  try {
-    const res = await fetch(`${API_BASE}/api/check-session`);
-    const data = await res.json();
-    if (data.authenticated) { 
-      // ✅ سجل الجلسة محلياً للـ dashboard
-      sessionStorage.setItem("loggedInAt_" + section, Date.now().toString());
-      window.location.href = section + ".html";
-      return;
-    }
+    showToast("✅ تم تسجيل الخروج بنجاح");
   } catch (err) { 
-    console.error("خطأ في التحقق من الجلسة:", err); 
+    showToast("❌ حدث خطأ أثناء تسجيل الخروج", "danger");
   }
-
-  // 3️⃣ إذا ما في جلسة محلية ولا سيرفر → اطلب كلمة المرور
-  const modalEl = document.getElementById('passwordModal');
-  passwordModal = new bootstrap.Modal(modalEl);
-  modalEl.addEventListener('shown.bs.modal', () => {
-    const input = document.getElementById('dashboardPassword'); 
-    input.value=''; 
-    input.focus();
-  });
-  passwordModal.show();
-
- document.getElementById('confirmDashboardAccess').onclick = async () => {
-  const passwordInput = document.getElementById('dashboardPassword');
-  const password = passwordInput.value.trim();
-  if (!password) return;
-
-  try {
-    const response = await fetch(`${API_BASE}/api/verify-password`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ section, password })
-    });
-
-    if (response.ok) {
-      sessionStorage.setItem("loggedInAt_" + section, Date.now().toString());
-      passwordModal.hide();
-      window.location.href = section + '.html';
-    } else { 
-      alert('❌ كلمة المرور غير صحيحة'); 
-      passwordInput.value = "";   // 🆕 يمسح الحقل
-      passwordInput.focus();      // 🆕 يرجع الفوكس للحقل
-    }
-  } catch { 
-    alert('❌ حدث خطأ في الاتصال بالخادم'); 
-  }
-};
-
-// 🆕 استماع لمفتاح Enter داخل حقل كلمة المرور
-document.getElementById('dashboardPassword').addEventListener("keydown", (e) => {
-  if (e.key === "Enter") {
-    document.getElementById('confirmDashboardAccess').click();
-  }
-});
-
 }
-async function fetchVideos() {
-  try {
-    const res = await fetch(`${API_BASE}/api/videos`);
-    videos = await res.json();
-    populateDepartmentOptions();
-  }
-  catch (err) { console.error('فشل تحميل الفيديوهات:', err); }
-}
-
-function renderVideos() {
-  const dep=document.getElementById('departmentSelect').value;
-  const q=document.getElementById('searchInput').value.trim().toLowerCase();
-  const c=document.getElementById('videoContainer');c.innerHTML='';
-  if(!dep)return;
-  const filtered=videos.filter(v=>{
-    const d=v.department?.trim().toLowerCase();
-    const t=v.title?.toLowerCase()||'';
-    const desc=v.description?.toLowerCase()||'';
-    return d===dep.trim().toLowerCase()&&(t.includes(q)||desc.includes(q));
-  });
-  if(filtered.length===0){
-    c.innerHTML='<p class="text-muted">🚫 لا توجد فيديوهات مطابقة للبحث</p>';
-    return;
-  }
-  filtered.forEach(video=>{
-    const card=document.createElement('div');card.className='video-card';
-    const title=`<div class="video-title">عنوان الفيديو: ${video.title}</div>`;
-    const desc=`<div class="video-description" onclick="showDescription('${escapeHtml(video.title)}','${escapeHtml(video.description)}')">وصف الفيديو: ${video.description}</div>`;
-    let media='';const link=video.link||video.url||'';let pop=link;
-    if(link.includes('youtube.com')||link.includes('youtu.be')){
-      media=`<iframe src="https://www.youtube.com/embed/${extractYouTubeID(link)}" allowfullscreen></iframe>`;
-    }
-    else if(link.includes('drive.google.com/file/d/')){
-      const m=link.match(/\/file\/d\/(.*?)(\/|$)/);
-      media=m?`<iframe src="https://drive.google.com/file/d/${m[1]}/preview" allowfullscreen></iframe>`:`<video controls src="${link}"></video>`;
-    }
-    else if(link.includes("sharepoint.com/")&&link.includes("/embed.aspx")){
-      media=`<iframe class="sharepoint-frame" src="${link}" allowfullscreen></iframe>`;
-      const m=link.match(/UniqueId=([a-zA-Z0-9\-]+)/);
-      if(m)pop=`https://ymkh-my.sharepoint.com/personal/laith_obaidat_iu_edu_jo/_layouts/15/stream.aspx?UniqueId=${m[1]}`;
-    }
-    else if(link.includes("sharepoint.com/")&&link.includes("/stream.aspx")){
-      const m=link.match(/UniqueId=([a-zA-Z0-9\-]+)/);
-      if(m){
-        const e=`https://ymkh-my.sharepoint.com/personal/laith_obaidat_iu_edu_jo/_layouts/15/embed.aspx?UniqueId=${m[1]}&embed=%7B%22ust%22%3Atrue%7D&referrer=StreamWebApp&referrerScenario=EmbedDialog.Create`;
-        media=`<iframe class="sharepoint-frame" src="${e}" allowfullscreen></iframe>`;
-        pop=link;
-      }else{
-        media=`<video controls src="${link}"></video>`;
-      }
-    }
-    else{media=`<video controls src="${link}"></video>`;}
-    const btn=`<button class="popout-button" onclick="window.open('${pop}','_blank','width=800,height=600')">عرض الفيديو</button>`;
-    card.innerHTML=title+desc+media+btn;c.appendChild(card);
-  });
-}
-function escapeHtml(t){return t?.replace(/"/g,'&quot;').replace(/'/g,'&#39;')||'';}
-function extractYouTubeID(u){const m=u.match(/[?&]v=([^&#]*)|youtu\.be\/([^&#]*)/);return m?(m[1]||m[2]):'';}
-function showDescription(t,d){document.getElementById('descTitle').textContent=t;document.getElementById('descContent').innerHTML=d;new bootstrap.Modal(document.getElementById('descModal')).show();}
-function populateDepartmentOptions(){
-  const counts=videos.reduce((a,v)=>{a[v.department]=(a[v.department]||0)+1;return a;},{});const sel=document.getElementById('departmentSelect');
-  sel.innerHTML='<option value="">-- اختر القسم --</option>';
-  Object.entries(counts).forEach(([dep,c])=>{
-    const o=document.createElement('option');
-    o.value=dep;o.textContent=`${dep} (${c})`;
-    sel.appendChild(o);
-  });
-}
-
-document.getElementById('departmentSelect').addEventListener('change',()=>{
-  document.getElementById('searchInput').disabled=false;
-  renderVideos();
-});
-document.getElementById('searchInput').addEventListener('input',renderVideos);
-document.addEventListener("DOMContentLoaded",()=>{
-  checkSessionStatus();
-  fetchVideos();
-});
-
-// Navbar scroll + theme toggle
-window.addEventListener('scroll',()=>{
-  const nav=document.getElementById('mainNavbar');
-  if(window.scrollY>20)nav.classList.add('scrolled');else nav.classList.remove('scrolled');
-});
-document.getElementById('themeToggle').addEventListener('click',()=>{
-  document.body.classList.toggle('dark-mode');
-  const icon=document.querySelector("#themeToggle i");
-  if(document.body.classList.contains("dark-mode")){
-    icon.classList.replace("bi-moon-stars-fill","bi-brightness-high-fill");
-  }else{
-    icon.classList.replace("bi-brightness-high-fill","bi-moon-stars-fill");
-  }
-});
 </script>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
