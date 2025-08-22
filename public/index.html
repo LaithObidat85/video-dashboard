@@ -156,15 +156,29 @@ async function logout() {
 }
 
 async function requestDashboardAccess() {
+  const section = "dashboard"; // الزر خاص بلوحة التحكم فقط
+
+  // 1️⃣ تحقق أولاً من التخزين المحلي (sessionStorage)
+  if (sessionStorage.getItem("loggedInAt_" + section)) {
+    window.location.href = section + ".html";
+    return;
+  }
+
+  // 2️⃣ تحقق من السيرفر (في حال تم تسجيل الدخول من نافذة أخرى بنفس البراوزر)
   try {
     const res = await fetch(`${API_BASE}/api/check-session`);
     const data = await res.json();
     if (data.authenticated) { 
-      window.location.href = 'dashboard.html'; 
-      return; 
+      // ✅ سجل الجلسة محلياً للـ dashboard
+      sessionStorage.setItem("loggedInAt_" + section, Date.now().toString());
+      window.location.href = section + ".html";
+      return;
     }
-  } catch (err) { console.error("خطأ في التحقق من الجلسة:", err); }
+  } catch (err) { 
+    console.error("خطأ في التحقق من الجلسة:", err); 
+  }
 
+  // 3️⃣ إذا ما في جلسة محلية ولا سيرفر → اطلب كلمة المرور
   const modalEl = document.getElementById('passwordModal');
   passwordModal = new bootstrap.Modal(modalEl);
   modalEl.addEventListener('shown.bs.modal', () => {
@@ -178,22 +192,16 @@ async function requestDashboardAccess() {
     const password = document.getElementById('dashboardPassword').value.trim();
     if (!password) return;
 
-    // 🆕 تحديد القسم الحالي
-    // 🛠️ بما أن الزر خاص بلوحة التحكم → نحدد القسم "dashboard" مباشرة
-    const section = "dashboard";
-
-
     try {
       const response = await fetch(`${API_BASE}/api/verify-password`, {
         method: 'POST', 
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ section, password }) // ✅ إرسال القسم + كلمة المرور
+        body: JSON.stringify({ section, password })
       });
       if (response.ok) {
-        // 🆕 تخزين جلسة خاصة بالقسم
         sessionStorage.setItem("loggedInAt_" + section, Date.now().toString());
         passwordModal.hide();
-        window.location.href = section + '.html'; // ✅ فتح نفس الصفحة المطلوبة
+        window.location.href = section + '.html';
       } else { 
         alert('❌ كلمة المرور غير صحيحة'); 
       }
@@ -201,14 +209,8 @@ async function requestDashboardAccess() {
       alert('❌ حدث خطأ في الاتصال بالخادم'); 
     }
   };
-
-  // ✅ دعم مفتاح Enter في حقل كلمة المرور
-  document.getElementById('dashboardPassword').addEventListener('keydown', function (e) {
-    if (e.key === "Enter") {
-      document.getElementById('confirmDashboardAccess').click();
-    }
-  });
 }
+
 
 async function fetchVideos() {
   try {
