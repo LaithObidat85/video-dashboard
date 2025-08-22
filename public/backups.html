@@ -22,6 +22,11 @@
       flex-wrap: wrap;
       gap: 10px;
     }
+    .details {
+      font-size: 0.85rem;
+      margin-top: 5px;
+      color: #555;
+    }
     /* ✅ توست أعلى الصفحة في الوسط */
     .toast-container {
       top: 20px;
@@ -135,9 +140,13 @@ function renderBackups() {
   backups.forEach((b, index) => {
     const dateText = new Date(b.date).toLocaleString('ar-EG', { dateStyle: 'full', timeStyle: 'short' });
     const sizeKB = (
-      (JSON.stringify(b.videos || []).length + JSON.stringify(b.links || []).length) / 1024
+      (JSON.stringify(b.videos || []).length + JSON.stringify(b.links || []).length + JSON.stringify(b.passwords || []).length) / 1024
     ).toFixed(2);
     totalSize += parseFloat(sizeKB);
+
+    const videoCount = (b.videos || []).length;
+    const linkCount = (b.links || []).length;
+    const passCount = (b.passwords || []).length;
 
     const card = document.createElement('div');
     card.className = 'backup-card';
@@ -146,6 +155,7 @@ function renderBackups() {
         <input type="checkbox" class="backup-check" data-id="${b._id}">
         <strong>نسخة رقم #${index + 1}</strong><br>
         <small class="text-muted">${dateText} – ${sizeKB} KB</small>
+        <div class="details">📹 فيديوهات: ${videoCount} | 🔗 روابط: ${linkCount} | 🔑 كلمات مرور: ${passCount}</div>
       </div>
       <div class="d-flex gap-2">
         <a class="btn btn-success btn-sm" href="/api/backups/download/${b._id}">⬇️ تنزيل</a>
