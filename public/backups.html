@@ -43,9 +43,15 @@
       <a href="dashboard.html" class="btn btn-outline-info">لوحة التحكم</a>
     </div>
 
-    <div class="d-flex gap-2 mb-3">
+    <div class="d-flex gap-2 mb-3 flex-wrap">
       <button class="btn btn-primary" onclick="createBackup()">📥 إنشاء نسخة احتياطية</button>
       <button class="btn btn-danger" onclick="deleteSelected()">🗑️ حذف المحدد</button>
+
+      <!-- ✅ زر رفع نسخة -->
+      <form id="uploadForm" enctype="multipart/form-data" class="d-flex gap-2">
+        <input type="file" id="backupFile" name="backupFile" accept=".json" class="form-control">
+        <button type="submit" class="btn btn-success">📤 رفع نسخة</button>
+      </form>
     </div>
 
     <div class="form-check mb-3">
@@ -206,6 +212,31 @@ async function restoreBackup(id) {
     showToast(result.message || '♻️ تم استرجاع النسخة الاحتياطية', "info");
   });
 }
+
+// ✅ رفع نسخة من الجهاز
+document.getElementById("uploadForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const fileInput = document.getElementById("backupFile");
+  if (!fileInput.files.length) {
+    showToast("⚠️ يرجى اختيار ملف JSON أولا", "warning");
+    return;
+  }
+
+  const formData = new FormData();
+  formData.append("backupFile", fileInput.files[0]);
+
+  try {
+    const res = await fetch("/api/backups/upload", {
+      method: "POST",
+      body: formData
+    });
+    const result = await res.json();
+    showToast(result.message || "✅ تم رفع النسخة وحفظها بنجاح");
+    await fetchBackups();
+  } catch (err) {
+    showToast("❌ فشل رفع النسخة", "danger");
+  }
+});
 
 // ✅ عند نجاح تسجيل الدخول → نفذ fetchBackups
 document.addEventListener("DOMContentLoaded", () => {
