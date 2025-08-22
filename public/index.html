@@ -17,12 +17,7 @@
       justify-content: space-between;
       transition: background 0.4s ease, color 0.4s ease;
     }
-    /* تحسين النافبار */
-    nav {
-      backdrop-filter: blur(8px);
-      background: rgba(13,110,253,0.9)!important;
-      border-radius: 0 0 12px 12px;
-    }
+    nav {backdrop-filter: blur(8px);background: rgba(13,110,253,0.9)!important;border-radius: 0 0 12px 12px;}
     .navbar-nav .nav-link {transition: all 0.3s ease;padding:8px 14px;border-radius:6px;position:relative;}
     .navbar-nav .nav-link:hover {background:rgba(255,255,255,0.15);transform:translateY(-2px);}
     .navbar-nav .nav-link::after {content:'';position:absolute;width:0;height:2px;left:0;bottom:0;background:white;transition:width 0.3s ease;}
@@ -37,29 +32,20 @@
     .video-description {color:#0d6efd;cursor:pointer;min-height:40px;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;margin-bottom:8px;}
 
     /* تحسين الإدخالات */
-    select, input[type="text"] {
-      border-radius: 10px!important;
-      border: 2px solid #0d6efd!important;
-      transition: all 0.3s ease;
-    }
-    select:focus, input[type="text"]:focus {
-      box-shadow:0 0 8px rgba(13,110,253,0.6)!important;
-      transform: scale(1.02);
-    }
+    select, input[type="text"] {border-radius: 10px!important;border: 2px solid #0d6efd!important;transition: all 0.3s ease;}
+    select:focus, input[type="text"]:focus {box-shadow:0 0 8px rgba(13,110,253,0.6)!important;transform: scale(1.02);}
+
+    /* زر مسح البحث */
+    .search-wrapper {position: relative;display: inline-block;width: 100%;}
+    #clearSearch {position: absolute;right: 12px;top: 50%;transform: translateY(-50%);background: transparent;border: none;font-size: 18px;color: #888;cursor: pointer;display:none;}
+    #clearSearch:hover {color:#000;}
 
     /* أزرار الفيديو */
     .popout-button {background:linear-gradient(to right,#0d6efd,#0b5ed7);color:white;border:none;padding:8px 14px;border-radius:8px;cursor:pointer;margin-top:6px;transition:all 0.3s ease;}
     .popout-button:hover {background:linear-gradient(to right,#0b5ed7,#084298);transform:scale(1.05);}
 
     /* Toast محسّن */
-    .toast-container {
-      position: fixed;
-      top: 30%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      z-index: 2000;
-      animation: fadeIn 0.5s ease;
-    }
+    .toast-container {position: fixed;top: 30%;left: 50%;transform: translate(-50%, -50%);z-index: 2000;animation: fadeIn 0.5s ease;}
     @keyframes fadeIn {from{opacity:0;transform:translate(-50%,-40%);}to{opacity:1;transform:translate(-50%,-50%);}}
 
     /* Footer */
@@ -67,72 +53,30 @@
     @keyframes glow {from{color:#333;text-shadow:none;}to{color:#0d6efd;text-shadow:0 0 10px #0d6efd;}}
 
     /* Spinner */
-    #loadingSpinner {
-      display:none;
-      position:fixed;
-      top:50%;left:50%;
-      transform:translate(-50%,-50%);
-      z-index:3000;
-    }
+    #loadingSpinner {display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:3000;}
 
     /* الوضع الداكن */
     body.dark-mode {background:#121212!important;color:#eaeaea!important;}
     body.dark-mode nav {background:rgba(34,34,34,0.95)!important;}
     body.dark-mode .video-card {background:#1e1e1e;color:#ddd;}
     body.dark-mode .video-description {color:#9bbcff;}
-/* شبكة الفيديوهات */
-.video-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 16px;
-  justify-content: center;
-  margin-top: 20px;
-}
-.video-card {
-  width: 100% !important; /* خليه يتمدد حسب العمود */
-}
 
-    /* 🎨 تنسيق المودال حسب الوضع */
+    /* شبكة الفيديوهات */
+    .video-grid {display: grid;grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));gap: 16px;justify-content: center;margin-top: 20px;}
+    .video-card {width: 100% !important;}
 
-/* الوضع الداكن */
-body.dark-mode .modal-content {
-  background-color: #1e1e1e; /* خلفية داكنة */
-  color: #eaeaea;           /* خط فاتح */
-}
-
-body.dark-mode .modal-header {
-  border-bottom: 1px solid #444;
-}
-
-body.dark-mode .modal-body {
-  color: #eaeaea;
-}
-
-body.dark-mode .modal-title {
-  color: #fff;
-}
-
-/* زر الإغلاق في الوضع الداكن */
-body.dark-mode .btn-close {
-  filter: invert(1) grayscale(100%) brightness(200%);
-}
-
-/* الوضع العادي (الافتراضي) */
-body:not(.dark-mode) .modal-content {
-  background-color: #fff;   /* خلفية بيضاء */
-  color: #212529;           /* خط غامق */
-}
-
-body:not(.dark-mode) .modal-title {
-  color: #000;
-}
-
-    
+    /* 🎨 المودال */
+    body.dark-mode .modal-content {background-color: #1e1e1e;color: #eaeaea;}
+    body.dark-mode .modal-header {border-bottom: 1px solid #444;}
+    body.dark-mode .modal-body {color: #eaeaea;}
+    body.dark-mode .modal-title {color: #fff;}
+    body.dark-mode .btn-close {filter: invert(1) grayscale(100%) brightness(200%);}
+    body:not(.dark-mode) .modal-content {background-color: #fff;color: #212529;}
+    body:not(.dark-mode) .modal-title {color: #000;}
   </style>
 </head>
 <body>
 
-<!-- Spinner -->
 <div id="loadingSpinner" class="spinner-border text-primary" role="status">
   <span class="visually-hidden">Loading...</span>
 </div>
@@ -141,79 +85,53 @@ body:not(.dark-mode) .modal-title {
   <div class="container-fluid">
     <div class="collapse navbar-collapse" id="navbarContent">
       <ul class="navbar-nav mb-2 mb-lg-0">
-        <li class="nav-item">
-          <a class="nav-link text-white fw-semibold" href="#" onclick="requestDashboardAccess()">
-            <i class="bi bi-shield-lock-fill fs-5"></i> لوحة التحكم
-          </a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link text-white fw-semibold" href="https://video-dashboard-backend.onrender.com/viewlinks.html">
-            <i class="bi bi-link-45deg fs-5"></i> روابط مهمة
-          </a>
-        </li>
-        <li class="nav-item" id="logoutNavItem" style="display:none;">
-          <a class="nav-link text-white fw-semibold" href="#" onclick="logout()">
-            <i class="bi bi-box-arrow-right fs-5"></i> تسجيل الخروج
-          </a>
-        </li>
+        <li class="nav-item"><a class="nav-link text-white fw-semibold" href="#" onclick="requestDashboardAccess()"><i class="bi bi-shield-lock-fill fs-5"></i> لوحة التحكم</a></li>
+        <li class="nav-item"><a class="nav-link text-white fw-semibold" href="https://video-dashboard-backend.onrender.com/viewlinks.html"><i class="bi bi-link-45deg fs-5"></i> روابط مهمة</a></li>
+        <li class="nav-item" id="logoutNavItem" style="display:none;"><a class="nav-link text-white fw-semibold" href="#" onclick="logout()"><i class="bi bi-box-arrow-right fs-5"></i> تسجيل الخروج</a></li>
       </ul>
     </div>
-    <a class="navbar-brand text-white fw-bold ms-auto d-flex align-items-center" href="#">
-      <i class="bi bi-collection-play-fill fs-4 me-1"></i> Video Dashboard
-    </a>
-    <button class="navbar-toggler text-white border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navbarContent">
-      <span class="navbar-toggler-icon"></span>
-    </button>
-    <button id="themeToggle" class="btn btn-sm btn-outline-light ms-2">
-      <i class="bi bi-moon-stars-fill"></i>
-    </button>
+    <a class="navbar-brand text-white fw-bold ms-auto d-flex align-items-center" href="#"><i class="bi bi-collection-play-fill fs-4 me-1"></i> Video Dashboard</a>
+    <button class="navbar-toggler text-white border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navbarContent"><span class="navbar-toggler-icon"></span></button>
+    <button id="themeToggle" class="btn btn-sm btn-outline-light ms-2"><i class="bi bi-moon-stars-fill"></i></button>
   </div>
 </nav>
 
 <div class="container text-center">
   <h3 class="my-3 fw-bold">🎥 اختر القسم لعرض الفيديوهات</h3>
-  <select id="departmentSelect" class="form-select mb-3">
-    <option value="">-- اختر القسم --</option>
-  </select>
-  <input id="searchInput" class="form-control mb-4" type="text" placeholder="🔍 ابحث بعنوان أو وصف الفيديو..." disabled>
+  <select id="departmentSelect" class="form-select mb-3"><option value="">-- اختر القسم --</option></select>
+
+  <!-- ✅ حقل البحث مع زر X -->
+  <div class="search-wrapper mb-4">
+    <input id="searchInput" class="form-control" type="text" placeholder="🔍 ابحث بعنوان أو وصف الفيديو..." disabled>
+    <button id="clearSearch">×</button>
+  </div>
+
   <div id="videoContainer" class="video-grid"></div>
 </div>
 
 <footer>برمجة وتطوير: ليث عبيدات</footer>
 
-<!-- نافذة عرض الوصف -->
+<!-- الوصف -->
 <div class="modal fade" id="descModal" tabindex="-1">
   <div class="modal-dialog modal-lg modal-dialog-centered">
     <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title" id="descTitle"></h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-      </div>
+      <div class="modal-header"><h5 class="modal-title" id="descTitle"></h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
       <div class="modal-body" id="descContent" style="white-space: pre-wrap; text-align: justify;"></div>
     </div>
   </div>
 </div>
 
-<!-- نافذة كلمة المرور -->
+<!-- كلمة المرور -->
 <div class="modal fade" id="passwordModal" tabindex="-1">
   <div class="modal-dialog modal-dialog-centered">
     <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title">🔐 الدخول إلى لوحة التحكم</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-      </div>
-      <div class="modal-body">
-        <input type="password" id="dashboardPassword" class="form-control" placeholder="أدخل كلمة المرور" lang="en">
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
-        <button type="button" class="btn btn-primary" id="confirmDashboardAccess">دخول</button>
-      </div>
+      <div class="modal-header"><h5 class="modal-title">🔐 الدخول إلى لوحة التحكم</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+      <div class="modal-body"><input type="password" id="dashboardPassword" class="form-control" placeholder="أدخل كلمة المرور" lang="en"></div>
+      <div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button><button type="button" class="btn btn-primary" id="confirmDashboardAccess">دخول</button></div>
     </div>
   </div>
 </div>
 
-<!-- Toast Container -->
 <div class="toast-container" id="toastContainer"></div>
 
 <script>
@@ -221,17 +139,10 @@ const API_BASE = 'https://video-dashboard-backend.onrender.com';
 let videos = [];
 let passwordModal;
 
-// ✅ دالة إظهار Toast
 function showToast(message, type="info") {
   const toastId = "toast" + Date.now();
   const bgClass = type==="success" ? "bg-success" : type==="error" ? "bg-danger" : "bg-info";
-  const html = `
-    <div id="${toastId}" class="toast align-items-center text-white ${bgClass} border-0 mb-2" role="alert">
-      <div class="d-flex">
-        <div class="toast-body">${message}</div>
-        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
-      </div>
-    </div>`;
+  const html = `<div id="${toastId}" class="toast align-items-center text-white ${bgClass} border-0 mb-2" role="alert"><div class="d-flex"><div class="toast-body">${message}</div><button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button></div></div>`;
   const container = document.getElementById("toastContainer");
   container.insertAdjacentHTML("beforeend", html);
   const toastEl = document.getElementById(toastId);
@@ -239,7 +150,6 @@ function showToast(message, type="info") {
   toast.show();
 }
 
-// التحقق من الجلسة
 async function checkSessionStatus() {
   try {
     const res = await fetch(`${API_BASE}/api/check-session`);
@@ -248,75 +158,38 @@ async function checkSessionStatus() {
   } catch (err) { console.error("خطأ في التحقق من الجلسة:", err); }
 }
 
-// تسجيل الخروج
 async function logout() {
   try {
     await fetch(`${API_BASE}/api/logout`, { method: "POST" });
     sessionStorage.clear();
     document.getElementById("logoutNavItem").style.display = "none";
     showToast("✅ تم تسجيل الخروج بنجاح","success");
-  } catch (err) {
-    showToast("❌ حدث خطأ أثناء تسجيل الخروج","error");
-  }
+  } catch (err) { showToast("❌ حدث خطأ أثناء تسجيل الخروج","error"); }
 }
 
-// طلب الدخول للوحة التحكم
 async function requestDashboardAccess() {
   const section = "dashboard";
-  if (sessionStorage.getItem("loggedInAt_" + section)) {
-    window.location.href = section + ".html";
-    return;
-  }
+  if (sessionStorage.getItem("loggedInAt_" + section)) {window.location.href = section + ".html";return;}
   try {
     const res = await fetch(`${API_BASE}/api/check-session`);
     const data = await res.json();
-    if (data.authenticated) {
-      sessionStorage.setItem("loggedInAt_" + section, Date.now().toString());
-      window.location.href = section + ".html";
-      return;
-    }
-  } catch (err) { console.error("خطأ في التحقق من الجلسة:", err); }
-
+    if (data.authenticated) {sessionStorage.setItem("loggedInAt_" + section, Date.now().toString());window.location.href = section + ".html";return;}
+  } catch (err) { console.error("خطأ:", err); }
   const modalEl = document.getElementById('passwordModal');
   passwordModal = new bootstrap.Modal(modalEl);
-  modalEl.addEventListener('shown.bs.modal', () => {
-    const input = document.getElementById('dashboardPassword');
-    input.value='';input.focus();
-  });
+  modalEl.addEventListener('shown.bs.modal', () => {const input = document.getElementById('dashboardPassword');input.value='';input.focus();});
   passwordModal.show();
-
   document.getElementById('confirmDashboardAccess').onclick = async () => {
-    const passwordInput = document.getElementById('dashboardPassword');
-    const password = passwordInput.value.trim();
-    if (!password) return;
-
+    const passwordInput = document.getElementById('dashboardPassword');const password = passwordInput.value.trim();if (!password) return;
     try {
-      const response = await fetch(`${API_BASE}/api/verify-password`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ section, password })
-      });
-
-      if (response.ok) {
-        sessionStorage.setItem("loggedInAt_" + section, Date.now().toString());
-        passwordModal.hide();
-        window.location.href = section + '.html';
-      } else { 
-        showToast("❌ كلمة المرور غير صحيحة","error");
-        passwordInput.value = "";
-        passwordInput.focus();
-      }
-    } catch { 
-      showToast("❌ حدث خطأ في الاتصال بالخادم","error");
-    }
+      const response = await fetch(`${API_BASE}/api/verify-password`, {method: 'POST',headers: { 'Content-Type': 'application/json' },body: JSON.stringify({ section, password })});
+      if (response.ok) {sessionStorage.setItem("loggedInAt_" + section, Date.now().toString());passwordModal.hide();window.location.href = section + '.html';}
+      else {showToast("❌ كلمة المرور غير صحيحة","error");passwordInput.value = "";passwordInput.focus();}
+    } catch {showToast("❌ خطأ في الاتصال","error");}
   };
-
-  document.getElementById('dashboardPassword').addEventListener("keydown",(e)=>{
-    if(e.key==="Enter") document.getElementById('confirmDashboardAccess').click();
-  });
+  document.getElementById('dashboardPassword').addEventListener("keydown",(e)=>{if(e.key==="Enter") document.getElementById('confirmDashboardAccess').click();});
 }
 
-// جلب الفيديوهات
 async function fetchVideos() {
   try {
     document.getElementById("loadingSpinner").style.display="block";
@@ -328,91 +201,36 @@ async function fetchVideos() {
   finally {document.getElementById("loadingSpinner").style.display="none";}
 }
 
-// عرض الفيديوهات
 function renderVideos() {
   const dep=document.getElementById('departmentSelect').value;
   const q=document.getElementById('searchInput').value.trim().toLowerCase();
   const c=document.getElementById('videoContainer');c.innerHTML='';
   if(!dep)return;
-  const filtered=videos.filter(v=>{
-    const d=v.department?.trim().toLowerCase();
-    const t=v.title?.toLowerCase()||'';
-    const desc=v.description?.toLowerCase()||'';
-    return d===dep.trim().toLowerCase()&&(t.includes(q)||desc.includes(q));
-  });
-  if(filtered.length===0){
-    c.innerHTML='<p class="text-muted">🚫 لا توجد فيديوهات مطابقة للبحث</p>';
-    return;
-  }
-  filtered.forEach(video=>{
-    const card=document.createElement('div');card.className='video-card';
+  const filtered=videos.filter(v=>{const d=v.department?.trim().toLowerCase();const t=v.title?.toLowerCase()||'';const desc=v.description?.toLowerCase()||'';return d===dep.trim().toLowerCase()&&(t.includes(q)||desc.includes(q));});
+  if(filtered.length===0){c.innerHTML='<p class="text-muted">🚫 لا توجد فيديوهات مطابقة للبحث</p>';return;}
+  filtered.forEach(video=>{const card=document.createElement('div');card.className='video-card';
     const title=`<div class="video-title">عنوان الفيديو: ${video.title}</div>`;
     const desc=`<div class="video-description" onclick="showDescription('${escapeHtml(video.title)}','${escapeHtml(video.description)}')">وصف الفيديو: ${video.description}</div>`;
     let media='';const link=video.link||video.url||'';let pop=link;
-    if(link.includes('youtube.com')||link.includes('youtu.be')){
-      media=`<iframe src="https://www.youtube.com/embed/${extractYouTubeID(link)}" allowfullscreen></iframe>`;
-    }
-    else if(link.includes('drive.google.com/file/d/')){
-      const m=link.match(/\/file\/d\/(.*?)(\/|$)/);
-      media=m?`<iframe src="https://drive.google.com/file/d/${m[1]}/preview" allowfullscreen></iframe>`:`<video controls src="${link}"></video>`;
-    }
-    else if(link.includes("sharepoint.com/")&&link.includes("/embed.aspx")){
-      media=`<iframe class="sharepoint-frame" src="${link}" allowfullscreen></iframe>`;
-      const m=link.match(/UniqueId=([a-zA-Z0-9\-]+)/);
-      if(m)pop=`https://ymkh-my.sharepoint.com/personal/laith_obaidat_iu_edu_jo/_layouts/15/stream.aspx?UniqueId=${m[1]}`;
-    }
-    else if(link.includes("sharepoint.com/")&&link.includes("/stream.aspx")){
-      const m=link.match(/UniqueId=([a-zA-Z0-9\-]+)/);
-      if(m){
-        const e=`https://ymkh-my.sharepoint.com/personal/laith_obaidat_iu_edu_jo/_layouts/15/embed.aspx?UniqueId=${m[1]}&embed=%7B%22ust%22%3Atrue%7D&referrer=StreamWebApp&referrerScenario=EmbedDialog.Create`;
-        media=`<iframe class="sharepoint-frame" src="${e}" allowfullscreen></iframe>`;
-        pop=link;
-      }else{
-        media=`<video controls src="${link}"></video>`;
-      }
-    }
+    if(link.includes('youtube.com')||link.includes('youtu.be')){media=`<iframe src="https://www.youtube.com/embed/${extractYouTubeID(link)}" allowfullscreen></iframe>`;}
+    else if(link.includes('drive.google.com/file/d/')){const m=link.match(/\/file\/d\/(.*?)(\/|$)/);media=m?`<iframe src="https://drive.google.com/file/d/${m[1]}/preview" allowfullscreen></iframe>`:`<video controls src="${link}"></video>`;}
+    else if(link.includes("sharepoint.com/")&&link.includes("/embed.aspx")){media=`<iframe class="sharepoint-frame" src="${link}" allowfullscreen></iframe>`;const m=link.match(/UniqueId=([a-zA-Z0-9\-]+)/);if(m)pop=`https://ymkh-my.sharepoint.com/...UniqueId=${m[1]}`;}
     else{media=`<video controls src="${link}"></video>`;}
     const btn=`<button class="popout-button" onclick="window.open('${pop}','_blank','width=800,height=600')">عرض الفيديو</button>`;
-    card.innerHTML=title+desc+media+btn;c.appendChild(card);
-  });
+    card.innerHTML=title+desc+media+btn;c.appendChild(card);});
 }
+
 function escapeHtml(t){return t?.replace(/"/g,'&quot;').replace(/'/g,'&#39;')||'';}
 function extractYouTubeID(u){const m=u.match(/[?&]v=([^&#]*)|youtu\.be\/([^&#]*)/);return m?(m[1]||m[2]):'';}
 function showDescription(t,d){document.getElementById('descTitle').textContent=t;document.getElementById('descContent').innerHTML=d;new bootstrap.Modal(document.getElementById('descModal')).show();}
-function populateDepartmentOptions(){
-  const counts=videos.reduce((a,v)=>{a[v.department]=(a[v.department]||0)+1;return a;},{});const sel=document.getElementById('departmentSelect');
-  sel.innerHTML='<option value="">-- اختر القسم --</option>';
-  Object.entries(counts).forEach(([dep,c])=>{
-    const o=document.createElement('option');
-    o.value=dep;o.textContent=`${dep} (${c})`;
-    sel.appendChild(o);
-  });
-}
+function populateDepartmentOptions(){const counts=videos.reduce((a,v)=>{a[v.department]=(a[v.department]||0)+1;return a;},{});const sel=document.getElementById('departmentSelect');sel.innerHTML='<option value="">-- اختر القسم --</option>';Object.entries(counts).forEach(([dep,c])=>{const o=document.createElement('option');o.value=dep;o.textContent=`${dep} (${c})`;sel.appendChild(o);});}
 
-document.getElementById('departmentSelect').addEventListener('change',()=>{
-  document.getElementById('searchInput').disabled=false;
-  renderVideos();
-});
-document.getElementById('searchInput').addEventListener('input',renderVideos);
-document.addEventListener("DOMContentLoaded",()=>{
-  checkSessionStatus();
-  fetchVideos();
-});
-
-// Navbar scroll + theme toggle
-window.addEventListener('scroll',()=>{
-  const nav=document.getElementById('mainNavbar');
-  if(window.scrollY>20)nav.classList.add('scrolled');else nav.classList.remove('scrolled');
-});
-document.getElementById('themeToggle').addEventListener('click',()=>{
-  document.body.classList.toggle('dark-mode');
-  const icon=document.querySelector("#themeToggle i");
-  if(document.body.classList.contains("dark-mode")){
-    icon.classList.replace("bi-moon-stars-fill","bi-brightness-high-fill");
-  }else{
-    icon.classList.replace("bi-brightness-high-fill","bi-moon-stars-fill");
-  }
-});
+document.getElementById('departmentSelect').addEventListener('change',()=>{document.getElementById('searchInput').disabled=false;renderVideos();});
+document.getElementById('searchInput').addEventListener('input',()=>{renderVideos();document.getElementById('clearSearch').style.display=document.getElementById('searchInput').value? "block":"none";});
+document.getElementById('clearSearch').addEventListener('click',()=>{document.getElementById('searchInput').value="";document.getElementById('clearSearch').style.display="none";renderVideos();});
+document.addEventListener("DOMContentLoaded",()=>{checkSessionStatus();fetchVideos();});
+window.addEventListener('scroll',()=>{const nav=document.getElementById('mainNavbar');if(window.scrollY>20)nav.classList.add('scrolled');else nav.classList.remove('scrolled');});
+document.getElementById('themeToggle').addEventListener('click',()=>{document.body.classList.toggle('dark-mode');const icon=document.querySelector("#themeToggle i");if(document.body.classList.contains("dark-mode")){icon.classList.replace("bi-moon-stars-fill","bi-brightness-high-fill");}else{icon.classList.replace("bi-brightness-high-fill","bi-moon-stars-fill");}});
 </script>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
