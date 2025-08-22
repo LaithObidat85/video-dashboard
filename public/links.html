@@ -12,13 +12,8 @@
       padding: 20px;
       font-family: 'Segoe UI', sans-serif;
     }
-    .card {
-      margin-bottom: 20px;
-    }
-    .table th, .table td {
-      white-space: nowrap;
-      vertical-align: middle;
-    }
+    .card { margin-bottom: 20px; }
+    .table th, .table td { white-space: nowrap; vertical-align: middle; }
     .table th:first-child, .table td:first-child {
       position: sticky;
       right: 0;
@@ -27,11 +22,8 @@
     }
     .table th:nth-child(4), .table td:nth-child(4) { width: 120px; text-align: center; }
     .table th:nth-child(5), .table td:nth-child(5) { width: 260px; }
-    .action-buttons {
-      display: flex;
-      gap: 8px;
-      justify-content: center;
-    }
+    .action-buttons { display: flex; gap: 8px; justify-content: center; }
+    .toast-container { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); z-index: 9999; }
   </style>
 </head>
 <body>
@@ -86,8 +78,25 @@
   <!-- ✅ نافذة تسجيل الدخول -->
   <div id="loginModalContainer"></div>
 
+  <!-- ✅ Toast -->
+  <div class="toast-container" id="toastContainer"></div>
+
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
   <script>
+    // ✅ دالة التوست
+    function showToast(message, type="success") {
+      const toast = document.createElement('div');
+      toast.className = `toast align-items-center text-bg-${type} border-0 mb-2`;
+      toast.setAttribute('role', 'alert');
+      toast.innerHTML = `
+        <div class="d-flex">
+          <div class="toast-body">${message}</div>
+          <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+        </div>`;
+      document.getElementById('toastContainer').appendChild(toast);
+      new bootstrap.Toast(toast, { delay: 2000 }).show();
+    }
+
     async function loadLinks() {
       const res = await fetch('/api/links');
       const data = await res.json();
@@ -103,14 +112,13 @@
                 ? '<i class="bi bi-lock-fill text-danger fs-4"></i>' 
                 : '<i class="bi bi-unlock-fill text-success fs-4"></i>'}</td>
             <td>
-  <div class="action-buttons">
-    <i class="bi bi-pencil-square text-warning fs-5" style="cursor:pointer;" onclick='editLink(${JSON.stringify(link)})'></i>
-    <i class="bi bi-trash-fill text-danger fs-5" style="cursor:pointer;" onclick="deleteLink('${link._id}')"></i>
-    <i class="bi bi-arrow-up-circle-fill text-info fs-5" style="cursor:pointer;" onclick="moveLink('${link._id}','up')"></i>
-    <i class="bi bi-arrow-down-circle-fill text-secondary fs-5" style="cursor:pointer;" onclick="moveLink('${link._id}','down')"></i>
-  </div>
-</td>
-
+              <div class="action-buttons">
+                <i class="bi bi-pencil-square text-warning fs-5" style="cursor:pointer;" onclick='editLink(${JSON.stringify(link)})'></i>
+                <i class="bi bi-trash-fill text-danger fs-5" style="cursor:pointer;" onclick="deleteLink('${link._id}')"></i>
+                <i class="bi bi-arrow-up-circle-fill text-info fs-5" style="cursor:pointer;" onclick="moveLink('${link._id}','up')"></i>
+                <i class="bi bi-arrow-down-circle-fill text-secondary fs-5" style="cursor:pointer;" onclick="moveLink('${link._id}','down')"></i>
+              </div>
+            </td>
           </tr>
         `;
       });
@@ -128,8 +136,12 @@
     async function deleteLink(id) {
       if (!confirm('هل أنت متأكد من الحذف؟')) return;
       const res = await fetch(`/api/links/${id}`, { method: 'DELETE' });
-      if (res.ok) loadLinks();
-      else alert('❌ فشل في الحذف');
+      if (res.ok) {
+        showToast("🗑️ تم الحذف بنجاح", "danger");
+        loadLinks();
+      } else {
+        showToast("❌ فشل في الحذف", "danger");
+      }
     }
 
     async function moveLink(id, direction) {
@@ -139,9 +151,10 @@
         body: JSON.stringify({ direction })
       });
       if (res.ok) {
+        showToast("🔼 تم النقل بنجاح");
         loadLinks();
       } else {
-        alert('❌ لم يتم النقل');
+        showToast("❌ لم يتم النقل", "danger");
       }
     }
 
@@ -150,9 +163,7 @@
       const data = Object.fromEntries(new FormData(form).entries());
       data.requiresPassword = document.getElementById('requiresPassword').checked;
 
-      if (!data.id) {
-        delete data.id;
-      }
+      if (!data.id) delete data.id;
 
       const method = data.id ? 'PUT' : 'POST';
       const url = data.id ? `/api/links/${data.id}` : '/api/links';
@@ -164,13 +175,13 @@
       });
 
       if (res.ok) {
-        alert('✅ تم الحفظ بنجاح');
+        showToast("✅ تم الحفظ بنجاح");
         loadLinks();
         form.reset();
         document.getElementById('id').value = '';
         form.style.display = 'none';
       } else {
-        alert('❌ فشل العملية');
+        showToast("❌ فشل العملية", "danger");
       }
     });
 
