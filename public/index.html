@@ -6,8 +6,6 @@
   <link rel="icon" type="image/png" href="https://www.dropbox.com/scl/fi/f283e4rvv5cf9x12a1cic/my-website-logo.png?rlkey=yia776im7klypy27af32m0scy&e=1&st=vhaprvzh&dl=1">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.rtl.min.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
-  <!-- SweetAlert2 -->
-  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
   <style>
     body {
       background: linear-gradient(to right, #e0eafc, #cfdef3);
@@ -38,6 +36,14 @@
     .scrolled {box-shadow:0 4px 10px rgba(0,0,0,0.2)!important;}
     body.dark-mode {background:#121212!important;color:#eaeaea!important;}
     body.dark-mode nav {background:linear-gradient(to right,#222,#000)!important;}
+    /* Toast في منتصف الصفحة */
+    .toast-container {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      z-index: 2000;
+    }
   </style>
 </head>
 <body>
@@ -119,12 +125,33 @@
   </div>
 </div>
 
+<!-- Toast Container -->
+<div class="toast-container" id="toastContainer"></div>
+
 <script>
 const API_BASE = 'https://video-dashboard-backend.onrender.com';
 let videos = [];
 let passwordModal;
 
-// دالة التحقق من الجلسة
+// ✅ دالة إظهار Toast
+function showToast(message, type="info") {
+  const toastId = "toast" + Date.now();
+  const bgClass = type==="success" ? "bg-success" : type==="error" ? "bg-danger" : "bg-info";
+  const html = `
+    <div id="${toastId}" class="toast align-items-center text-white ${bgClass} border-0 mb-2" role="alert">
+      <div class="d-flex">
+        <div class="toast-body">${message}</div>
+        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+      </div>
+    </div>`;
+  const container = document.getElementById("toastContainer");
+  container.insertAdjacentHTML("beforeend", html);
+  const toastEl = document.getElementById(toastId);
+  const toast = new bootstrap.Toast(toastEl, { delay: 3000 });
+  toast.show();
+}
+
+// التحقق من الجلسة
 async function checkSessionStatus() {
   try {
     const res = await fetch(`${API_BASE}/api/check-session`);
@@ -139,9 +166,9 @@ async function logout() {
     await fetch(`${API_BASE}/api/logout`, { method: "POST" });
     sessionStorage.clear();
     document.getElementById("logoutNavItem").style.display = "none";
-    Swal.fire({icon:"success",title:"تم تسجيل الخروج بنجاح ✅",confirmButtonText:"موافق"});
+    showToast("✅ تم تسجيل الخروج بنجاح","success");
   } catch (err) {
-    Swal.fire({icon:"error",title:"❌ حدث خطأ أثناء تسجيل الخروج"});
+    showToast("❌ حدث خطأ أثناء تسجيل الخروج","error");
   }
 }
 
@@ -187,12 +214,12 @@ async function requestDashboardAccess() {
         passwordModal.hide();
         window.location.href = section + '.html';
       } else { 
-        Swal.fire({icon:"error",title:"❌ كلمة المرور غير صحيحة"});
+        showToast("❌ كلمة المرور غير صحيحة","error");
         passwordInput.value = "";
         passwordInput.focus();
       }
     } catch { 
-      Swal.fire({icon:"error",title:"❌ حدث خطأ في الاتصال بالخادم"});
+      showToast("❌ حدث خطأ في الاتصال بالخادم","error");
     }
   };
 
