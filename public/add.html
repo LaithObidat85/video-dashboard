@@ -11,6 +11,8 @@
     #preview { margin-top: 20px; position: relative; }
     iframe, video { width: 100%; height: 360px; border: none; }
     #descriptionEditor { height: 120px; }
+    /* ✅ مكان ظهور التوست */
+    #toastContainer { position: fixed; bottom: 20px; left: 20px; z-index: 2000; }
   </style>
 </head>
 <body>
@@ -55,17 +57,54 @@
     <div id="confirmation" class="alert alert-success mt-3 d-none"></div>
   </div>
 
-  <!-- ✅ مكان لإدخال نافذة تسجيل الدخول -->
+  <!-- ✅ مكان نافذة تسجيل الدخول -->
   <div id="loginModalContainer"></div>
+
+  <!-- ✅ مكان ظهور التوست -->
+  <div id="toastContainer"></div>
+
+  <!-- ✅ Modal تأكيد الحذف -->
+  <div class="modal fade" id="confirmDeleteModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header bg-danger text-white">
+          <h5 class="modal-title">تأكيد الحذف</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          ⚠️ هل أنت متأكد أنك تريد حذف القسم "<span id="deleteDepName"></span>"؟
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+          <button type="button" class="btn btn-danger" id="confirmDeleteBtn">حذف</button>
+        </div>
+      </div>
+    </div>
+  </div>
 
   <!-- المكتبات -->
   <script src="https://cdn.quilljs.com/1.3.6/quill.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
-  <!-- سكربتات الصفحة -->
   <script>
     const quill = new Quill('#descriptionEditor', { theme: 'snow' });
     const API_BASE = 'https://video-dashboard-backend.onrender.com';
+
+    // ✅ دالة التوست
+    function showToast(message, type = "success") {
+      const toastId = "toast" + Date.now();
+      const toast = document.createElement("div");
+      toast.className = `toast align-items-center text-bg-${type} border-0 show`;
+      toast.id = toastId;
+      toast.role = "alert";
+      toast.innerHTML = `
+        <div class="d-flex">
+          <div class="toast-body">${message}</div>
+          <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+        </div>`;
+      document.getElementById("toastContainer").appendChild(toast);
+      setTimeout(() => toast.remove(), 4000);
+    }
 
     function updatePreview() {
       const link = document.getElementById('url').value.trim();
@@ -76,19 +115,15 @@
       }
       let embedUrl = null;
 
-      // YouTube
       if (link.includes("youtube.com/watch?v=")) {
         const videoId = link.split("v=")[1].split("&")[0];
         embedUrl = `https://www.youtube.com/embed/${videoId}`;
       } else if (link.includes("drive.google.com/file/d/")) {
-        // Google Drive
         const match = link.match(/\/file\/d\/(.*?)(\/|$)/);
         if (match) embedUrl = `https://drive.google.com/file/d/${match[1]}/preview`;
       } else if (link.includes("sharepoint.com/") && link.includes("/embed.aspx")) {
-        // OneDrive / SharePoint embed
         embedUrl = link;
       } else if (link.includes("sharepoint.com/") && link.includes("/stream.aspx")) {
-        // OneDrive / SharePoint stream → embed
         const uniqueIdMatch = link.match(/UniqueId=([a-zA-Z0-9\-]+)/);
         if (uniqueIdMatch) {
           embedUrl = `https://ymkh-my.sharepoint.com/personal/laith_obaidat_iu_edu_jo/_layouts/15/embed.aspx?UniqueId=${uniqueIdMatch[1]}&embed=%7B%22ust%22%3Atrue%7D&referrer=StreamWebApp&referrerScenario=EmbedDialog.Create`;
@@ -120,29 +155,53 @@
       const res = await fetch(`${API_BASE}/api/departments`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name })
       });
-      if (res.ok) loadDepartments();
+      if (res.ok) {
+        loadDepartments();
+        showToast("✅ تم إضافة القسم","success");
+      }
     }
 
     async function editDepartmentPrompt() {
       const select = document.getElementById('department');
       const selected = select.options[select.selectedIndex];
-      if (!selected || !selected.dataset.id) return alert("❌ اختر القسم أولاً");
+      if (!selected || !selected.dataset.id) return showToast("❌ اختر القسم أولاً","danger");
       const newName = prompt("✏️ أدخل الاسم الجديد للقسم:", selected.value);
       if (!newName) return;
       const res = await fetch(`${API_BASE}/api/departments/${selected.dataset.id}`, {
         method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: newName })
       });
-      if (res.ok) loadDepartments();
+      if (res.ok) {
+        loadDepartments();
+        showToast("✏️ تم تعديل القسم","success");
+      }
     }
 
-    async function deleteDepartment() {
+    // ✅ حذف باستخدام Modal
+    let departmentToDelete = null;
+    function deleteDepartment() {
       const select = document.getElementById('department');
       const selected = select.options[select.selectedIndex];
-      if (!selected || !selected.dataset.id) return alert("❌ اختر القسم أولاً");
-      if (!confirm(`⚠️ هل تريد حذف القسم "${selected.value}"؟`)) return;
-      const res = await fetch(`${API_BASE}/api/departments/${selected.dataset.id}`, { method: 'DELETE' });
-      if (res.ok) loadDepartments();
+      if (!selected || !selected.dataset.id) {
+        showToast("❌ اختر القسم أولاً","danger");
+        return;
+      }
+      departmentToDelete = selected;
+      document.getElementById("deleteDepName").textContent = selected.value;
+      new bootstrap.Modal(document.getElementById("confirmDeleteModal")).show();
     }
+
+    document.getElementById("confirmDeleteBtn").addEventListener("click", async () => {
+      if (!departmentToDelete) return;
+      const res = await fetch(`${API_BASE}/api/departments/${departmentToDelete.dataset.id}`, { method: 'DELETE' });
+      if (res.ok) {
+        loadDepartments();
+        showToast("🗑️ تم حذف القسم","success");
+      } else {
+        showToast("❌ فشل حذف القسم","danger");
+      }
+      bootstrap.Modal.getInstance(document.getElementById("confirmDeleteModal")).hide();
+      departmentToDelete = null;
+    });
 
     document.getElementById('videoForm').addEventListener('submit', async e => {
       e.preventDefault();
@@ -163,15 +222,16 @@
         quill.setContents([]);
         document.getElementById('preview').innerHTML = '';
         loadDepartments();
+        showToast("✅ تم إضافة الفيديو بنجاح","success");
       } else {
-        alert('حدث خطأ أثناء الإضافة.');
+        showToast("❌ حدث خطأ أثناء الإضافة","danger");
       }
     });
 
     loadDepartments();
   </script>
 
-  <!-- ✅ الحماية من ملف موحّد -->
+  <!-- ✅ الحماية -->
   <script src="login-guard.js"></script>
 </body>
 </html>
