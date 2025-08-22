@@ -92,6 +92,41 @@
   width: 100% !important; /* خليه يتمدد حسب العمود */
 }
 
+    /* 🎨 تنسيق المودال حسب الوضع */
+
+/* الوضع الداكن */
+body.dark-mode .modal-content {
+  background-color: #1e1e1e; /* خلفية داكنة */
+  color: #eaeaea;           /* خط فاتح */
+}
+
+body.dark-mode .modal-header {
+  border-bottom: 1px solid #444;
+}
+
+body.dark-mode .modal-body {
+  color: #eaeaea;
+}
+
+body.dark-mode .modal-title {
+  color: #fff;
+}
+
+/* زر الإغلاق في الوضع الداكن */
+body.dark-mode .btn-close {
+  filter: invert(1) grayscale(100%) brightness(200%);
+}
+
+/* الوضع العادي (الافتراضي) */
+body:not(.dark-mode) .modal-content {
+  background-color: #fff;   /* خلفية بيضاء */
+  color: #212529;           /* خط غامق */
+}
+
+body:not(.dark-mode) .modal-title {
+  color: #000;
+}
+
     
   </style>
 </head>
