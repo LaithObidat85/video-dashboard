@@ -82,6 +82,10 @@
       height: 200px;
       background: white;
     }
+    /* Toast */
+    .toast-container {
+      z-index: 9999;
+    }
   </style>
 </head>
 <body>
@@ -136,6 +140,36 @@
           <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إغلاق</button>
           <button type="button" class="btn btn-primary" onclick="saveEdit()">حفظ</button>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- نافذة تأكيد الحذف -->
+  <div class="modal fade" id="confirmDeleteModal" tabindex="-1">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header bg-danger text-white">
+          <h5 class="modal-title">تأكيد الحذف</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          هل أنت متأكد أنك تريد حذف هذا الفيديو؟
+          <input type="hidden" id="deleteVideoId">
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+          <button type="button" class="btn btn-danger" onclick="confirmDelete()">تأكيد الحذف</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div class="toast-container position-fixed bottom-0 end-0 p-3">
+    <div id="actionToast" class="toast align-items-center text-bg-primary border-0" role="alert">
+      <div class="d-flex">
+        <div class="toast-body" id="toastMsg">تم التنفيذ بنجاح</div>
+        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
       </div>
     </div>
   </div>
@@ -262,7 +296,7 @@
       const actions = `
         <div class="action-buttons">
           <button class="btn btn-warning btn-sm" onclick="openEditModal('${video._id}')">تعديل</button>
-          <button class="btn btn-danger btn-sm" onclick="deleteVideo('${video._id}')">حذف</button>
+          <button class="btn btn-danger btn-sm" onclick="showDeleteModal('${video._id}')">حذف</button>
         </div>
       `;
 
@@ -312,16 +346,30 @@
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(updated)
     });
-    alert('✅ تم حفظ التعديلات');
+    showToast('✅ تم حفظ التعديلات');
     fetchVideos();
     bootstrap.Modal.getInstance(document.getElementById('editModal')).hide();
   }
 
-  async function deleteVideo(id) {
-    if (!confirm('❌ هل أنت متأكد من حذف هذا الفيديو؟')) return;
+  function showDeleteModal(id) {
+    document.getElementById('deleteVideoId').value = id;
+    const modal = new bootstrap.Modal(document.getElementById('confirmDeleteModal'));
+    modal.show();
+  }
+
+  async function confirmDelete() {
+    const id = document.getElementById('deleteVideoId').value;
     await fetch(`/api/videos/${id}`, { method: 'DELETE' });
-    alert('🗑️ تم حذف الفيديو');
+    showToast('🗑️ تم حذف الفيديو');
     fetchVideos();
+    bootstrap.Modal.getInstance(document.getElementById('confirmDeleteModal')).hide();
+  }
+
+  function showToast(message) {
+    document.getElementById('toastMsg').textContent = message;
+    const toastEl = document.getElementById('actionToast');
+    const toast = new bootstrap.Toast(toastEl);
+    toast.show();
   }
 
   document.getElementById('departmentSelect').addEventListener('change', () => {
