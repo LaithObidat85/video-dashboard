@@ -80,6 +80,19 @@
     body.dark-mode nav {background:rgba(34,34,34,0.95)!important;}
     body.dark-mode .video-card {background:#1e1e1e;color:#ddd;}
     body.dark-mode .video-description {color:#9bbcff;}
+/* شبكة الفيديوهات */
+.video-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 16px;
+  justify-content: center;
+  margin-top: 20px;
+}
+.video-card {
+  width: 100% !important; /* خليه يتمدد حسب العمود */
+}
+
+    
   </style>
 </head>
 <body>
