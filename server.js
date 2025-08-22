@@ -54,19 +54,20 @@ const passwordSchema = new mongoose.Schema({
 });
 const Password = mongoose.model('Password', passwordSchema);
 
-// ✅ النسخ الاحتياطية الآن تشمل كلمات المرور
-const backupSchema = new mongoose.Schema({
-  date: { type: Date, default: Date.now },
-  videos: Array,
-  links: Array,
-  passwords: Array
-});
-const Backup = mongoose.model('Backup', backupSchema);
-
 const departmentSchema = new mongoose.Schema({
   name: { type: String, required: true, unique: true }
 });
 const Department = mongoose.model('Department', departmentSchema);
+
+// ✅ النسخ الاحتياطية الآن تشمل (فيديوهات + روابط + كلمات مرور + أقسام)
+const backupSchema = new mongoose.Schema({
+  date: { type: Date, default: Date.now },
+  videos: Array,
+  links: Array,
+  passwords: Array,
+  departments: Array
+});
+const Backup = mongoose.model('Backup', backupSchema);
 
 // Middleware
 app.use(bodyParser.json());
@@ -131,7 +132,7 @@ app.get('/add.html', requireSectionAuth('add', 'add.html'));
 app.get('/passwords.html', requireSectionAuth('passwords', 'passwords.html'));
 app.get('/index.html', requireSectionAuth('index', 'index.html'));
 
-// ✅ إدارة كلمات المرور
+// ====== إدارة كلمات المرور ======
 app.get('/api/passwords', async (req, res) => {
   try {
     const passwords = await Password.find();
@@ -347,9 +348,10 @@ app.post('/api/backups/create', async (req, res) => {
     const videos = await Video.find();
     const links = await Link.find();
     const passwords = await Password.find();
-    const backup = new Backup({ videos, links, passwords });
+    const departments = await Department.find();
+    const backup = new Backup({ videos, links, passwords, departments });
     await backup.save();
-    res.json({ message: '✅ تم إنشاء النسخة الاحتياطية (فيديوهات + روابط + كلمات مرور)' });
+    res.json({ message: '✅ تم إنشاء النسخة الاحتياطية (فيديوهات + روابط + كلمات مرور + أقسام)' });
   } catch (err) {
     res.status(500).json({ message: '❌ فشل في إنشاء النسخة', error: err.message });
   }
@@ -400,7 +402,10 @@ app.post('/api/backups/restore/:id', async (req, res) => {
     await Password.deleteMany({});
     if (backup.passwords && backup.passwords.length > 0) await Password.insertMany(backup.passwords);
 
-    res.json({ message: '♻️ تم الاسترجاع بنجاح (فيديوهات + روابط + كلمات مرور)' });
+    await Department.deleteMany({});
+    if (backup.departments && backup.departments.length > 0) await Department.insertMany(backup.departments);
+
+    res.json({ message: '♻️ تم الاسترجاع بنجاح (فيديوهات + روابط + كلمات مرور + أقسام)' });
   } catch (err) {
     res.status(500).json({ message: '❌ فشل في الاسترجاع', error: err.message });
   }
