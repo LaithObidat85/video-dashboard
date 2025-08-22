@@ -22,6 +22,13 @@
       flex-wrap: wrap;
       gap: 10px;
     }
+    /* ✅ توست أعلى الصفحة في الوسط */
+    .toast-container {
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 2000;
+    }
   </style>
 </head>
 <body>
@@ -48,12 +55,63 @@
   <!-- ✅ مودال تسجيل الدخول سيتم تحميله هنا -->
   <div id="loginModalContainer"></div>
 
+  <!-- ✅ Toast Container -->
+  <div class="toast-container position-fixed"></div>
+
+  <!-- ✅ Modal للتأكيد -->
+  <div class="modal fade" id="confirmModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">تأكيد العملية</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body" id="confirmMessage">هل أنت متأكد؟</div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+          <button type="button" class="btn btn-primary" id="confirmOkBtn">موافق</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <!-- ✅ استدعاء الحماية -->
 <script src="login-guard.js"></script>
 
 <script>
 let backups = [];
+let confirmCallback = null;
+
+// ✅ دالة لعرض التوست
+function showToast(message, type="success") {
+  const container = document.querySelector('.toast-container');
+  const toastEl = document.createElement('div');
+  toastEl.className = `toast align-items-center text-bg-${type} border-0 mb-2`;
+  toastEl.role = "alert";
+  toastEl.innerHTML = `
+    <div class="d-flex">
+      <div class="toast-body">${message}</div>
+      <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+    </div>
+  `;
+  container.appendChild(toastEl);
+  const bsToast = new bootstrap.Toast(toastEl, { delay: 3000 });
+  bsToast.show();
+  toastEl.addEventListener("hidden.bs.toast", () => toastEl.remove());
+}
+
+// ✅ دالة لعرض مودال التأكيد
+function showConfirm(message, callback) {
+  document.getElementById("confirmMessage").innerText = message;
+  confirmCallback = callback;
+  new bootstrap.Modal(document.getElementById("confirmModal")).show();
+}
+
+document.getElementById("confirmOkBtn").addEventListener("click", () => {
+  if (confirmCallback) confirmCallback();
+  bootstrap.Modal.getInstance(document.getElementById("confirmModal")).hide();
+});
 
 async function fetchBackups() {
   const res = await fetch('/api/backups');
@@ -109,37 +167,38 @@ function toggleSelectAll(source) {
 async function deleteSelected() {
   const selected = [...document.querySelectorAll('.backup-check:checked')];
   if (selected.length === 0) {
-    alert("يرجى تحديد نسخة واحدة على الأقل");
+    showToast("⚠️ يرجى تحديد نسخة واحدة على الأقل", "warning");
     return;
   }
-  if (!confirm("هل أنت متأكد من حذف النسخ المحددة؟")) return;
-
-  for (let cb of selected) {
-    const id = cb.getAttribute('data-id');
-    await fetch(`/api/backups/${id}`, { method: 'DELETE' });
-  }
-  await fetchBackups();
-  document.getElementById('selectAll').checked = false;
+  showConfirm("هل أنت متأكد من حذف النسخ المحددة؟", async () => {
+    for (let cb of selected) {
+      const id = cb.getAttribute('data-id');
+      await fetch(`/api/backups/${id}`, { method: 'DELETE' });
+    }
+    await fetchBackups();
+    document.getElementById('selectAll').checked = false;
+    showToast("🗑️ تم الحذف بنجاح", "success");
+  });
 }
 
 async function createBackup() {
   const res = await fetch('/api/backups/create', { method: 'POST' });
   const result = await res.json();
-  alert(result.message || 'تم إنشاء النسخة الاحتياطية');
+  showToast(result.message || '✅ تم إنشاء النسخة الاحتياطية');
   await fetchBackups();
 }
 
 async function restoreBackup(id) {
-  if (!confirm("هل تريد استرجاع هذه النسخة إلى قاعدة البيانات؟")) return;
-  const res = await fetch(`/api/backups/restore/${id}`, { method: 'POST' });
-  const result = await res.json();
-  alert(result.message || 'تم استرجاع النسخة الاحتياطية');
+  showConfirm("هل تريد استرجاع هذه النسخة إلى قاعدة البيانات؟", async () => {
+    const res = await fetch(`/api/backups/restore/${id}`, { method: 'POST' });
+    const result = await res.json();
+    showToast(result.message || '♻️ تم استرجاع النسخة الاحتياطية', "info");
+  });
 }
 
 // ✅ عند نجاح تسجيل الدخول → نفذ fetchBackups
 document.addEventListener("DOMContentLoaded", () => {
   setTimeout(() => {
-    // بعد تحقق login-guard.js من كلمة المرور
     fetchBackups();
   }, 500);
 });
