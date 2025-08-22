@@ -12,7 +12,15 @@
     iframe, video { width: 100%; height: 360px; border: none; }
     #descriptionEditor { height: 120px; }
     /* ✅ مكان ظهور التوست */
-    #toastContainer { position: fixed; bottom: 20px; left: 20px; z-index: 2000; }
+    /* ✅ مكان ظهور التوست أعلى الصفحة في الوسط */
+#toastContainer { 
+  position: fixed; 
+  top: 20px; 
+  left: 50%; 
+  transform: translateX(-50%); 
+  z-index: 2000; 
+}
+
   </style>
 </head>
 <body>
