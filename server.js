@@ -36,18 +36,6 @@ const videoSchema = new mongoose.Schema({
 });
 const Video = mongoose.model('Video', videoSchema);
 
-const backupSchema = new mongoose.Schema({
-  date: { type: Date, default: Date.now },
-  videos: Array,
-  links: Array
-});
-const Backup = mongoose.model('Backup', backupSchema);
-
-const departmentSchema = new mongoose.Schema({
-  name: { type: String, required: true, unique: true }
-});
-const Department = mongoose.model('Department', departmentSchema);
-
 const linkSchema = new mongoose.Schema({
   name: { type: String },
   description: String,
@@ -61,9 +49,24 @@ const Link = mongoose.model('Link', linkSchema);
 
 const passwordSchema = new mongoose.Schema({
   section: { type: String, required: true, unique: true },
-  password: { type: String, required: true }
+  password: { type: String, required: true },
+  createdAt: { type: Date, default: Date.now }
 });
 const Password = mongoose.model('Password', passwordSchema);
+
+// ✅ النسخ الاحتياطية الآن تشمل كلمات المرور
+const backupSchema = new mongoose.Schema({
+  date: { type: Date, default: Date.now },
+  videos: Array,
+  links: Array,
+  passwords: Array
+});
+const Backup = mongoose.model('Backup', backupSchema);
+
+const departmentSchema = new mongoose.Schema({
+  name: { type: String, required: true, unique: true }
+});
+const Department = mongoose.model('Department', departmentSchema);
 
 // Middleware
 app.use(bodyParser.json());
@@ -80,11 +83,10 @@ app.use(session({
 // ✅ التحقق من كلمة المرور لكل قسم أو صفحة
 app.post("/api/verify-password", async (req, res) => {
   const { section, password } = req.body;
-
   try {
     const record = await Password.findOne({ section });
     if (record && record.password === password) {
-      req.session[`${section}Auth`] = true; // جلسة خاصة بكل قسم
+      req.session[`${section}Auth`] = true;
       return res.json({ success: true });
     } else {
       return res.status(403).json({ success: false, message: "❌ كلمة المرور غير صحيحة" });
@@ -94,7 +96,7 @@ app.post("/api/verify-password", async (req, res) => {
   }
 });
 
-// ✅ تحقق من حالة الجلسة (لكل قسم)
+// ✅ تحقق من حالة الجلسة
 app.get('/api/check-session/:section', (req, res) => {
   const { section } = req.params;
   if (req.session && req.session[`${section}Auth`]) {
@@ -104,16 +106,14 @@ app.get('/api/check-session/:section', (req, res) => {
   }
 });
 
-// ✅ تسجيل الخروج (لكل الأقسام)
+// ✅ تسجيل الخروج
 app.post('/api/logout/:section', (req, res) => {
   const { section } = req.params;
-  if (req.session) {
-    req.session[`${section}Auth`] = false;
-  }
+  if (req.session) req.session[`${section}Auth`] = false;
   return res.json({ success: true });
 });
 
-// ✅ حماية الصفحات حسب القسم
+// ✅ حماية الصفحات
 function requireSectionAuth(section, page) {
   return (req, res) => {
     if (req.session && req.session[`${section}Auth`]) {
@@ -123,7 +123,6 @@ function requireSectionAuth(section, page) {
     }
   };
 }
-
 app.get('/dashboard.html', requireSectionAuth('dashboard', 'dashboard.html'));
 app.get('/edit.html', requireSectionAuth('edit', 'edit.html'));
 app.get('/links.html', requireSectionAuth('links', 'links.html'));
@@ -170,7 +169,7 @@ app.delete('/api/passwords/:id', async (req, res) => {
   }
 });
 
-// ✅ التحقق من كلمة مرور قسم (للاستخدام المباشر)
+// ✅ التحقق المباشر من كلمة مرور قسم
 app.post('/api/check-section-password', async (req, res) => {
   const { section, password } = req.body;
   try {
@@ -347,11 +346,10 @@ app.post('/api/backups/create', async (req, res) => {
   try {
     const videos = await Video.find();
     const links = await Link.find();
-
-    const backup = new Backup({ videos, links });
+    const passwords = await Password.find();
+    const backup = new Backup({ videos, links, passwords });
     await backup.save();
-
-    res.json({ message: '✅ تم إنشاء النسخة الاحتياطية (فيديوهات + روابط)' });
+    res.json({ message: '✅ تم إنشاء النسخة الاحتياطية (فيديوهات + روابط + كلمات مرور)' });
   } catch (err) {
     res.status(500).json({ message: '❌ فشل في إنشاء النسخة', error: err.message });
   }
@@ -394,16 +392,15 @@ app.post('/api/backups/restore/:id', async (req, res) => {
     if (!backup) return res.status(404).json({ message: '❌ النسخة غير موجودة' });
 
     await Video.deleteMany({});
-    if (backup.videos && backup.videos.length > 0) {
-      await Video.insertMany(backup.videos);
-    }
+    if (backup.videos && backup.videos.length > 0) await Video.insertMany(backup.videos);
 
     await Link.deleteMany({});
-    if (backup.links && backup.links.length > 0) {
-      await Link.insertMany(backup.links);
-    }
+    if (backup.links && backup.links.length > 0) await Link.insertMany(backup.links);
 
-    res.json({ message: '♻️ تم الاسترجاع بنجاح (فيديوهات + روابط)' });
+    await Password.deleteMany({});
+    if (backup.passwords && backup.passwords.length > 0) await Password.insertMany(backup.passwords);
+
+    res.json({ message: '♻️ تم الاسترجاع بنجاح (فيديوهات + روابط + كلمات مرور)' });
   } catch (err) {
     res.status(500).json({ message: '❌ فشل في الاسترجاع', error: err.message });
   }
@@ -446,11 +443,9 @@ app.get('/protected', async (req, res) => {
   if (!req.session.user) return res.redirect('/auth/login');
   const linkId = req.query.id;
   if (!linkId) return res.redirect('/auth/login');
-
   try {
     const link = await Link.findById(linkId);
     if (!link) return res.send('❌ الرابط غير موجود');
-
     res.send(`<iframe src="${link.link}" style="width:100%;height:100vh;border:none;"></iframe>`);
   } catch (err) {
     res.redirect('/auth/login');
