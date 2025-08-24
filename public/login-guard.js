@@ -64,7 +64,12 @@ async function setupLoginGuard() {
       sessionStorage.setItem(loggedInKey, Date.now().toString());
       passwordModal.hide();
     } else {
-      alert("❌ كلمة المرور غير صحيحة");
+      // 🚫 بدل الـ alert → Toast
+      if (typeof showToast === "function") {
+        showToast("❌ كلمة المرور غير صحيحة", "danger");
+      } else {
+        console.warn("showToast غير معرف - fallback إلى console.warn");
+      }
       passwordInput.value = "";
       passwordInput.focus();
     }
@@ -97,8 +102,6 @@ function getSectionName() {
 
   return "general"; // افتراضي
 }
-
-
 
 // ✅ عند تحميل الصفحة نفذ الحماية
 document.addEventListener("DOMContentLoaded", setupLoginGuard);
