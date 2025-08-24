@@ -32,7 +32,7 @@
     body.dark-mode .modal-content { background: #1e1e1e; color: #fff; }
     body.dark-mode .btn-close { filter: invert(1); }
 
-    /* شاشة التحميل مع Fade */
+    /* شاشة التحميل */
     #loadingOverlay {
       position: fixed; top: 0; left: 0; width: 100%; height: 100%;
       background: rgba(0,0,0,0.5); display: flex;
@@ -69,7 +69,9 @@
   <div class="d-flex justify-content-between mb-3 mt-3">
     <div>
       <button id="logoutBtn" class="btn btn-danger me-2" data-bs-toggle="tooltip" title="تسجيل الخروج"><i class="bi bi-box-arrow-right"></i></button>
-      <button id="dashboardBtn" class="btn btn-secondary" data-bs-toggle="tooltip" title="العودة للوحة التحكم"><i class="bi bi-speedometer2"></i></button>
+      <button id="dashboardBtn" class="btn btn-secondary me-2" data-bs-toggle="tooltip" title="العودة للوحة التحكم"><i class="bi bi-speedometer2"></i></button>
+      <!-- زر تحديث الفيديوهات -->
+      <button id="refreshBtn" class="btn btn-info" data-bs-toggle="tooltip" title="تحديث القائمة"><i class="bi bi-arrow-clockwise"></i></button>
     </div>
     <div>
       <button id="themeToggle" class="btn btn-outline-dark" data-bs-toggle="tooltip" title="الوضع الليلي/النهاري"><i class="bi bi-moon-stars-fill"></i></button>
@@ -153,7 +155,7 @@ let quill = new Quill('#editor', {
   modules: { toolbar: [['bold','italic','underline'],[{ 'list':'ordered'},{ 'list':'bullet'}],['link','image'],[{ 'direction':'rtl'}],['clean']] }
 });
 
-// ✅ دوال Overlay مع Fade
+// ✅ دوال Overlay
 function showOverlay(text="جاري التحميل...⏳"){
   const overlay = document.getElementById("loadingOverlay");
   document.getElementById("loadingText").textContent = text;
@@ -204,16 +206,31 @@ document.getElementById("themeToggle").addEventListener("click",()=>{
 // ✅ Dashboard
 document.getElementById("dashboardBtn").addEventListener("click",()=>{window.location.href="dashboard.html";});
 
+// ✅ Refresh
+document.getElementById("refreshBtn").addEventListener("click", () => {
+  showOverlay("جاري تحديث القائمة...⏳");
+  fetchVideos().then(() => {
+    hideOverlay();
+    showToast("✅ تم تحديث القائمة");
+  });
+});
+
 // ✅ Tooltips
 document.addEventListener("DOMContentLoaded", () => {
   const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
   tooltipTriggerList.forEach(el => { new bootstrap.Tooltip(el,{ trigger:'hover focus', placement:'top', delay:{show:300,hide:150}, customClass:'custom-tooltip'}); });
 });
 
+// ✅ تحميل الصفحة
+window.addEventListener("load",()=>{
+  hideOverlay();
+  document.getElementById("pageContent").style.display="block";
+});
+
 // 🔽 وظائف الفيديوهات
 async function fetchDepartments(){ try{const res=await fetch("/api/departments");departments=await res.json();}catch(e){console.error(e);} }
 function populateDeptSelect(select,selected=""){select.innerHTML='<option value="">-- اختر القسم --</option>';departments.forEach(dep=>{const o=document.createElement('option');o.value=dep.name;o.textContent=dep.name;if(dep.name===selected)o.selected=true;select.appendChild(o);});}
-async function fetchVideos(){const res=await fetch("/api/videos");videos=await res.json();populateDepartmentOptions();}
+async function fetchVideos(){const res=await fetch("/api/videos");videos=await res.json();populateDepartmentOptions();renderVideos();}
 function populateDepartmentOptions(){const counts=videos.reduce((a,v)=>{a[v.department]=(a[v.department]||0)+1;return a;},{});const sel=document.getElementById('departmentSelect');sel.innerHTML='<option value="">-- اختر القسم --</option>';Object.entries(counts).forEach(([d,c])=>{const o=document.createElement('option');o.value=d;o.textContent=`${d} (${c})`;sel.appendChild(o);});}
 function renderVideos(){const dept=document.getElementById('departmentSelect').value;const q=document.getElementById('searchInput').value.trim().toLowerCase();const cont=document.getElementById('videoContainer');cont.innerHTML='';if(!dept)return;const f=videos.filter(v=>v.department?.trim().toLowerCase()===dept.trim().toLowerCase()&&(v.title?.toLowerCase().includes(q)||v.description?.toLowerCase().includes(q)));if(!f.length){cont.innerHTML='<p class="text-muted">🚫 لا توجد فيديوهات مطابقة</p>';return;}f.forEach(video=>{const card=document.createElement('div');card.className='video-card';const title=`<div class="video-title" title="${video.title}">عنوان الفيديو: ${video.title}</div>`;const desc=`<div class="video-description" title="عرض الوصف الكامل" onclick="showDescription('${escapeHtml(video.title)}','${escapeHtml(video.description)}')">وصف الفيديو: ${video.description}</div>`;const link=video.link||video.url||'';let media='';let pop=link;if(link.includes('youtube.com')||link.includes('youtu.be')){media=`<iframe src="https://www.youtube.com/embed/${extractYouTubeID(link)}" allowfullscreen></iframe>`;}else if(link.includes('drive.google.com/file/d/')){const m=link.match(/\/file\/d\/(.*?)(\/|$)/);media=m?`<iframe src="https://drive.google.com/file/d/${m[1]}/preview" allowfullscreen></iframe>`:`<video controls src="${link}"></video>`;}else if(link.includes("sharepoint.com/")&&link.includes("/embed.aspx")){media=`<iframe class="sharepoint-frame" src="${link}" allowfullscreen></iframe>`;const u=link.match(/UniqueId=([a-zA-Z0-9\-]+)/);if(u)pop=`https://ymkh-my.sharepoint.com/personal/laith_obaidat_iu_edu_jo/_layouts/15/stream.aspx?UniqueId=${u[1]}`;}else if(link.includes("sharepoint.com/")&&link.includes("/stream.aspx")){const u=link.match(/UniqueId=([a-zA-Z0-9\-]+)/);if(u){const e=`https://ymkh-my.sharepoint.com/personal/laith_obaidat_iu_edu_jo/_layouts/15/embed.aspx?UniqueId=${u[1]}&embed=%7B%22ust%22%3Atrue%7D`;media=`<iframe class="sharepoint-frame" src="${e}" allowfullscreen></iframe>`;pop=link;}else{media=`<video controls src="${link}"></video>`;}}else{media=`<video controls src="${link}"></video>`;}const popBtn=`<button class="popout-button" onclick="window.open('${pop}','_blank','width=800,height=600')">عرض الفيديو</button>`;const actions=`<div class="action-buttons"><button class="btn btn-warning btn-sm" onclick="openEditModal('${video._id}')">تعديل</button><button class="btn btn-danger btn-sm" onclick="showDeleteModal('${video._id}')">حذف</button></div>`;card.innerHTML=title+desc+media+popBtn+actions;cont.appendChild(card);});}
 function escapeHtml(t){return t?.replace(/"/g,'&quot;').replace(/'/g,'&#39;')||'';}
