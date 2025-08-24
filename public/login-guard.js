@@ -41,7 +41,12 @@ async function setupLoginGuard() {
     const diff = (now - parseInt(loggedInAt, 10)) / 1000;
     if (diff < LOGIN_TIMEOUT) {
       // ✅ دخول صالح → أظهر المحتوى
-      if (pageContent) pageContent.style.display = "block";
+      if (pageContent) {
+        pageContent.style.display = "block";
+        if (typeof loadPasswords === "function") {
+          loadPasswords(); // ⬅️ تحميل كلمات المرور إذا كنا في passwords.html
+        }
+      }
       return;
     }
   }
@@ -87,19 +92,23 @@ async function setupLoginGuard() {
       body: JSON.stringify({ section, password })
     });
 
-   if (res.status === 200) {
-  sessionStorage.setItem(loggedInKey, Date.now().toString());
-  passwordModal.hide();
+    if (res.status === 200) {
+      sessionStorage.setItem(loggedInKey, Date.now().toString());
+      passwordModal.hide();
 
-  // ✅ إظهار المحتوى بعد تسجيل الدخول
-  if (pageContent) {
-    pageContent.style.display = "block";
-    if (typeof loadPasswords === "function") {
-      loadPasswords(); // ⬅️ حمّل كلمات المرور بعد تسجيل الدخول
+      // ✅ إظهار المحتوى بعد تسجيل الدخول
+      if (pageContent) {
+        pageContent.style.display = "block";
+        if (typeof loadPasswords === "function") {
+          loadPasswords();
+        }
+      }
+    } else {
+      showToast("❌ كلمة المرور غير صحيحة", "danger");
+      passwordInput.value = "";
+      passwordInput.focus();
     }
   }
-}
-
 
   document.getElementById("confirmDashboardAccess")
     .addEventListener("click", verifyPassword);
