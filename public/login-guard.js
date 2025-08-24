@@ -87,18 +87,19 @@ async function setupLoginGuard() {
       body: JSON.stringify({ section, password })
     });
 
-    if (res.status === 200) {
-      sessionStorage.setItem(loggedInKey, Date.now().toString());
-      passwordModal.hide();
+   if (res.status === 200) {
+  sessionStorage.setItem(loggedInKey, Date.now().toString());
+  passwordModal.hide();
 
-      // ✅ إظهار المحتوى بعد تسجيل الدخول
-      if (pageContent) pageContent.style.display = "block";
-    } else {
-      showToast("❌ كلمة المرور غير صحيحة", "danger");
-      passwordInput.value = "";
-      passwordInput.focus();
+  // ✅ إظهار المحتوى بعد تسجيل الدخول
+  if (pageContent) {
+    pageContent.style.display = "block";
+    if (typeof loadPasswords === "function") {
+      loadPasswords(); // ⬅️ حمّل كلمات المرور بعد تسجيل الدخول
     }
   }
+}
+
 
   document.getElementById("confirmDashboardAccess")
     .addEventListener("click", verifyPassword);
