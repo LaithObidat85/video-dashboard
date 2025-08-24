@@ -43,6 +43,7 @@ async function setupLoginGuard() {
       // ✅ دخول صالح → أظهر المحتوى
       if (pageContent) {
         pageContent.style.display = "block";
+        if (typeof hideOverlay === "function") hideOverlay(); // ← إخفاء شاشة التحميل
         if (typeof loadPasswords === "function") {
           loadPasswords(); // ⬅️ تحميل كلمات المرور إذا كنا في passwords.html
         }
@@ -65,6 +66,9 @@ async function setupLoginGuard() {
     keyboard: false
   });
   passwordModal.show();
+
+  // ✅ إخفاء شاشة التحميل بمجرد عرض المودال
+  if (typeof hideOverlay === "function") hideOverlay();
 
   // إخفاء زر الإغلاق العلوي ✖
   document.querySelectorAll("#passwordModal .btn-close")
@@ -99,6 +103,7 @@ async function setupLoginGuard() {
       // ✅ إظهار المحتوى بعد تسجيل الدخول
       if (pageContent) {
         pageContent.style.display = "block";
+        if (typeof hideOverlay === "function") hideOverlay(); // ← إخفاء شاشة التحميل بعد الدخول
         if (typeof loadPasswords === "function") {
           loadPasswords();
         }
