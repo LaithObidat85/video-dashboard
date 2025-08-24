@@ -230,7 +230,7 @@ document.getElementById('videoForm').addEventListener('submit',async e=>{
   try {
     const res=await fetch(`${API_BASE}/api/videos`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({title,link:url,url,description,department})});
     if(res.ok){
-      document.getElementById('confirmation').textContent='✅ تم إضافة الفيديو بنجاح';
+    /*  document.getElementById('confirmation').textContent='✅ تم إضافة الفيديو بنجاح';*/
       document.getElementById('confirmation').classList.remove('d-none');
       document.getElementById('videoForm').reset(); quill.setContents([]); document.getElementById('preview').innerHTML='';
       loadDepartments(); showToast("✅ تم إضافة الفيديو بنجاح","success");
