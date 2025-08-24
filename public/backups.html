@@ -52,16 +52,12 @@
       border-radius: 8px;
       box-shadow: 0 2px 6px rgba(0,0,0,0.15);
     }
-    /* ✅ شاشة التحميل مع تدرج */
-   
-
-     #loadingOverlay {
+    #loadingOverlay {
       position: fixed; top: 0; left: 0; width: 100%; height: 100%;
       background: rgba(0,0,0,0.5); display: none;
       align-items: center; justify-content: center; flex-direction: column;
       z-index: 2000; color: #fff; font-size: 1.2rem;
     }
-    
   </style>
 </head>
 <body>
@@ -158,7 +154,7 @@ function showToast(message, type="success") {
       <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
     </div>`;
   container.appendChild(toastEl);
-  new bootstrap.Toast(toastEl, { delay: 3000 }).show();
+  new bootstrap.Toast(toastEl, { delay: 1500 }).show();
   toastEl.addEventListener("hidden.bs.toast", () => toastEl.remove());
 }
 
@@ -302,11 +298,19 @@ document.getElementById("dashboardBtn").addEventListener("click",()=>{
   window.location.href="dashboard.html";
 });
 
-document.getElementById("logoutBtn").addEventListener("click",()=>{
-  // 🧹 تنظيف الصفحة فورًا
-  document.body.innerHTML = "<h3 style='text-align:center; margin-top:50px;'>تم تسجيل الخروج ✅</h3>";
-  sessionStorage.removeItem("loggedInAt_backups");
-  setTimeout(()=>{ window.location.replace("index.html"); },1500);
+// ✅ تسجيل الخروج بأسلوب التوست + إعادة تحميل + توجيه بعد 1.5 ثانية
+document.addEventListener("DOMContentLoaded", () => {
+  if (sessionStorage.getItem("logoutPending") === "true") {
+    sessionStorage.removeItem("logoutPending");
+    sessionStorage.removeItem("loggedInAt_backups");
+    showToast("✅ تم تسجيل الخروج بنجاح","success");
+    setTimeout(() => { window.location.href="index.html"; }, 1500);
+  }
+});
+
+document.getElementById("logoutBtn").addEventListener("click", () => {
+  sessionStorage.setItem("logoutPending", "true");
+  location.reload();
 });
 
 document.getElementById("themeToggle").addEventListener("click",()=>{
