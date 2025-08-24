@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
   <title>النسخ الاحتياطية</title>
-   <link rel="icon" type="image/png" href="https://www.dropbox.com/scl/fi/f283e4rvv5cf9x12a1cic/my-website-logo.png?rlkey=yia776im7klypy27af32m0scy&e=1&st=vhaprvzh&dl=1">
+  <link rel="icon" type="image/png" href="https://www.dropbox.com/scl/fi/f283e4rvv5cf9x12a1cic/my-website-logo.png?rlkey=yia776im7klypy27af32m0scy&e=1&st=vhaprvzh&dl=1">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.rtl.min.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
   <style>
@@ -52,7 +52,7 @@
       border-radius: 8px;
       box-shadow: 0 2px 6px rgba(0,0,0,0.15);
     }
-    /* ✅ شاشة التحميل */
+    /* ✅ شاشة التحميل مع تدرج */
     #loadingOverlay {
       position: fixed; top: 0; left: 0;
       width: 100%; height: 100%;
@@ -134,19 +134,17 @@
 <script src="login-guard.js"></script>
 
 <script>
-  // منع الرجوع للصفحة بعد تسجيل الخروج
+let backups = [];
+let confirmCallback = null;
+
+// ✅ منع الرجوع بعد تسجيل الخروج
 if (!sessionStorage.getItem("loggedInAt_backups")) {
   window.location.replace("index.html");
 }
-
-// تعطيل الكاش عند الرجوع
 window.history.pushState(null, "", window.location.href);
 window.addEventListener("popstate", function () {
   window.location.replace("index.html");
 });
-
-let backups = [];
-let confirmCallback = null;
 
 function showToast(message, type="success") {
   const container = document.querySelector('.toast-container');
@@ -175,7 +173,7 @@ document.getElementById("confirmOkBtn").addEventListener("click", () => {
 });
 
 async function fetchBackups() {
-  document.getElementById("loadingOverlay").style.display = "flex"; // ✅ إظهار التحميل
+  document.getElementById("loadingOverlay").style.display = "flex";
   try {
     const res = await fetch('/api/backups');
     backups = await res.json();
@@ -183,7 +181,7 @@ async function fetchBackups() {
   } catch {
     showToast("❌ فشل في جلب النسخ الاحتياطية","danger");
   } finally {
-    document.getElementById("loadingOverlay").style.display = "none"; // ✅ إخفاء التحميل
+    document.getElementById("loadingOverlay").style.display = "none";
   }
 }
 
