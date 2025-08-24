@@ -6,14 +6,13 @@
       <!-- رأس المودال -->
       <div class="modal-header bg-primary text-white">
         <h5 class="modal-title">🔒 صفحة محمية - تسجيل الدخول</h5>
-        <!-- ❌ تمت إزالة زر الإغلاق -->
       </div>
 
       <!-- جسم المودال -->
       <div class="modal-body text-center">
         <!-- أيقونة قفل كبيرة -->
         <div class="mb-3">
-          <i class="bi bi-shield-lock-fill" style="font-size:3rem; color:#0d6efd;"></i>
+          <i id="lockIcon" class="bi bi-shield-lock-fill" style="font-size:3rem; color:#0d6efd;"></i>
         </div>
         <!-- رسالة توضيحية -->
         <p class="fw-bold text-muted mb-3">
@@ -32,6 +31,21 @@
   </div>
 </div>
 
+<style>
+/* ✨ حركة اهتزاز */
+@keyframes shake {
+  0% { transform: translateX(0); }
+  20% { transform: translateX(-5px); }
+  40% { transform: translateX(5px); }
+  60% { transform: translateX(-5px); }
+  80% { transform: translateX(5px); }
+  100% { transform: translateX(0); }
+}
+.shake {
+  animation: shake 0.4s;
+}
+</style>
+
 <script>
 document.addEventListener("DOMContentLoaded", function () {
   const passwordModal = new bootstrap.Modal(document.getElementById("passwordModal"), {
@@ -43,6 +57,7 @@ document.addEventListener("DOMContentLoaded", function () {
   const passwordInput = document.getElementById("dashboardPassword");
   const confirmBtn = document.getElementById("confirmDashboardAccess");
   const cancelBtn = document.getElementById("cancelBtn");
+  const lockIcon = document.getElementById("lockIcon");
 
   // ✅ تركيز المؤشر تلقائياً
   passwordInput.focus();
@@ -59,7 +74,15 @@ document.addEventListener("DOMContentLoaded", function () {
     if (res.status === 200) {
       passwordModal.hide();
     } else {
-      alert("❌ كلمة المرور غير صحيحة");
+      // ✨ اهتزاز الأيقونة + تغيير اللون للأحمر
+      lockIcon.classList.add("shake");
+      lockIcon.style.color = "red";
+
+      setTimeout(() => {
+        lockIcon.classList.remove("shake");
+        lockIcon.style.color = "#0d6efd"; // أزرق افتراضي
+      }, 1500);
+
       passwordInput.value = "";
       passwordInput.focus();
     }
