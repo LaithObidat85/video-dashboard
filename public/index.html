@@ -35,10 +35,24 @@
     select, input[type="text"] {border-radius: 10px!important;border: 2px solid #0d6efd!important;transition: all 0.3s ease;}
     select:focus, input[type="text"]:focus {box-shadow:0 0 8px rgba(13,110,253,0.6)!important;transform: scale(1.02);}
 
-    /* زر مسح البحث */
-    .search-wrapper {position: relative;display: inline-block;width: 100%;}
-    #clearSearch {position: absolute;right: 12px;top: 50%;transform: translateY(-50%);background: transparent;border: none;font-size: 18px;color: #888;cursor: pointer;display:none;}
-    #clearSearch:hover {color:#000;}
+   /* زر مسح البحث مع دعم RTL/LTR */
+#clearSearch {
+  position: absolute;
+  inset-inline-end: 12px; /* يحل تلقائياً RTL/LTR */
+  top: 50%;
+  transform: translateY(-50%);
+  background: transparent;
+  border: none;
+  font-size: 22px;
+  color: #666;
+  cursor: pointer;
+  display: none;
+  line-height: 1;
+}
+
+#clearSearch:hover {
+  color: #000;
+}
 
     /* أزرار الفيديو */
     .popout-button {background:linear-gradient(to right,#0d6efd,#0b5ed7);color:white;border:none;padding:8px 14px;border-radius:8px;cursor:pointer;margin-top:6px;transition:all 0.3s ease;}
