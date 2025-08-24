@@ -15,6 +15,7 @@
     iframe, video { width: 100%; height: 360px; border: none; border-radius: 8px; }
     #descriptionEditor { height: 120px; }
     #toastContainer { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); z-index: 2000; }
+    #pageContent { display: none; } /* إخفاء الصفحة حتى تسجيل الدخول */
     /* الوضع الليلي */
     body.dark-mode { background-color: #121212; color: #eaeaea; }
     body.dark-mode .form-section { background: #1e1e1e; color: #ddd; }
@@ -34,55 +35,86 @@
 </head>
 <body>
 
-<!-- ✅ أزرار علوية -->
-<div class="d-flex justify-content-between mb-3 mt-3">
-  <div>
-    <button id="logoutBtn" class="btn btn-danger me-2" data-bs-toggle="tooltip" title="تسجيل الخروج"><i class="bi bi-box-arrow-right"></i></button>
+<div id="pageContent">
+  <!-- ✅ أزرار علوية -->
+  <div class="d-flex justify-content-between mb-3 mt-3">
+    <div>
+      <button id="logoutBtn" class="btn btn-danger me-2" data-bs-toggle="tooltip" title="تسجيل الخروج"><i class="bi bi-box-arrow-right"></i></button>
+      <button id="dashboardBtn" class="btn btn-secondary" data-bs-toggle="tooltip" title="لوحة التحكم"><i class="bi bi-speedometer2"></i></button>
+    </div>
+    <div>
+      <button id="themeToggle" class="btn btn-outline-dark" data-bs-toggle="tooltip" title="الوضع الليلي/النهاري"><i class="bi bi-moon-stars-fill"></i></button>
+    </div>
   </div>
-  <div>
-    <button id="themeToggle" class="btn btn-outline-dark" data-bs-toggle="tooltip" title="الوضع الليلي/النهاري"><i class="bi bi-moon-stars-fill"></i></button>
-  </div>
-</div>
 
-<div class="form-section">
-  <h3 class="mb-4 text-center">➕ إضافة فيديو جديد</h3>
-  <form id="videoForm">
-    <div class="mb-3">
-      <label class="form-label">عنوان الفيديو</label>
-      <input type="text" class="form-control" id="title" required data-bs-toggle="tooltip" title="أدخل عنوان الفيديو">
-    </div>
-    <div class="mb-3">
-      <label class="form-label">وصف الفيديو</label>
-      <div id="descriptionEditor" data-bs-toggle="tooltip" title="أدخل وصف الفيديو"></div>
-    </div>
-    <div class="mb-3">
-      <label class="form-label">رابط الفيديو</label>
-      <input type="url" class="form-control" id="url" required oninput="updatePreview()" data-bs-toggle="tooltip" title="ضع رابط الفيديو">
-    </div>
-    <div id="preview"></div>
-
-    <!-- ✅ إدارة الأقسام -->
-    <div class="mb-3 mt-3">
-      <label class="form-label">القسم</label>
-      <div class="d-flex gap-2">
-        <select class="form-select" id="department" required data-bs-toggle="tooltip" title="اختر القسم"></select>
-        <button type="button" class="btn btn-success" onclick="addDepartmentPrompt()" data-bs-toggle="tooltip" title="إضافة قسم جديد">➕</button>
-        <button type="button" class="btn btn-warning" onclick="editDepartmentPrompt()" data-bs-toggle="tooltip" title="تعديل القسم">✏️</button>
-        <button type="button" class="btn btn-danger" onclick="deleteDepartment()" data-bs-toggle="tooltip" title="حذف القسم">🗑️</button>
+  <div class="form-section">
+    <h3 class="mb-4 text-center">➕ إضافة فيديو جديد</h3>
+    <form id="videoForm">
+      <div class="mb-3">
+        <label class="form-label">عنوان الفيديو</label>
+        <input type="text" class="form-control" id="title" required data-bs-toggle="tooltip" title="أدخل عنوان الفيديو">
       </div>
-    </div>
+      <div class="mb-3">
+        <label class="form-label">وصف الفيديو</label>
+        <div id="descriptionEditor" data-bs-toggle="tooltip" title="أدخل وصف الفيديو"></div>
+      </div>
+      <div class="mb-3">
+        <label class="form-label">رابط الفيديو</label>
+        <input type="url" class="form-control" id="url" required oninput="updatePreview()" data-bs-toggle="tooltip" title="ضع رابط الفيديو">
+      </div>
+      <div id="preview"></div>
 
-    <div class="d-grid">
-      <button type="submit" class="btn btn-primary" data-bs-toggle="tooltip" title="حفظ الفيديو">إضافة الفيديو</button>
-    </div>
-  </form>
+      <!-- ✅ إدارة الأقسام -->
+      <div class="mb-3 mt-3">
+        <label class="form-label">القسم</label>
+        <div class="d-flex gap-2">
+          <select class="form-select" id="department" required data-bs-toggle="tooltip" title="اختر القسم"></select>
+          <button type="button" class="btn btn-success" onclick="openAddDepModal()" data-bs-toggle="tooltip" title="إضافة قسم جديد">➕</button>
+          <button type="button" class="btn btn-warning" onclick="openEditDepModal()" data-bs-toggle="tooltip" title="تعديل القسم">✏️</button>
+          <button type="button" class="btn btn-danger" onclick="deleteDepartment()" data-bs-toggle="tooltip" title="حذف القسم">🗑️</button>
+        </div>
+      </div>
 
-  <div id="confirmation" class="alert alert-success mt-3 d-none"></div>
+      <div class="d-grid">
+        <button type="submit" class="btn btn-primary" data-bs-toggle="tooltip" title="حفظ الفيديو">إضافة الفيديو</button>
+      </div>
+    </form>
+
+    <div id="confirmation" class="alert alert-success mt-3 d-none"></div>
+  </div>
 </div>
 
 <!-- ✅ Toast + Login Modal -->
 <div id="toastContainer"></div>
 <div id="loginModalContainer"></div>
+
+<!-- ✅ Modal إضافة قسم -->
+<div class="modal fade" id="addDepModal" tabindex="-1">
+  <div class="modal-dialog"><div class="modal-content">
+    <div class="modal-header"><h5 class="modal-title">➕ إضافة قسم جديد</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+    <div class="modal-body">
+      <input type="text" id="newDepName" class="form-control" placeholder="اسم القسم الجديد">
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+      <button type="button" class="btn btn-success" onclick="addDepartment()">إضافة</button>
+    </div>
+  </div></div>
+</div>
+
+<!-- ✅ Modal تعديل قسم -->
+<div class="modal fade" id="editDepModal" tabindex="-1">
+  <div class="modal-dialog"><div class="modal-content">
+    <div class="modal-header"><h5 class="modal-title">✏️ تعديل القسم</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+    <div class="modal-body">
+      <input type="text" id="editDepName" class="form-control" placeholder="الاسم الجديد">
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+      <button type="button" class="btn btn-primary" onclick="editDepartment()">حفظ</button>
+    </div>
+  </div></div>
+</div>
 
 <!-- ✅ Modal تأكيد حذف القسم -->
 <div class="modal fade" id="confirmDeleteModal" tabindex="-1">
@@ -106,6 +138,8 @@
 <script>
 const quill = new Quill('#descriptionEditor', { theme: 'snow' });
 const API_BASE = 'https://video-dashboard-backend.onrender.com';
+let departmentToEdit = null;
+let departmentToDelete = null;
 
 // ✅ دالة التوست
 function showToast(message, type = "success") {
@@ -122,6 +156,9 @@ function showToast(message, type = "success") {
   setTimeout(() => toast.remove(), 4000);
 }
 
+// ✅ Dashboard
+document.getElementById("dashboardBtn").addEventListener("click",()=>{window.location.href="dashboard.html";});
+
 // ✅ تسجيل خروج صارم مع منع الرجوع
 window.history.pushState(null, "", window.location.href);
 window.addEventListener("popstate", function () {
@@ -129,7 +166,6 @@ window.addEventListener("popstate", function () {
     window.location.replace("index.html");
   }
 });
-
 document.addEventListener("DOMContentLoaded", () => {
   if (sessionStorage.getItem("logoutPending") === "true") {
     sessionStorage.removeItem("logoutPending");
@@ -138,7 +174,6 @@ document.addEventListener("DOMContentLoaded", () => {
     setTimeout(() => { window.location.href="index.html"; }, 1500);
   }
 });
-
 document.getElementById("logoutBtn").addEventListener("click", () => {
   sessionStorage.setItem("logoutPending", "true");
   location.reload();
@@ -155,7 +190,7 @@ document.getElementById("themeToggle").addEventListener("click",()=>{
   }
 });
 
-// ✅ Tooltips احترافية
+// ✅ Tooltips
 document.addEventListener("DOMContentLoaded", () => {
   const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
   tooltipTriggerList.forEach(el => {
@@ -209,29 +244,40 @@ async function loadDepartments() {
   });
 }
 
-async function addDepartmentPrompt() {
-  const name = prompt("🆕 أدخل اسم القسم الجديد:");
+function openAddDepModal() {
+  document.getElementById("newDepName").value="";
+  new bootstrap.Modal(document.getElementById("addDepModal")).show();
+}
+async function addDepartment() {
+  const name = document.getElementById("newDepName").value.trim();
   if (!name) return;
   const res = await fetch(`${API_BASE}/api/departments`, {
     method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name })
   });
   if (res.ok) { loadDepartments(); showToast("✅ تم إضافة القسم","success"); }
+  bootstrap.Modal.getInstance(document.getElementById("addDepModal")).hide();
 }
 
-async function editDepartmentPrompt() {
+function openEditDepModal() {
   const select = document.getElementById('department');
   const selected = select.options[select.selectedIndex];
   if (!selected || !selected.dataset.id) return showToast("❌ اختر القسم أولاً","danger");
-  const newName = prompt("✏️ أدخل الاسم الجديد للقسم:", selected.value);
+  departmentToEdit = selected;
+  document.getElementById("editDepName").value=selected.value;
+  new bootstrap.Modal(document.getElementById("editDepModal")).show();
+}
+async function editDepartment() {
+  if (!departmentToEdit) return;
+  const newName = document.getElementById("editDepName").value.trim();
   if (!newName) return;
-  const res = await fetch(`${API_BASE}/api/departments/${selected.dataset.id}`, {
+  const res = await fetch(`${API_BASE}/api/departments/${departmentToEdit.dataset.id}`, {
     method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: newName })
   });
   if (res.ok) { loadDepartments(); showToast("✏️ تم تعديل القسم","success"); }
+  bootstrap.Modal.getInstance(document.getElementById("editDepModal")).hide();
 }
 
-// ✅ حذف القسم مع Modal
-let departmentToDelete = null;
+// ✅ حذف القسم
 function deleteDepartment() {
   const select = document.getElementById('department');
   const selected = select.options[select.selectedIndex];
@@ -249,7 +295,7 @@ document.getElementById("confirmDeleteBtn").addEventListener("click", async () =
   departmentToDelete = null;
 });
 
-// ✅ إرسال نموذج الفيديو
+// ✅ إرسال الفيديو
 document.getElementById('videoForm').addEventListener('submit', async e => {
   e.preventDefault();
   const title = document.getElementById('title').value;
