@@ -51,9 +51,23 @@
       border-radius: 8px;
       box-shadow: 0 2px 6px rgba(0,0,0,0.15);
     }
+    /* ✅ شاشة التحميل */
+    #loadingOverlay {
+      position: fixed; top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: rgba(0,0,0,0.5);
+      display: none; align-items: center; justify-content: center; flex-direction: column;
+      z-index: 3000; color: #fff; font-size: 1.2rem;
+    }
   </style>
 </head>
 <body>
+
+<!-- شاشة التحميل -->
+<div id="loadingOverlay">
+  <div class="spinner-border text-light" role="status" style="width:3rem; height:3rem;"></div>
+  <p class="mt-3"> جاري التحميل...⏳</p>
+</div>
 
 <!-- ✅ محتوى الصفحة -->
 <div id="pageContent">
@@ -149,9 +163,16 @@ document.getElementById("confirmOkBtn").addEventListener("click", () => {
 });
 
 async function fetchBackups() {
-  const res = await fetch('/api/backups');
-  backups = await res.json();
-  renderBackups();
+  document.getElementById("loadingOverlay").style.display = "flex"; // ✅ إظهار التحميل
+  try {
+    const res = await fetch('/api/backups');
+    backups = await res.json();
+    renderBackups();
+  } catch {
+    showToast("❌ فشل في جلب النسخ الاحتياطية","danger");
+  } finally {
+    document.getElementById("loadingOverlay").style.display = "none"; // ✅ إخفاء التحميل
+  }
 }
 
 function renderBackups() {
@@ -219,17 +240,27 @@ async function deleteSelected() {
 }
 
 async function createBackup() {
-  const res = await fetch('/api/backups/create', { method: 'POST' });
-  const result = await res.json();
-  showToast(result.message || '✅ تم إنشاء النسخة الاحتياطية');
-  await fetchBackups();
+  document.getElementById("loadingOverlay").style.display = "flex"; 
+  try {
+    const res = await fetch('/api/backups/create', { method: 'POST' });
+    const result = await res.json();
+    showToast(result.message || '✅ تم إنشاء النسخة الاحتياطية');
+    await fetchBackups();
+  } finally {
+    document.getElementById("loadingOverlay").style.display = "none"; 
+  }
 }
 
 async function restoreBackup(id) {
   showConfirm("هل تريد استرجاع هذه النسخة إلى قاعدة البيانات؟", async () => {
-    const res = await fetch(`/api/backups/restore/${id}`, { method: 'POST' });
-    const result = await res.json();
-    showToast(result.message || '♻️ تم استرجاع النسخة الاحتياطية', "info");
+    document.getElementById("loadingOverlay").style.display = "flex"; 
+    try {
+      const res = await fetch(`/api/backups/restore/${id}`, { method: 'POST' });
+      const result = await res.json();
+      showToast(result.message || '♻️ تم استرجاع النسخة الاحتياطية', "info");
+    } finally {
+      document.getElementById("loadingOverlay").style.display = "none"; 
+    }
   });
 }
 
@@ -240,10 +271,9 @@ document.getElementById("uploadForm").addEventListener("submit", async (e) => {
     showToast("⚠️ يرجى اختيار ملف JSON أولا", "warning");
     return;
   }
-
+  document.getElementById("loadingOverlay").style.display = "flex"; 
   const formData = new FormData();
   formData.append("backupFile", fileInput.files[0]);
-
   try {
     const res = await fetch("/api/backups/upload", { method: "POST", body: formData });
     const result = await res.json();
@@ -251,6 +281,8 @@ document.getElementById("uploadForm").addEventListener("submit", async (e) => {
     await fetchBackups();
   } catch {
     showToast("❌ فشل رفع النسخة", "danger");
+  } finally {
+    document.getElementById("loadingOverlay").style.display = "none"; 
   }
 });
 
