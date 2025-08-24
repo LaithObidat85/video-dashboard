@@ -2,245 +2,274 @@
 <html lang="ar" dir="rtl">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
   <title>إضافة فيديو</title>
   <link rel="icon" type="image/png" href="https://www.dropbox.com/scl/fi/f283e4rvv5cf9x12a1cic/my-website-logo.png?rlkey=yia776im7klypy27af32m0scy&e=1&st=vhaprvzh&dl=1">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.rtl.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
   <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
   <style>
-    body { padding: 30px; background-color: #f2f4f8; font-family: 'Segoe UI', sans-serif; }
-    .form-section { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 2px 6px rgba(0,0,0,0.1); max-width: 600px; margin: auto; }
+    body { padding: 30px; background-color: #f4f6f9; font-family: 'Segoe UI', sans-serif; transition: background 0.3s, color 0.3s; }
+    .form-section { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 2px 6px rgba(0,0,0,0.1); max-width: 700px; margin: auto; }
     #preview { margin-top: 20px; position: relative; }
-    iframe, video { width: 100%; height: 360px; border: none; }
+    iframe, video { width: 100%; height: 360px; border: none; border-radius: 8px; }
     #descriptionEditor { height: 120px; }
-    /* ✅ مكان ظهور التوست */
-    /* ✅ مكان ظهور التوست أعلى الصفحة في الوسط */
-#toastContainer { 
-  position: fixed; 
-  top: 20px; 
-  left: 50%; 
-  transform: translateX(-50%); 
-  z-index: 2000; 
-}
-
+    #toastContainer { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); z-index: 2000; }
+    /* الوضع الليلي */
+    body.dark-mode { background-color: #121212; color: #eaeaea; }
+    body.dark-mode .form-section { background: #1e1e1e; color: #ddd; }
+    body.dark-mode .modal-content { background: #1e1e1e; color: #fff; }
+    body.dark-mode .btn-close { filter: invert(1); }
+    /* Tooltips */
+    .custom-tooltip.bs-tooltip-auto[x-placement^=top],
+    .custom-tooltip.bs-tooltip-top {
+      --bs-tooltip-bg: #0d6efd;
+      --bs-tooltip-color: #fff;
+      font-size: 0.85rem;
+      padding: 6px 10px;
+      border-radius: 8px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+    }
   </style>
 </head>
 <body>
-  <div class="form-section">
-    <h3 class="mb-4 text-center">إضافة فيديو جديد</h3>
-    <form id="videoForm">
-      <div class="mb-3">
-        <label class="form-label">عنوان الفيديو</label>
-        <input type="text" class="form-control" id="title" required>
-      </div>
-      <div class="mb-3">
-        <label class="form-label">وصف الفيديو</label>
-        <div id="descriptionEditor"></div>
-      </div>
-      <div class="mb-3">
-        <label class="form-label">رابط الفيديو</label>
-        <input type="url" class="form-control" id="url" required oninput="updatePreview()">
-      </div>
-      <div id="preview"></div>
 
-      <!-- قسم اختيار أو إدارة الأقسام -->
-      <div class="mb-3 mt-3">
-        <label class="form-label">القسم</label>
-        <div class="d-flex gap-2">
-          <select class="form-select" id="department" required></select>
-          <button type="button" class="btn btn-success" onclick="addDepartmentPrompt()">➕</button>
-          <button type="button" class="btn btn-warning" onclick="editDepartmentPrompt()">✏️</button>
-          <button type="button" class="btn btn-danger" onclick="deleteDepartment()">🗑️</button>
-        </div>
-      </div>
+<!-- ✅ أزرار علوية -->
+<div class="d-flex justify-content-between mb-3 mt-3">
+  <div>
+    <button id="logoutBtn" class="btn btn-danger me-2" data-bs-toggle="tooltip" title="تسجيل الخروج"><i class="bi bi-box-arrow-right"></i></button>
+  </div>
+  <div>
+    <button id="themeToggle" class="btn btn-outline-dark" data-bs-toggle="tooltip" title="الوضع الليلي/النهاري"><i class="bi bi-moon-stars-fill"></i></button>
+  </div>
+</div>
 
-      <div class="d-grid">
-        <button type="submit" class="btn btn-primary">إضافة الفيديو</button>
-      </div>
-    </form>
+<div class="form-section">
+  <h3 class="mb-4 text-center">➕ إضافة فيديو جديد</h3>
+  <form id="videoForm">
+    <div class="mb-3">
+      <label class="form-label">عنوان الفيديو</label>
+      <input type="text" class="form-control" id="title" required data-bs-toggle="tooltip" title="أدخل عنوان الفيديو">
+    </div>
+    <div class="mb-3">
+      <label class="form-label">وصف الفيديو</label>
+      <div id="descriptionEditor" data-bs-toggle="tooltip" title="أدخل وصف الفيديو"></div>
+    </div>
+    <div class="mb-3">
+      <label class="form-label">رابط الفيديو</label>
+      <input type="url" class="form-control" id="url" required oninput="updatePreview()" data-bs-toggle="tooltip" title="ضع رابط الفيديو">
+    </div>
+    <div id="preview"></div>
 
-    <div class="text-center mt-3">
-      <a href="edit.html" class="btn btn-outline-secondary">تعديل الفيديوهات</a>
-      <a href="dashboard.html" class="btn btn-outline-info ms-2">لوحة التحكم</a>
+    <!-- ✅ إدارة الأقسام -->
+    <div class="mb-3 mt-3">
+      <label class="form-label">القسم</label>
+      <div class="d-flex gap-2">
+        <select class="form-select" id="department" required data-bs-toggle="tooltip" title="اختر القسم"></select>
+        <button type="button" class="btn btn-success" onclick="addDepartmentPrompt()" data-bs-toggle="tooltip" title="إضافة قسم جديد">➕</button>
+        <button type="button" class="btn btn-warning" onclick="editDepartmentPrompt()" data-bs-toggle="tooltip" title="تعديل القسم">✏️</button>
+        <button type="button" class="btn btn-danger" onclick="deleteDepartment()" data-bs-toggle="tooltip" title="حذف القسم">🗑️</button>
+      </div>
     </div>
 
-    <div id="confirmation" class="alert alert-success mt-3 d-none"></div>
-  </div>
-
-  <!-- ✅ مكان نافذة تسجيل الدخول -->
-  <div id="loginModalContainer"></div>
-
-  <!-- ✅ مكان ظهور التوست -->
-  <div id="toastContainer"></div>
-
-  <!-- ✅ Modal تأكيد الحذف -->
-  <div class="modal fade" id="confirmDeleteModal" tabindex="-1">
-    <div class="modal-dialog modal-dialog-centered">
-      <div class="modal-content">
-        <div class="modal-header bg-danger text-white">
-          <h5 class="modal-title">تأكيد الحذف</h5>
-          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-        </div>
-        <div class="modal-body">
-          ⚠️ هل أنت متأكد أنك تريد حذف القسم "<span id="deleteDepName"></span>"؟
-        </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
-          <button type="button" class="btn btn-danger" id="confirmDeleteBtn">حذف</button>
-        </div>
-      </div>
+    <div class="d-grid">
+      <button type="submit" class="btn btn-primary" data-bs-toggle="tooltip" title="حفظ الفيديو">إضافة الفيديو</button>
     </div>
-  </div>
+  </form>
 
-  <!-- المكتبات -->
-  <script src="https://cdn.quilljs.com/1.3.6/quill.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <div id="confirmation" class="alert alert-success mt-3 d-none"></div>
+</div>
 
-  <script>
-    const quill = new Quill('#descriptionEditor', { theme: 'snow' });
-    const API_BASE = 'https://video-dashboard-backend.onrender.com';
+<!-- ✅ Toast + Login Modal -->
+<div id="toastContainer"></div>
+<div id="loginModalContainer"></div>
 
-    // ✅ دالة التوست
-    function showToast(message, type = "success") {
-      const toastId = "toast" + Date.now();
-      const toast = document.createElement("div");
-      toast.className = `toast align-items-center text-bg-${type} border-0 show`;
-      toast.id = toastId;
-      toast.role = "alert";
-      toast.innerHTML = `
-        <div class="d-flex">
-          <div class="toast-body">${message}</div>
-          <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
-        </div>`;
-      document.getElementById("toastContainer").appendChild(toast);
-      setTimeout(() => toast.remove(), 4000);
-    }
+<!-- ✅ Modal تأكيد حذف القسم -->
+<div class="modal fade" id="confirmDeleteModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered"><div class="modal-content">
+    <div class="modal-header bg-danger text-white"><h5 class="modal-title">تأكيد الحذف</h5>
+      <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+    </div>
+    <div class="modal-body">⚠️ هل أنت متأكد أنك تريد حذف القسم "<span id="deleteDepName"></span>"؟</div>
+    <div class="modal-footer">
+      <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+      <button type="button" class="btn btn-danger" id="confirmDeleteBtn">حذف</button>
+    </div>
+  </div></div>
+</div>
 
-    function updatePreview() {
-      const link = document.getElementById('url').value.trim();
-      const preview = document.getElementById('preview');
-      if (!link) { 
-        preview.innerHTML = ''; 
-        return; 
-      }
-      let embedUrl = null;
+<!-- المكتبات -->
+<script src="https://cdn.quilljs.com/1.3.6/quill.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="login-guard.js"></script>
 
-      if (link.includes("youtube.com/watch?v=")) {
-        const videoId = link.split("v=")[1].split("&")[0];
-        embedUrl = `https://www.youtube.com/embed/${videoId}`;
-      } else if (link.includes("drive.google.com/file/d/")) {
-        const match = link.match(/\/file\/d\/(.*?)(\/|$)/);
-        if (match) embedUrl = `https://drive.google.com/file/d/${match[1]}/preview`;
-      } else if (link.includes("sharepoint.com/") && link.includes("/embed.aspx")) {
-        embedUrl = link;
-      } else if (link.includes("sharepoint.com/") && link.includes("/stream.aspx")) {
-        const uniqueIdMatch = link.match(/UniqueId=([a-zA-Z0-9\-]+)/);
-        if (uniqueIdMatch) {
-          embedUrl = `https://ymkh-my.sharepoint.com/personal/laith_obaidat_iu_edu_jo/_layouts/15/embed.aspx?UniqueId=${uniqueIdMatch[1]}&embed=%7B%22ust%22%3Atrue%7D&referrer=StreamWebApp&referrerScenario=EmbedDialog.Create`;
-        }
-      }
+<script>
+const quill = new Quill('#descriptionEditor', { theme: 'snow' });
+const API_BASE = 'https://video-dashboard-backend.onrender.com';
 
-      preview.innerHTML = embedUrl 
-        ? `<iframe src="${embedUrl}" allowfullscreen></iframe>` 
-        : `<div class="alert alert-warning">⚠️ لا يمكن عرض هذا الرابط داخل المعاينة.</div>`;
-    }
+// ✅ دالة التوست
+function showToast(message, type = "success") {
+  const toastId = "toast" + Date.now();
+  const toast = document.createElement("div");
+  toast.className = `toast align-items-center text-bg-${type} border-0 show mb-2`;
+  toast.id = toastId;
+  toast.role = "alert";
+  toast.innerHTML = `<div class="d-flex">
+    <div class="toast-body">${message}</div>
+    <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+  </div>`;
+  document.getElementById("toastContainer").appendChild(toast);
+  setTimeout(() => toast.remove(), 4000);
+}
 
-    async function loadDepartments() {
-      const res = await fetch(`${API_BASE}/api/departments`);
-      const departments = await res.json();
-      const select = document.getElementById('department');
-      select.innerHTML = '<option value="">-- اختر القسم --</option>';
-      departments.forEach(dep => {
-        const opt = document.createElement('option');
-        opt.value = dep.name;
-        opt.textContent = dep.name;
-        opt.dataset.id = dep._id;
-        select.appendChild(opt);
-      });
-    }
+// ✅ تسجيل خروج صارم مع منع الرجوع
+window.history.pushState(null, "", window.location.href);
+window.addEventListener("popstate", function () {
+  if (!sessionStorage.getItem("loggedInAt_add")) {
+    window.location.replace("index.html");
+  }
+});
 
-    async function addDepartmentPrompt() {
-      const name = prompt("🆕 أدخل اسم القسم الجديد:");
-      if (!name) return;
-      const res = await fetch(`${API_BASE}/api/departments`, {
-        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name })
-      });
-      if (res.ok) {
-        loadDepartments();
-        showToast("✅ تم إضافة القسم","success");
-      }
-    }
+document.addEventListener("DOMContentLoaded", () => {
+  if (sessionStorage.getItem("logoutPending") === "true") {
+    sessionStorage.removeItem("logoutPending");
+    sessionStorage.removeItem("loggedInAt_add");
+    showToast("✅ تم تسجيل الخروج بنجاح","success");
+    setTimeout(() => { window.location.href="index.html"; }, 1500);
+  }
+});
 
-    async function editDepartmentPrompt() {
-      const select = document.getElementById('department');
-      const selected = select.options[select.selectedIndex];
-      if (!selected || !selected.dataset.id) return showToast("❌ اختر القسم أولاً","danger");
-      const newName = prompt("✏️ أدخل الاسم الجديد للقسم:", selected.value);
-      if (!newName) return;
-      const res = await fetch(`${API_BASE}/api/departments/${selected.dataset.id}`, {
-        method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: newName })
-      });
-      if (res.ok) {
-        loadDepartments();
-        showToast("✏️ تم تعديل القسم","success");
-      }
-    }
+document.getElementById("logoutBtn").addEventListener("click", () => {
+  sessionStorage.setItem("logoutPending", "true");
+  location.reload();
+});
 
-    // ✅ حذف باستخدام Modal
-    let departmentToDelete = null;
-    function deleteDepartment() {
-      const select = document.getElementById('department');
-      const selected = select.options[select.selectedIndex];
-      if (!selected || !selected.dataset.id) {
-        showToast("❌ اختر القسم أولاً","danger");
-        return;
-      }
-      departmentToDelete = selected;
-      document.getElementById("deleteDepName").textContent = selected.value;
-      new bootstrap.Modal(document.getElementById("confirmDeleteModal")).show();
-    }
+// ✅ الوضع الليلي
+document.getElementById("themeToggle").addEventListener("click",()=>{
+  document.body.classList.toggle("dark-mode");
+  const icon=document.querySelector("#themeToggle i");
+  if(document.body.classList.contains("dark-mode")){
+    icon.classList.replace("bi-moon-stars-fill","bi-brightness-high-fill");
+  } else {
+    icon.classList.replace("bi-brightness-high-fill","bi-moon-stars-fill");
+  }
+});
 
-    document.getElementById("confirmDeleteBtn").addEventListener("click", async () => {
-      if (!departmentToDelete) return;
-      const res = await fetch(`${API_BASE}/api/departments/${departmentToDelete.dataset.id}`, { method: 'DELETE' });
-      if (res.ok) {
-        loadDepartments();
-        showToast("🗑️ تم حذف القسم","success");
-      } else {
-        showToast("❌ فشل حذف القسم","danger");
-      }
-      bootstrap.Modal.getInstance(document.getElementById("confirmDeleteModal")).hide();
-      departmentToDelete = null;
+// ✅ Tooltips احترافية
+document.addEventListener("DOMContentLoaded", () => {
+  const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+  tooltipTriggerList.forEach(el => {
+    new bootstrap.Tooltip(el, {
+      trigger: 'hover focus',
+      placement: 'top',
+      fallbackPlacements: ['bottom','left','right'],
+      delay: { show: 300, hide: 150 },
+      customClass: 'custom-tooltip'
     });
+  });
+});
 
-    document.getElementById('videoForm').addEventListener('submit', async e => {
-      e.preventDefault();
-      const title = document.getElementById('title').value;
-      const url = document.getElementById('url').value;
-      const description = quill.root.innerHTML;
-      const department = document.getElementById('department').value;
+// ✅ معاينة الفيديو
+function updatePreview() {
+  const link = document.getElementById('url').value.trim();
+  const preview = document.getElementById('preview');
+  if (!link) { preview.innerHTML = ''; return; }
+  let embedUrl = null;
+  if (link.includes("youtube.com/watch?v=")) {
+    const videoId = link.split("v=")[1].split("&")[0];
+    embedUrl = `https://www.youtube.com/embed/${videoId}`;
+  } else if (link.includes("drive.google.com/file/d/")) {
+    const match = link.match(/\/file\/d\/(.*?)(\/|$)/);
+    if (match) embedUrl = `https://drive.google.com/file/d/${match[1]}/preview`;
+  } else if (link.includes("sharepoint.com/") && link.includes("/embed.aspx")) {
+    embedUrl = link;
+  } else if (link.includes("sharepoint.com/") && link.includes("/stream.aspx")) {
+    const uniqueIdMatch = link.match(/UniqueId=([a-zA-Z0-9\-]+)/);
+    if (uniqueIdMatch) {
+      embedUrl = `https://ymkh-my.sharepoint.com/personal/laith_obaidat_iu_edu_jo/_layouts/15/embed.aspx?UniqueId=${uniqueIdMatch[1]}&embed=%7B%22ust%22%3Atrue%7D`;
+    }
+  }
+  preview.innerHTML = embedUrl 
+    ? `<iframe src="${embedUrl}" allowfullscreen></iframe>` 
+    : `<div class="alert alert-warning">⚠️ لا يمكن عرض هذا الرابط داخل المعاينة.</div>`;
+}
 
-      const response = await fetch(`${API_BASE}/api/videos`, {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title, link: url, url, description, department })
-      });
+// ✅ إدارة الأقسام
+async function loadDepartments() {
+  const res = await fetch(`${API_BASE}/api/departments`);
+  const departments = await res.json();
+  const select = document.getElementById('department');
+  select.innerHTML = '<option value="">-- اختر القسم --</option>';
+  departments.forEach(dep => {
+    const opt = document.createElement('option');
+    opt.value = dep.name;
+    opt.textContent = dep.name;
+    opt.dataset.id = dep._id;
+    select.appendChild(opt);
+  });
+}
 
-      if (response.ok) {
-        document.getElementById('confirmation').textContent = '✅ تم إضافة الفيديو بنجاح';
-        document.getElementById('confirmation').classList.remove('d-none');
-        document.getElementById('videoForm').reset();
-        quill.setContents([]);
-        document.getElementById('preview').innerHTML = '';
-        loadDepartments();
-        showToast("✅ تم إضافة الفيديو بنجاح","success");
-      } else {
-        showToast("❌ حدث خطأ أثناء الإضافة","danger");
-      }
-    });
+async function addDepartmentPrompt() {
+  const name = prompt("🆕 أدخل اسم القسم الجديد:");
+  if (!name) return;
+  const res = await fetch(`${API_BASE}/api/departments`, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name })
+  });
+  if (res.ok) { loadDepartments(); showToast("✅ تم إضافة القسم","success"); }
+}
 
-    loadDepartments();
-  </script>
+async function editDepartmentPrompt() {
+  const select = document.getElementById('department');
+  const selected = select.options[select.selectedIndex];
+  if (!selected || !selected.dataset.id) return showToast("❌ اختر القسم أولاً","danger");
+  const newName = prompt("✏️ أدخل الاسم الجديد للقسم:", selected.value);
+  if (!newName) return;
+  const res = await fetch(`${API_BASE}/api/departments/${selected.dataset.id}`, {
+    method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: newName })
+  });
+  if (res.ok) { loadDepartments(); showToast("✏️ تم تعديل القسم","success"); }
+}
 
-  <!-- ✅ الحماية -->
-  <script src="login-guard.js"></script>
+// ✅ حذف القسم مع Modal
+let departmentToDelete = null;
+function deleteDepartment() {
+  const select = document.getElementById('department');
+  const selected = select.options[select.selectedIndex];
+  if (!selected || !selected.dataset.id) { showToast("❌ اختر القسم أولاً","danger"); return; }
+  departmentToDelete = selected;
+  document.getElementById("deleteDepName").textContent = selected.value;
+  new bootstrap.Modal(document.getElementById("confirmDeleteModal")).show();
+}
+document.getElementById("confirmDeleteBtn").addEventListener("click", async () => {
+  if (!departmentToDelete) return;
+  const res = await fetch(`${API_BASE}/api/departments/${departmentToDelete.dataset.id}`, { method: 'DELETE' });
+  if (res.ok) { loadDepartments(); showToast("🗑️ تم حذف القسم","success"); }
+  else { showToast("❌ فشل حذف القسم","danger"); }
+  bootstrap.Modal.getInstance(document.getElementById("confirmDeleteModal")).hide();
+  departmentToDelete = null;
+});
+
+// ✅ إرسال نموذج الفيديو
+document.getElementById('videoForm').addEventListener('submit', async e => {
+  e.preventDefault();
+  const title = document.getElementById('title').value;
+  const url = document.getElementById('url').value;
+  const description = quill.root.innerHTML;
+  const department = document.getElementById('department').value;
+  const response = await fetch(`${API_BASE}/api/videos`, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ title, link: url, url, description, department })
+  });
+  if (response.ok) {
+    document.getElementById('confirmation').textContent = '✅ تم إضافة الفيديو بنجاح';
+    document.getElementById('confirmation').classList.remove('d-none');
+    document.getElementById('videoForm').reset();
+    quill.setContents([]); document.getElementById('preview').innerHTML = '';
+    loadDepartments(); showToast("✅ تم إضافة الفيديو بنجاح","success");
+  } else { showToast("❌ حدث خطأ أثناء الإضافة","danger"); }
+});
+
+loadDepartments();
+</script>
 </body>
 </html>
