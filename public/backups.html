@@ -34,28 +34,29 @@
       transform: translateX(-50%);
       z-index: 2000;
     }
+    #pageContent { display: none; }
   </style>
 </head>
 <body>
-  <div class="container">
+  <div class="container" id="pageContent">
     <div class="d-flex justify-content-between align-items-center mb-4">
-      <h3>النسخ الاحتياطية</h3>
-      <a href="dashboard.html" class="btn btn-outline-info">لوحة التحكم</a>
+      <h3>🗄️ النسخ الاحتياطية</h3>
+      <a href="dashboard.html" class="btn btn-outline-info" data-bs-toggle="tooltip" title="العودة إلى لوحة التحكم">لوحة التحكم</a>
     </div>
 
     <div class="d-flex gap-2 mb-3 flex-wrap">
-      <button class="btn btn-primary" onclick="createBackup()">📥 إنشاء نسخة احتياطية</button>
-      <button class="btn btn-danger" onclick="deleteSelected()">🗑️ حذف المحدد</button>
+      <button class="btn btn-primary" onclick="createBackup()" data-bs-toggle="tooltip" title="إنشاء نسخة احتياطية جديدة">📥 إنشاء نسخة احتياطية</button>
+      <button class="btn btn-danger" onclick="deleteSelected()" data-bs-toggle="tooltip" title="حذف النسخ المحددة">🗑️ حذف المحدد</button>
 
-      <!-- ✅ زر رفع نسخة. -->
+      <!-- ✅ زر رفع نسخة -->
       <form id="uploadForm" enctype="multipart/form-data" class="d-flex gap-2">
-        <input type="file" id="backupFile" name="backupFile" accept=".json" class="form-control">
-        <button type="submit" class="btn btn-success">📤 رفع نسخة</button>
+        <input type="file" id="backupFile" name="backupFile" accept=".json" class="form-control" data-bs-toggle="tooltip" title="اختر ملف نسخة احتياطية بصيغة JSON">
+        <button type="submit" class="btn btn-success" data-bs-toggle="tooltip" title="رفع وحفظ نسخة احتياطية من جهازك">📤 رفع نسخة</button>
       </form>
     </div>
 
     <div class="form-check mb-3">
-      <input class="form-check-input" type="checkbox" id="selectAll" onchange="toggleSelectAll(this)">
+      <input class="form-check-input" type="checkbox" id="selectAll" onchange="toggleSelectAll(this)" data-bs-toggle="tooltip" title="تحديد أو إلغاء تحديد جميع النسخ">
       <label class="form-check-label" for="selectAll">تحديد الكل</label>
     </div>
 
@@ -93,6 +94,12 @@
 <script>
 let backups = [];
 let confirmCallback = null;
+
+// ✅ تفعيل التولتيب بشكل عام
+document.addEventListener("DOMContentLoaded", () => {
+  const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+  tooltipTriggerList.forEach(el => new bootstrap.Tooltip(el));
+});
 
 // ✅ دالة لعرض التوست
 function showToast(message, type="success") {
@@ -159,18 +166,22 @@ function renderBackups() {
     card.className = 'backup-card';
     card.innerHTML = `
       <div>
-        <input type="checkbox" class="backup-check" data-id="${b._id}">
+        <input type="checkbox" class="backup-check" data-id="${b._id}" data-bs-toggle="tooltip" title="تحديد هذه النسخة">
         <strong>نسخة رقم #${index + 1}</strong><br>
         <small class="text-muted">${dateText} – ${sizeKB} KB</small>
         <div class="details">📹 فيديوهات: ${videoCount} | 🔗 روابط: ${linkCount} | 🔑 كلمات مرور: ${passCount} | 🗂️ أقسام: ${deptCount}</div>
       </div>
       <div class="d-flex gap-2">
-        <a class="btn btn-success btn-sm" href="/api/backups/download/${b._id}">⬇️ تنزيل</a>
-        <button class="btn btn-warning btn-sm" onclick="restoreBackup('${b._id}')">♻️ استرجاع</button>
+        <a class="btn btn-success btn-sm" href="/api/backups/download/${b._id}" data-bs-toggle="tooltip" title="تنزيل هذه النسخة الاحتياطية">⬇️ تنزيل</a>
+        <button class="btn btn-warning btn-sm" onclick="restoreBackup('${b._id}')" data-bs-toggle="tooltip" title="استرجاع البيانات من هذه النسخة">♻️ استرجاع</button>
       </div>
     `;
     container.appendChild(card);
   });
+
+  // ✅ إعادة تفعيل التولتيب للنسخ الجديدة
+  const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+  tooltipTriggerList.forEach(el => new bootstrap.Tooltip(el));
 
   summary.innerHTML = `عدد النسخ: ${backups.length} – الحجم الكلي: ${totalSize.toFixed(2)} KB`;
 }
@@ -206,7 +217,7 @@ async function createBackup() {
 }
 
 async function restoreBackup(id) {
-  showConfirm("هل تريد استرجاع هذه النسخة إلى قاعدة البيانات؟", async () => {
+  showConfirm("⚠️ سيتم استبدال البيانات الحالية. هل تريد المتابعة؟", async () => {
     const res = await fetch(`/api/backups/restore/${id}`, { method: 'POST' });
     const result = await res.json();
     showToast(result.message || '♻️ تم استرجاع النسخة الاحتياطية', "info");
