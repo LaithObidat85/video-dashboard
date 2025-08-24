@@ -162,13 +162,21 @@ function showToast(message, type="success") {
   new bootstrap.Toast(toast, { delay: 1500 }).show();
 }
 
+// ✅ منع الرجوع بعد تسجيل الخروج
+window.history.pushState(null, "", window.location.href);
+window.addEventListener("popstate", function () {
+  if (!sessionStorage.getItem("loggedInAt_edit")) {
+    window.location.replace("index.html");
+  }
+});
+
 // ✅ تسجيل الخروج
 document.addEventListener("DOMContentLoaded", () => {
   if (sessionStorage.getItem("logoutPending") === "true") {
     sessionStorage.removeItem("logoutPending");
-    sessionStorage.removeItem("loggedInAt_videos");
-    showToast("تم تسجيل الخروج بنجاح","success");
-    setTimeout(() => { window.location.href="dashboard.html"; }, 1500);
+    sessionStorage.removeItem("loggedInAt_edit");
+    showToast("✅ تم تسجيل الخروج بنجاح","success");
+    setTimeout(() => { window.location.href="index.html"; }, 1500);
   }
 });
 document.getElementById("logoutBtn").addEventListener("click", () => {
@@ -190,13 +198,13 @@ document.getElementById("themeToggle").addEventListener("click",()=>{
 // ✅ Dashboard
 document.getElementById("dashboardBtn").addEventListener("click",()=>{window.location.href="dashboard.html";});
 
-// ✅ Tooltips
+// ✅ Tooltips احترافية
 document.addEventListener("DOMContentLoaded", () => {
   const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
   tooltipTriggerList.forEach(el => { new bootstrap.Tooltip(el,{ trigger:'hover focus', placement:'top', delay:{show:300,hide:150}, customClass:'custom-tooltip'}); });
 });
 
-// 🔽 وظائف الفيديوهات (كما بالكود الأصلي)
+// 🔽 وظائف الفيديوهات
 async function fetchDepartments(){ try{const res=await fetch("/api/departments");departments=await res.json();}catch(e){console.error(e);} }
 function populateDeptSelect(select,selected=""){select.innerHTML='<option value="">-- اختر القسم --</option>';departments.forEach(dep=>{const o=document.createElement('option');o.value=dep.name;o.textContent=dep.name;if(dep.name===selected)o.selected=true;select.appendChild(o);});}
 async function fetchVideos(){const res=await fetch("/api/videos");videos=await res.json();populateDepartmentOptions();}
