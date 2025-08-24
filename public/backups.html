@@ -137,13 +137,12 @@
 let backups = [];
 let confirmCallback = null;
 
-// ✅ منع الرجوع بعد تسجيل الخروج
-if (!sessionStorage.getItem("loggedInAt_backups")) {
-  window.location.replace("index.html");
-}
+// ✅ منع الرجوع بعد تسجيل الخروج فقط
 window.history.pushState(null, "", window.location.href);
 window.addEventListener("popstate", function () {
-  window.location.replace("index.html");
+  if (!sessionStorage.getItem("loggedInAt_backups")) {
+    window.location.replace("index.html");
+  }
 });
 
 function showToast(message, type="success") {
