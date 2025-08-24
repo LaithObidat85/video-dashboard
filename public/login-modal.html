@@ -64,15 +64,20 @@ document.addEventListener("DOMContentLoaded", function () {
 
   // ✅ وظيفة التحقق
   async function verifyPassword() {
+    const section = "dashboard"; // مهم: حتى يتوافق مع index.html
     const password = passwordInput.value;
+
     const res = await fetch("/api/verify-password", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ password })
+      body: JSON.stringify({ section, password })
     });
 
     if (res.status === 200) {
       passwordModal.hide();
+      // 🔹 بعد النجاح → تخزين الجلسة
+      sessionStorage.setItem("loggedInAt_" + section, Date.now().toString());
+      window.location.href = section + ".html";
     } else {
       // ✨ اهتزاز الأيقونة + تغيير اللون للأحمر
       lockIcon.classList.add("shake");
@@ -93,9 +98,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
   // ✅ عند الضغط على Enter
   passwordInput.addEventListener("keydown", function (e) {
-    if (e.key === "Enter") {
-      verifyPassword();
-    }
+    if (e.key === "Enter") verifyPassword();
   });
 
   // ✅ عند الضغط على زر إلغاء → العودة للرئيسية
