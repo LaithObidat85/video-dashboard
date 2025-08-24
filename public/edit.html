@@ -172,13 +172,10 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 // Overlay عند تحميل الصفحة
+// Overlay عند تحميل الصفحة
 window.addEventListener("load",()=>{
-  if(sessionStorage.getItem("loggedInAt_edit")){
-    hideOverlay();
-    document.getElementById("pageContent").style.display="block";
-  } else {
-    window.location.replace("index.html");
-  }
+  // login-guard.js هو اللي يقرر عرض المودال أو الصفحة
+  hideOverlay(); 
 });
 
 // أثناء حفظ التعديلات
