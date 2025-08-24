@@ -1,5 +1,3 @@
-// login-guard.js
-
 // ⏱️ المدة المسموح بها قبل إعادة طلب كلمة المرور (بالثواني)
 const LOGIN_TIMEOUT = 3600; // 60 دقيقة  
 
@@ -7,7 +5,6 @@ const LOGIN_TIMEOUT = 3600; // 60 دقيقة
 function showToast(message, type = "success") {
   let icon = type === "success" ? "✅" : type === "danger" ? "❌" : "ℹ️";
 
-  // إذا ما فيش container للتوست → أنشئ واحد
   let container = document.getElementById("toastContainer");
   if (!container) {
     container = document.createElement("div");
@@ -31,17 +28,21 @@ function showToast(message, type = "success") {
 }
 
 async function setupLoginGuard() {
-  // 🆔 تحديد اسم القسم حسب الصفحة الحالية
   const section = getSectionName();
-
-  // ✅ تحقق إذا كان فيه جلسة دخول سارية للقسم الحالي
   const loggedInKey = `loggedInAt_${section}`;
   const loggedInAt = sessionStorage.getItem(loggedInKey);
+
+  // ✅ أخفي المحتوى من البداية
+  const pageContent = document.getElementById("pageContent");
+  if (pageContent) pageContent.style.display = "none";
+
   if (loggedInAt) {
     const now = Date.now();
-    const diff = (now - parseInt(loggedInAt, 10)) / 1000; 
-    if (diff < LOGIN_TIMEOUT) { 
-      return; // لا تطلب كلمة المرور
+    const diff = (now - parseInt(loggedInAt, 10)) / 1000;
+    if (diff < LOGIN_TIMEOUT) {
+      // ✅ دخول صالح → أظهر المحتوى
+      if (pageContent) pageContent.style.display = "block";
+      return;
     }
   }
 
@@ -83,15 +84,16 @@ async function setupLoginGuard() {
     const res = await fetch("/api/verify-password", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ section, password }) // ✅ إرسال القسم مع كلمة المرور
+      body: JSON.stringify({ section, password })
     });
 
     if (res.status === 200) {
-      // ✅ حفظ وقت الدخول للقسم الحالي فقط
       sessionStorage.setItem(loggedInKey, Date.now().toString());
       passwordModal.hide();
+
+      // ✅ إظهار المحتوى بعد تسجيل الدخول
+      if (pageContent) pageContent.style.display = "block";
     } else {
-      // 🚫 بدل الـ alert → Toast
       showToast("❌ كلمة المرور غير صحيحة", "danger");
       passwordInput.value = "";
       passwordInput.focus();
@@ -102,9 +104,7 @@ async function setupLoginGuard() {
     .addEventListener("click", verifyPassword);
 
   passwordInput.addEventListener("keydown", function (e) {
-    if (e.key === "Enter") {
-      verifyPassword();
-    }
+    if (e.key === "Enter") verifyPassword();
   });
 }
 
@@ -119,11 +119,9 @@ function getSectionName() {
   if (path.includes("add.html")) return "add";
   if (path.includes("passwords.html")) return "passwords";
   if (path.includes("edit.html")) return "edit";
-
-  // 🆕 معالجة الصفحة الرئيسية
   if (path === "/" || path.endsWith("index.html") || window.location.hash) return "index";
 
-  return "general"; // افتراضي
+  return "general";
 }
 
 // ✅ عند تحميل الصفحة نفذ الحماية
