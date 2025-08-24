@@ -80,6 +80,29 @@
       color: #bbb;
       animation: none;
     }
+    /* زر مسح البحث */
+    .search-wrapper {
+      position: relative;
+      display: inline-block;
+      width: 100%;
+    }
+    .search-wrapper input {
+      padding-inline-end: 32px; /* مساحة للزر */
+    }
+    #clearSearch {
+      position: absolute;
+      inset-inline-end: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      background: transparent;
+      border: none;
+      font-size: 20px;
+      color: #666;
+      cursor: pointer;
+      display: none;
+      line-height: 1;
+    }
+    #clearSearch:hover { color: #000; }
   </style>
 </head>
 <body>
@@ -112,9 +135,10 @@
 
 <div class="container mt-4 text-center">
 
-  <!-- ✅ شريط البحث -->
-  <div class="mb-3">
+  <!-- ✅ شريط البحث مع زر المسح -->
+  <div class="mb-3 search-wrapper">
     <input id="searchInput" type="text" class="form-control" placeholder="🔍 ابحث عن وصف أو رابط...">
+    <button id="clearSearch" type="button">×</button>
   </div>
 
   <div class="table-responsive">
@@ -172,8 +196,8 @@ function renderLinks(data) {
       : `${API_BASE}/api/redirect/${encodeURIComponent(link._id)}`;
 
     const linkHtml = `
-      <a href="${secureLink}" target="_blank" class="btn btn-primary btn-sm">
-        <i class="bi bi-box-arrow-up-right"></i> فتح الرابط
+      <a href="${secureLink}" target="_blank">
+        ${link.linkText || 'الرابط'}
       </a>
     `;
 
@@ -189,13 +213,23 @@ function renderLinks(data) {
 }
 
 // ✅ فلترة النتائج محليًا
-document.getElementById('searchInput').addEventListener('input', function() {
+const searchInput = document.getElementById('searchInput');
+const clearBtn = document.getElementById('clearSearch');
+
+searchInput.addEventListener('input', function() {
   const query = this.value.trim().toLowerCase();
+  clearBtn.style.display = query ? "block" : "none";
   const filtered = linksData.filter(link => {
     return (link.description && link.description.toLowerCase().includes(query)) ||
            (link.linkText && link.linkText.toLowerCase().includes(query));
   });
   renderLinks(filtered);
+});
+
+clearBtn.addEventListener('click', () => {
+  searchInput.value = "";
+  clearBtn.style.display = "none";
+  renderLinks(linksData);
 });
 
 fetchLinks();
