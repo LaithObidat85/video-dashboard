@@ -195,8 +195,9 @@ function renderLinks(data) {
       ? `/auth/login?id=${link._id}`
       : `${API_BASE}/api/redirect/${encodeURIComponent(link._id)}`;
 
+    // ✅ زر نصه من قاعدة البيانات
     const linkHtml = `
-      <a href="${secureLink}" target="_blank">
+      <a href="${secureLink}" target="_blank" class="btn btn-primary btn-sm">
         ${link.linkText || 'الرابط'}
       </a>
     `;
