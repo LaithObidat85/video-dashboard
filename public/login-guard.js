@@ -3,6 +3,33 @@
 // ⏱️ المدة المسموح بها قبل إعادة طلب كلمة المرور (بالثواني)
 const LOGIN_TIMEOUT = 3600; // 60 دقيقة  
 
+// ✅ دالة Toast مدمجة
+function showToast(message, type = "success") {
+  let icon = type === "success" ? "✅" : type === "danger" ? "❌" : "ℹ️";
+
+  // إذا ما فيش container للتوست → أنشئ واحد
+  let container = document.getElementById("toastContainer");
+  if (!container) {
+    container = document.createElement("div");
+    container.id = "toastContainer";
+    container.className = "toast-container position-fixed top-0 start-50 translate-middle-x p-3";
+    container.style.zIndex = "9999";
+    document.body.appendChild(container);
+  }
+
+  const toast = document.createElement("div");
+  toast.className = `toast align-items-center text-bg-${type} border-0 mb-2`;
+  toast.setAttribute("role", "alert");
+  toast.innerHTML = `
+    <div class="d-flex">
+      <div class="toast-body">${icon} ${message}</div>
+      <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+    </div>`;
+  container.appendChild(toast);
+
+  new bootstrap.Toast(toast, { delay: 2500 }).show();
+}
+
 async function setupLoginGuard() {
   // 🆔 تحديد اسم القسم حسب الصفحة الحالية
   const section = getSectionName();
@@ -65,11 +92,7 @@ async function setupLoginGuard() {
       passwordModal.hide();
     } else {
       // 🚫 بدل الـ alert → Toast
-      if (typeof showToast === "function") {
-        showToast("❌ كلمة المرور غير صحيحة", "danger");
-      } else {
-        console.warn("showToast غير معرف - fallback إلى console.warn");
-      }
+      showToast("❌ كلمة المرور غير صحيحة", "danger");
       passwordInput.value = "";
       passwordInput.focus();
     }
