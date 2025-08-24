@@ -167,7 +167,7 @@ document.addEventListener("DOMContentLoaded", () => {
   if (sessionStorage.getItem("logoutPending") === "true") {
     sessionStorage.removeItem("logoutPending");
     sessionStorage.removeItem("loggedInAt_videos");
-    showToast("✅ تم تسجيل الخروج بنجاح","success");
+    showToast("تم تسجيل الخروج بنجاح","success");
     setTimeout(() => { window.location.href="dashboard.html"; }, 1500);
   }
 });
