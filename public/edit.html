@@ -89,7 +89,7 @@
   </div>
 </div>
 
-<!-- النوافذ المنبثقة (مودالات) -->
+<!-- النوافذ المنبثقة -->
 <div class="modal fade" id="descModal" tabindex="-1">
   <div class="modal-dialog modal-lg"><div class="modal-content">
     <div class="modal-header"><h5 class="modal-title" id="descTitle"></h5>
@@ -139,7 +139,7 @@
   </div></div>
 </div>
 
-<!-- Toast للإشعارات -->
+<!-- Toast -->
 <div class="toast-container" id="toastContainer"></div>
 <div id="loginModalContainer"></div>
 
@@ -156,7 +156,7 @@ let quill = new Quill('#editor', {
   modules: { toolbar: [['bold','italic','underline'],[{ 'list':'ordered'},{ 'list':'bullet'}],['link','image'],[{ 'direction':'rtl'}],['clean']] }
 });
 
-// ✅ التحكم بالـ Overlay
+// ✅ Overlay
 function showOverlay(text="جاري التحميل...⏳"){
   const overlay = document.getElementById("loadingOverlay");
   document.getElementById("loadingText").textContent = text;
@@ -168,7 +168,7 @@ function hideOverlay(){
   document.getElementById("loadingText").textContent = "جاري التحميل...⏳";
 }
 
-// ✅ نظام الإشعارات
+// ✅ Toast
 function showToast(message, type="success") {
   let icon = type==="success" ? "✅" : type==="danger" ? "❌" : "ℹ️";
   const toast = document.createElement('div');
@@ -204,10 +204,10 @@ document.getElementById("themeToggle").addEventListener("click",()=>{
   }
 });
 
-// ✅ الذهاب للوحة التحكم
+// ✅ Dashboard
 document.getElementById("dashboardBtn").addEventListener("click",()=>{window.location.href="dashboard.html";});
 
-// ✅ زر التحديث
+// ✅ Refresh
 document.getElementById("refreshBtn").addEventListener("click", () => {
   showOverlay("جاري تحديث القائمة...⏳");
   fetchVideos().then(() => {
@@ -220,6 +220,21 @@ document.getElementById("refreshBtn").addEventListener("click", () => {
 document.addEventListener("DOMContentLoaded", () => {
   const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
   tooltipTriggerList.forEach(el => { new bootstrap.Tooltip(el,{ trigger:'hover focus', placement:'top', delay:{show:300,hide:150}, customClass:'custom-tooltip'}); });
+});
+
+// ✅ تحميل الصفحة مع التحقق من تسجيل الدخول
+window.addEventListener("load", () => {
+  const isLoggedIn = sessionStorage.getItem("loggedInAt_edit");
+  if (!isLoggedIn) {
+    document.getElementById("pageContent").style.display = "none";
+    showOverlay("🚫 الرجاء تسجيل الدخول أولاً");
+    setTimeout(() => {
+      window.location.href = "login.html";
+    }, 1500);
+  } else {
+    hideOverlay();
+    document.getElementById("pageContent").style.display = "block";
+  }
 });
 
 // 🔽 وظائف الفيديوهات
