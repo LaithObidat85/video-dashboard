@@ -73,10 +73,10 @@
 
 <div class="container text-center">
   <h3 class="mb-4">إدارة وتعديل الفيديوهات</h3>
-   <select id="departmentSelect" class="form-select mb-3" style="max-width: 300px; margin: auto;">
+   <select id="departmentSelect" class="form-select mb-3" style="max-width: 300px; margin: auto;" data-bs-toggle="tooltip" title="اختر القسم">
     <option value="">-- اختر القسم --</option>
   </select>
-  <input id="searchInput" class="form-control mb-4" type="text" placeholder="ابحث بعنوان أو وصف الفيديو..." disabled>
+  <input id="searchInput" class="form-control mb-4" type="text" placeholder="ابحث بعنوان أو وصف الفيديو..." disabled data-bs-toggle="tooltip" title="اكتب كلمة للبحث">
   <div id="videoContainer" class="video-grid"></div>
 </div>
 
@@ -84,7 +84,7 @@
 <div class="modal fade" id="descModal" tabindex="-1">
   <div class="modal-dialog modal-lg"><div class="modal-content">
     <div class="modal-header"><h5 class="modal-title" id="descTitle"></h5>
-      <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      <button type="button" class="btn-close" data-bs-dismiss="modal" data-bs-toggle="tooltip" title="إغلاق"></button>
     </div>
     <div class="modal-body" id="descContent" style="white-space: pre-wrap; text-align: justify;"></div>
   </div></div>
@@ -94,24 +94,24 @@
 <div class="modal fade" id="editModal" tabindex="-1">
   <div class="modal-dialog modal-lg"><div class="modal-content">
     <div class="modal-header"><h5 class="modal-title">تعديل الفيديو</h5>
-      <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      <button type="button" class="btn-close" data-bs-dismiss="modal" data-bs-toggle="tooltip" title="إغلاق النافذة"></button>
     </div>
     <div class="modal-body">
       <input type="hidden" id="editId">
       <label>العنوان</label>
-      <input type="text" class="form-control mb-2" id="editTitle">
+      <input type="text" class="form-control mb-2" id="editTitle" data-bs-toggle="tooltip" title="أدخل العنوان الجديد">
       <label>الوصف</label>
       <div id="editor"></div>
       <label class="mt-3">رابط الفيديو</label>
-      <input type="text" class="form-control mb-2" id="editUrl">
+      <input type="text" class="form-control mb-2" id="editUrl" data-bs-toggle="tooltip" title="ضع رابط الفيديو">
       <label>القسم</label>
-      <select class="form-select mb-2" id="editDeptSelect" required>
+      <select class="form-select mb-2" id="editDeptSelect" required data-bs-toggle="tooltip" title="اختر القسم">
         <option value="">-- اختر القسم --</option>
       </select>
     </div>
     <div class="modal-footer">
-      <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إغلاق</button>
-      <button type="button" class="btn btn-primary" onclick="saveEdit()">حفظ</button>
+      <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" data-bs-toggle="tooltip" title="إغلاق">إغلاق</button>
+      <button type="button" class="btn btn-primary" onclick="saveEdit()" data-bs-toggle="tooltip" title="حفظ التغييرات">حفظ</button>
     </div>
   </div></div>
 </div>
@@ -120,14 +120,14 @@
 <div class="modal fade" id="confirmDeleteModal" tabindex="-1">
   <div class="modal-dialog"><div class="modal-content">
     <div class="modal-header bg-danger text-white"><h5 class="modal-title">تأكيد الحذف</h5>
-      <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      <button type="button" class="btn-close" data-bs-dismiss="modal" data-bs-toggle="tooltip" title="إغلاق النافذة"></button>
     </div>
     <div class="modal-body">هل أنت متأكد أنك تريد حذف هذا الفيديو؟
       <input type="hidden" id="deleteVideoId">
     </div>
     <div class="modal-footer">
-      <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
-      <button type="button" class="btn btn-danger" onclick="confirmDelete()">تأكيد الحذف</button>
+      <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" data-bs-toggle="tooltip" title="إلغاء العملية">إلغاء</button>
+      <button type="button" class="btn btn-danger" onclick="confirmDelete()" data-bs-toggle="tooltip" title="تأكيد الحذف">تأكيد الحذف</button>
     </div>
   </div></div>
 </div>
@@ -205,7 +205,7 @@ async function fetchDepartments(){ try{const res=await fetch("/api/departments")
 function populateDeptSelect(select,selected=""){select.innerHTML='<option value="">-- اختر القسم --</option>';departments.forEach(dep=>{const o=document.createElement('option');o.value=dep.name;o.textContent=dep.name;if(dep.name===selected)o.selected=true;select.appendChild(o);});}
 async function fetchVideos(){const res=await fetch("/api/videos");videos=await res.json();populateDepartmentOptions();}
 function populateDepartmentOptions(){const counts=videos.reduce((a,v)=>{a[v.department]=(a[v.department]||0)+1;return a;},{});const sel=document.getElementById('departmentSelect');sel.innerHTML='<option value="">-- اختر القسم --</option>';Object.entries(counts).forEach(([d,c])=>{const o=document.createElement('option');o.value=d;o.textContent=`${d} (${c})`;sel.appendChild(o);});}
-function renderVideos(){const dept=document.getElementById('departmentSelect').value;const q=document.getElementById('searchInput').value.trim().toLowerCase();const cont=document.getElementById('videoContainer');cont.innerHTML='';if(!dept)return;const f=videos.filter(v=>v.department?.trim().toLowerCase()===dept.trim().toLowerCase()&&(v.title?.toLowerCase().includes(q)||v.description?.toLowerCase().includes(q)));if(!f.length){cont.innerHTML='<p class="text-muted">🚫 لا توجد فيديوهات مطابقة</p>';return;}f.forEach(video=>{const card=document.createElement('div');card.className='video-card';const title=`<div class="video-title">عنوان الفيديو: ${video.title}</div>`;const desc=`<div class="video-description" onclick="showDescription('${escapeHtml(video.title)}','${escapeHtml(video.description)}')">وصف الفيديو: ${video.description}</div>`;const link=video.link||video.url||'';let media='';let pop=link;if(link.includes('youtube.com')||link.includes('youtu.be')){media=`<iframe src="https://www.youtube.com/embed/${extractYouTubeID(link)}" allowfullscreen></iframe>`;}else if(link.includes('drive.google.com/file/d/')){const m=link.match(/\/file\/d\/(.*?)(\/|$)/);media=m?`<iframe src="https://drive.google.com/file/d/${m[1]}/preview" allowfullscreen></iframe>`:`<video controls src="${link}"></video>`;}else if(link.includes("sharepoint.com/")&&link.includes("/embed.aspx")){media=`<iframe class="sharepoint-frame" src="${link}" allowfullscreen></iframe>`;const u=link.match(/UniqueId=([a-zA-Z0-9\-]+)/);if(u)pop=`https://ymkh-my.sharepoint.com/personal/laith_obaidat_iu_edu_jo/_layouts/15/stream.aspx?UniqueId=${u[1]}`;}else if(link.includes("sharepoint.com/")&&link.includes("/stream.aspx")){const u=link.match(/UniqueId=([a-zA-Z0-9\-]+)/);if(u){const e=`https://ymkh-my.sharepoint.com/personal/laith_obaidat_iu_edu_jo/_layouts/15/embed.aspx?UniqueId=${u[1]}&embed=%7B%22ust%22%3Atrue%7D`;media=`<iframe class="sharepoint-frame" src="${e}" allowfullscreen></iframe>`;pop=link;}else{media=`<video controls src="${link}"></video>`;}}else{media=`<video controls src="${link}"></video>`;}const popBtn=`<button class="popout-button" onclick="window.open('${pop}','_blank','width=800,height=600')">عرض الفيديو</button>`;const actions=`<div class="action-buttons"><button class="btn btn-warning btn-sm" onclick="openEditModal('${video._id}')">تعديل</button><button class="btn btn-danger btn-sm" onclick="showDeleteModal('${video._id}')">حذف</button></div>`;card.innerHTML=title+desc+media+popBtn+actions;cont.appendChild(card);});}
+function renderVideos(){const dept=document.getElementById('departmentSelect').value;const q=document.getElementById('searchInput').value.trim().toLowerCase();const cont=document.getElementById('videoContainer');cont.innerHTML='';if(!dept)return;const f=videos.filter(v=>v.department?.trim().toLowerCase()===dept.trim().toLowerCase()&&(v.title?.toLowerCase().includes(q)||v.description?.toLowerCase().includes(q)));if(!f.length){cont.innerHTML='<p class="text-muted">🚫 لا توجد فيديوهات مطابقة</p>';return;}f.forEach(video=>{const card=document.createElement('div');card.className='video-card';const title=`<div class="video-title" data-bs-toggle="tooltip" title="${video.title}">عنوان الفيديو: ${video.title}</div>`;const desc=`<div class="video-description" data-bs-toggle="tooltip" title="عرض الوصف الكامل" onclick="showDescription('${escapeHtml(video.title)}','${escapeHtml(video.description)}')">وصف الفيديو: ${video.description}</div>`;const link=video.link||video.url||'';let media='';let pop=link;if(link.includes('youtube.com')||link.includes('youtu.be')){media=`<iframe src="https://www.youtube.com/embed/${extractYouTubeID(link)}" allowfullscreen></iframe>`;}else if(link.includes('drive.google.com/file/d/')){const m=link.match(/\/file\/d\/(.*?)(\/|$)/);media=m?`<iframe src="https://drive.google.com/file/d/${m[1]}/preview" allowfullscreen></iframe>`:`<video controls src="${link}"></video>`;}else if(link.includes("sharepoint.com/")&&link.includes("/embed.aspx")){media=`<iframe class="sharepoint-frame" src="${link}" allowfullscreen></iframe>`;const u=link.match(/UniqueId=([a-zA-Z0-9\-]+)/);if(u)pop=`https://ymkh-my.sharepoint.com/personal/laith_obaidat_iu_edu_jo/_layouts/15/stream.aspx?UniqueId=${u[1]}`;}else if(link.includes("sharepoint.com/")&&link.includes("/stream.aspx")){const u=link.match(/UniqueId=([a-zA-Z0-9\-]+)/);if(u){const e=`https://ymkh-my.sharepoint.com/personal/laith_obaidat_iu_edu_jo/_layouts/15/embed.aspx?UniqueId=${u[1]}&embed=%7B%22ust%22%3Atrue%7D`;media=`<iframe class="sharepoint-frame" src="${e}" allowfullscreen></iframe>`;pop=link;}else{media=`<video controls src="${link}"></video>`;}}else{media=`<video controls src="${link}"></video>`;}const popBtn=`<button class="popout-button" data-bs-toggle="tooltip" title="فتح الفيديو في نافذة جديدة" onclick="window.open('${pop}','_blank','width=800,height=600')">عرض الفيديو</button>`;const actions=`<div class="action-buttons"><button class="btn btn-warning btn-sm" data-bs-toggle="tooltip" title="تعديل الفيديو" onclick="openEditModal('${video._id}')">تعديل</button><button class="btn btn-danger btn-sm" data-bs-toggle="tooltip" title="حذف الفيديو" onclick="showDeleteModal('${video._id}')">حذف</button></div>`;card.innerHTML=title+desc+media+popBtn+actions;cont.appendChild(card);});}
 function escapeHtml(t){return t?.replace(/"/g,'&quot;').replace(/'/g,'&#39;')||'';}
 function extractYouTubeID(u){const m=u.match(/[?&]v=([^&#]*)|youtu\.be\/([^&#]*)/);return m?(m[1]||m[2]):'';}
 function showDescription(t,d){document.getElementById('descTitle').textContent=t;document.getElementById('descContent').innerHTML=d;new bootstrap.Modal(document.getElementById('descModal')).show();}
