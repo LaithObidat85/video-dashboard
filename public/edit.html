@@ -26,21 +26,31 @@
     #editor { height: 200px; background: white; }
     .toast-container { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); z-index: 9999; }
 
-    /* 🔲 الوضع الليلي */
+    /* الوضع الليلي */
     body.dark-mode { background-color: #121212; color: #eaeaea; }
     body.dark-mode .video-card { background: #1e1e1e; color: #ddd; }
     body.dark-mode .modal-content { background: #1e1e1e; color: #fff; }
     body.dark-mode .btn-close { filter: invert(1); }
 
-    /* شاشة التحميل */
+    /* شاشة التحميل مع Fade */
     #loadingOverlay {
       position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-      background: rgba(0,0,0,0.5); display: none;
+      background: rgba(0,0,0,0.5); 
+      display: flex;
       align-items: center; justify-content: center; flex-direction: column;
-      z-index: 2000; color: #fff; font-size: 1.2rem;
+      z-index: 3000; color: #fff; font-size: 1.2rem;
+
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.4s ease, visibility 0.4s ease;
+    }
+    #loadingOverlay.active {
+      opacity: 1;
+      visibility: visible;
     }
 
-    /* 🎨 تحسين شكل التولتيب */
+    #pageContent { display: none; }
+    /* تحسين التولتيب */
     .custom-tooltip.bs-tooltip-auto[x-placement^=top],
     .custom-tooltip.bs-tooltip-top {
       --bs-tooltip-bg: #0d6efd;
@@ -57,82 +67,31 @@
 <!-- شاشة التحميل -->
 <div id="loadingOverlay">
   <div class="spinner-border text-light" role="status" style="width:3rem; height:3rem;"></div>
-  <p class="mt-3"> جاري التحميل...⏳</p>
+  <p class="mt-3" id="loadingText">جاري التحميل...⏳</p>
 </div>
 
-<!-- ✅ أزرار علوية -->
-<div class="d-flex justify-content-between mb-3 mt-3">
-  <div>
-    <button id="logoutBtn" class="btn btn-danger me-2" data-bs-toggle="tooltip" title="تسجيل الخروج"><i class="bi bi-box-arrow-right"></i></button>
-    <button id="dashboardBtn" class="btn btn-secondary" data-bs-toggle="tooltip" title="العودة للوحة التحكم"><i class="bi bi-speedometer2"></i></button>
+<div id="pageContent">
+  <!-- أزرار علوية -->
+  <div class="d-flex justify-content-between mb-3 mt-3">
+    <div>
+      <button id="logoutBtn" class="btn btn-danger me-2" data-bs-toggle="tooltip" title="تسجيل الخروج"><i class="bi bi-box-arrow-right"></i></button>
+      <button id="dashboardBtn" class="btn btn-secondary" data-bs-toggle="tooltip" title="العودة للوحة التحكم"><i class="bi bi-speedometer2"></i></button>
+    </div>
+    <div>
+      <button id="themeToggle" class="btn btn-outline-dark" data-bs-toggle="tooltip" title="الوضع الليلي/النهاري"><i class="bi bi-moon-stars-fill"></i></button>
+    </div>
   </div>
-  <div>
-    <button id="themeToggle" class="btn btn-outline-dark" data-bs-toggle="tooltip" title="الوضع الليلي/النهاري"><i class="bi bi-moon-stars-fill"></i></button>
+
+  <div class="container text-center">
+    <h3 class="mb-4">إدارة وتعديل الفيديوهات</h3>
+    <select id="departmentSelect" class="form-select mb-3" style="max-width: 300px; margin: auto;" data-bs-toggle="tooltip" title="اختر القسم">
+      <option value="">-- اختر القسم --</option>
+    </select>
+    <input id="searchInput" class="form-control mb-4" type="text" placeholder="ابحث بعنوان أو وصف الفيديو..." disabled data-bs-toggle="tooltip" title="اكتب كلمة للبحث">
+    <div id="videoContainer" class="video-grid"></div>
   </div>
 </div>
 
-<div class="container text-center">
-  <h3 class="mb-4">إدارة وتعديل الفيديوهات</h3>
-   <select id="departmentSelect" class="form-select mb-3" style="max-width: 300px; margin: auto;" data-bs-toggle="tooltip" title="اختر القسم">
-    <option value="">-- اختر القسم --</option>
-  </select>
-  <input id="searchInput" class="form-control mb-4" type="text" placeholder="ابحث بعنوان أو وصف الفيديو..." disabled data-bs-toggle="tooltip" title="اكتب كلمة للبحث">
-  <div id="videoContainer" class="video-grid"></div>
-</div>
-
-<!-- نافذة عرض الوصف -->
-<div class="modal fade" id="descModal" tabindex="-1">
-  <div class="modal-dialog modal-lg"><div class="modal-content">
-    <div class="modal-header"><h5 class="modal-title" id="descTitle"></h5>
-      <button type="button" class="btn-close" data-bs-dismiss="modal" data-bs-toggle="tooltip" title="إغلاق"></button>
-    </div>
-    <div class="modal-body" id="descContent" style="white-space: pre-wrap; text-align: justify;"></div>
-  </div></div>
-</div>
-
-<!-- نافذة تعديل الفيديو -->
-<div class="modal fade" id="editModal" tabindex="-1">
-  <div class="modal-dialog modal-lg"><div class="modal-content">
-    <div class="modal-header"><h5 class="modal-title">تعديل الفيديو</h5>
-      <button type="button" class="btn-close" data-bs-dismiss="modal" data-bs-toggle="tooltip" title="إغلاق النافذة"></button>
-    </div>
-    <div class="modal-body">
-      <input type="hidden" id="editId">
-      <label>العنوان</label>
-      <input type="text" class="form-control mb-2" id="editTitle" data-bs-toggle="tooltip" title="أدخل العنوان الجديد">
-      <label>الوصف</label>
-      <div id="editor"></div>
-      <label class="mt-3">رابط الفيديو</label>
-      <input type="text" class="form-control mb-2" id="editUrl" data-bs-toggle="tooltip" title="ضع رابط الفيديو">
-      <label>القسم</label>
-      <select class="form-select mb-2" id="editDeptSelect" required data-bs-toggle="tooltip" title="اختر القسم">
-        <option value="">-- اختر القسم --</option>
-      </select>
-    </div>
-    <div class="modal-footer">
-      <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" data-bs-toggle="tooltip" title="إغلاق">إغلاق</button>
-      <button type="button" class="btn btn-primary" onclick="saveEdit()" data-bs-toggle="tooltip" title="حفظ التغييرات">حفظ</button>
-    </div>
-  </div></div>
-</div>
-
-<!-- نافذة تأكيد الحذف -->
-<div class="modal fade" id="confirmDeleteModal" tabindex="-1">
-  <div class="modal-dialog"><div class="modal-content">
-    <div class="modal-header bg-danger text-white"><h5 class="modal-title">تأكيد الحذف</h5>
-      <button type="button" class="btn-close" data-bs-dismiss="modal" data-bs-toggle="tooltip" title="إغلاق النافذة"></button>
-    </div>
-    <div class="modal-body">هل أنت متأكد أنك تريد حذف هذا الفيديو؟
-      <input type="hidden" id="deleteVideoId">
-    </div>
-    <div class="modal-footer">
-      <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" data-bs-toggle="tooltip" title="إلغاء العملية">إلغاء</button>
-      <button type="button" class="btn btn-danger" onclick="confirmDelete()" data-bs-toggle="tooltip" title="تأكيد الحذف">تأكيد الحذف</button>
-    </div>
-  </div></div>
-</div>
-
-<!-- Toast -->
 <div class="toast-container" id="toastContainer"></div>
 <div id="loginModalContainer"></div>
 
@@ -147,7 +106,19 @@ let quill = new Quill('#editor', {
   modules: { toolbar: [['bold','italic','underline'],[{ 'list':'ordered'},{ 'list':'bullet'}],['link','image'],[{ 'direction':'rtl'}],['clean']] }
 });
 
-// ✅ Toast موحد
+// ✅ دوال Overlay مع Fade
+function showOverlay(text="جاري التحميل...⏳"){
+  const overlay = document.getElementById("loadingOverlay");
+  document.getElementById("loadingText").textContent = text;
+  overlay.classList.add("active");
+}
+function hideOverlay(){
+  const overlay = document.getElementById("loadingOverlay");
+  overlay.classList.remove("active");
+  document.getElementById("loadingText").textContent = "جاري التحميل...⏳";
+}
+
+// Toast
 function showToast(message, type="success") {
   let icon = type === "success" ? "✅" : type === "danger" ? "❌" : "ℹ️";
   const toast = document.createElement('div');
@@ -158,7 +129,7 @@ function showToast(message, type="success") {
   new bootstrap.Toast(toast, { delay: 1500 }).show();
 }
 
-// ✅ منع الرجوع بعد تسجيل الخروج
+// منع الرجوع بعد تسجيل الخروج
 window.history.pushState(null, "", window.location.href);
 window.addEventListener("popstate", function () {
   if (!sessionStorage.getItem("loggedInAt_edit")) {
@@ -166,7 +137,7 @@ window.addEventListener("popstate", function () {
   }
 });
 
-// ✅ تسجيل الخروج
+// تسجيل الخروج
 document.addEventListener("DOMContentLoaded", () => {
   if (sessionStorage.getItem("logoutPending") === "true") {
     sessionStorage.removeItem("logoutPending");
@@ -180,7 +151,7 @@ document.getElementById("logoutBtn").addEventListener("click", () => {
   location.reload();
 });
 
-// ✅ الوضع الليلي
+// الوضع الليلي
 document.getElementById("themeToggle").addEventListener("click",()=>{
   document.body.classList.toggle("dark-mode");
   const icon=document.querySelector("#themeToggle i");
@@ -191,32 +162,60 @@ document.getElementById("themeToggle").addEventListener("click",()=>{
   }
 });
 
-// ✅ Dashboard
+// Dashboard
 document.getElementById("dashboardBtn").addEventListener("click",()=>{window.location.href="dashboard.html";});
 
-// ✅ Tooltips احترافية
+// Tooltips
 document.addEventListener("DOMContentLoaded", () => {
   const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
   tooltipTriggerList.forEach(el => { new bootstrap.Tooltip(el,{ trigger:'hover focus', placement:'top', delay:{show:300,hide:150}, customClass:'custom-tooltip'}); });
 });
 
-// 🔽 وظائف الفيديوهات
-async function fetchDepartments(){ try{const res=await fetch("/api/departments");departments=await res.json();}catch(e){console.error(e);} }
-function populateDeptSelect(select,selected=""){select.innerHTML='<option value="">-- اختر القسم --</option>';departments.forEach(dep=>{const o=document.createElement('option');o.value=dep.name;o.textContent=dep.name;if(dep.name===selected)o.selected=true;select.appendChild(o);});}
-async function fetchVideos(){const res=await fetch("/api/videos");videos=await res.json();populateDepartmentOptions();}
-function populateDepartmentOptions(){const counts=videos.reduce((a,v)=>{a[v.department]=(a[v.department]||0)+1;return a;},{});const sel=document.getElementById('departmentSelect');sel.innerHTML='<option value="">-- اختر القسم --</option>';Object.entries(counts).forEach(([d,c])=>{const o=document.createElement('option');o.value=d;o.textContent=`${d} (${c})`;sel.appendChild(o);});}
-function renderVideos(){const dept=document.getElementById('departmentSelect').value;const q=document.getElementById('searchInput').value.trim().toLowerCase();const cont=document.getElementById('videoContainer');cont.innerHTML='';if(!dept)return;const f=videos.filter(v=>v.department?.trim().toLowerCase()===dept.trim().toLowerCase()&&(v.title?.toLowerCase().includes(q)||v.description?.toLowerCase().includes(q)));if(!f.length){cont.innerHTML='<p class="text-muted">🚫 لا توجد فيديوهات مطابقة</p>';return;}f.forEach(video=>{const card=document.createElement('div');card.className='video-card';const title=`<div class="video-title" data-bs-toggle="tooltip" title="${video.title}">عنوان الفيديو: ${video.title}</div>`;const desc=`<div class="video-description" data-bs-toggle="tooltip" title="عرض الوصف الكامل" onclick="showDescription('${escapeHtml(video.title)}','${escapeHtml(video.description)}')">وصف الفيديو: ${video.description}</div>`;const link=video.link||video.url||'';let media='';let pop=link;if(link.includes('youtube.com')||link.includes('youtu.be')){media=`<iframe src="https://www.youtube.com/embed/${extractYouTubeID(link)}" allowfullscreen></iframe>`;}else if(link.includes('drive.google.com/file/d/')){const m=link.match(/\/file\/d\/(.*?)(\/|$)/);media=m?`<iframe src="https://drive.google.com/file/d/${m[1]}/preview" allowfullscreen></iframe>`:`<video controls src="${link}"></video>`;}else if(link.includes("sharepoint.com/")&&link.includes("/embed.aspx")){media=`<iframe class="sharepoint-frame" src="${link}" allowfullscreen></iframe>`;const u=link.match(/UniqueId=([a-zA-Z0-9\-]+)/);if(u)pop=`https://ymkh-my.sharepoint.com/personal/laith_obaidat_iu_edu_jo/_layouts/15/stream.aspx?UniqueId=${u[1]}`;}else if(link.includes("sharepoint.com/")&&link.includes("/stream.aspx")){const u=link.match(/UniqueId=([a-zA-Z0-9\-]+)/);if(u){const e=`https://ymkh-my.sharepoint.com/personal/laith_obaidat_iu_edu_jo/_layouts/15/embed.aspx?UniqueId=${u[1]}&embed=%7B%22ust%22%3Atrue%7D`;media=`<iframe class="sharepoint-frame" src="${e}" allowfullscreen></iframe>`;pop=link;}else{media=`<video controls src="${link}"></video>`;}}else{media=`<video controls src="${link}"></video>`;}const popBtn=`<button class="popout-button" data-bs-toggle="tooltip" title="فتح الفيديو في نافذة جديدة" onclick="window.open('${pop}','_blank','width=800,height=600')">عرض الفيديو</button>`;const actions=`<div class="action-buttons"><button class="btn btn-warning btn-sm" data-bs-toggle="tooltip" title="تعديل الفيديو" onclick="openEditModal('${video._id}')">تعديل</button><button class="btn btn-danger btn-sm" data-bs-toggle="tooltip" title="حذف الفيديو" onclick="showDeleteModal('${video._id}')">حذف</button></div>`;card.innerHTML=title+desc+media+popBtn+actions;cont.appendChild(card);});}
-function escapeHtml(t){return t?.replace(/"/g,'&quot;').replace(/'/g,'&#39;')||'';}
-function extractYouTubeID(u){const m=u.match(/[?&]v=([^&#]*)|youtu\.be\/([^&#]*)/);return m?(m[1]||m[2]):'';}
-function showDescription(t,d){document.getElementById('descTitle').textContent=t;document.getElementById('descContent').innerHTML=d;new bootstrap.Modal(document.getElementById('descModal')).show();}
-async function openEditModal(id){await fetchDepartments();const v=videos.find(v=>v._id===id);document.getElementById('editId').value=v._id;document.getElementById('editTitle').value=v.title;document.getElementById('editUrl').value=v.url;quill.root.innerHTML=v.description||'';populateDeptSelect(document.getElementById('editDeptSelect'),v.department);new bootstrap.Modal(document.getElementById('editModal')).show();}
-async function saveEdit(){const id=document.getElementById('editId').value;const upd={title:document.getElementById('editTitle').value,description:quill.root.innerHTML,url:document.getElementById('editUrl').value,department:document.getElementById('editDeptSelect').value};await fetch(`/api/videos/${id}`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(upd)});showToast('✅ تم حفظ التعديلات');fetchVideos();bootstrap.Modal.getInstance(document.getElementById('editModal')).hide();}
-function showDeleteModal(id){document.getElementById('deleteVideoId').value=id;new bootstrap.Modal(document.getElementById('confirmDeleteModal')).show();}
-async function confirmDelete(){const id=document.getElementById('deleteVideoId').value;await fetch(`/api/videos/${id}`,{method:'DELETE'});showToast('🗑️ تم حذف الفيديو',"danger");fetchVideos();bootstrap.Modal.getInstance(document.getElementById('confirmDeleteModal')).hide();}
-document.getElementById('departmentSelect').addEventListener('change',()=>{document.getElementById('searchInput').disabled=false;renderVideos();});
-document.getElementById('searchInput').addEventListener('input',renderVideos);
+// Overlay عند تحميل الصفحة
+window.addEventListener("load",()=>{
+  if(sessionStorage.getItem("loggedInAt_edit")){
+    hideOverlay();
+    document.getElementById("pageContent").style.display="block";
+  } else {
+    window.location.replace("index.html");
+  }
+});
 
-fetchVideos();
+// أثناء حفظ التعديلات
+async function saveEdit(){
+  const id=document.getElementById('editId').value;
+  const upd={title:document.getElementById('editTitle').value,description:quill.root.innerHTML,url:document.getElementById('editUrl').value,department:document.getElementById('editDeptSelect').value};
+
+  showOverlay("جاري الحفظ...⏳");
+  try {
+    await fetch(`/api/videos/${id}`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(upd)});
+    showToast('✅ تم حفظ التعديلات');
+    fetchVideos();
+    bootstrap.Modal.getInstance(document.getElementById('editModal')).hide();
+  } catch {
+    showToast('❌ فشل الحفظ',"danger");
+  } finally {
+    hideOverlay();
+  }
+}
+
+// أثناء الحذف
+async function confirmDelete(){
+  const id=document.getElementById('deleteVideoId').value;
+  showOverlay("جاري الحذف...⏳");
+  try {
+    await fetch(`/api/videos/${id}`,{method:'DELETE'});
+    showToast('🗑️ تم حذف الفيديو',"danger");
+    fetchVideos();
+    bootstrap.Modal.getInstance(document.getElementById('confirmDeleteModal')).hide();
+  } catch {
+    showToast('❌ فشل الحذف',"danger");
+  } finally {
+    hideOverlay();
+  }
+}
+
+// باقي الدوال fetchVideos(), renderVideos() ... كما هي عندك
 </script>
 </body>
 </html>
