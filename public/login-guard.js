@@ -1,6 +1,32 @@
 // ⏱️ مدة الجلسة (ثواني)
 const LOGIN_TIMEOUT = 3600; // ساعة
 
+// ✅ دالة Toast عامة
+function showToast(message, type = "success") {
+  let icon = type === "success" ? "✅" : type === "danger" ? "❌" : "ℹ️";
+
+  let container = document.getElementById("toastContainer");
+  if (!container) {
+    container = document.createElement("div");
+    container.id = "toastContainer";
+    container.className = "toast-container position-fixed top-0 start-50 translate-middle-x p-3";
+    container.style.zIndex = "9999";
+    document.body.appendChild(container);
+  }
+
+  const toast = document.createElement("div");
+  toast.className = `toast align-items-center text-bg-${type} border-0 mb-2`;
+  toast.setAttribute("role", "alert");
+  toast.innerHTML = `
+    <div class="d-flex">
+      <div class="toast-body">${icon} ${message}</div>
+      <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+    </div>`;
+  container.appendChild(toast);
+
+  new bootstrap.Toast(toast, { delay: 2500 }).show();
+}
+
 async function setupLoginGuard() {
   const section = getSectionName();
   const loggedInKey = `loggedInAt_${section}`;
@@ -10,7 +36,7 @@ async function setupLoginGuard() {
   if (sessionStorage.getItem("logoutPending") === "true") {
     sessionStorage.removeItem("logoutPending");
     sessionStorage.removeItem(loggedInKey);
-    alert("✅ تم تسجيل الخروج بنجاح، الرجاء إعادة تسجيل الدخول");
+    showToast("✅ تم تسجيل الخروج بنجاح، الرجاء إعادة تسجيل الدخول", "success");
   }
 
   const pageContent = document.getElementById("pageContent");
@@ -51,8 +77,9 @@ async function setupLoginGuard() {
       sessionStorage.setItem(loggedInKey, Date.now().toString());
       passwordModal.hide();
       if (pageContent) pageContent.style.display = "block";
+      showToast("✅ تم تسجيل الدخول بنجاح", "success");
     } else {
-      alert("❌ كلمة المرور غير صحيحة");
+      showToast("❌ كلمة المرور غير صحيحة", "danger");
       passwordInput.value = "";
       passwordInput.focus();
     }
