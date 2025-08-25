@@ -11,11 +11,30 @@
     table { background: #fff; border-radius: 10px; overflow: hidden; }
     th { background-color: #0d6efd; color: #fff; }
     .toast-container { position: fixed; top: 20px; left: 20px; z-index: 2000; }
+    .filters { margin-bottom: 20px; }
   </style>
 </head>
 <body>
   <div class="container">
     <h3 class="text-center mb-4">⚙️ إدارة تقييم اللجان</h3>
+
+    <!-- الفلاتر -->
+    <div class="filters row">
+      <div class="col-md-6 mb-2">
+        <label class="form-label">الكلية</label>
+        <select id="collegeFilter" class="form-select">
+          <option value="">جميع الكليات</option>
+        </select>
+      </div>
+      <div class="col-md-6 mb-2">
+        <label class="form-label">اسم المدقق</label>
+        <select id="auditorFilter" class="form-select">
+          <option value="">جميع المدققين</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- الجدول -->
     <table class="table table-bordered table-striped">
       <thead>
         <tr>
@@ -111,31 +130,57 @@
     const errorToast = new bootstrap.Toast(document.getElementById('errorToast'));
     const quillEdit = new Quill('#editEditor', { theme: 'snow' });
 
-    // تحميل الكليات والمدققين للاختيار
+    // تحميل الكليات والمدققين للفلاتر والمودال
     async function loadOptions() {
       const colleges = await axios.get('/api/colleges');
+      const collegeFilter = document.getElementById('collegeFilter');
       const collegeSelect = document.getElementById('editCollege');
       colleges.data.forEach(c => {
-        const opt = document.createElement('option');
-        opt.value = c.name; opt.textContent = c.name;
-        collegeSelect.appendChild(opt);
+        const opt1 = document.createElement('option');
+        opt1.value = c.name; opt1.textContent = c.name;
+        collegeFilter.appendChild(opt1);
+        const opt2 = document.createElement('option');
+        opt2.value = c.name; opt2.textContent = c.name;
+        collegeSelect.appendChild(opt2);
       });
       const auditors = await axios.get('/api/auditors');
+      const auditorFilter = document.getElementById('auditorFilter');
       const auditorSelect = document.getElementById('editAuditor');
       auditors.data.forEach(a => {
-        const opt = document.createElement('option');
-        opt.value = a.name; opt.textContent = a.name;
-        auditorSelect.appendChild(opt);
+        const opt1 = document.createElement('option');
+        opt1.value = a.name; opt1.textContent = a.name;
+        auditorFilter.appendChild(opt1);
+        const opt2 = document.createElement('option');
+        opt2.value = a.name; opt2.textContent = a.name;
+        auditorSelect.appendChild(opt2);
       });
     }
     loadOptions();
 
-    // تحميل التقييمات
+    // تحميل التقييمات مع تطبيق الفلترة + ترتيب حسب الكلية
     async function loadCommittees() {
       try {
-        const res = await axios.get('/api/committees');
+        const college = document.getElementById('collegeFilter').value;
+        const auditor = document.getElementById('auditorFilter').value;
+
+        let url = '/api/committees';
+        const params = [];
+        if (college) params.push(`college=${encodeURIComponent(college)}`);
+        if (auditor) params.push(`auditor_name=${encodeURIComponent(auditor)}`);
+        if (params.length > 0) url += '?' + params.join('&');
+
+        const res = await axios.get(url);
         const tbody = document.getElementById('committeesTable');
         tbody.innerHTML = "";
+
+        if(res.data.length === 0){
+          tbody.innerHTML = `<tr><td colspan="7" class="text-center">لا توجد بيانات</td></tr>`;
+          return;
+        }
+
+        // ✅ ترتيب النتائج حسب اسم الكلية (بالعربية)
+        res.data.sort((a, b) => (a.college || "").localeCompare(b.college || "", "ar"));
+
         res.data.forEach((c, idx) => {
           const tr = document.createElement('tr');
           tr.innerHTML = `
@@ -157,6 +202,10 @@
       }
     }
     loadCommittees();
+
+    // إعادة تحميل عند تغيير الفلاتر
+    document.getElementById('collegeFilter').addEventListener('change', loadCommittees);
+    document.getElementById('auditorFilter').addEventListener('change', loadCommittees);
 
     // فتح التعديل
     function editCommittee(c) {
