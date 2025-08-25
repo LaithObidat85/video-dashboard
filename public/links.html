@@ -2,46 +2,58 @@
 <html lang="ar" dir="rtl">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
   <title>إدارة الروابط</title>
   <link rel="icon" type="image/png" href="https://www.dropbox.com/scl/fi/f283e4rvv5cf9x12a1cic/my-website-logo.png?rlkey=yia776im7klypy27af32m0scy&e=1&st=vhaprvzh&dl=1">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.rtl.min.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
   <style>
-    body {
-      background: linear-gradient(to right, #e0eafc, #cfdef3);
-      padding: 20px;
-      font-family: 'Segoe UI', sans-serif;
-    }
+    body { background: linear-gradient(to right, #e0eafc, #cfdef3); font-family: 'Segoe UI', sans-serif; padding: 20px; transition: background 0.3s ease, color 0.3s ease; }
     .card { margin-bottom: 20px; }
-    .table th, .table td { white-space: nowrap; vertical-align: middle; }
-    .table th:first-child, .table td:first-child {
-      position: sticky;
-      right: 0;
-      background: #fff;
-      z-index: 2;
+    table td, table th { vertical-align: middle; white-space: normal; } /* 🔹 يسمح بلف النص بدون Scroll */
+    .action-buttons { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
+    .toast-container { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); z-index: 9999; }
+    #loadingOverlay {
+      position: fixed; top:0; left:0; width:100%; height:100%;
+      background: rgba(0,0,0,0.5); display: none;
+      align-items: center; justify-content: center; flex-direction: column;
+      z-index: 2000; color:#fff; font-size:1.2rem;
     }
-    .table th:nth-child(4), .table td:nth-child(4) { width: 120px; text-align: center; }
-    .table th:nth-child(5), .table td:nth-child(5) { width: 260px; }
-    .action-buttons { display: flex; gap: 8px; justify-content: center; }
-    /* ✅ مكان التوست أعلى الصفحة بالوسط */
-    .toast-container { 
-      position: fixed; 
-      top: 20px; 
-      left: 50%; 
-      transform: translateX(-50%); 
-      z-index: 9999; 
-    }
+    #pageContent { display: none; }
+    body.dark-mode { background: #121212 !important; color: #eaeaea !important; }
+    body.dark-mode table, body.dark-mode .card { background:#1e1e1e; color:#ddd; }
+    body.dark-mode .modal-content { background:#1e1e1e; color:#fff; }
+    body.dark-mode .btn-close { filter: invert(1); }
   </style>
 </head>
 <body>
+
+<!-- ✅ شاشة تحميل -->
+<div id="loadingOverlay">
+  <div class="spinner-border text-light" role="status" style="width:3rem;height:3rem;"></div>
+  <p class="mt-3">جاري التحميل... ⏳</p>
+</div>
+
+<div id="pageContent">
+  <!-- ✅ الهيدر العلوي -->
+  <div class="d-flex justify-content-between mb-3">
+    <div>
+      <button id="logoutBtn" class="btn btn-danger me-2" data-bs-toggle="tooltip" title="تسجيل الخروج"><i class="bi bi-box-arrow-right"></i></button>
+      <button id="dashboardBtn" class="btn btn-secondary" data-bs-toggle="tooltip" title="العودة للوحة التحكم"><i class="bi bi-speedometer2"></i></button>
+    </div>
+    <div>
+      <button id="themeToggle" class="btn btn-outline-dark" data-bs-toggle="tooltip" title="الوضع الليلي/النهاري"><i class="bi bi-moon-stars-fill"></i></button>
+    </div>
+  </div>
+
   <div class="container">
-    <h2 class="mb-4 text-center">إدارة الروابط</h2>
+    <h2 class="mb-4 text-center">🔗 إدارة الروابط</h2>
 
     <div class="d-flex justify-content-between mb-3">
-      <button class="btn btn-primary" id="showFormBtn">➕ إضافة رابط جديد</button>
-      <a href="dashboard.html" class="btn btn-outline-info">لوحة التحكم</a>
+      <button class="btn btn-primary" id="showFormBtn" data-bs-toggle="tooltip" title="إضافة رابط جديد">➕ إضافة رابط جديد</button>
     </div>
 
+    <!-- ✅ نموذج إضافة/تعديل رابط -->
     <form id="addLinkForm" class="card card-body mb-4" style="display:none;">
       <input type="hidden" id="id" name="id">
       <div class="mb-3">
@@ -66,9 +78,10 @@
       </div>
     </form>
 
+    <!-- ✅ جدول الروابط -->
     <div class="table-responsive">
       <table class="table table-bordered table-striped">
-        <thead>
+        <thead class="table-dark">
           <tr>
             <th>#</th>
             <th>الوصف</th>
@@ -77,161 +90,162 @@
             <th>إجراءات</th>
           </tr>
         </thead>
-        <tbody id="linksTable"></tbody>
+        <tbody id="linksTable">
+          <tr><td colspan="5" class="text-center text-muted">🚫 لا توجد روابط</td></tr>
+        </tbody>
       </table>
     </div>
   </div>
+</div>
 
-  <!-- ✅ نافذة تسجيل الدخول -->
-  <div id="loginModalContainer"></div>
-
-  <!-- ✅ حاوية التوست -->
-  <div class="toast-container" id="toastContainer"></div>
-
-  <!-- ✅ مودال تأكيد الحذف -->
-  <div class="modal fade" id="confirmDeleteModal" tabindex="-1">
-    <div class="modal-dialog modal-dialog-centered">
-      <div class="modal-content">
-        <div class="modal-header bg-danger text-white">
-          <h5 class="modal-title">تأكيد الحذف</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-        </div>
-        <div class="modal-body">هل أنت متأكد أنك تريد حذف هذا الرابط؟</div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
-          <button type="button" id="confirmDeleteBtn" class="btn btn-danger">حذف</button>
-        </div>
-      </div>
+<!-- ✅ مودال تأكيد الحذف -->
+<div class="modal fade" id="confirmDeleteModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered"><div class="modal-content">
+    <div class="modal-header bg-danger text-white">
+      <h5 class="modal-title">تأكيد الحذف</h5>
+      <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
     </div>
-  </div>
+    <div class="modal-body">هل أنت متأكد أنك تريد حذف هذا الرابط؟</div>
+    <div class="modal-footer">
+      <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+      <button type="button" id="confirmDeleteBtn" class="btn btn-danger">🗑️ حذف</button>
+    </div>
+  </div></div>
+</div>
 
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-  <script>
-    let deleteId = null;
+<!-- ✅ حاويات -->
+<div class="toast-container" id="toastContainer"></div>
+<div id="loginModalContainer"></div>
 
-    /* ✅ (1) دالة التوست العامة */
-    function showToast(message, type="success") {
-      const toast = document.createElement('div');
-      toast.className = `toast align-items-center text-bg-${type} border-0 mb-2`;
-      toast.setAttribute('role', 'alert');
-      toast.innerHTML = `
-        <div class="d-flex">
-          <div class="toast-body">${message}</div>
-          <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
-        </div>`;
-      document.getElementById('toastContainer').appendChild(toast);
-      new bootstrap.Toast(toast, { delay: 2000 }).show();
-    }
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="login-guard.js"></script>
+<script>
+let deleteId = null;
 
-    async function loadLinks() {
-      const res = await fetch('/api/links');
-      const data = await res.json();
-      const table = document.getElementById('linksTable');
-      table.innerHTML = '';
-      data.forEach((link, index) => {
-        table.innerHTML += `
-          <tr>
-            <td>${index + 1}</td>
-            <td>${link.description || ''}</td>
-            <td><a href="${link.link}" target="_blank">${link.linkText}</a></td>
-            <td>${link.requiresPassword 
-                ? '<i class="bi bi-lock-fill text-danger fs-4"></i>' 
-                : '<i class="bi bi-unlock-fill text-success fs-4"></i>'}</td>
-            <td>
-              <div class="action-buttons">
-                <i class="bi bi-pencil-square text-warning fs-5" style="cursor:pointer;" onclick='editLink(${JSON.stringify(link)})'></i>
-                <i class="bi bi-trash-fill text-danger fs-5" style="cursor:pointer;" onclick="prepareDelete('${link._id}')"></i>
-                <i class="bi bi-arrow-up-circle-fill text-info fs-5" style="cursor:pointer;" onclick="moveLink('${link._id}','up')"></i>
-                <i class="bi bi-arrow-down-circle-fill text-secondary fs-5" style="cursor:pointer;" onclick="moveLink('${link._id}','down')"></i>
-              </div>
-            </td>
-          </tr>
-        `;
-      });
-    }
+// 🟢 Toast
+function showToast(message, type="success") {
+  let icon = type === "success" ? "✅" : type === "danger" ? "❌" : "ℹ️";
+  const toast = document.createElement('div');
+  toast.className = `toast align-items-center text-bg-${type} border-0 mb-2`;
+  toast.innerHTML = `<div class="d-flex"><div class="toast-body">${icon} ${message}</div><button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button></div>`;
+  document.getElementById('toastContainer').appendChild(toast);
+  new bootstrap.Toast(toast, { delay: 1500 }).show();
+}
 
-    function editLink(link) {
-      document.getElementById('id').value = link._id;
-      document.getElementById('description').value = link.description;
-      document.getElementById('link').value = link.link;
-      document.getElementById('linkText').value = link.linkText;
-      document.getElementById('requiresPassword').checked = link.requiresPassword;
-      document.getElementById('addLinkForm').style.display = 'block';
-    }
+// 🟡 تحميل الروابط
+async function loadLinks() {
+  document.getElementById("loadingOverlay").style.display = "flex";
+  try {
+    const res = await fetch('/api/links');
+    const data = await res.json();
+    renderLinks(data);
+  } catch {
+    showToast("❌ خطأ في تحميل الروابط","danger");
+  } finally {
+    document.getElementById("loadingOverlay").style.display = "none";
+  }
+}
 
-    function prepareDelete(id) {
-      deleteId = id;
-      const modal = new bootstrap.Modal(document.getElementById('confirmDeleteModal'));
-      modal.show();
-    }
+function renderLinks(data) {
+  const table = document.getElementById('linksTable');
+  table.innerHTML = '';
+  if (!data.length) {
+    table.innerHTML = `<tr><td colspan="5" class="text-center text-muted">🚫 لا توجد روابط</td></tr>`;
+    return;
+  }
+  data.forEach((link, index) => {
+    table.innerHTML += `
+      <tr>
+        <td>${index+1}</td>
+        <td>${link.description || ''}</td>
+        <td><a href="${link.link}" target="_blank">${link.linkText}</a></td>
+        <td>${link.requiresPassword ? '<i class="bi bi-lock-fill text-danger fs-5"></i>' : '<i class="bi bi-unlock-fill text-success fs-5"></i>'}</td>
+        <td>
+          <div class="action-buttons">
+            <i class="bi bi-pencil-square text-warning fs-5" style="cursor:pointer;" onclick='editLink(${JSON.stringify(link)})'></i>
+            <i class="bi bi-trash-fill text-danger fs-5" style="cursor:pointer;" onclick="prepareDelete('${link._id}')"></i>
+            <i class="bi bi-arrow-up-circle-fill text-info fs-5" style="cursor:pointer;" onclick="moveLink('${link._id}','up')"></i>
+            <i class="bi bi-arrow-down-circle-fill text-secondary fs-5" style="cursor:pointer;" onclick="moveLink('${link._id}','down')"></i>
+          </div>
+        </td>
+      </tr>`;
+  });
+}
 
-    document.getElementById('confirmDeleteBtn').addEventListener('click', async () => {
-      if (!deleteId) return;
-      const res = await fetch(`/api/links/${deleteId}`, { method: 'DELETE' });
-      if (res.ok) {
-        showToast("🗑️ تم الحذف بنجاح", "danger");
-        loadLinks();
-      } else {
-        showToast("❌ فشل في الحذف", "danger");
-      }
-      deleteId = null;
-      bootstrap.Modal.getInstance(document.getElementById('confirmDeleteModal')).hide();
-    });
+// ✏️ تعديل رابط
+function editLink(link) {
+  document.getElementById('id').value = link._id;
+  document.getElementById('description').value = link.description;
+  document.getElementById('link').value = link.link;
+  document.getElementById('linkText').value = link.linkText;
+  document.getElementById('requiresPassword').checked = link.requiresPassword;
+  document.getElementById('addLinkForm').style.display = 'block';
+}
 
-    async function moveLink(id, direction) {
-      const res = await fetch(`/api/links/${id}/move`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ direction })
-      });
-      if (res.ok) {
-        showToast("🔼 تم النقل بنجاح");
-        loadLinks();
-      } else {
-        showToast("❌ لم يتم النقل", "danger");
-      }
-    }
+// 🗑️ تحضير الحذف
+function prepareDelete(id) {
+  deleteId = id;
+  new bootstrap.Modal(document.getElementById('confirmDeleteModal')).show();
+}
+document.getElementById('confirmDeleteBtn').addEventListener('click', async () => {
+  if (!deleteId) return;
+  await fetch(`/api/links/${deleteId}`, { method:'DELETE' });
+  showToast("🗑️ تم الحذف بنجاح","danger");
+  loadLinks();
+  bootstrap.Modal.getInstance(document.getElementById('confirmDeleteModal')).hide();
+  deleteId = null;
+});
 
-    document.getElementById('saveBtn').addEventListener('click', async () => {
-      const form = document.getElementById('addLinkForm');
-      const data = Object.fromEntries(new FormData(form).entries());
-      data.requiresPassword = document.getElementById('requiresPassword').checked;
+// 🔼 تحريك الرابط
+async function moveLink(id,direction){
+  const res = await fetch(`/api/links/${id}/move`,{ method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({direction}) });
+  if(res.ok){ showToast("✅ تم النقل"); loadLinks(); }
+  else{ showToast("❌ فشل النقل","danger"); }
+}
 
-      if (!data.id) delete data.id;
+// 💾 حفظ رابط
+document.getElementById('saveBtn').addEventListener('click', async ()=>{
+  const form = document.getElementById('addLinkForm');
+  const data = Object.fromEntries(new FormData(form).entries());
+  data.requiresPassword = document.getElementById('requiresPassword').checked;
+  if(!data.id) delete data.id;
+  const method = data.id ? 'PUT' : 'POST';
+  const url = data.id ? `/api/links/${data.id}` : '/api/links';
+  const res = await fetch(url,{ method, headers:{'Content-Type':'application/json'}, body:JSON.stringify(data) });
+  if(res.ok){ showToast("✅ تم الحفظ"); loadLinks(); form.reset(); form.style.display='none'; }
+  else showToast("❌ فشل العملية","danger");
+});
 
-      const method = data.id ? 'PUT' : 'POST';
-      const url = data.id ? `/api/links/${data.id}` : '/api/links';
+// ❌ إلغاء
+document.getElementById('cancelBtn').addEventListener('click', ()=>{
+  document.getElementById('addLinkForm').reset();
+  document.getElementById('addLinkForm').style.display='none';
+});
+document.getElementById('showFormBtn').addEventListener('click', ()=>{ document.getElementById('addLinkForm').style.display='block'; });
 
-      const res = await fetch(url, {
-        method,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data)
-      });
+// 🔴 تسجيل خروج
+document.getElementById("logoutBtn").addEventListener("click", ()=>{
+  sessionStorage.removeItem("loggedInAt_links");
+  showToast("تم تسجيل الخروج بنجاح","success");
+  setTimeout(()=> window.location.href="index.html", 1200);
+});
 
-      if (res.ok) {
-        showToast("✅ تم الحفظ بنجاح");
-        loadLinks();
-        form.reset();
-        document.getElementById('id').value = '';
-        form.style.display = 'none';
-      } else {
-        showToast("❌ فشل العملية", "danger");
-      }
-    });
+// ⏪ العودة للوحة التحكم
+document.getElementById("dashboardBtn").addEventListener("click", ()=>{ window.location.href="dashboard.html"; });
 
-    document.getElementById('cancelBtn').addEventListener('click', () => {
-      document.getElementById('addLinkForm').reset();
-      document.getElementById('addLinkForm').style.display = 'none';
-    });
+// 🌙 الوضع الليلي
+document.getElementById("themeToggle").addEventListener("click", ()=>{
+  document.body.classList.toggle("dark-mode");
+  const icon=document.querySelector("#themeToggle i");
+  if(document.body.classList.contains("dark-mode")) icon.classList.replace("bi-moon-stars-fill","bi-brightness-high-fill");
+  else icon.classList.replace("bi-brightness-high-fill","bi-moon-stars-fill");
+});
 
-    document.getElementById('showFormBtn').addEventListener('click', () => {
-      document.getElementById('addLinkForm').style.display = 'block';
-    });
-
-    loadLinks();
-  </script>
-
-  <!-- ✅ استدعاء ملف الحماية الموحّد -->
-  <script src="login-guard.js"></script>
+// 🚀 عند التحميل
+document.addEventListener("DOMContentLoaded", ()=>{
+  loadLinks();
+  [...document.querySelectorAll('[data-bs-toggle="tooltip"]')].forEach(el=> new bootstrap.Tooltip(el));
+});
+</script>
 </body>
 </html>
