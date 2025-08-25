@@ -290,11 +290,14 @@
     : '<span class="text-muted">لا توجد ملاحظات</span>'
 }</td>
 
-            <td class="action-buttons">
-              <button class="btn btn-sm btn-success" onclick="saveRow(this, '${c._id}')">💾</button>
-              <button class="btn btn-sm btn-primary" onclick='editCommittee(${JSON.stringify(c)})'>✏️</button>
-              <button class="btn btn-sm btn-danger" onclick="confirmDelete('${c._id}')">🗑️</button>
-            </td>
+            <td>
+  <div class="action-buttons">
+    <button class="btn btn-sm btn-success" onclick="saveRow(this, '${c._id}')">💾</button>
+    <button class="btn btn-sm btn-primary" onclick='editCommittee(${JSON.stringify(c)})'>✏️</button>
+    <button class="btn btn-sm btn-danger" onclick="confirmDelete('${c._id}')">🗑️</button>
+  </div>
+</td>
+
           `;
           tbody.appendChild(tr);
           attachCellListeners(tr);
