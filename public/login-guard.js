@@ -74,13 +74,17 @@ async function setupLoginGuard() {
   document.querySelectorAll("#passwordModal .btn-close")
     .forEach(btn => btn.style.display = "none");
 
-  // زر إلغاء → إذا كنت في index يخفي المودال فقط، غير ذلك يرجعك للرئيسية
+  // زر إلغاء → إذا كنت في index يخفي المودال فقط + Toast، غير ذلك يرجعك للرئيسية
   const cancelBtn = document.querySelector("#passwordModal .btn-secondary");
   if (cancelBtn) {
     cancelBtn.addEventListener("click", () => {
       if (getSectionName() === "index") {
-        const modalInstance = bootstrap.Modal.getInstance(passwordModalEl);
+        let modalInstance = bootstrap.Modal.getInstance(passwordModalEl);
+        if (!modalInstance) {
+          modalInstance = new bootstrap.Modal(passwordModalEl);
+        }
         modalInstance.hide(); // إخفاء المودال فقط
+        showToast("ℹ️ تم إلغاء تسجيل الدخول", "info"); // ✅ عرض Toast
       } else {
         window.location.href = "index.html"; // العودة للرئيسية
       }
