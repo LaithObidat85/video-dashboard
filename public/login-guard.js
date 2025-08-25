@@ -79,14 +79,10 @@ async function setupLoginGuard() {
   if (cancelBtn) {
     cancelBtn.addEventListener("click", () => {
       if (getSectionName() === "index") {
-        let modalInstance = bootstrap.Modal.getInstance(passwordModalEl);
-        if (!modalInstance) {
-          modalInstance = new bootstrap.Modal(passwordModalEl);
-        }
-        modalInstance.hide(); // إخفاء المودال فقط
-        showToast("ℹ️ تم إلغاء تسجيل الدخول", "info"); // ✅ عرض Toast
+        passwordModal.hide(); // ✅ تم التعديل هنا
+        showToast("ℹ️ تم إلغاء تسجيل الدخول", "info"); 
       } else {
-        window.location.href = "index.html"; // العودة للرئيسية
+        window.location.href = "index.html"; 
       }
     });
   }
@@ -112,7 +108,7 @@ async function setupLoginGuard() {
       // ✅ إظهار المحتوى بعد تسجيل الدخول
       if (pageContent) {
         pageContent.style.display = "block";
-        if (typeof hideOverlay === "function") hideOverlay(); // ← إخفاء شاشة التحميل بعد الدخول
+        if (typeof hideOverlay === "function") hideOverlay(); 
         if (typeof loadPasswords === "function") {
           loadPasswords();
         }
