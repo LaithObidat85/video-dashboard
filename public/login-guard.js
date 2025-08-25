@@ -1,7 +1,7 @@
-// ⏱️ مدة الجلسة (ثواني)
-const LOGIN_TIMEOUT = 3600; // ساعة
+// ⏱️ المدة المسموح بها قبل إعادة طلب كلمة المرور (بالثواني)
+const LOGIN_TIMEOUT = 3600; // 60 دقيقة  
 
-// ✅ دالة Toast عامة
+// ✅ دالة Toast مدمجة
 function showToast(message, type = "success") {
   let icon = type === "success" ? "✅" : type === "danger" ? "❌" : "ℹ️";
 
@@ -32,13 +32,7 @@ async function setupLoginGuard() {
   const loggedInKey = `loggedInAt_${section}`;
   const loggedInAt = sessionStorage.getItem(loggedInKey);
 
-  // ✅ فحص إذا كان في تسجيل خروج معلّق
-  if (sessionStorage.getItem("logoutPending") === "true") {
-    sessionStorage.removeItem("logoutPending");
-    sessionStorage.removeItem(loggedInKey);
-    showToast("✅ تم تسجيل الخروج بنجاح، الرجاء إعادة تسجيل الدخول", "success");
-  }
-
+  // ✅ أخفي المحتوى من البداية
   const pageContent = document.getElementById("pageContent");
   if (pageContent) pageContent.style.display = "none";
 
@@ -46,24 +40,53 @@ async function setupLoginGuard() {
     const now = Date.now();
     const diff = (now - parseInt(loggedInAt, 10)) / 1000;
     if (diff < LOGIN_TIMEOUT) {
-      if (pageContent) pageContent.style.display = "block";
+      // ✅ دخول صالح → أظهر المحتوى
+      if (pageContent) {
+        pageContent.style.display = "block";
+        if (typeof hideOverlay === "function") hideOverlay(); // ← إخفاء شاشة التحميل
+        if (typeof loadPasswords === "function") {
+          loadPasswords(); // ⬅️ تحميل كلمات المرور إذا كنا في passwords.html
+        }
+      }
       return;
     }
   }
 
-  // 🛑 لا جلسة → عرض المودال
+  // 🛑 إذا لا توجد جلسة → أظهر المودال
   const container = document.createElement("div");
   document.body.appendChild(container);
+
   const res = await fetch("login-modal.html");
   const html = await res.text();
   container.innerHTML = html;
 
   const passwordModalEl = document.getElementById("passwordModal");
-  const passwordModal = new bootstrap.Modal(passwordModalEl,{backdrop:"static",keyboard:false});
+  const passwordModal = new bootstrap.Modal(passwordModalEl, {
+    backdrop: "static",
+    keyboard: false
+  });
   passwordModal.show();
 
+  // ✅ إخفاء شاشة التحميل بمجرد عرض المودال
+  if (typeof hideOverlay === "function") hideOverlay();
+
+  // إخفاء زر الإغلاق العلوي ✖
+  document.querySelectorAll("#passwordModal .btn-close")
+    .forEach(btn => btn.style.display = "none");
+
+  // زر إلغاء → العودة للرئيسية
+  const cancelBtn = document.querySelector("#passwordModal .btn-secondary");
+  if (cancelBtn) {
+    cancelBtn.addEventListener("click", () => {
+      window.location.href = "index.html";
+    });
+  }
+
   const passwordInput = document.getElementById("dashboardPassword");
-  passwordModalEl.addEventListener("shown.bs.modal", () => passwordInput.focus());
+
+  passwordModalEl.addEventListener("shown.bs.modal", () => {
+    passwordInput.focus();
+  });
 
   async function verifyPassword() {
     const password = passwordInput.value;
@@ -76,8 +99,15 @@ async function setupLoginGuard() {
     if (res.status === 200) {
       sessionStorage.setItem(loggedInKey, Date.now().toString());
       passwordModal.hide();
-      if (pageContent) pageContent.style.display = "block";
-      showToast("✅ تم تسجيل الدخول بنجاح", "success");
+
+      // ✅ إظهار المحتوى بعد تسجيل الدخول
+      if (pageContent) {
+        pageContent.style.display = "block";
+        if (typeof hideOverlay === "function") hideOverlay(); // ← إخفاء شاشة التحميل بعد الدخول
+        if (typeof loadPasswords === "function") {
+          loadPasswords();
+        }
+      }
     } else {
       showToast("❌ كلمة المرور غير صحيحة", "danger");
       passwordInput.value = "";
@@ -85,13 +115,18 @@ async function setupLoginGuard() {
     }
   }
 
-  document.getElementById("confirmDashboardAccess").addEventListener("click", verifyPassword);
-  passwordInput.addEventListener("keydown", e => { if(e.key==="Enter") verifyPassword(); });
+  document.getElementById("confirmDashboardAccess")
+    .addEventListener("click", verifyPassword);
+
+  passwordInput.addEventListener("keydown", function (e) {
+    if (e.key === "Enter") verifyPassword();
+  });
 }
 
-// 🔹 تحديد القسم حسب الصفحة
+// 🔹 دالة تحدد اسم القسم حسب الصفحة
 function getSectionName() {
   const path = window.location.pathname;
+
   if (path.includes("dashboard.html")) return "dashboard";
   if (path.includes("links.html")) return "links";
   if (path.includes("viewlinks.html")) return "viewlinks";
@@ -99,8 +134,10 @@ function getSectionName() {
   if (path.includes("add.html")) return "add";
   if (path.includes("passwords.html")) return "passwords";
   if (path.includes("edit.html")) return "edit";
-  if (path === "/" || path.endsWith("index.html")) return "index";
+  if (path === "/" || path.endsWith("index.html") || window.location.hash) return "index";
+
   return "general";
 }
 
+// ✅ عند تحميل الصفحة نفذ الحماية
 document.addEventListener("DOMContentLoaded", setupLoginGuard);
