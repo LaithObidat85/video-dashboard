@@ -15,7 +15,7 @@
     .highlight { background-color: #d4edda !important; transition: background-color 1s ease; }
     .toast-container { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); z-index: 2000; }
     .filters { margin-bottom: 20px; width: 90%; margin-left: auto; margin-right: auto; }
-    .action-buttons button { display: block; width: 100%; margin: 2px 0; }
+    .action-buttons button { margin: 0 3px; }
   </style>
 </head>
 <body>
@@ -92,17 +92,18 @@
           </div>
           <div class="modal-body">
             <input type="hidden" name="_id" id="edit_id">
+
             <div class="mb-3">
               <label class="form-label">الكلية</label>
-              <input type="text" class="form-control" id="editCollege">
+              <select class="form-select" id="editCollege" required></select>
             </div>
             <div class="mb-3">
               <label class="form-label">اسم اللجنة</label>
-              <input type="text" class="form-control" id="editCommittee">
+              <input type="text" class="form-control" id="editCommittee" required>
             </div>
             <div class="mb-3">
               <label class="form-label">اسم المدقق</label>
-              <input type="text" class="form-control" id="editAuditor">
+              <select class="form-select" id="editAuditor" required></select>
             </div>
             <div class="mb-3">
               <label class="form-label">تاريخ التدقيق</label>
@@ -137,15 +138,6 @@
         <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
       </div>
     </div>
-    <div id="toastConfirm" class="toast align-items-center text-bg-warning border-0 mb-2" role="alert">
-      <div class="d-flex">
-        <div class="toast-body" id="toastConfirmMsg">⚠️ هل أنت متأكد؟</div>
-        <div class="me-2 m-auto">
-          <button type="button" class="btn btn-sm btn-danger" id="confirmYes">نعم</button>
-          <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="toast">إلغاء</button>
-        </div>
-      </div>
-    </div>
   </div>
 
   <!-- مكتبات -->
@@ -154,13 +146,8 @@
   <script src="https://cdn.quilljs.com/1.3.6/quill.min.js"></script>
   <script>
     const quillEdit = new Quill('#editEditor', { theme: 'snow' });
-
     const toastSuccess = new bootstrap.Toast(document.getElementById('toastSuccess'));
     const toastError = new bootstrap.Toast(document.getElementById('toastError'));
-    const toastConfirmEl = document.getElementById('toastConfirm');
-    const toastConfirm = new bootstrap.Toast(toastConfirmEl);
-
-    let confirmCallback = null;
 
     function showSuccess(msg="✅ العملية نجحت") {
       document.querySelector("#toastSuccess .toast-body").innerText = msg;
@@ -170,72 +157,36 @@
       document.querySelector("#toastError .toast-body").innerText = msg;
       toastError.show();
     }
-    function showConfirm(msg, callback) {
-      document.getElementById("toastConfirmMsg").innerText = msg;
-      confirmCallback = callback;
-      toastConfirm.show();
-    }
-    document.getElementById("confirmYes").addEventListener("click", () => {
-      toastConfirm.hide();
-      if (confirmCallback) confirmCallback();
-    });
 
-    // حساب درجة التوفر
-    function updateAvailability(row) {
-      let sum = 0;
-      const fields = [
-        "formation_decision","work_plan","performance_indicators",
-        "meetings","consistency","coverage_books","report1","report2","report3","statistical_analysis"
-      ];
-      fields.forEach(f => {
-        const cell = row.querySelector(`[data-field="${f}"]`);
-        sum += parseFloat(cell?.innerText) || 0;
-      });
-      const availabilityCell = row.querySelector(".availability-cell");
-      availabilityCell.innerText = sum.toFixed(2);
-      availabilityCell.classList.add("highlight");
-      setTimeout(() => availabilityCell.classList.remove("highlight"), 1500);
-    }
-
-    // مستمع لتحديد كامل النص عند التركيز
-    function attachCellListeners(tr) {
-      tr.querySelectorAll('[contenteditable="true"]').forEach(cell => {
-        cell.addEventListener('focus', () => {
-          const range = document.createRange();
-          range.selectNodeContents(cell);
-          const sel = window.getSelection();
-          sel.removeAllRanges();
-          sel.addRange(range);
-        });
-        cell.addEventListener('input', () => {
-          cell.classList.add("highlight");
-          setTimeout(() => cell.classList.remove("highlight"), 1500);
-          updateAvailability(tr);
-        });
-      });
-    }
-
+    // تحميل خيارات الكليات والمدققين
     async function loadOptions() {
       const colleges = await axios.get('/api/colleges');
       const collegeFilter = document.getElementById('collegeFilter');
+      const collegeSelect = document.getElementById('editCollege');
       colleges.data.forEach(c => {
-        const opt = document.createElement('option');
-        opt.value = c.name;
-        opt.textContent = c.name;
-        collegeFilter.appendChild(opt);
+        const opt1 = document.createElement('option');
+        opt1.value = c.name; opt1.textContent = c.name;
+        collegeFilter.appendChild(opt1);
+        const opt2 = document.createElement('option');
+        opt2.value = c.name; opt2.textContent = c.name;
+        collegeSelect.appendChild(opt2);
       });
 
       const auditors = await axios.get('/api/auditors');
       const auditorFilter = document.getElementById('auditorFilter');
+      const auditorSelect = document.getElementById('editAuditor');
       auditors.data.forEach(a => {
-        const opt = document.createElement('option');
-        opt.value = a.name;
-        opt.textContent = a.name;
-        auditorFilter.appendChild(opt);
+        const opt1 = document.createElement('option');
+        opt1.value = a.name; opt1.textContent = a.name;
+        auditorFilter.appendChild(opt1);
+        const opt2 = document.createElement('option');
+        opt2.value = a.name; opt2.textContent = a.name;
+        auditorSelect.appendChild(opt2);
       });
     }
     loadOptions();
 
+    // تحميل التقييمات
     async function loadCommittees() {
       try {
         const college = document.getElementById('collegeFilter').value;
@@ -277,14 +228,13 @@
             <td contenteditable="true" data-field="statistical_analysis">${c.statistical_analysis ?? 0}</td>
             <td class="availability-cell">${c.availability_score ?? 0}</td>
             <td>${c.notes ? `<button class="btn btn-sm btn-info" onclick="showNotes(\`${c.notes}\`)">🔍 عرض</button>` : ''}</td>
-            <td class="action-buttons">
+            <td class="action-buttons d-flex justify-content-center">
               <button class="btn btn-sm btn-success" onclick="saveRow(this, '${c._id}')">💾</button>
               <button class="btn btn-sm btn-primary" onclick='editCommittee(${JSON.stringify(c)})'>✏️</button>
-              <button class="btn btn-sm btn-danger" onclick="confirmDelete('${c._id}')">🗑️</button>
+              <button class="btn btn-sm btn-danger" onclick="deleteCommittee('${c._id}')">🗑️</button>
             </td>
           `;
           tbody.appendChild(tr);
-          attachCellListeners(tr);
         });
       } catch (err) { showError("❌ فشل تحميل البيانات"); console.error(err); }
     }
@@ -298,6 +248,7 @@
       new bootstrap.Modal(document.getElementById('notesModal')).show();
     }
 
+    // فتح المودال الكامل
     function editCommittee(c) {
       document.getElementById('edit_id').value = c._id;
       document.getElementById('editCollege').value = c.college;
@@ -308,6 +259,26 @@
       new bootstrap.Modal(document.getElementById('editModal')).show();
     }
 
+    // حفظ من المودال
+    document.getElementById('editForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      document.getElementById('editNotesInput').value = quillEdit.root.innerHTML;
+      const data = {
+        college: document.getElementById('editCollege').value,
+        committee_name: document.getElementById('editCommittee').value,
+        auditor_name: document.getElementById('editAuditor').value,
+        audit_date: document.getElementById('editDate').value,
+        notes: document.getElementById('editNotesInput').value
+      };
+      try {
+        await axios.put(`/api/committees/${document.getElementById('edit_id').value}`, data);
+        showSuccess("✅ تم حفظ التعديلات بنجاح");
+        bootstrap.Modal.getInstance(document.getElementById('editModal')).hide();
+        loadCommittees();
+      } catch (err) { console.error(err); showError("❌ خطأ أثناء الحفظ"); }
+    });
+
+    // حفظ من الجدول
     async function saveRow(btn, id) {
       const row = btn.closest('tr');
       const updatedData = {};
@@ -321,14 +292,14 @@
       } catch (err) { console.error(err); showError("❌ خطأ أثناء الحفظ"); }
     }
 
-    function confirmDelete(id) {
-      showConfirm("⚠️ هل أنت متأكد من الحذف؟", async () => {
-        try {
-          await axios.delete(`/api/committees/${id}`);
-          showSuccess("🗑️ تم حذف السجل بنجاح");
-          loadCommittees();
-        } catch (err) { console.error(err); showError("❌ فشل الحذف"); }
-      });
+    // حذف
+    async function deleteCommittee(id) {
+      if (!confirm("⚠️ هل أنت متأكد من الحذف؟")) return;
+      try {
+        await axios.delete(`/api/committees/${id}`);
+        showSuccess("🗑️ تم حذف السجل بنجاح");
+        loadCommittees();
+      } catch (err) { console.error(err); showError("❌ فشل الحذف"); }
     }
   </script>
 </body>
