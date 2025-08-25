@@ -8,17 +8,35 @@
   <style>
     body { background: #f8f9fa; font-family: 'Segoe UI', sans-serif; }
     .container { margin-top: 30px; }
-    table { background: #fff; border-radius: 10px; overflow: hidden; font-size: 14px; }
+    table { background: #fff; border-radius: 10px; overflow: hidden; font-size: 14px; width: 90%; margin: auto; }
     th { background-color: #0d6efd; color: #fff; text-align: center; }
     td { text-align: center; vertical-align: middle; }
     td[contenteditable="true"] { background: #fefae0; cursor: text; }
     .highlight { background-color: #d4edda !important; transition: background-color 1s ease; }
     .toast-container { position: fixed; top: 20px; left: 20px; z-index: 2000; }
+    .filters { margin-bottom: 20px; width: 90%; margin-left: auto; margin-right: auto; }
+    .action-buttons button { margin: 0 3px; }
   </style>
 </head>
 <body>
   <div class="container">
     <h3 class="text-center mb-4">⚙️ إدارة تقييم اللجان</h3>
+
+    <!-- الفلاتر -->
+    <div class="filters row">
+      <div class="col-md-6 mb-2">
+        <label class="form-label">الكلية</label>
+        <select id="collegeFilter" class="form-select">
+          <option value="">جميع الكليات</option>
+        </select>
+      </div>
+      <div class="col-md-6 mb-2">
+        <label class="form-label">اسم المدقق</label>
+        <select id="auditorFilter" class="form-select">
+          <option value="">جميع المدققين</option>
+        </select>
+      </div>
+    </div>
 
     <!-- الجدول -->
     <table class="table table-bordered table-striped table-responsive">
@@ -117,7 +135,7 @@
       let sum = 0;
       const fields = [
         "formation_decision","work_plan","performance_indicators",
-        "meetings","consistency","report1","report2","report3","statistical_analysis"
+        "meetings","consistency","coverage_books","report1","report2","report3","statistical_analysis"
       ];
       fields.forEach(f => {
         const cell = row.querySelector(`[data-field="${f}"]`);
@@ -140,12 +158,47 @@
       });
     }
 
+    // 🔹 تحميل الكليات والمدققين للفلاتر
+    async function loadOptions() {
+      const colleges = await axios.get('/api/colleges');
+      const collegeFilter = document.getElementById('collegeFilter');
+      colleges.data.forEach(c => {
+        const opt = document.createElement('option');
+        opt.value = c.name;
+        opt.textContent = c.name;
+        collegeFilter.appendChild(opt);
+      });
+
+      const auditors = await axios.get('/api/auditors');
+      const auditorFilter = document.getElementById('auditorFilter');
+      auditors.data.forEach(a => {
+        const opt = document.createElement('option');
+        opt.value = a.name;
+        opt.textContent = a.name;
+        auditorFilter.appendChild(opt);
+      });
+    }
+    loadOptions();
+
     // 🔹 تحميل التقييمات
     async function loadCommittees() {
       try {
-        const res = await axios.get('/api/committees');
+        const college = document.getElementById('collegeFilter').value;
+        const auditor = document.getElementById('auditorFilter').value;
+        let url = '/api/committees';
+        const params = [];
+        if (college) params.push(`college=${encodeURIComponent(college)}`);
+        if (auditor) params.push(`auditor_name=${encodeURIComponent(auditor)}`);
+        if (params.length > 0) url += '?' + params.join('&');
+
+        const res = await axios.get(url);
         const tbody = document.getElementById('committeesTable');
         tbody.innerHTML = "";
+
+        if(res.data.length === 0){
+          tbody.innerHTML = `<tr><td colspan="18" class="text-center">لا توجد بيانات</td></tr>`;
+          return;
+        }
 
         res.data.sort((a,b)=>(a.college||"").localeCompare(b.college||"","ar"));
 
@@ -162,15 +215,15 @@
             <td contenteditable="true" data-field="performance_indicators">${c.performance_indicators ?? 0}</td>
             <td contenteditable="true" data-field="meetings">${c.meetings ?? 0}</td>
             <td contenteditable="true" data-field="consistency">${c.consistency ?? 0}</td>
-            <td>${c.coverage_books ?? 0}</td>
+            <td contenteditable="true" data-field="coverage_books">${c.coverage_books ?? 0}</td>
             <td contenteditable="true" data-field="report1">${c.report1 ?? 0}</td>
             <td contenteditable="true" data-field="report2">${c.report2 ?? 0}</td>
             <td contenteditable="true" data-field="report3">${c.report3 ?? 0}</td>
             <td contenteditable="true" data-field="statistical_analysis">${c.statistical_analysis ?? 0}</td>
             <td class="availability-cell">${c.availability_score ?? 0}</td>
-            <td><button class="btn btn-sm btn-info" onclick="showNotes(\`${c.notes || ''}\`)">🔍 عرض</button></td>
-            <td>
-              <button class="btn btn-sm btn-success" onclick="saveRow(this, '${c._id}')">💾 حفظ</button>
+            <td>${c.notes ? `<button class="btn btn-sm btn-info" onclick="showNotes(\`${c.notes}\`)">🔍 عرض</button>` : ''}</td>
+            <td class="action-buttons">
+              <button class="btn btn-sm btn-success" onclick="saveRow(this, '${c._id}')">💾</button>
               <button class="btn btn-sm btn-primary" onclick='editCommittee(${JSON.stringify(c)})'>✏️</button>
               <button class="btn btn-sm btn-danger" onclick="deleteCommittee('${c._id}')">🗑️</button>
             </td>
@@ -180,6 +233,10 @@
         });
       } catch (err) { console.error(err); }
     }
+    loadCommittees();
+
+    document.getElementById('collegeFilter').addEventListener('change', loadCommittees);
+    document.getElementById('auditorFilter').addEventListener('change', loadCommittees);
 
     // 🔹 عرض الملاحظات
     function showNotes(html) {
@@ -220,9 +277,6 @@
         loadCommittees();
       } catch (err) { console.error(err); }
     }
-
-    // تشغيل أولي
-    loadCommittees();
   </script>
 </body>
 </html>
