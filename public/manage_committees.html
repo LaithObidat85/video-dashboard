@@ -8,8 +8,9 @@
   <style>
     body { background: #f8f9fa; font-family: 'Segoe UI', sans-serif; }
     .container { margin-top: 30px; }
-    table { background: #fff; border-radius: 10px; overflow: hidden; }
-    th { background-color: #0d6efd; color: #fff; }
+    table { background: #fff; border-radius: 10px; overflow: hidden; font-size: 14px; }
+    th { background-color: #0d6efd; color: #fff; text-align: center; }
+    td { text-align: center; vertical-align: middle; }
     .toast-container { position: fixed; top: 20px; left: 20px; z-index: 2000; }
     .filters { margin-bottom: 20px; }
   </style>
@@ -35,7 +36,7 @@
     </div>
 
     <!-- الجدول -->
-    <table class="table table-bordered table-striped">
+    <table class="table table-bordered table-striped table-responsive">
       <thead>
         <tr>
           <th>#</th>
@@ -43,17 +44,30 @@
           <th>اسم اللجنة</th>
           <th>اسم المدقق</th>
           <th>تاريخ التدقيق</th>
+
+          <!-- ✅ الحقول التفصيلية -->
+          <th>قرار التشكيل</th>
+          <th>خطة العمل</th>
+          <th>مؤشرات الأداء</th>
+          <th>عدد الاجتماعات</th>
+          <th>التوافق بين الدعوات والاجتماعات</th>
+          <th>كتب التغطية</th>
+          <th>تقرير 1</th>
+          <th>تقرير 2</th>
+          <th>تقرير 3</th>
+          <th>التحليل الإحصائي</th>
+
           <th>درجة التوفر</th>
           <th>إجراءات</th>
         </tr>
       </thead>
       <tbody id="committeesTable">
-        <tr><td colspan="7" class="text-center">جاري التحميل...</td></tr>
+        <tr><td colspan="17" class="text-center">جاري التحميل...</td></tr>
       </tbody>
     </table>
   </div>
 
-  <!-- Modal التعديل -->
+  <!-- Modal التعديل (التوافق أصبح التوافق بين الدعوات والاجتماعات) -->
   <div class="modal fade" id="editModal" tabindex="-1">
     <div class="modal-dialog modal-lg">
       <div class="modal-content">
@@ -86,20 +100,20 @@
               <input type="hidden" name="notes" id="editNotesInput">
             </div>
             <div class="row">
-              <div class="col-md-6 mb-2"><label class="form-label">قرار التشكيل</label><input type="number" step="0.25" class="form-control score" name="formation_decision" id="editFormation"></div>
-              <div class="col-md-6 mb-2"><label class="form-label">خطة العمل</label><input type="number" step="0.25" class="form-control score" name="work_plan" id="editWorkPlan"></div>
-              <div class="col-md-6 mb-2"><label class="form-label">مؤشرات الأداء</label><input type="number" step="0.25" class="form-control score" name="performance_indicators" id="editIndicators"></div>
-              <div class="col-md-6 mb-2"><label class="form-label">عدد الاجتماعات</label><input type="number" step="0.25" class="form-control score" name="meetings" id="editMeetings"></div>
-              <div class="col-md-6 mb-2"><label class="form-label">التوافق</label><input type="number" step="0.25" class="form-control score" name="consistency" id="editConsistency"></div>
-              <div class="col-md-6 mb-2"><label class="form-label">كتب التغطية</label><input type="number" step="0.25" class="form-control score" name="coverage_books" id="editCoverage"></div>
-              <div class="col-md-4 mb-2"><label class="form-label">تقرير 1</label><input type="number" step="0.25" class="form-control score" name="report1" id="editReport1"></div>
-              <div class="col-md-4 mb-2"><label class="form-label">تقرير 2</label><input type="number" step="0.25" class="form-control score" name="report2" id="editReport2"></div>
-              <div class="col-md-4 mb-2"><label class="form-label">تقرير 3</label><input type="number" step="0.25" class="form-control score" name="report3" id="editReport3"></div>
-              <div class="col-md-6 mb-2"><label class="form-label">التحليل الإحصائي</label><input type="number" step="0.25" class="form-control score" name="statistical_analysis" id="editAnalysis"></div>
+              <div class="col-md-6 mb-2"><label class="form-label">قرار التشكيل</label><input type="number" step="0.25" class="form-control score" id="editFormation"></div>
+              <div class="col-md-6 mb-2"><label class="form-label">خطة العمل</label><input type="number" step="0.25" class="form-control score" id="editWorkPlan"></div>
+              <div class="col-md-6 mb-2"><label class="form-label">مؤشرات الأداء</label><input type="number" step="0.25" class="form-control score" id="editIndicators"></div>
+              <div class="col-md-6 mb-2"><label class="form-label">عدد الاجتماعات</label><input type="number" step="0.25" class="form-control score" id="editMeetings"></div>
+              <div class="col-md-6 mb-2"><label class="form-label">التوافق بين الدعوات والاجتماعات</label><input type="number" step="0.25" class="form-control score" id="editConsistency"></div>
+              <div class="col-md-6 mb-2"><label class="form-label">كتب التغطية</label><input type="number" step="0.25" class="form-control score" id="editCoverage"></div>
+              <div class="col-md-4 mb-2"><label class="form-label">تقرير 1</label><input type="number" step="0.25" class="form-control score" id="editReport1"></div>
+              <div class="col-md-4 mb-2"><label class="form-label">تقرير 2</label><input type="number" step="0.25" class="form-control score" id="editReport2"></div>
+              <div class="col-md-4 mb-2"><label class="form-label">تقرير 3</label><input type="number" step="0.25" class="form-control score" id="editReport3"></div>
+              <div class="col-md-6 mb-2"><label class="form-label">التحليل الإحصائي</label><input type="number" step="0.25" class="form-control score" id="editAnalysis"></div>
             </div>
             <div class="mb-3">
               <label class="form-label">درجة التوفر (تحسب تلقائيًا)</label>
-              <input type="number" class="form-control" id="editAvailability" name="availability_score" readonly>
+              <input type="number" class="form-control" id="editAvailability" readonly>
             </div>
           </div>
           <div class="modal-footer">
@@ -174,7 +188,7 @@
         tbody.innerHTML = "";
 
         if(res.data.length === 0){
-          tbody.innerHTML = `<tr><td colspan="7" class="text-center">لا توجد بيانات</td></tr>`;
+          tbody.innerHTML = `<tr><td colspan="17" class="text-center">لا توجد بيانات</td></tr>`;
           return;
         }
 
@@ -189,6 +203,18 @@
             <td>${c.committee_name}</td>
             <td>${c.auditor_name}</td>
             <td>${c.audit_date ? new Date(c.audit_date).toLocaleDateString('ar-EG'): '-'}</td>
+
+            <td>${c.formation_decision ?? 0}</td>
+            <td>${c.work_plan ?? 0}</td>
+            <td>${c.performance_indicators ?? 0}</td>
+            <td>${c.meetings ?? 0}</td>
+            <td>${c.consistency ?? 0}</td>
+            <td>${c.coverage_books ?? 0}</td>
+            <td>${c.report1 ?? 0}</td>
+            <td>${c.report2 ?? 0}</td>
+            <td>${c.report3 ?? 0}</td>
+            <td>${c.statistical_analysis ?? 0}</td>
+
             <td>${c.availability_score ?? 0}</td>
             <td>
               <button class="btn btn-sm btn-primary" onclick='editCommittee(${JSON.stringify(c)})'>✏️</button>
