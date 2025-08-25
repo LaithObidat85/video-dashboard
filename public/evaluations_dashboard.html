@@ -23,16 +23,22 @@
     /* ✅ الطباعة */
     @media print {
       body * { visibility: hidden; }
-      #printHeader, #evaluationsTableWrapper, #evaluationsTableWrapper * {
+      #printHeader, #printHeader * ,
+      #evaluationsTableWrapper, #evaluationsTableWrapper * {
         visibility: visible;
       }
       #printHeader {
         text-align: center;
-        margin-bottom: 15px;
+        margin-bottom: 20px;
+        position: absolute;
+        top: 20px;
+        left: 0;
+        width: 100%;
       }
       #evaluationsTableWrapper {
         position: absolute;
-        left: 0; top: 120px;
+        left: 0; 
+        top: 120px; /* الجدول يبدأ بعد الهيدر */
         width: 100%;
       }
     }
@@ -58,7 +64,7 @@
       </div>
     </div>
 
-    <!-- زر الطباعة فقط -->
+    <!-- زر الطباعة -->
     <div class="export-buttons text-center">
       <button class="btn btn-secondary" onclick="printTable()">🖨️ طباعة</button>
     </div>
@@ -67,7 +73,7 @@
     <div id="completionRateContainer"></div>
 
     <!-- هيدر للطباعة -->
-    <div id="printHeader" style="display:none;"></div>
+    <div id="printHeader"></div>
 
     <!-- الجدول -->
     <table class="table table-bordered table-striped" id="evaluationsTableWrapper">
@@ -163,7 +169,7 @@
         const denominator = numCommittees * 9;
         const completionRate = ((totalAvailability / denominator) * 100).toFixed(2);
         completionDiv.innerHTML = `📌 نسبة الاكتمال = ${completionRate}%`;
-        completionDiv.style.display = college ? "block" : "none";
+        completionDiv.style.display = "block";
         lastCompletionRate = completionRate;
 
       } catch (err) {
@@ -171,14 +177,12 @@
       }
     }
 
-    // 🔹 Print (جدول + عنوان + نسبة اكتمال)
+    // 🔹 Print (عنوان + نسبة اكتمال + الجدول)
     function printTable() {
       const headerDiv = document.getElementById("printHeader");
-      headerDiv.style.display = "block";
       headerDiv.innerHTML = `<h4>📊 نتائج تقييم اللجان - ${lastCollegeName}</h4>` +
                             (lastCompletionRate ? `<p>📌 نسبة الاكتمال = ${lastCompletionRate}%</p>` : "");
       window.print();
-      headerDiv.style.display = "none";
     }
 
     loadFilters().then(loadEvaluations);
