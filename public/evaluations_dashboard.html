@@ -189,7 +189,7 @@
     // 🔹 Print (عنوان + نسبة اكتمال + عدد اللجان)
     function printTable() {
       const headerDiv = document.getElementById("printHeader");
-      headerDiv.innerHTML = `<h4>📊 نتائج تقييم اللجان - ${lastCollegeName}</h4>` +
+      headerDiv.innerHTML = `<h4>📊 نتائج تقييم اللجان - كلية ${lastCollegeName}</h4>` +
                             (lastCompletionRate ? `<p>📌 نسبة الاكتمال = ${lastCompletionRate}%</p>` : "") +
                             (lastCollegeName !== "جميع الكليات" ? `<p>📋 عدد لجان كلية ${lastCollegeName} = ${lastCommitteesCount}</p>` : "");
       window.print();
