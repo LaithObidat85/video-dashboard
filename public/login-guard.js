@@ -79,7 +79,7 @@ async function setupLoginGuard() {
   if (cancelBtn) {
     cancelBtn.addEventListener("click", () => {
       if (getSectionName() === "index") {
-        const modalInstance = bootstrap.Modal.getInstance(passwordModalEl);
+        const modalInstance = bootstrap.Modal.getOrCreateInstance(passwordModalEl);
         if (modalInstance) {
           modalInstance.hide(); // ✅ يغلق المودال بشكل صحيح
           showToast("ℹ️ تم إلغاء تسجيل الدخول", "info");
