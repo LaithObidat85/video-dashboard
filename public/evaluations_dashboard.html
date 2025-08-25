@@ -38,9 +38,15 @@
       #evaluationsTableWrapper {
         position: absolute;
         left: 0; 
-        top: 150px; /* الجدول يبدأ بعد الهيدر */
+        top: 150px;
         width: 100%;
       }
+    }
+
+    /* إخفاء عمود اسم المدقق عند التفعيل */
+    .hide-auditor th:nth-child(4),
+    .hide-auditor td:nth-child(4) {
+      display: none;
     }
 
     #printHeader {
@@ -66,6 +72,14 @@
           <option value="">جميع المدققين</option>
         </select>
       </div>
+    </div>
+
+    <!-- خيار إخفاء المدقق -->
+    <div class="form-check mb-3 text-center">
+      <input class="form-check-input" type="checkbox" id="hideAuditorCheckbox">
+      <label class="form-check-label" for="hideAuditorCheckbox">
+        إخفاء اسم المدقق
+      </label>
     </div>
 
     <!-- زر الطباعة -->
@@ -209,6 +223,16 @@
       window.print();
       headerDiv.innerHTML = "";
     }
+
+    // ✅ التحكم في إخفاء/إظهار عمود اسم المدقق
+    document.getElementById('hideAuditorCheckbox').addEventListener('change', function () {
+      const table = document.getElementById('evaluationsTableWrapper');
+      if (this.checked) {
+        table.classList.add('hide-auditor');
+      } else {
+        table.classList.remove('hide-auditor');
+      }
+    });
 
     loadFilters().then(loadEvaluations);
     document.getElementById('collegeFilter').addEventListener('change', loadEvaluations);
