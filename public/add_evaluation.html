@@ -65,7 +65,12 @@
         </div>
         <div class="row">
           <div class="col-md-6 mb-3"><label class="form-label">تاريخ التدقيق</label><input type="date" class="form-control" name="audit_date"></div>
-          <div class="col-md-6 mb-3"><label class="form-label">اسم المدقق</label><input type="text" class="form-control" name="auditor_name" required></div>
+          <div class="col-md-6 mb-3">
+            <label class="form-label">اسم المدقق</label>
+            <select class="form-select" name="auditor_name" id="auditorSelect" required>
+              <option value="">اختر المدقق...</option>
+            </select>
+          </div>
         </div>
       </div>
 
@@ -109,6 +114,23 @@
       }
     }
     loadColleges();
+
+    // 🔹 جلب المدققين من قاعدة البيانات
+    async function loadAuditors() {
+      try {
+        const res = await axios.get('/api/auditors');
+        const select = document.getElementById('auditorSelect');
+        res.data.forEach(a => {
+          const opt = document.createElement('option');
+          opt.value = a.name;
+          opt.textContent = a.name;
+          select.appendChild(opt);
+        });
+      } catch (err) {
+        console.error("خطأ في جلب المدققين:", err);
+      }
+    }
+    loadAuditors();
 
     // 🔹 حساب درجة التوفر تلقائيًا
     document.querySelectorAll('.score').forEach(input => {
