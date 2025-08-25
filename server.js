@@ -112,17 +112,6 @@ app.get('/api/check-session/:section', (req, res) => {
   }
 });
 
-// ✅ تحقق عام من أي جلسة (مطلوب من index.html)
-app.get('/api/check-session', (req, res) => {
-  if (req.session) {
-    // إذا كان هناك أي جلسة مفعلة
-    const hasAuth = Object.keys(req.session).some(key => key.endsWith("Auth") && req.session[key]);
-    return res.json({ authenticated: hasAuth });
-  }
-  return res.json({ authenticated: false });
-});
-
-
 // ✅ تسجيل الخروج
 app.post('/api/logout/:section', (req, res) => {
   const { section } = req.params;
