@@ -88,6 +88,7 @@ const Evaluation = require('./models/evaluationSchema');
 
 const College = require('./models/collegeSchema');
 
+const Auditor = require('./models/auditorSchema');
 
 
 // ✅ إعداد multer لحفظ الملفات مؤقتًا
@@ -395,18 +396,20 @@ app.post('/api/committees', async (req, res) => {
   }
 });
 
-// جلب كل التقييمات (مع إمكانية الفلترة حسب الكلية)
+// جلب كل التقييمات (مع إمكانية الفلترة حسب الكلية او المدقق)
 app.get('/api/committees', async (req, res) => {
   try {
-    const { college } = req.query;
+    const { college, auditor_name } = req.query;
     let query = {};
     if (college) query.college = college;
+    if (auditor_name) query.auditor_name = auditor_name; // ✅ إضافة فلترة بالمدقق
     const evaluations = await Evaluation.find(query).sort({ createdAt: -1 });
     res.json(evaluations);
   } catch (err) {
     res.status(500).json({ message: '❌ خطأ في جلب التقييمات', error: err.message });
   }
 });
+
 
 // تعديل تقييم لجنة
 app.put('/api/committees/:id', async (req, res) => {
@@ -479,7 +482,54 @@ app.delete('/api/colleges/:id', async (req, res) => {
   }
 });
 
+// ====== إدارة المدققين ======
 
+// جلب جميع المدققين
+app.get('/api/auditors', async (req, res) => {
+  try {
+    const auditors = await Auditor.find().sort({ name: 1 });
+    res.json(auditors);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// إضافة مدقق جديد
+app.post('/api/auditors', async (req, res) => {
+  try {
+    const auditor = new Auditor({ name: req.body.name });
+    await auditor.save();
+    res.status(201).json(auditor);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+// تعديل اسم مدقق
+app.put('/api/auditors/:id', async (req, res) => {
+  try {
+    const updated = await Auditor.findByIdAndUpdate(
+      req.params.id,
+      { name: req.body.name },
+      { new: true }
+    );
+    if (!updated) return res.status(404).json({ message: '❌ المدقق غير موجود' });
+    res.json(updated);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+// حذف مدقق
+app.delete('/api/auditors/:id', async (req, res) => {
+  try {
+    const deleted = await Auditor.findByIdAndDelete(req.params.id);
+    if (!deleted) return res.status(404).json({ message: '❌ المدقق غير موجود' });
+    res.json({ message: '🗑️ تم حذف المدقق' });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
 
 // ✅ رفع نسخة من الجهاز
 app.post('/api/backups/upload', upload.single('backupFile'), async (req, res) => {
