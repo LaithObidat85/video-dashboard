@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
@@ -25,7 +26,7 @@
     .scrolled {box-shadow:0 4px 12px rgba(0,0,0,0.25)!important;}
 
     /* Spinner + Overlay */
-    #loadingOverlay {
+      #loadingOverlay {
       display:none;
       position:fixed;
       top:0;
@@ -37,7 +38,7 @@
       opacity:0;
       transition:opacity 0.3s ease;
     }
-    #loadingOverlay.active { display:block; opacity:1; }  
+  #loadingOverlay.active { display:block; opacity:1; }  
 
     #loadingSpinner {
       position:fixed;
@@ -146,8 +147,16 @@
   </div>
 </div>
 
-<!-- ✅ مكان تحميل login-modal.html -->
-<div id="loginModalContainer"></div>
+<!-- كلمة المرور -->
+<div class="modal fade" id="passwordModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header"><h5 class="modal-title">🔐 الدخول إلى لوحة التحكم</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+      <div class="modal-body"><input type="password" id="dashboardPassword" class="form-control" placeholder="أدخل كلمة المرور" lang="en"></div>
+      <div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button><button type="button" class="btn btn-primary" id="confirmDashboardAccess">دخول</button></div>
+    </div>
+  </div>
+</div>
 
 <div class="toast-container" id="toastContainer"></div>
 
@@ -169,7 +178,7 @@ function showToast(message, type="info") {
 
 async function checkSessionStatus() {
   try {
-    const res = await fetch(`${API_BASE}/api/check-session`, { credentials: "include" });
+    const res = await fetch(`${API_BASE}/api/check-session`);
     const data = await res.json();
     document.getElementById("logoutNavItem").style.display = data.authenticated ? "block" : "none";
   } catch (err) { console.error("خطأ في التحقق من الجلسة:", err); }
@@ -177,70 +186,34 @@ async function checkSessionStatus() {
 
 async function logout() {
   try {
-    const section = "dashboard"; // 👈 القسم المطلوب تسجيل الخروج منه
-    await fetch(`${API_BASE}/api/logout/${section}`, { 
-      method: "POST",
-      credentials: "include"
-    });
-    sessionStorage.removeItem("loggedInAt_" + section); // تنظيف التخزين المحلي
+    await fetch(`${API_BASE}/api/logout`, { method: "POST" });
+    sessionStorage.clear();
     document.getElementById("logoutNavItem").style.display = "none";
     showToast("✅ تم تسجيل الخروج بنجاح","success");
-  } catch (err) { 
-    showToast("❌ حدث خطأ أثناء تسجيل الخروج","error"); 
-  }
+  } catch (err) { showToast("❌ حدث خطأ أثناء تسجيل الخروج","error"); }
 }
 
 async function requestDashboardAccess() {
   const section = "dashboard";
   if (sessionStorage.getItem("loggedInAt_" + section)) {window.location.href = section + ".html";return;}
   try {
-    const res = await fetch(`${API_BASE}/api/check-session`, { credentials: "include" });
+    const res = await fetch(`${API_BASE}/api/check-session`);
     const data = await res.json();
     if (data.authenticated) {sessionStorage.setItem("loggedInAt_" + section, Date.now().toString());window.location.href = section + ".html";return;}
   } catch (err) { console.error("خطأ:", err); }
-
-  // ✅ تحميل login-modal.html
-  const container = document.getElementById("loginModalContainer");
-  const res2 = await fetch("login-modal.html", { credentials: "include" });
-  const html = await res2.text();
-  container.innerHTML = html;
-
-  // ✅ تفعيل المودال
   const modalEl = document.getElementById('passwordModal');
   passwordModal = new bootstrap.Modal(modalEl);
-  modalEl.addEventListener('shown.bs.modal', () => {
-    const input = document.getElementById('dashboardPassword');
-    input.value='';
-    input.focus();
-  });
+  modalEl.addEventListener('shown.bs.modal', () => {const input = document.getElementById('dashboardPassword');input.value='';input.focus();});
   passwordModal.show();
-
   document.getElementById('confirmDashboardAccess').onclick = async () => {
-    const passwordInput = document.getElementById('dashboardPassword');
-    const password = passwordInput.value.trim();
-    if (!password) return;
+    const passwordInput = document.getElementById('dashboardPassword');const password = passwordInput.value.trim();if (!password) return;
     try {
-      const response = await fetch(`${API_BASE}/api/verify-password`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: "include",
-        body: JSON.stringify({ section, password })
-      });
-      if (response.ok) {
-        sessionStorage.setItem("loggedInAt_" + section, Date.now().toString());
-        passwordModal.hide();
-        window.location.href = section + '.html';
-      } else {
-        showToast("❌ كلمة المرور غير صحيحة","error");
-        passwordInput.value = "";
-        passwordInput.focus();
-      }
+      const response = await fetch(`${API_BASE}/api/verify-password`, {method: 'POST',headers: { 'Content-Type': 'application/json' },body: JSON.stringify({ section, password })});
+      if (response.ok) {sessionStorage.setItem("loggedInAt_" + section, Date.now().toString());passwordModal.hide();window.location.href = section + '.html';}
+      else {showToast("❌ كلمة المرور غير صحيحة","error");passwordInput.value = "";passwordInput.focus();}
     } catch {showToast("❌ خطأ في الاتصال","error");}
   };
-
-  document.getElementById('dashboardPassword').addEventListener("keydown",(e)=>{
-    if(e.key==="Enter") document.getElementById('confirmDashboardAccess').click();
-  });
+  document.getElementById('dashboardPassword').addEventListener("keydown",(e)=>{if(e.key==="Enter") document.getElementById('confirmDashboardAccess').click();});
 }
 
 // ✅ التحكم بالـ Spinner
@@ -256,7 +229,7 @@ function hideLoading() {
 async function fetchVideos() {
   try {
     showLoading();
-    const res = await fetch(`${API_BASE}/api/videos`, { credentials: "include" });
+    const res = await fetch(`${API_BASE}/api/videos`);
     videos = await res.json();
     populateDepartmentOptions();
   }
