@@ -2,94 +2,126 @@
 <html lang="ar" dir="rtl">
 <head>
   <meta charset="UTF-8">
-  <title>تقرير تقييمات اللجان</title>
+  <title>لوحة متابعة التقييمات</title>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.rtl.min.css">
   <style>
-    body { background: #f4f6f9; font-family: 'Segoe UI', sans-serif; }
-    .container { max-width: 1200px; margin-top: 40px; }
-    table { background: #fff; }
+    body { background-color: #f8f9fa; font-family: 'Segoe UI', sans-serif; }
+    .container { margin-top: 30px; }
+    table { background: #fff; border-radius: 10px; overflow: hidden; }
+    th { background-color: #0d6efd; color: #fff; }
+    .filters { margin-bottom: 20px; }
   </style>
 </head>
 <body>
-<div class="container">
-  <h3 class="mb-4 text-center">📊 تقرير تقييمات اللجان</h3>
+  <div class="container">
+    <h3 class="text-center mb-4">📊 لوحة متابعة التقييمات</h3>
 
-  <div class="mb-3">
-    <label class="form-label">اختر الكلية</label>
-    <select id="collegeFilter" class="form-select"></select>
+    <!-- الفلاتر -->
+    <div class="filters row">
+      <div class="col-md-6 mb-2">
+        <label class="form-label">الكلية</label>
+        <select id="collegeFilter" class="form-select">
+          <option value="">جميع الكليات</option>
+        </select>
+      </div>
+      <div class="col-md-6 mb-2">
+        <label class="form-label">اسم المدقق</label>
+        <select id="auditorFilter" class="form-select">
+          <option value="">جميع المدققين</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- الجدول -->
+    <table class="table table-bordered table-striped">
+      <thead>
+        <tr>
+          <th>الكلية</th>
+          <th>اسم اللجنة</th>
+          <th>اسم المدقق</th>
+          <th>تاريخ التدقيق</th>
+          <th>درجة التوفر</th>
+          <th>ملاحظات</th>
+        </tr>
+      </thead>
+      <tbody id="evaluationsTable">
+        <tr><td colspan="6" class="text-center">جاري التحميل...</td></tr>
+      </tbody>
+    </table>
   </div>
 
-  <table class="table table-bordered text-center">
-    <thead class="table-dark">
-      <tr>
-        <th>الكلية</th>
-        <th>اسم اللجنة</th>
-        <th>قرار التشكيل</th>
-        <th>خطة العمل</th>
-        <th>مؤشرات الأداء</th>
-        <th>الاجتماعات</th>
-        <th>الاتساق</th>
-        <th>تغطية الكتب</th>
-        <th>التقارير</th>
-        <th>التحليل الإحصائي</th>
-        <th>درجة التوفر</th>
-        <th>الملاحظات</th>
-        <th>اسم المدقق</th>
-        <th>تاريخ التدقيق</th>
-      </tr>
-    </thead>
-    <tbody id="evaluationsTable"></tbody>
-  </table>
-</div>
+  <!-- مكتبات -->
+  <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+  <script>
+    async function loadFilters() {
+      try {
+        // جلب الكليات
+        const colleges = await axios.get('/api/colleges');
+        const collegeSelect = document.getElementById('collegeFilter');
+        colleges.data.forEach(c => {
+          const opt = document.createElement('option');
+          opt.value = c.name;
+          opt.textContent = c.name;
+          collegeSelect.appendChild(opt);
+        });
 
-<script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
-<script>
-  async function loadColleges() {
-    const res = await axios.get('/api/colleges');
-    const select = document.getElementById('collegeFilter');
-    const all = document.createElement('option');
-    all.value = '';
-    all.textContent = 'جميع الكليات';
-    select.appendChild(all);
-    res.data.forEach(c => {
-      const opt = document.createElement('option');
-      opt.value = c.name;
-      opt.textContent = c.name;
-      select.appendChild(opt);
-    });
-  }
+        // جلب المدققين
+        const auditors = await axios.get('/api/auditors');
+        const auditorSelect = document.getElementById('auditorFilter');
+        auditors.data.forEach(a => {
+          const opt = document.createElement('option');
+          opt.value = a.name;
+          opt.textContent = a.name;
+          auditorSelect.appendChild(opt);
+        });
+      } catch (err) {
+        console.error("خطأ في جلب الفلاتر:", err);
+      }
+    }
 
-  async function loadEvaluations() {
-    const college = document.getElementById('collegeFilter').value;
-    const res = await axios.get('/api/committees', { params: { college } });
-    const tbody = document.getElementById('evaluationsTable');
-    tbody.innerHTML = '';
-    res.data.forEach(ev => {
-      const tr = document.createElement('tr');
-      tr.innerHTML = `
-        <td>${ev.college}</td>
-        <td>${ev.committee_name}</td>
-        <td>${ev.formation_decision}</td>
-        <td>${ev.work_plan}</td>
-        <td>${ev.performance_indicators}</td>
-        <td>${ev.meetings}</td>
-        <td>${ev.consistency}</td>
-        <td>${ev.coverage_books}</td>
-        <td>${ev.report1}, ${ev.report2}, ${ev.report3}</td>
-        <td>${ev.statistical_analysis}</td>
-        <td><b>${ev.availability_score}</b></td>
-        <td>${ev.notes || ''}</td>
-        <td>${ev.auditor_name}</td>
-        <td>${ev.audit_date ? new Date(ev.audit_date).toLocaleDateString() : ''}</td>
-      `;
-      tbody.appendChild(tr);
-    });
-  }
+    async function loadEvaluations() {
+      try {
+        const college = document.getElementById('collegeFilter').value;
+        const auditor = document.getElementById('auditorFilter').value;
 
-  document.getElementById('collegeFilter').addEventListener('change', loadEvaluations);
+        let url = '/api/committees';
+        const params = [];
+        if (college) params.push(`college=${encodeURIComponent(college)}`);
+        if (auditor) params.push(`auditor_name=${encodeURIComponent(auditor)}`);
+        if (params.length > 0) url += '?' + params.join('&');
 
-  // تحميل أولي
-  loadColleges().then(loadEvaluations);
-</script>
+        const res = await axios.get(url);
+        const tbody = document.getElementById('evaluationsTable');
+        tbody.innerHTML = "";
+
+        if (res.data.length === 0) {
+          tbody.innerHTML = `<tr><td colspan="6" class="text-center">لا توجد تقييمات</td></tr>`;
+          return;
+        }
+
+        res.data.forEach(ev => {
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+            <td>${ev.college || '-'}</td>
+            <td>${ev.committee_name || '-'}</td>
+            <td>${ev.auditor_name || '-'}</td>
+            <td>${ev.audit_date ? new Date(ev.audit_date).toLocaleDateString('ar-EG') : '-'}</td>
+            <td>${ev.availability_score ?? 0}</td>
+            <td>${ev.notes || '-'}</td>
+          `;
+          tbody.appendChild(tr);
+        });
+      } catch (err) {
+        console.error("خطأ في جلب التقييمات:", err);
+      }
+    }
+
+    // تحميل الفلاتر والتقييمات عند فتح الصفحة
+    loadFilters().then(loadEvaluations);
+
+    // إعادة تحميل عند تغيير الفلاتر
+    document.getElementById('collegeFilter').addEventListener('change', loadEvaluations);
+    document.getElementById('auditorFilter').addEventListener('change', loadEvaluations);
+  </script>
 </body>
 </html>
