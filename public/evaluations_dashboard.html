@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <title>تقرير تقييمات اللجان</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.rtl.min.css">
+  <style>
+    body { background: #f4f6f9; font-family: 'Segoe UI', sans-serif; }
+    .container { max-width: 1200px; margin-top: 40px; }
+    table { background: #fff; }
+  </style>
+</head>
+<body>
+<div class="container">
+  <h3 class="mb-4 text-center">📊 تقرير تقييمات اللجان</h3>
+
+  <div class="mb-3">
+    <label class="form-label">اختر الكلية</label>
+    <select id="collegeFilter" class="form-select"></select>
+  </div>
+
+  <table class="table table-bordered text-center">
+    <thead class="table-dark">
+      <tr>
+        <th>الكلية</th>
+        <th>اسم اللجنة</th>
+        <th>قرار التشكيل</th>
+        <th>خطة العمل</th>
+        <th>مؤشرات الأداء</th>
+        <th>الاجتماعات</th>
+        <th>الاتساق</th>
+        <th>تغطية الكتب</th>
+        <th>التقارير</th>
+        <th>التحليل الإحصائي</th>
+        <th>درجة التوفر</th>
+        <th>الملاحظات</th>
+        <th>اسم المدقق</th>
+        <th>تاريخ التدقيق</th>
+      </tr>
+    </thead>
+    <tbody id="evaluationsTable"></tbody>
+  </table>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+<script>
+  async function loadColleges() {
+    const res = await axios.get('/api/colleges');
+    const select = document.getElementById('collegeFilter');
+    const all = document.createElement('option');
+    all.value = '';
+    all.textContent = 'جميع الكليات';
+    select.appendChild(all);
+    res.data.forEach(c => {
+      const opt = document.createElement('option');
+      opt.value = c.name;
+      opt.textContent = c.name;
+      select.appendChild(opt);
+    });
+  }
+
+  async function loadEvaluations() {
+    const college = document.getElementById('collegeFilter').value;
+    const res = await axios.get('/api/committees', { params: { college } });
+    const tbody = document.getElementById('evaluationsTable');
+    tbody.innerHTML = '';
+    res.data.forEach(ev => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${ev.college}</td>
+        <td>${ev.committee_name}</td>
+        <td>${ev.formation_decision}</td>
+        <td>${ev.work_plan}</td>
+        <td>${ev.performance_indicators}</td>
+        <td>${ev.meetings}</td>
+        <td>${ev.consistency}</td>
+        <td>${ev.coverage_books}</td>
+        <td>${ev.report1}, ${ev.report2}, ${ev.report3}</td>
+        <td>${ev.statistical_analysis}</td>
+        <td><b>${ev.availability_score}</b></td>
+        <td>${ev.notes || ''}</td>
+        <td>${ev.auditor_name}</td>
+        <td>${ev.audit_date ? new Date(ev.audit_date).toLocaleDateString() : ''}</td>
+      `;
+      tbody.appendChild(tr);
+    });
+  }
+
+  document.getElementById('collegeFilter').addEventListener('change', loadEvaluations);
+
+  // تحميل أولي
+  loadColleges().then(loadEvaluations);
+</script>
+</body>
+</html>
