@@ -61,12 +61,13 @@ const departmentSchema = new mongoose.Schema({
 });
 const Department = mongoose.model('Department', departmentSchema);
 
-// ✅ النسخ الاحتياطية الآن تشمل (فيديوهات + روابط + كلمات مرور + أقسام)
+// ✅ النسخ الاحتياطية الآن تشمل (فيديوهات + روابط + كلمات مرور + أقسام + كليات)
 const backupSchema = new mongoose.Schema({
   date: { type: Date, default: Date.now },
   videos: Array,
   links: Array,
   passwords: Array,
+  colleges: Array,   // ✅ إضافة الكليات
   departments: Array
 });
 const Backup = mongoose.model('Backup', backupSchema);
@@ -82,6 +83,12 @@ app.use(session({
   saveUninitialized: true,
   cookie: { maxAge: 10 * 60 * 1000 }
 }));
+
+const Evaluation = require('./models/evaluationSchema');
+
+const College = require('./models/collegeSchema');
+
+
 
 // ✅ إعداد multer لحفظ الملفات مؤقتًا
 const upload = multer({ dest: 'uploads/' });
@@ -375,6 +382,105 @@ app.post('/api/backups/restore/:id', async (req, res) => {
   }
 });
 
+// ====== إدارة تقييمات اللجان ======
+
+// إضافة تقييم لجنة
+app.post('/api/committees', async (req, res) => {
+  try {
+    const evaluation = new Evaluation(req.body);
+    await evaluation.save();
+    res.status(201).json({ message: '✅ تم حفظ التقييم بنجاح', evaluation });
+  } catch (err) {
+    res.status(400).json({ message: '❌ خطأ في حفظ التقييم', error: err.message });
+  }
+});
+
+// جلب كل التقييمات (مع إمكانية الفلترة حسب الكلية)
+app.get('/api/committees', async (req, res) => {
+  try {
+    const { college } = req.query;
+    let query = {};
+    if (college) query.college = college;
+    const evaluations = await Evaluation.find(query).sort({ createdAt: -1 });
+    res.json(evaluations);
+  } catch (err) {
+    res.status(500).json({ message: '❌ خطأ في جلب التقييمات', error: err.message });
+  }
+});
+
+// تعديل تقييم لجنة
+app.put('/api/committees/:id', async (req, res) => {
+  try {
+    const updated = await Evaluation.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    if (!updated) return res.status(404).json({ message: '❌ التقييم غير موجود' });
+    res.json(updated);
+  } catch (err) {
+    res.status(400).json({ message: '❌ خطأ في تعديل التقييم', error: err.message });
+  }
+});
+
+// حذف تقييم لجنة
+app.delete('/api/committees/:id', async (req, res) => {
+  try {
+    const deleted = await Evaluation.findByIdAndDelete(req.params.id);
+    if (!deleted) return res.status(404).json({ message: '❌ التقييم غير موجود' });
+    res.json({ message: '🗑️ تم حذف التقييم' });
+  } catch (err) {
+    res.status(400).json({ message: '❌ خطأ في الحذف', error: err.message });
+  }
+});
+
+// ====== إدارة الكليات ======
+
+// جلب جميع الكليات
+app.get('/api/colleges', async (req, res) => {
+  try {
+    const colleges = await College.find().sort({ name: 1 });
+    res.json(colleges);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// إضافة كلية جديدة
+app.post('/api/colleges', async (req, res) => {
+  try {
+    const college = new College({ name: req.body.name });
+    await college.save();
+    res.status(201).json(college);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+// تعديل كلية
+app.put('/api/colleges/:id', async (req, res) => {
+  try {
+    const updated = await College.findByIdAndUpdate(
+      req.params.id,
+      { name: req.body.name },
+      { new: true }
+    );
+    if (!updated) return res.status(404).json({ message: '❌ الكلية غير موجودة' });
+    res.json(updated);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+// حذف كلية
+app.delete('/api/colleges/:id', async (req, res) => {
+  try {
+    const deleted = await College.findByIdAndDelete(req.params.id);
+    if (!deleted) return res.status(404).json({ message: '❌ الكلية غير موجودة' });
+    res.json({ message: '🗑️ تم حذف الكلية' });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+
+
 // ✅ رفع نسخة من الجهاز
 app.post('/api/backups/upload', upload.single('backupFile'), async (req, res) => {
   try {
@@ -385,6 +491,7 @@ app.post('/api/backups/upload', upload.single('backupFile'), async (req, res) =>
       videos: jsonData.videos || [],
       links: jsonData.links || [],
       passwords: jsonData.passwords || [],
+      colleges: jsonData.colleges || [],   // ✅ إضافة الكليات هنا أيضًا
       departments: jsonData.departments || []
     });
     await backup.save();
