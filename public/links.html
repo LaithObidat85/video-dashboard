@@ -256,14 +256,14 @@ document.getElementById("themeToggle").addEventListener("click", ()=>{
   else icon.classList.replace("bi-brightness-high-fill","bi-moon-stars-fill");
 });
 
-// ✅ تفعيل Tooltips لجميع العناصر
+// ✅ تفعيل Tooltips لجميع العناصر (بما فيها اللمس على الموبايل)
 function activateTooltips() {
   [...document.querySelectorAll('[data-bs-toggle="tooltip"]')].forEach(el=>{
     new bootstrap.Tooltip(el,{
-      trigger:'hover focus',
+      trigger:'hover focus click', // 🟢 الآن يعمل مع hover + focus + click (للموبايل)
       placement:'top',
       customClass:'custom-tooltip',
-      delay:{show:300, hide:150}
+      delay:{show:300, hide:200}
     });
   });
 }
