@@ -10,6 +10,7 @@
     table { background: #fff; border-radius: 10px; overflow: hidden; }
     th { background-color: #0d6efd; color: #fff; }
     .filters { margin-bottom: 20px; }
+    .export-buttons { margin: 15px 0; }
   </style>
 </head>
 <body>
@@ -32,8 +33,14 @@
       </div>
     </div>
 
+    <!-- أزرار التصدير -->
+    <div class="export-buttons">
+      <button class="btn btn-success me-2" onclick="exportToExcel()">📥 تصدير إلى Excel</button>
+      <button class="btn btn-danger" onclick="exportToPDF()">📄 تصدير إلى PDF</button>
+    </div>
+
     <!-- الجدول -->
-    <table class="table table-bordered table-striped">
+    <table class="table table-bordered table-striped" id="evaluationsTableWrapper">
       <thead>
         <tr>
           <th>الكلية</th>
@@ -52,6 +59,10 @@
 
   <!-- مكتبات -->
   <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.23/jspdf.plugin.autotable.min.js"></script>
+
   <script>
     async function loadFilters() {
       try {
@@ -114,6 +125,22 @@
       } catch (err) {
         console.error("خطأ في جلب التقييمات:", err);
       }
+    }
+
+    // ✅ تصدير إلى Excel
+    function exportToExcel() {
+      const table = document.getElementById("evaluationsTableWrapper");
+      const wb = XLSX.utils.table_to_book(table, { sheet: "التقييمات" });
+      XLSX.writeFile(wb, "التقييمات.xlsx");
+    }
+
+    // ✅ تصدير إلى PDF
+    function exportToPDF() {
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF('l', 'pt', 'a4');
+      doc.text("تقرير التقييمات", 40, 40);
+      doc.autoTable({ html: '#evaluationsTableWrapper', startY: 60 });
+      doc.save("التقييمات.pdf");
     }
 
     // تحميل الفلاتر والتقييمات عند فتح الصفحة
