@@ -8,14 +8,14 @@
   <style>
     body { background: #f8f9fa; font-family: 'Segoe UI', sans-serif; }
     .container { margin-top: 30px; }
-    table { background: #fff; border-radius: 10px; overflow: hidden; font-size: 14px; width: 90%; margin: auto; }
+    table { background: #fff; border-radius: 10px; overflow: hidden; font-size: 14px; width: 99%; margin: auto; }
     th { background-color: #0d6efd; color: #fff; text-align: center; }
     td { text-align: center; vertical-align: middle; }
     td[contenteditable="true"] { background: #fefae0; cursor: text; }
     .highlight { background-color: #d4edda !important; transition: background-color 1s ease; }
     .toast-container { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); z-index: 2000; }
-    .filters { margin-bottom: 20px; width: 90%; margin-left: auto; margin-right: auto; }
-    .action-buttons button { margin: 0 3px; }
+    .filters { margin-bottom: 20px; width: 99%; margin-left: auto; margin-right: auto; }
+    .action-buttons { display: flex; justify-content: center; align-items: center; gap: 5px; height: 100%; }
   </style>
 </head>
 <body>
@@ -186,6 +186,41 @@
     }
     loadOptions();
 
+    // حساب درجة التوفر
+    function updateAvailability(row) {
+      let sum = 0;
+      const fields = [
+        "formation_decision","work_plan","performance_indicators",
+        "meetings","consistency","coverage_books","report1","report2","report3","statistical_analysis"
+      ];
+      fields.forEach(f => {
+        const cell = row.querySelector(`[data-field="${f}"]`);
+        sum += parseFloat(cell?.innerText) || 0;
+      });
+      const availabilityCell = row.querySelector(".availability-cell");
+      availabilityCell.innerText = sum.toFixed(2);
+      availabilityCell.classList.add("highlight");
+      setTimeout(() => availabilityCell.classList.remove("highlight"), 1500);
+    }
+
+    // إضافة مستمع لتحديد كامل النص عند التركيز
+    function attachCellListeners(tr) {
+      tr.querySelectorAll('[contenteditable="true"]').forEach(cell => {
+        cell.addEventListener('focus', () => {
+          const range = document.createRange();
+          range.selectNodeContents(cell);
+          const sel = window.getSelection();
+          sel.removeAllRanges();
+          sel.addRange(range);
+        });
+        cell.addEventListener('input', () => {
+          cell.classList.add("highlight");
+          setTimeout(() => cell.classList.remove("highlight"), 1500);
+          updateAvailability(tr);
+        });
+      });
+    }
+
     // تحميل التقييمات
     async function loadCommittees() {
       try {
@@ -227,14 +262,15 @@
             <td contenteditable="true" data-field="report3">${c.report3 ?? 0}</td>
             <td contenteditable="true" data-field="statistical_analysis">${c.statistical_analysis ?? 0}</td>
             <td class="availability-cell">${c.availability_score ?? 0}</td>
-            <td>${c.notes ? `<button class="btn btn-sm btn-info" onclick="showNotes(\`${c.notes}\`)">🔍 عرض</button>` : ''}</td>
-            <td class="action-buttons d-flex justify-content-center">
+            <td>${c.notes && c.notes.trim() !== "" ? `<button class="btn btn-sm btn-info" onclick="showNotes(\`${c.notes}\`)">🔍 عرض</button>` : ''}</td>
+            <td class="action-buttons">
               <button class="btn btn-sm btn-success" onclick="saveRow(this, '${c._id}')">💾</button>
               <button class="btn btn-sm btn-primary" onclick='editCommittee(${JSON.stringify(c)})'>✏️</button>
               <button class="btn btn-sm btn-danger" onclick="deleteCommittee('${c._id}')">🗑️</button>
             </td>
           `;
           tbody.appendChild(tr);
+          attachCellListeners(tr);
         });
       } catch (err) { showError("❌ فشل تحميل البيانات"); console.error(err); }
     }
