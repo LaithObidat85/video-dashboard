@@ -32,7 +32,7 @@
       }
       #evaluationsTableWrapper {
         position: absolute;
-        left: 0; top: 100px;
+        left: 0; top: 120px;
         width: 100%;
       }
     }
@@ -58,10 +58,8 @@
       </div>
     </div>
 
-    <!-- أزرار التصدير -->
+    <!-- زر الطباعة فقط -->
     <div class="export-buttons text-center">
-      <button class="btn btn-success" onclick="exportToExcel()">📥 تصدير Excel</button>
-      <button class="btn btn-danger" onclick="exportToPDF()">📄 تصدير PDF</button>
       <button class="btn btn-secondary" onclick="printTable()">🖨️ طباعة</button>
     </div>
 
@@ -92,12 +90,6 @@
 
   <!-- مكتبات -->
   <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.23/jspdf.plugin.autotable.min.js"></script>
-
-  <!-- خط Amiri -->
-  <script src="https://cdn.jsdelivr.net/gh/LaithObidat85/video-dashboard/public/fonts/amiri.js"></script>
 
   <script>
     let lastCompletionRate = null;
@@ -151,7 +143,6 @@
         }
 
         let totalAvailability = 0;
-
         res.data.forEach((ev, index) => {
           totalAvailability += ev.availability_score ?? 0;
           const tr = document.createElement('tr');
@@ -178,61 +169,6 @@
       } catch (err) {
         console.error("خطأ في جلب التقييمات:", err);
       }
-    }
-
-    // 🔹 Excel
-    function exportToExcel() {
-      const table = document.getElementById("evaluationsTableWrapper");
-      const wb = XLSX.utils.table_to_book(table, { sheet: "التقييمات" });
-      const ws = wb.Sheets["التقييمات"];
-
-      if (lastCollegeName) {
-        XLSX.utils.sheet_add_aoa(ws, [
-          [`نتائج تقييم اللجان - ${lastCollegeName}`],
-          [lastCompletionRate ? `📌 نسبة الاكتمال = ${lastCompletionRate}%` : ""],
-          []
-        ], { origin: "A1" });
-      }
-
-      XLSX.writeFile(wb, "التقييمات.xlsx", { bookType: "xlsx", bookSST: true });
-    }
-
-    // 🔹 PDF (RTL)
-    function exportToPDF() {
-      const { jsPDF } = window.jspdf;
-      const doc = new jsPDF({ orientation: 'landscape' });
-
-      doc.addFileToVFS("Amiri-Regular.ttf", amiriBase64);
-      doc.addFont("Amiri-Regular.ttf", "Amiri", "normal");
-      doc.setFont("Amiri");
-
-      doc.text(`📊 نتائج تقييم اللجان - ${lastCollegeName}`, 140, 20, { align: "center" });
-      if (lastCompletionRate) {
-        doc.text(`📌 نسبة الاكتمال = ${lastCompletionRate}%`, 140, 30, { align: "center" });
-      }
-
-      const headers = [];
-      document.querySelectorAll("#evaluationsTableWrapper thead tr th").forEach(th => headers.push(th.innerText));
-
-      const data = [];
-      document.querySelectorAll("#evaluationsTableWrapper tbody tr").forEach(tr => {
-        const row = [];
-        tr.querySelectorAll("td").forEach(td => row.push(td.innerText));
-        data.push(row);
-      });
-
-      const rtlHeaders = headers.reverse();
-      const rtlData = data.map(r => r.reverse());
-
-      doc.autoTable({
-        head: [rtlHeaders],
-        body: rtlData,
-        startY: lastCompletionRate ? 40 : 30,
-        styles: { font: "Amiri", fontStyle: "normal", halign: "right" },
-        headStyles: { fillColor: [13, 110, 253] }
-      });
-
-      doc.save("التقييمات.pdf");
     }
 
     // 🔹 Print (جدول + عنوان + نسبة اكتمال)
