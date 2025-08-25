@@ -81,6 +81,7 @@ async function setupLoginGuard() {
       if (getSectionName() === "index") {
         const modalInstance = bootstrap.Modal.getOrCreateInstance(passwordModalEl);
         if (modalInstance) {
+          console.log("🔹 Cancel clicked on index → modalInstance.hide() is called"); // ✅ للتجربة
           modalInstance.hide(); // ✅ يغلق المودال بشكل صحيح
           showToast("ℹ️ تم إلغاء تسجيل الدخول", "info");
         }
@@ -111,7 +112,7 @@ async function setupLoginGuard() {
       // ✅ إظهار المحتوى بعد تسجيل الدخول
       if (pageContent) {
         pageContent.style.display = "block";
-        if (typeof hideOverlay === "function") hideOverlay(); 
+        if (typeof hideOverlay === "function") hideOverlay(); // ← إخفاء شاشة التحميل بعد الدخول
         if (typeof loadPasswords === "function") {
           loadPasswords();
         }
