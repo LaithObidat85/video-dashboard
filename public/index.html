@@ -169,9 +169,7 @@ function showToast(message, type="info") {
 
 async function checkSessionStatus() {
   try {
-    const res = await fetch(`${API_BASE}/api/check-session`, {
-      credentials: "include"
-    });
+    const res = await fetch(`${API_BASE}/api/check-session`, { credentials: "include" });
     const data = await res.json();
     document.getElementById("logoutNavItem").style.display = data.authenticated ? "block" : "none";
   } catch (err) { console.error("خطأ في التحقق من الجلسة:", err); }
@@ -179,23 +177,24 @@ async function checkSessionStatus() {
 
 async function logout() {
   try {
-    await fetch(`${API_BASE}/api/logout`, { 
+    const section = "dashboard"; // 👈 القسم المطلوب تسجيل الخروج منه
+    await fetch(`${API_BASE}/api/logout/${section}`, { 
       method: "POST",
       credentials: "include"
     });
-    sessionStorage.clear();
+    sessionStorage.removeItem("loggedInAt_" + section); // تنظيف التخزين المحلي
     document.getElementById("logoutNavItem").style.display = "none";
     showToast("✅ تم تسجيل الخروج بنجاح","success");
-  } catch (err) { showToast("❌ حدث خطأ أثناء تسجيل الخروج","error"); }
+  } catch (err) { 
+    showToast("❌ حدث خطأ أثناء تسجيل الخروج","error"); 
+  }
 }
 
 async function requestDashboardAccess() {
   const section = "dashboard";
   if (sessionStorage.getItem("loggedInAt_" + section)) {window.location.href = section + ".html";return;}
   try {
-    const res = await fetch(`${API_BASE}/api/check-session`, {
-      credentials: "include"
-    });
+    const res = await fetch(`${API_BASE}/api/check-session`, { credentials: "include" });
     const data = await res.json();
     if (data.authenticated) {sessionStorage.setItem("loggedInAt_" + section, Date.now().toString());window.location.href = section + ".html";return;}
   } catch (err) { console.error("خطأ:", err); }
@@ -257,9 +256,7 @@ function hideLoading() {
 async function fetchVideos() {
   try {
     showLoading();
-    const res = await fetch(`${API_BASE}/api/videos`, {
-      credentials: "include"
-    });
+    const res = await fetch(`${API_BASE}/api/videos`, { credentials: "include" });
     videos = await res.json();
     populateDepartmentOptions();
   }
