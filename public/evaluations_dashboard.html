@@ -28,30 +28,32 @@
       color: #0d6efd;
     }
 
-    /* ✅ الطباعة */
-    @media print {
-      body * { visibility: hidden; }
-      #printHeader, #printHeader * ,
-      #evaluationsTableWrapper, #evaluationsTableWrapper * {
-        visibility: visible;
-      }
-      #printHeader {
-        display: block !important;
-        text-align: center;
-        margin-bottom: 20px;
-        position: absolute;
-        top: 20px;
-        left: 0;
-        width: 100%;
-      }
-      #evaluationsTableWrapper {
-        position: absolute;
-        left: 0; 
-        top: 150px;
-        width: 100%;
-      }
-    }
+   /* ✅ الطباعة */
+@media print {
+  @page { size: landscape; } /* ✅ إجبار الطباعة أفقياً */
+  body * { visibility: hidden; }
+  #printHeader, #printHeader * ,
+  #evaluationsTableWrapper, #evaluationsTableWrapper * {
+    visibility: visible;
+  }
+  #printHeader {
+    display: block !important;
+    text-align: center;
+    margin-bottom: 20px;
+    position: absolute;
+    top: 20px;
+    left: 0;
+    width: 100%;
+  }
+  #evaluationsTableWrapper {
+    position: absolute;
+    left: 0; 
+    top: 150px;
+    width: 100%;
+  }
+}
 
+     
    /* إخفاء عمود اسم المدقق */
 .hide-auditor th:nth-child(4),
 .hide-auditor td:nth-child(4) {
@@ -129,6 +131,18 @@
 
     <!-- هيدر للطباعة -->
     <div id="printHeader"></div>
+<!-- Modal لعرض الملاحظات -->
+<div class="modal fade" id="notesModal" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">📝 الملاحظات</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body" id="notesContent"></div>
+    </div>
+  </div>
+</div>
 
     <!-- الجدول -->
     <table class="table table-bordered table-striped" id="evaluationsTableWrapper">
@@ -269,7 +283,12 @@
             <td>${ev.report3 ?? 0}</td>
             <td>${ev.statistical_analysis ?? 0}</td>
             <td>${ev.availability_score ?? 0}</td>
-            <td>${ev.notes && ev.notes.trim() !== "" ? ev.notes : '<span class="text-muted">لا توجد ملاحظات</span>'}</td>
+            <td>${
+  ev.notes && ev.notes.trim() !== "" && ev.notes.trim() !== "<p><br></p>"
+    ? `<button class="btn btn-sm btn-info" onclick="showNotes(\`${ev.notes}\`)">🔍 عرض</button>`
+    : '<span class="text-muted">لا توجد ملاحظات</span>'
+}</td>
+
           `;
           tbody.appendChild(tr);
         });
@@ -311,6 +330,13 @@
       window.print();
       headerDiv.innerHTML = "";
     }
+
+    // 🔹 عرض الملاحظات في مودال
+function showNotes(html) {
+  document.getElementById('notesContent').innerHTML = html || "<i>لا توجد ملاحظات</i>";
+  new bootstrap.Modal(document.getElementById('notesModal')).show();
+}
+
 
     // ✅ التحكم في إخفاء/إظهار عمود اسم المدقق
     document.getElementById('hideAuditorCheckbox').addEventListener('change', function () {
