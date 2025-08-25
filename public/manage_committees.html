@@ -13,9 +13,9 @@
     td { text-align: center; vertical-align: middle; }
     td[contenteditable="true"] { background: #fefae0; cursor: text; }
     .highlight { background-color: #d4edda !important; transition: background-color 1s ease; }
-    .toast-container { position: fixed; top: 20px; left: 20px; z-index: 2000; }
+    .toast-container { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); z-index: 2000; }
     .filters { margin-bottom: 20px; width: 90%; margin-left: auto; margin-right: auto; }
-    .action-buttons button { margin: 0 3px; }
+    .action-buttons button { display: block; width: 100%; margin: 2px 0; }
   </style>
 </head>
 <body>
@@ -94,15 +94,15 @@
             <input type="hidden" name="_id" id="edit_id">
             <div class="mb-3">
               <label class="form-label">الكلية</label>
-              <input type="text" class="form-control" id="editCollege" disabled>
+              <input type="text" class="form-control" id="editCollege">
             </div>
             <div class="mb-3">
               <label class="form-label">اسم اللجنة</label>
-              <input type="text" class="form-control" id="editCommittee" disabled>
+              <input type="text" class="form-control" id="editCommittee">
             </div>
             <div class="mb-3">
               <label class="form-label">اسم المدقق</label>
-              <input type="text" class="form-control" id="editAuditor" disabled>
+              <input type="text" class="form-control" id="editAuditor">
             </div>
             <div class="mb-3">
               <label class="form-label">تاريخ التدقيق</label>
@@ -162,19 +162,14 @@
 
     let confirmCallback = null;
 
-    // 🔹 دالة عرض توست نجاح
-    function showSuccess(msg="✅ تم حفظ التعديلات بنجاح") {
+    function showSuccess(msg="✅ العملية نجحت") {
       document.querySelector("#toastSuccess .toast-body").innerText = msg;
       toastSuccess.show();
     }
-
-    // 🔹 دالة عرض توست خطأ
-    function showError(msg="❌ حدث خطأ أثناء العملية") {
+    function showError(msg="❌ حدث خطأ") {
       document.querySelector("#toastError .toast-body").innerText = msg;
       toastError.show();
     }
-
-    // 🔹 دالة تأكيد عبر Toast
     function showConfirm(msg, callback) {
       document.getElementById("toastConfirmMsg").innerText = msg;
       confirmCallback = callback;
@@ -185,7 +180,7 @@
       if (confirmCallback) confirmCallback();
     });
 
-    // 🔹 حساب درجة التوفر
+    // حساب درجة التوفر
     function updateAvailability(row) {
       let sum = 0;
       const fields = [
@@ -202,9 +197,16 @@
       setTimeout(() => availabilityCell.classList.remove("highlight"), 1500);
     }
 
-    // 🔹 إضافة مستمع لأي خلية قابلة للتعديل
+    // مستمع لتحديد كامل النص عند التركيز
     function attachCellListeners(tr) {
       tr.querySelectorAll('[contenteditable="true"]').forEach(cell => {
+        cell.addEventListener('focus', () => {
+          const range = document.createRange();
+          range.selectNodeContents(cell);
+          const sel = window.getSelection();
+          sel.removeAllRanges();
+          sel.addRange(range);
+        });
         cell.addEventListener('input', () => {
           cell.classList.add("highlight");
           setTimeout(() => cell.classList.remove("highlight"), 1500);
@@ -213,7 +215,6 @@
       });
     }
 
-    // 🔹 تحميل الكليات والمدققين للفلاتر
     async function loadOptions() {
       const colleges = await axios.get('/api/colleges');
       const collegeFilter = document.getElementById('collegeFilter');
@@ -235,7 +236,6 @@
     }
     loadOptions();
 
-    // 🔹 تحميل التقييمات
     async function loadCommittees() {
       try {
         const college = document.getElementById('collegeFilter').value;
@@ -293,13 +293,11 @@
     document.getElementById('collegeFilter').addEventListener('change', loadCommittees);
     document.getElementById('auditorFilter').addEventListener('change', loadCommittees);
 
-    // 🔹 عرض الملاحظات
     function showNotes(html) {
       document.getElementById('notesContent').innerHTML = html || "<i>لا توجد ملاحظات</i>";
       new bootstrap.Modal(document.getElementById('notesModal')).show();
     }
 
-    // 🔹 فتح المودال الكامل
     function editCommittee(c) {
       document.getElementById('edit_id').value = c._id;
       document.getElementById('editCollege').value = c.college;
@@ -310,7 +308,6 @@
       new bootstrap.Modal(document.getElementById('editModal')).show();
     }
 
-    // 🔹 حفظ من الجدول مباشرة
     async function saveRow(btn, id) {
       const row = btn.closest('tr');
       const updatedData = {};
@@ -324,7 +321,6 @@
       } catch (err) { console.error(err); showError("❌ خطأ أثناء الحفظ"); }
     }
 
-    // 🔹 حذف مع تأكيد Toast
     function confirmDelete(id) {
       showConfirm("⚠️ هل أنت متأكد من الحذف؟", async () => {
         try {
