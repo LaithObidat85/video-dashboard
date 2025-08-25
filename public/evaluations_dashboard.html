@@ -10,7 +10,7 @@
     table { background: #fff; border-radius: 10px; overflow: hidden; }
     th { background-color: #0d6efd; color: #fff; }
     .filters { margin-bottom: 20px; }
-    .export-buttons { margin: 15px 0; }
+    .export-buttons { margin: 20px 0; }
   </style>
 </head>
 <body>
@@ -34,9 +34,10 @@
     </div>
 
     <!-- أزرار التصدير -->
-    <div class="export-buttons">
-      <button class="btn btn-success me-2" onclick="exportToExcel()">📥 تصدير إلى Excel</button>
-      <button class="btn btn-danger" onclick="exportToPDF()">📄 تصدير إلى PDF</button>
+    <div class="export-buttons text-center">
+      <button class="btn btn-success" onclick="exportToExcel()">📥 تصدير Excel</button>
+      <button class="btn btn-danger" onclick="exportToPDF()">📄 تصدير PDF</button>
+      <button class="btn btn-secondary" onclick="window.print()">🖨️ طباعة</button>
     </div>
 
     <!-- الجدول -->
@@ -59,9 +60,12 @@
 
   <!-- مكتبات -->
   <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.23/jspdf.plugin.autotable.min.js"></script>
+
+  <!-- خط Amiri مدمج Base64 -->
+  <script src="https://cdn.jsdelivr.net/gh/LaithObidat85/fonts/amiri.js"></script>
 
   <script>
     async function loadFilters() {
@@ -127,19 +131,32 @@
       }
     }
 
-    // ✅ تصدير إلى Excel
+    // 🔹 Excel
     function exportToExcel() {
       const table = document.getElementById("evaluationsTableWrapper");
       const wb = XLSX.utils.table_to_book(table, { sheet: "التقييمات" });
-      XLSX.writeFile(wb, "التقييمات.xlsx");
+      XLSX.writeFile(wb, "التقييمات.xlsx", { bookType: "xlsx", bookSST: true });
     }
 
-    // ✅ تصدير إلى PDF
+    // 🔹 PDF
     function exportToPDF() {
       const { jsPDF } = window.jspdf;
-      const doc = new jsPDF('l', 'pt', 'a4');
-      doc.text("تقرير التقييمات", 40, 40);
-      doc.autoTable({ html: '#evaluationsTableWrapper', startY: 60 });
+      const doc = new jsPDF({ orientation: 'landscape' });
+
+      // إضافة الخط العربي
+      doc.addFileToVFS("Amiri-Regular.ttf", amiriBase64);
+      doc.addFont("Amiri-Regular.ttf", "Amiri", "normal");
+      doc.setFont("Amiri");
+
+      doc.text("📊 تقرير التقييمات", 140, 20, { align: "center" });
+
+      doc.autoTable({
+        html: '#evaluationsTableWrapper',
+        startY: 30,
+        styles: { font: "Amiri", fontStyle: "normal", halign: "right" },
+        headStyles: { fillColor: [13, 110, 253] }
+      });
+
       doc.save("التقييمات.pdf");
     }
 
