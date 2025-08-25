@@ -79,8 +79,11 @@ async function setupLoginGuard() {
   if (cancelBtn) {
     cancelBtn.addEventListener("click", () => {
       if (getSectionName() === "index") {
-        passwordModal.hide(); // ✅ تم التعديل هنا
-        showToast("ℹ️ تم إلغاء تسجيل الدخول", "info"); 
+        const modalInstance = bootstrap.Modal.getInstance(passwordModalEl);
+        if (modalInstance) {
+          modalInstance.hide(); // ✅ يغلق المودال بشكل صحيح
+          showToast("ℹ️ تم إلغاء تسجيل الدخول", "info");
+        }
       } else {
         window.location.href = "index.html"; 
       }
