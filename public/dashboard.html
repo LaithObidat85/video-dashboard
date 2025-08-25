@@ -88,48 +88,14 @@
 <div class="container">
   <h2 class="text-center mb-5">لوحة التحكم الرئيسية</h2>
   <div class="row g-4 justify-content-center">
-    <div class="col-sm-6 col-md-4">
-      <div class="dashboard-card" data-bs-toggle="tooltip" title="إضافة فيديو جديد">
-        <div class="card-icon"><i class="bi bi-plus-circle-fill"></i></div>
-        <a href="add.html">إضافة فيديو</a>
-      </div>
-    </div>
-    <div class="col-sm-6 col-md-4">
-      <div class="dashboard-card" data-bs-toggle="tooltip" title="تعديل الفيديوهات">
-        <div class="card-icon"><i class="bi bi-pencil-square"></i></div>
-        <a href="edit.html">تعديل الفيديوهات</a>
-      </div>
-    </div>
-    <div class="col-sm-6 col-md-4">
-      <div class="dashboard-card" data-bs-toggle="tooltip" title="إدارة النسخ الاحتياطية">
-        <div class="card-icon"><i class="bi bi-folder-fill"></i></div>
-        <a href="backups.html">النسخ الاحتياطية</a>
-      </div>
-    </div>
-    <div class="col-sm-6 col-md-4">
-      <div class="dashboard-card" data-bs-toggle="tooltip" title="العودة للصفحة الرئيسية">
-        <div class="card-icon"><i class="bi bi-house-fill"></i></div>
-        <a href="index.html">الرئيسية</a>
-      </div>
-    </div>
-    <div class="col-sm-6 col-md-4">
-      <div class="dashboard-card" data-bs-toggle="tooltip" title="إدارة كلمات المرور">
-        <div class="card-icon"><i class="bi bi-key-fill"></i></div>
-        <a href="passwords.html">كلمات المرور</a>
-      </div>
-    </div>
-    <div class="col-sm-6 col-md-4">
-      <div class="dashboard-card" data-bs-toggle="tooltip" title="عرض جميع الروابط">
-        <div class="card-icon"><i class="bi bi-eye-fill"></i></div>
-        <a href="viewlinks.html">عرض الروابط</a>
-      </div>
-    </div>
-    <div class="col-sm-6 col-md-4">
-      <div class="dashboard-card" data-bs-toggle="tooltip" title="إدارة الروابط">
-        <div class="card-icon"><i class="bi bi-link-45deg"></i></div>
-        <a href="links.html">إدارة الروابط</a>
-      </div>
-    </div>
+    <!-- البطاقات كما هي -->
+    <div class="col-sm-6 col-md-4"><div class="dashboard-card"><div class="card-icon"><i class="bi bi-plus-circle-fill"></i></div><a href="add.html">إضافة فيديو</a></div></div>
+    <div class="col-sm-6 col-md-4"><div class="dashboard-card"><div class="card-icon"><i class="bi bi-pencil-square"></i></div><a href="edit.html">تعديل الفيديوهات</a></div></div>
+    <div class="col-sm-6 col-md-4"><div class="dashboard-card"><div class="card-icon"><i class="bi bi-folder-fill"></i></div><a href="backups.html">النسخ الاحتياطية</a></div></div>
+    <div class="col-sm-6 col-md-4"><div class="dashboard-card"><div class="card-icon"><i class="bi bi-house-fill"></i></div><a href="index.html">الرئيسية</a></div></div>
+    <div class="col-sm-6 col-md-4"><div class="dashboard-card"><div class="card-icon"><i class="bi bi-key-fill"></i></div><a href="passwords.html">كلمات المرور</a></div></div>
+    <div class="col-sm-6 col-md-4"><div class="dashboard-card"><div class="card-icon"><i class="bi bi-eye-fill"></i></div><a href="viewlinks.html">عرض الروابط</a></div></div>
+    <div class="col-sm-6 col-md-4"><div class="dashboard-card"><div class="card-icon"><i class="bi bi-link-45deg"></i></div><a href="links.html">إدارة الروابط</a></div></div>
   </div>
 </div>
 
@@ -146,30 +112,24 @@ function showToast(message, type="success") {
   let icon = type === "success" ? "✅" : type === "danger" ? "❌" : "ℹ️";
   const toast = document.createElement('div');
   toast.className = `toast align-items-center text-bg-${type} border-0 mb-2 show`;
-  toast.innerHTML = `
-    <div class="d-flex">
-      <div class="toast-body">${icon} ${message}</div>
-      <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
-    </div>`;
+  toast.innerHTML = `<div class="d-flex"><div class="toast-body">${icon} ${message}</div><button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button></div>`;
   document.getElementById('toastContainer').appendChild(toast);
   setTimeout(()=>toast.remove(),3000);
 }
 
 // ✅ تسجيل خروج صارم
 document.getElementById("logoutBtn").addEventListener("click", async () => {
-  try {
-    await fetch(\`\${API_BASE}/api/logout\`, { method: "POST" }); // مسح الجلسة من السيرفر
-  } catch(e) {}
-  sessionStorage.clear(); // مسح كل شيء محلي
+  try { await fetch(`${API_BASE}/api/logout`, { method: "POST" }); } catch(e) {}
+  sessionStorage.removeItem("loggedInAt_dashboard"); // مسح جلسة هذه الصفحة فقط
+  sessionStorage.setItem("logoutPending", "true");   // علامة للخروج
   showToast("✅ تم تسجيل الخروج بنجاح","success");
-  setTimeout(()=>{ window.location.href = "index.html"; },1200);
+  setTimeout(()=> window.location.href = "index.html", 1500);
 });
 
-// ✅ منع الرجوع للخلف بعد تسجيل الخروج
+// ✅ منع الرجوع بعد الخروج
 window.history.pushState(null,null,window.location.href);
-window.addEventListener("popstate", function() {
+window.addEventListener("popstate", ()=> {
   if (!sessionStorage.getItem("loggedInAt_dashboard")) {
-    // تحميل login-modal.html بدل الرجوع
     fetch("login-modal.html")
       .then(res=>res.text())
       .then(html=>{
