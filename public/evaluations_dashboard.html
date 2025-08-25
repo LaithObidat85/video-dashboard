@@ -11,6 +11,22 @@
     th { background-color: #0d6efd; color: #fff; }
     .filters { margin-bottom: 20px; }
     .export-buttons { margin: 20px 0; }
+
+    /* ✅ عند الطباعة فقط يظهر الجدول */
+    @media print {
+      body * {
+        visibility: hidden;
+      }
+      #evaluationsTableWrapper, #evaluationsTableWrapper * {
+        visibility: visible;
+      }
+      #evaluationsTableWrapper {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+      }
+    }
   </style>
 </head>
 <body>
@@ -37,13 +53,14 @@
     <div class="export-buttons text-center">
       <button class="btn btn-success" onclick="exportToExcel()">📥 تصدير Excel</button>
       <button class="btn btn-danger" onclick="exportToPDF()">📄 تصدير PDF</button>
-      <button class="btn btn-secondary" onclick="window.print()">🖨️ طباعة</button>
+      <button class="btn btn-secondary" onclick="printTable()">🖨️ طباعة</button>
     </div>
 
     <!-- الجدول -->
     <table class="table table-bordered table-striped" id="evaluationsTableWrapper">
       <thead>
         <tr>
+          <th>#</th>
           <th>الكلية</th>
           <th>اسم اللجنة</th>
           <th>اسم المدقق</th>
@@ -53,7 +70,7 @@
         </tr>
       </thead>
       <tbody id="evaluationsTable">
-        <tr><td colspan="6" class="text-center">جاري التحميل...</td></tr>
+        <tr><td colspan="7" class="text-center">جاري التحميل...</td></tr>
       </tbody>
     </table>
   </div>
@@ -110,13 +127,14 @@
         tbody.innerHTML = "";
 
         if (res.data.length === 0) {
-          tbody.innerHTML = `<tr><td colspan="6" class="text-center">لا توجد تقييمات</td></tr>`;
+          tbody.innerHTML = `<tr><td colspan="7" class="text-center">لا توجد تقييمات</td></tr>`;
           return;
         }
 
-        res.data.forEach(ev => {
+        res.data.forEach((ev, index) => {
           const tr = document.createElement('tr');
           tr.innerHTML = `
+            <td>${index + 1}</td>
             <td>${ev.college || '-'}</td>
             <td>${ev.committee_name || '-'}</td>
             <td>${ev.auditor_name || '-'}</td>
@@ -138,7 +156,7 @@
       XLSX.writeFile(wb, "التقييمات.xlsx", { bookType: "xlsx", bookSST: true });
     }
 
-    // 🔹 PDF
+    // 🔹 PDF (RTL)
     function exportToPDF() {
       const { jsPDF } = window.jspdf;
       const doc = new jsPDF({ orientation: 'landscape' });
@@ -150,14 +168,37 @@
 
       doc.text("📊 تقرير التقييمات", 140, 20, { align: "center" });
 
+      // استخراج الأعمدة والبيانات بنفس ترتيب RTL
+      const headers = [];
+      document.querySelectorAll("#evaluationsTableWrapper thead tr th").forEach(th => {
+        headers.push(th.innerText);
+      });
+
+      const data = [];
+      document.querySelectorAll("#evaluationsTableWrapper tbody tr").forEach(tr => {
+        const row = [];
+        tr.querySelectorAll("td").forEach(td => row.push(td.innerText));
+        data.push(row);
+      });
+
+      // عكس ترتيب الأعمدة للـ RTL
+      const rtlHeaders = headers.reverse();
+      const rtlData = data.map(r => r.reverse());
+
       doc.autoTable({
-        html: '#evaluationsTableWrapper',
+        head: [rtlHeaders],
+        body: rtlData,
         startY: 30,
         styles: { font: "Amiri", fontStyle: "normal", halign: "right" },
         headStyles: { fillColor: [13, 110, 253] }
       });
 
       doc.save("التقييمات.pdf");
+    }
+
+    // 🔹 Print (الجدول فقط)
+    function printTable() {
+      window.print();
     }
 
     // تحميل الفلاتر والتقييمات عند فتح الصفحة
