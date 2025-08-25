@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <title>إدخال تقييم لجنة</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.rtl.min.css">
+  <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
+  <style>
+    body { background-color: #f8f9fa; font-family: 'Segoe UI', sans-serif; }
+    .form-container { max-width: 800px; margin: 40px auto; background: #fff; padding: 25px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+    .form-section { margin-bottom: 20px; padding: 15px; border: 1px solid #dee2e6; border-radius: 10px; background: #fdfdfd; }
+    .form-section h6 { margin-bottom: 15px; font-weight: bold; color: #0d6efd; }
+    .toast-container { position: fixed; top: 20px; left: 20px; z-index: 2000; }
+    #editor { height: 150px; background: #fff; }
+  </style>
+</head>
+<body>
+  <div class="form-container">
+    <h4 class="mb-4 text-center">📝 إدخال تقييم لجنة</h4>
+    <form id="committeeForm">
+
+      <!-- بيانات اللجنة -->
+      <div class="form-section">
+        <h6>بيانات اللجنة</h6>
+        <div class="mb-3">
+          <label class="form-label">الكلية</label>
+          <select class="form-select" name="college" id="collegeSelect" required>
+            <option value="">اختر الكلية...</option>
+          </select>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">اسم اللجنة</label>
+          <input type="text" class="form-control" name="committee_name" required>
+        </div>
+      </div>
+
+      <!-- عناصر التقييم -->
+      <div class="form-section">
+        <h6>التقييم التفصيلي</h6>
+        <div class="row">
+          <div class="col-md-6 mb-3"><label class="form-label">قرار التشكيل</label><input type="number" step="0.25" min="0" class="form-control score" name="formation_decision"></div>
+          <div class="col-md-6 mb-3"><label class="form-label">خطة العمل</label><input type="number" step="0.25" min="0" class="form-control score" name="work_plan"></div>
+          <div class="col-md-6 mb-3"><label class="form-label">مؤشرات الأداء</label><input type="number" step="0.25" min="0" class="form-control score" name="performance_indicators"></div>
+          <div class="col-md-6 mb-3"><label class="form-label">عدد الاجتماعات</label><input type="number" step="0.25" min="0" class="form-control score" name="meetings"></div>
+          <div class="col-md-6 mb-3"><label class="form-label">الاتساق</label><input type="number" step="0.25" min="0" class="form-control score" name="consistency"></div>
+          <div class="col-md-6 mb-3"><label class="form-label">تغطية الكتب</label><input type="number" step="0.25" min="0" class="form-control score" name="coverage_books"></div>
+          <div class="col-md-4 mb-3"><label class="form-label">تقرير 1</label><input type="number" step="0.25" min="0" class="form-control score" name="report1"></div>
+          <div class="col-md-4 mb-3"><label class="form-label">تقرير 2</label><input type="number" step="0.25" min="0" class="form-control score" name="report2"></div>
+          <div class="col-md-4 mb-3"><label class="form-label">تقرير 3</label><input type="number" step="0.25" min="0" class="form-control score" name="report3"></div>
+          <div class="col-md-6 mb-3"><label class="form-label">التحليل الإحصائي</label><input type="number" step="0.25" min="0" class="form-control score" name="statistical_analysis"></div>
+        </div>
+      </div>
+
+      <!-- درجة التوفر والملاحظات -->
+      <div class="form-section">
+        <h6>النتائج النهائية</h6>
+        <div class="mb-3">
+          <label class="form-label">درجة التوفر (تُحسب تلقائيًا)</label>
+          <input type="number" class="form-control" id="availability_score" name="availability_score" readonly>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">ملاحظات</label>
+          <div id="editor"></div>
+          <input type="hidden" name="notes" id="notesInput">
+        </div>
+        <div class="row">
+          <div class="col-md-6 mb-3"><label class="form-label">تاريخ التدقيق</label><input type="date" class="form-control" name="audit_date"></div>
+          <div class="col-md-6 mb-3"><label class="form-label">اسم المدقق</label><input type="text" class="form-control" name="auditor_name" required></div>
+        </div>
+      </div>
+
+      <button type="submit" class="btn btn-primary w-100">💾 حفظ التقييم</button>
+    </form>
+  </div>
+
+  <!-- Toasts -->
+  <div class="toast-container">
+    <div id="successToast" class="toast align-items-center text-bg-success border-0" role="alert">
+      <div class="d-flex"><div class="toast-body">✅ تم حفظ التقييم بنجاح</div><button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button></div>
+    </div>
+    <div id="errorToast" class="toast align-items-center text-bg-danger border-0" role="alert">
+      <div class="d-flex"><div class="toast-body">❌ حدث خطأ أثناء الحفظ</div><button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button></div>
+    </div>
+  </div>
+
+  <!-- مكتبات -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+  <script src="https://cdn.quilljs.com/1.3.6/quill.min.js"></script>
+  <script>
+    const quill = new Quill('#editor', { theme: 'snow' });
+
+    const successToast = new bootstrap.Toast(document.getElementById('successToast'));
+    const errorToast = new bootstrap.Toast(document.getElementById('errorToast'));
+
+    // 🔹 جلب الكليات من قاعدة البيانات
+    async function loadColleges() {
+      try {
+        const res = await axios.get('/api/colleges');
+        const select = document.getElementById('collegeSelect');
+        res.data.forEach(c => {
+          const opt = document.createElement('option');
+          opt.value = c.name;
+          opt.textContent = c.name;
+          select.appendChild(opt);
+        });
+      } catch (err) {
+        console.error("خطأ في جلب الكليات:", err);
+      }
+    }
+    loadColleges();
+
+    // 🔹 حساب درجة التوفر تلقائيًا
+    document.querySelectorAll('.score').forEach(input => {
+      input.addEventListener('input', () => {
+        let sum = 0;
+        document.querySelectorAll('.score').forEach(i => sum += parseFloat(i.value) || 0);
+        document.getElementById('availability_score').value = sum;
+      });
+    });
+
+    // 🔹 إرسال النموذج
+    document.getElementById("committeeForm").addEventListener("submit", async function(e){
+      e.preventDefault();
+      document.getElementById("notesInput").value = quill.root.innerHTML;
+
+      const formData = new FormData(this);
+      const data = Object.fromEntries(formData.entries());
+
+      try {
+        const res = await axios.post('/api/committees', data);
+        if(res.status === 201){
+          successToast.show();
+          this.reset();
+          quill.setContents([]);
+          document.getElementById('availability_score').value = 0;
+        }
+      } catch (err) {
+        console.error(err);
+        errorToast.show();
+      }
+    });
+  </script>
+</body>
+</html>
