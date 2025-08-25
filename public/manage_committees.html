@@ -123,12 +123,67 @@
     </div>
   </div>
 
+  <!-- Toasts -->
+  <div class="toast-container">
+    <div id="toastSuccess" class="toast align-items-center text-bg-success border-0 mb-2" role="alert">
+      <div class="d-flex">
+        <div class="toast-body">✅ العملية نجحت</div>
+        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+      </div>
+    </div>
+    <div id="toastError" class="toast align-items-center text-bg-danger border-0 mb-2" role="alert">
+      <div class="d-flex">
+        <div class="toast-body">❌ حدث خطأ</div>
+        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+      </div>
+    </div>
+    <div id="toastConfirm" class="toast align-items-center text-bg-warning border-0 mb-2" role="alert">
+      <div class="d-flex">
+        <div class="toast-body" id="toastConfirmMsg">⚠️ هل أنت متأكد؟</div>
+        <div class="me-2 m-auto">
+          <button type="button" class="btn btn-sm btn-danger" id="confirmYes">نعم</button>
+          <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="toast">إلغاء</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- مكتبات -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
   <script src="https://cdn.quilljs.com/1.3.6/quill.min.js"></script>
   <script>
     const quillEdit = new Quill('#editEditor', { theme: 'snow' });
+
+    const toastSuccess = new bootstrap.Toast(document.getElementById('toastSuccess'));
+    const toastError = new bootstrap.Toast(document.getElementById('toastError'));
+    const toastConfirmEl = document.getElementById('toastConfirm');
+    const toastConfirm = new bootstrap.Toast(toastConfirmEl);
+
+    let confirmCallback = null;
+
+    // 🔹 دالة عرض توست نجاح
+    function showSuccess(msg="✅ تم حفظ التعديلات بنجاح") {
+      document.querySelector("#toastSuccess .toast-body").innerText = msg;
+      toastSuccess.show();
+    }
+
+    // 🔹 دالة عرض توست خطأ
+    function showError(msg="❌ حدث خطأ أثناء العملية") {
+      document.querySelector("#toastError .toast-body").innerText = msg;
+      toastError.show();
+    }
+
+    // 🔹 دالة تأكيد عبر Toast
+    function showConfirm(msg, callback) {
+      document.getElementById("toastConfirmMsg").innerText = msg;
+      confirmCallback = callback;
+      toastConfirm.show();
+    }
+    document.getElementById("confirmYes").addEventListener("click", () => {
+      toastConfirm.hide();
+      if (confirmCallback) confirmCallback();
+    });
 
     // 🔹 حساب درجة التوفر
     function updateAvailability(row) {
@@ -225,13 +280,13 @@
             <td class="action-buttons">
               <button class="btn btn-sm btn-success" onclick="saveRow(this, '${c._id}')">💾</button>
               <button class="btn btn-sm btn-primary" onclick='editCommittee(${JSON.stringify(c)})'>✏️</button>
-              <button class="btn btn-sm btn-danger" onclick="deleteCommittee('${c._id}')">🗑️</button>
+              <button class="btn btn-sm btn-danger" onclick="confirmDelete('${c._id}')">🗑️</button>
             </td>
           `;
           tbody.appendChild(tr);
           attachCellListeners(tr);
         });
-      } catch (err) { console.error(err); }
+      } catch (err) { showError("❌ فشل تحميل البيانات"); console.error(err); }
     }
     loadCommittees();
 
@@ -265,17 +320,19 @@
       updatedData.availability_score = parseFloat(row.querySelector(".availability-cell").innerText) || 0;
       try {
         await axios.put(`/api/committees/${id}`, updatedData);
-        alert("✅ تم حفظ التعديلات");
-      } catch (err) { console.error(err); alert("❌ خطأ بالحفظ"); }
+        showSuccess("✅ تم حفظ التعديلات");
+      } catch (err) { console.error(err); showError("❌ خطأ أثناء الحفظ"); }
     }
 
-    // 🔹 حذف
-    async function deleteCommittee(id) {
-      if (!confirm("هل أنت متأكد من الحذف؟")) return;
-      try {
-        await axios.delete(`/api/committees/${id}`);
-        loadCommittees();
-      } catch (err) { console.error(err); }
+    // 🔹 حذف مع تأكيد Toast
+    function confirmDelete(id) {
+      showConfirm("⚠️ هل أنت متأكد من الحذف؟", async () => {
+        try {
+          await axios.delete(`/api/committees/${id}`);
+          showSuccess("🗑️ تم حذف السجل بنجاح");
+          loadCommittees();
+        } catch (err) { console.error(err); showError("❌ فشل الحذف"); }
+      });
     }
   </script>
 </body>
