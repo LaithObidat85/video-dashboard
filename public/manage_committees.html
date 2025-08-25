@@ -284,9 +284,12 @@
             <td contenteditable="true" data-field="report3">${c.report3 ?? 0}</td>
             <td contenteditable="true" data-field="statistical_analysis">${c.statistical_analysis ?? 0}</td>
             <td class="availability-cell">${c.availability_score ?? 0}</td>
-            <td>${c.notes && c.notes.trim() !== "" 
-                ? `<button class="btn btn-sm btn-info notes-btn" onclick="showNotes(\`${c.notes}\`)">🔍 عرض</button>` 
-                : '<span class="text-muted">لا توجد ملاحظات</span>'}</td>
+            <td>${
+  c.notes && c.notes.trim() !== "" && c.notes.trim() !== "<p><br></p>"
+    ? `<button class="btn btn-sm btn-info notes-btn" onclick="showNotes(\`${c.notes}\`)">🔍</button>` 
+    : '<span class="text-muted">لا توجد ملاحظات</span>'
+}</td>
+
             <td class="action-buttons">
               <button class="btn btn-sm btn-success" onclick="saveRow(this, '${c._id}')">💾</button>
               <button class="btn btn-sm btn-primary" onclick='editCommittee(${JSON.stringify(c)})'>✏️</button>
