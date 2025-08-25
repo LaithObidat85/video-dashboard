@@ -169,7 +169,9 @@ function showToast(message, type="info") {
 
 async function checkSessionStatus() {
   try {
-    const res = await fetch(`${API_BASE}/api/check-session`);
+    const res = await fetch(`${API_BASE}/api/check-session`, {
+      credentials: "include"
+    });
     const data = await res.json();
     document.getElementById("logoutNavItem").style.display = data.authenticated ? "block" : "none";
   } catch (err) { console.error("خطأ في التحقق من الجلسة:", err); }
@@ -177,7 +179,10 @@ async function checkSessionStatus() {
 
 async function logout() {
   try {
-    await fetch(`${API_BASE}/api/logout`, { method: "POST" });
+    await fetch(`${API_BASE}/api/logout`, { 
+      method: "POST",
+      credentials: "include"
+    });
     sessionStorage.clear();
     document.getElementById("logoutNavItem").style.display = "none";
     showToast("✅ تم تسجيل الخروج بنجاح","success");
@@ -188,14 +193,16 @@ async function requestDashboardAccess() {
   const section = "dashboard";
   if (sessionStorage.getItem("loggedInAt_" + section)) {window.location.href = section + ".html";return;}
   try {
-    const res = await fetch(`${API_BASE}/api/check-session`);
+    const res = await fetch(`${API_BASE}/api/check-session`, {
+      credentials: "include"
+    });
     const data = await res.json();
     if (data.authenticated) {sessionStorage.setItem("loggedInAt_" + section, Date.now().toString());window.location.href = section + ".html";return;}
   } catch (err) { console.error("خطأ:", err); }
 
   // ✅ تحميل login-modal.html
   const container = document.getElementById("loginModalContainer");
-  const res2 = await fetch("login-modal.html");
+  const res2 = await fetch("login-modal.html", { credentials: "include" });
   const html = await res2.text();
   container.innerHTML = html;
 
@@ -217,6 +224,7 @@ async function requestDashboardAccess() {
       const response = await fetch(`${API_BASE}/api/verify-password`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: "include",
         body: JSON.stringify({ section, password })
       });
       if (response.ok) {
@@ -249,7 +257,9 @@ function hideLoading() {
 async function fetchVideos() {
   try {
     showLoading();
-    const res = await fetch(`${API_BASE}/api/videos`);
+    const res = await fetch(`${API_BASE}/api/videos`, {
+      credentials: "include"
+    });
     videos = await res.json();
     populateDepartmentOptions();
   }
