@@ -52,11 +52,24 @@
       }
     }
 
-    /* إخفاء عمود اسم المدقق عند التفعيل */
-    .hide-auditor th:nth-child(4),
-    .hide-auditor td:nth-child(4) {
-      display: none;
-    }
+   /* إخفاء عمود اسم المدقق */
+.hide-auditor th:nth-child(4),
+.hide-auditor td:nth-child(4) {
+  display: none;
+}
+
+/* إخفاء عمود تاريخ التدقيق */
+.hide-date th:nth-child(5),
+.hide-date td:nth-child(5) {
+  display: none;
+}
+
+/* إخفاء عمود الكلية */
+.hide-college th:nth-child(2),
+.hide-college td:nth-child(2) {
+  display: none;
+}
+    
 
     #printHeader { display: none; }
 
@@ -89,13 +102,25 @@
       </div>
     </div>
 
-    <!-- خيار إخفاء المدقق -->
-    <div class="form-check mb-3">
-      <input class="form-check-input" type="checkbox" id="hideAuditorCheckbox">
-      <label class="form-check-label ms-2" for="hideAuditorCheckbox">
-        إخفاء اسم المدقق
-      </label>
-    </div>
+   <!-- خيارات الإخفاء -->
+<div class="d-flex justify-content-center align-items-center gap-3 mb-3">
+  <div class="form-check">
+    <input class="form-check-input" type="checkbox" id="hideAuditorCheckbox">
+    <label class="form-check-label ms-2" for="hideAuditorCheckbox">إخفاء اسم المدقق</label>
+  </div>
+  <span>|</span>
+  <div class="form-check">
+    <input class="form-check-input" type="checkbox" id="hideDateCheckbox">
+    <label class="form-check-label ms-2" for="hideDateCheckbox">إخفاء تاريخ التدقيق</label>
+  </div>
+  <span>|</span>
+  <div class="form-check">
+    <input class="form-check-input" type="checkbox" id="hideCollegeCheckbox">
+    <label class="form-check-label ms-2" for="hideCollegeCheckbox">إخفاء الكلية</label>
+  </div>
+</div>
+
+    
 
     <!-- نسبة الاكتمال -->
     <div id="completionRateContainer"></div>
@@ -294,6 +319,17 @@
         table.classList.remove('hide-auditor');
       }
     });
+
+    // ✅ إخفاء/إظهار تاريخ التدقيق
+document.getElementById('hideDateCheckbox').addEventListener('change', function () {
+  document.getElementById('evaluationsTableWrapper').classList.toggle('hide-date', this.checked);
+});
+
+// ✅ إخفاء/إظهار الكلية
+document.getElementById('hideCollegeCheckbox').addEventListener('change', function () {
+  document.getElementById('evaluationsTableWrapper').classList.toggle('hide-college', this.checked);
+});
+
 
     loadFilters().then(loadEvaluations);
     document.getElementById('collegeFilter').addEventListener('change', loadEvaluations);
