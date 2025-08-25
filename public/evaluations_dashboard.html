@@ -7,10 +7,10 @@
   <style>
     body { background-color: #f8f9fa; font-family: 'Segoe UI', sans-serif; }
     .container { margin-top: 30px; }
-    table { background: #fff; border-radius: 10px; overflow: hidden; }
-    th { background-color: #0d6efd; color: #fff; }
+    table { background: #fff; border-radius: 10px; overflow: hidden; font-size: 14px; }
+    th { background-color: #0d6efd; color: #fff; text-align: center; }
+    td { text-align: center; vertical-align: middle; }
     .filters { margin-bottom: 20px; }
-    .export-buttons { margin: 20px 0; }
     #completionRateContainer {
       text-align: center;
       font-weight: bold;
@@ -49,13 +49,19 @@
       display: none;
     }
 
-    #printHeader {
-      display: none;
+    #printHeader { display: none; }
+
+    /* زر الطباعة أعلى اليسار */
+    .print-btn {
+      position: absolute;
+      top: 10px;
+      left: 15px;
     }
   </style>
 </head>
 <body>
-  <div class="container">
+  <div class="container position-relative">
+    <button class="btn btn-secondary print-btn" onclick="printTable()">🖨️</button>
     <h3 class="text-center mb-4">📊 لوحة متابعة التقييمات</h3>
 
     <!-- الفلاتر -->
@@ -75,16 +81,11 @@
     </div>
 
     <!-- خيار إخفاء المدقق -->
-    <div class="form-check mb-3 text-center">
+    <div class="form-check mb-3">
       <input class="form-check-input" type="checkbox" id="hideAuditorCheckbox">
-      <label class="form-check-label" for="hideAuditorCheckbox">
+      <label class="form-check-label ms-2" for="hideAuditorCheckbox">
         إخفاء اسم المدقق
       </label>
-    </div>
-
-    <!-- زر الطباعة -->
-    <div class="export-buttons text-center">
-      <button class="btn btn-secondary" onclick="printTable()">🖨️ طباعة</button>
     </div>
 
     <!-- نسبة الاكتمال -->
@@ -102,20 +103,59 @@
           <th>اسم اللجنة</th>
           <th>اسم المدقق</th>
           <th>تاريخ التدقيق</th>
+          <th>قرار التشكيل</th>
+          <th>خطة العمل</th>
+          <th>مؤشرات الأداء</th>
+          <th>عدد الاجتماعات</th>
+          <th>التوافق بين الدعوات والاجتماعات</th>
+          <th>كتب التغطية</th>
+          <th>تقرير إنجاز 1</th>
+          <th>تقرير إنجاز 2</th>
+          <th>تقرير إنجاز 3</th>
+          <th>التحليل الإحصائي</th>
           <th>درجة التوفر</th>
-          <th>ملاحظات</th>
+          <th>الملاحظات</th>
         </tr>
       </thead>
       <tbody id="evaluationsTable">
-        <tr><td colspan="7" class="text-center">جاري التحميل...</td></tr>
+        <tr><td colspan="17" class="text-center">جاري التحميل...</td></tr>
       </tbody>
     </table>
   </div>
 
+  <!-- Toasts -->
+  <div class="toast-container position-fixed top-0 start-50 translate-middle-x p-3">
+    <div id="toastSuccess" class="toast align-items-center text-bg-success border-0 mb-2">
+      <div class="d-flex">
+        <div class="toast-body">✅ العملية نجحت</div>
+        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+      </div>
+    </div>
+    <div id="toastError" class="toast align-items-center text-bg-danger border-0 mb-2">
+      <div class="d-flex">
+        <div class="toast-body">❌ حدث خطأ</div>
+        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+      </div>
+    </div>
+  </div>
+
   <!-- مكتبات -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
 
   <script>
+    const toastSuccess = new bootstrap.Toast(document.getElementById('toastSuccess'));
+    const toastError = new bootstrap.Toast(document.getElementById('toastError'));
+
+    function showSuccess(msg="✅ العملية نجحت") {
+      document.querySelector("#toastSuccess .toast-body").innerText = msg;
+      toastSuccess.show();
+    }
+    function showError(msg="❌ حدث خطأ") {
+      document.querySelector("#toastError .toast-body").innerText = msg;
+      toastError.show();
+    }
+
     let lastCompletionRate = null;
     let lastCollegeName = "جميع الكليات";
     let lastCommitteesCount = 0;
@@ -141,6 +181,7 @@
         });
       } catch (err) {
         console.error("خطأ في جلب الفلاتر:", err);
+        showError("❌ فشل تحميل الفلاتر");
       }
     }
 
@@ -161,7 +202,7 @@
         tbody.innerHTML = "";
 
         if (res.data.length === 0) {
-          tbody.innerHTML = `<tr><td colspan="7" class="text-center">لا توجد تقييمات</td></tr>`;
+          tbody.innerHTML = `<tr><td colspan="17" class="text-center">لا توجد تقييمات</td></tr>`;
           document.getElementById("completionRateContainer").innerHTML = "";
           lastCompletionRate = null;
           lastCommitteesCount = 0;
@@ -181,8 +222,18 @@
             <td>${ev.committee_name || '-'}</td>
             <td>${ev.auditor_name || '-'}</td>
             <td>${ev.audit_date ? new Date(ev.audit_date).toLocaleDateString('ar-EG') : '-'}</td>
+            <td>${ev.formation_decision ?? 0}</td>
+            <td>${ev.work_plan ?? 0}</td>
+            <td>${ev.performance_indicators ?? 0}</td>
+            <td>${ev.meetings ?? 0}</td>
+            <td>${ev.consistency ?? 0}</td>
+            <td>${ev.coverage_books ?? 0}</td>
+            <td>${ev.report1 ?? 0}</td>
+            <td>${ev.report2 ?? 0}</td>
+            <td>${ev.report3 ?? 0}</td>
+            <td>${ev.statistical_analysis ?? 0}</td>
             <td>${ev.availability_score ?? 0}</td>
-            <td>${ev.notes || '-'}</td>
+            <td>${ev.notes && ev.notes.trim() !== "" ? ev.notes : '<span class="text-muted">لا توجد ملاحظات</span>'}</td>
           `;
           tbody.appendChild(tr);
         });
@@ -205,6 +256,7 @@
 
       } catch (err) {
         console.error("خطأ في جلب التقييمات:", err);
+        showError("❌ فشل تحميل التقييمات");
       }
     }
 
