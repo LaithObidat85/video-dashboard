@@ -28,6 +28,7 @@
         visibility: visible;
       }
       #printHeader {
+        display: block !important;
         text-align: center;
         margin-bottom: 20px;
         position: absolute;
@@ -41,6 +42,11 @@
         top: 150px; /* الجدول يبدأ بعد الهيدر */
         width: 100%;
       }
+    }
+
+    /* مخفي افتراضياً في الصفحة */
+    #printHeader {
+      display: none;
     }
   </style>
 </head>
@@ -193,6 +199,7 @@
                             (lastCompletionRate ? `<p>📌 نسبة الاكتمال = ${lastCompletionRate}%</p>` : "") +
                             (lastCollegeName !== "جميع الكليات" ? `<p>📋 عدد لجان كلية ${lastCollegeName} = ${lastCommitteesCount}</p>` : "");
       window.print();
+      headerDiv.innerHTML = ""; // يرجع فاضي بعد الطباعة
     }
 
     loadFilters().then(loadEvaluations);
