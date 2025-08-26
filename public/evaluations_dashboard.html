@@ -71,24 +71,24 @@
   }
 
 
-     
-   /* إخفاء عمود اسم المدقق */
-.hide-auditor th:nth-child(4),
-.hide-auditor td:nth-child(4) {
+/* ✅ إخفاء عمود اسم المدقق */
+#evaluationsTableWrapper.hide-auditor th:nth-child(4),
+#evaluationsTableWrapper.hide-auditor td:nth-child(4) {
   display: none;
 }
 
-/* إخفاء عمود تاريخ التدقيق */
-.hide-date th:nth-child(5),
-.hide-date td:nth-child(5) {
+/* ✅ إخفاء عمود تاريخ التدقيق */
+#evaluationsTableWrapper.hide-date th:nth-child(5),
+#evaluationsTableWrapper.hide-date td:nth-child(5) {
   display: none;
 }
 
-/* إخفاء عمود الكلية */
-.hide-college th:nth-child(2),
-.hide-college td:nth-child(2) {
+/* ✅ إخفاء عمود الكلية */
+#evaluationsTableWrapper.hide-college th:nth-child(2),
+#evaluationsTableWrapper.hide-college td:nth-child(2) {
   display: none;
 }
+
     
 
     #printHeader { display: none; }
@@ -97,7 +97,7 @@
 .print-btn {
   position: absolute;
   top: 10px;
-  right: 15px; /* ✅ استبدال left بـ right */
+  left: 15px; /* ✅ استبدال left بـ right */
 }
 
 
