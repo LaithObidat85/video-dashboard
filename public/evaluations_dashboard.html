@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
@@ -11,11 +12,26 @@
     th { background-color: #0d6efd; color: #fff; text-align: center; }
     td { text-align: center; vertical-align: middle; }
 
+    th {
+  text-align: center;       /* ✅ توسيط أفقي */
+  vertical-align: middle;   /* ✅ توسيط عمودي */
+}
+
+    
+/* ✅ ضبط عرض التاريخ LTR مع التوسيط وزيادة عرضه */
+#evaluationsTableWrapper th.date-col,
+#evaluationsTableWrapper td.date-col {
+  direction: ltr;
+  text-align: center;
+  width: 85px;     /* ✅ عرض أكبر قليلاً */
+  max-width: 85px; /* ✅ لتثبيت العرض */
+}
+
     /* تحديد عرض عمود الملاحظات */
     #evaluationsTableWrapper th.notes-col,
     #evaluationsTableWrapper td.notes-col {
-      width: 300px;
-      max-width: 300px;
+      width: 200px;
+      max-width: 200px;
       white-space: normal;
       word-wrap: break-word;
     }
@@ -123,17 +139,17 @@
     <div class="card mb-3">
       <div class="card-body d-flex justify-content-center align-items-center gap-3">
         <div class="form-check">
-          <input class="form-check-input" type="checkbox" id="hideAuditorCheckbox">
+          <input class="form-check-input" type="checkbox" id="hideAuditorCheckbox" checked>
           <label class="form-check-label ms-2" for="hideAuditorCheckbox">إخفاء اسم المدقق</label>
         </div>
         <span>|</span>
         <div class="form-check">
-          <input class="form-check-input" type="checkbox" id="hideDateCheckbox">
+          <input class="form-check-input" type="checkbox" id="hideDateCheckbox" checked>
           <label class="form-check-label ms-2" for="hideDateCheckbox">إخفاء تاريخ التدقيق</label>
         </div>
         <span>|</span>
         <div class="form-check">
-          <input class="form-check-input" type="checkbox" id="hideCollegeCheckbox">
+          <input class="form-check-input" type="checkbox" id="hideCollegeCheckbox" checked>
           <label class="form-check-label ms-2" for="hideCollegeCheckbox">إخفاء الكلية</label>
         </div>
       </div>
@@ -363,15 +379,29 @@
     document.getElementById('auditorFilter').addEventListener('change', loadEvaluations);
 
     // ✅ التحكم في إخفاء/إظهار الأعمدة
-    document.getElementById('hideAuditorCheckbox').addEventListener('change', function () {
-      document.getElementById('evaluationsTableWrapper').classList.toggle('hide-auditor', this.checked);
-    });
-    document.getElementById('hideDateCheckbox').addEventListener('change', function () {
-      document.getElementById('evaluationsTableWrapper').classList.toggle('hide-date', this.checked);
-    });
-    document.getElementById('hideCollegeCheckbox').addEventListener('change', function () {
-      document.getElementById('evaluationsTableWrapper').classList.toggle('hide-college', this.checked);
-    });
+   // ✅ التحكم في إخفاء/إظهار الأعمدة
+function applyColumnVisibility() {
+  document.getElementById('evaluationsTableWrapper').classList.toggle(
+    'hide-auditor',
+    document.getElementById('hideAuditorCheckbox').checked
+  );
+  document.getElementById('evaluationsTableWrapper').classList.toggle(
+    'hide-date',
+    document.getElementById('hideDateCheckbox').checked
+  );
+  document.getElementById('evaluationsTableWrapper').classList.toggle(
+    'hide-college',
+    document.getElementById('hideCollegeCheckbox').checked
+  );
+}
+
+document.getElementById('hideAuditorCheckbox').addEventListener('change', applyColumnVisibility);
+document.getElementById('hideDateCheckbox').addEventListener('change', applyColumnVisibility);
+document.getElementById('hideCollegeCheckbox').addEventListener('change', applyColumnVisibility);
+
+// ✅ تنفيذها عند تحميل الصفحة مباشرة
+applyColumnVisibility();
+
   </script>
 </body>
 </html>
