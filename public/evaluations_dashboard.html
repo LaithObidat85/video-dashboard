@@ -81,6 +81,18 @@
       top: 10px;
       left: 15px;
     }
+
+    /* ✅ في الشاشة: أخفي نص الملاحظات وأظهر الزر */
+.screen-notes { display: inline; }
+.print-notes { display: none; }
+
+/* ✅ في الطباعة: أظهر النص وأخفي الزر */
+@media print {
+  .screen-notes { display: none !important; }
+  .print-notes { display: inline !important; }
+}
+
+    
   </style>
 </head>
 <body>
@@ -283,11 +295,22 @@
             <td>${ev.report3 ?? 0}</td>
             <td>${ev.statistical_analysis ?? 0}</td>
             <td>${ev.availability_score ?? 0}</td>
-            <td>${
-  ev.notes && ev.notes.trim() !== "" && ev.notes.trim() !== "<p><br></p>"
-    ? `<button class="btn btn-sm btn-info" onclick="showNotes(\`${ev.notes}\`)">🔍 عرض</button>`
-    : '<span class="text-muted">لا توجد ملاحظات</span>'
-}</td>
+            <td>
+  <span class="screen-notes">
+    ${
+      ev.notes && ev.notes.trim() !== "" && ev.notes.trim() !== "<p><br></p>"
+        ? `<button class="btn btn-sm btn-info" onclick="showNotes(\`${ev.notes}\`)">🔍 عرض</button>`
+        : '<span class="text-muted">لا توجد ملاحظات</span>'
+    }
+  </span>
+  <span class="print-notes d-none">
+    ${
+      ev.notes && ev.notes.trim() !== "" && ev.notes.trim() !== "<p><br></p>"
+        ? ev.notes
+        : 'لا توجد ملاحظات'
+    }
+  </span>
+</td>
 
           `;
           tbody.appendChild(tr);
