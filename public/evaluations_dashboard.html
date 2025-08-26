@@ -381,30 +381,25 @@ function showNotes(html) {
 }
 
 
-    // ✅ التحكم في إخفاء/إظهار عمود اسم المدقق
-    document.getElementById('hideAuditorCheckbox').addEventListener('change', function () {
-      const table = document.getElementById('evaluationsTableWrapper');
-      if (this.checked) {
-        table.classList.add('hide-auditor');
-      } else {
-        table.classList.remove('hide-auditor');
-      }
-    });
-
-    // ✅ إخفاء/إظهار تاريخ التدقيق
-document.getElementById('hideDateCheckbox').addEventListener('change', function () {
-  document.getElementById('evaluationsTableWrapper').classList.toggle('hide-date', this.checked);
-});
-
-// ✅ إخفاء/إظهار الكلية
-document.getElementById('hideCollegeCheckbox').addEventListener('change', function () {
-  document.getElementById('evaluationsTableWrapper').classList.toggle('hide-college', this.checked);
-});
-
-
+ 
     loadFilters().then(loadEvaluations);
     document.getElementById('collegeFilter').addEventListener('change', loadEvaluations);
     document.getElementById('auditorFilter').addEventListener('change', loadEvaluations);
+        // ✅ التحكم في إخفاء/إظهار عمود اسم المدقق
+    document.getElementById('hideAuditorCheckbox').addEventListener('change', function () {
+      document.getElementById('evaluationsTableWrapper').classList.toggle('hide-auditor', this.checked);
+    });
+
+    // ✅ إخفاء/إظهار تاريخ التدقيق
+    document.getElementById('hideDateCheckbox').addEventListener('change', function () {
+      document.getElementById('evaluationsTableWrapper').classList.toggle('hide-date', this.checked);
+    });
+
+    // ✅ إخفاء/إظهار الكلية
+    document.getElementById('hideCollegeCheckbox').addEventListener('change', function () {
+      document.getElementById('evaluationsTableWrapper').classList.toggle('hide-college', this.checked);
+    });
+
   </script>
 </body>
 </html>
