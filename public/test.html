@@ -373,15 +373,29 @@
     document.getElementById('auditorFilter').addEventListener('change', loadEvaluations);
 
     // ✅ التحكم في إخفاء/إظهار الأعمدة
-    document.getElementById('hideAuditorCheckbox').addEventListener('change', function () {
-      document.getElementById('evaluationsTableWrapper').classList.toggle('hide-auditor', this.checked);
-    });
-    document.getElementById('hideDateCheckbox').addEventListener('change', function () {
-      document.getElementById('evaluationsTableWrapper').classList.toggle('hide-date', this.checked);
-    });
-    document.getElementById('hideCollegeCheckbox').addEventListener('change', function () {
-      document.getElementById('evaluationsTableWrapper').classList.toggle('hide-college', this.checked);
-    });
+   // ✅ التحكم في إخفاء/إظهار الأعمدة
+function applyColumnVisibility() {
+  document.getElementById('evaluationsTableWrapper').classList.toggle(
+    'hide-auditor',
+    document.getElementById('hideAuditorCheckbox').checked
+  );
+  document.getElementById('evaluationsTableWrapper').classList.toggle(
+    'hide-date',
+    document.getElementById('hideDateCheckbox').checked
+  );
+  document.getElementById('evaluationsTableWrapper').classList.toggle(
+    'hide-college',
+    document.getElementById('hideCollegeCheckbox').checked
+  );
+}
+
+document.getElementById('hideAuditorCheckbox').addEventListener('change', applyColumnVisibility);
+document.getElementById('hideDateCheckbox').addEventListener('change', applyColumnVisibility);
+document.getElementById('hideCollegeCheckbox').addEventListener('change', applyColumnVisibility);
+
+// ✅ تنفيذها عند تحميل الصفحة مباشرة
+applyColumnVisibility();
+
   </script>
 </body>
 </html>
