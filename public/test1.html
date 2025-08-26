@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <title>إدارة تقييم اللجان</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.rtl.min.css">
+  <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
+  <style>
+    body { background: #f8f9fa; font-family: 'Segoe UI', sans-serif; }
+    .container { margin-top: 30px; }
+    table { background: #fff; border-radius: 10px; overflow: hidden; font-size: 14px; width: 99%; margin: auto; }
+    th { background-color: #0d6efd; color: #fff; text-align: center; }
+    td { text-align: center; vertical-align: middle; }
+    td[contenteditable="true"] { background: #fefae0; cursor: text; }
+    .highlight { background-color: #d4edda !important; transition: background-color 1s ease; }
+    .toast-container { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); z-index: 2000; }
+    .filters { margin-bottom: 20px; width: 99%; margin-left: auto; margin-right: auto; }
+    .action-buttons { display: flex; justify-content: center; align-items: center; gap: 5px; height: 100%; }
+    .notes-btn { display: block; width: 100%; }
+
+
+  th {
+  text-align: center;       /* ✅ توسيط أفقي */
+  vertical-align: middle;   /* ✅ توسيط عمودي */
+}
+
+    
+/* ✅ ضبط عرض التاريخ LTR مع التوسيط وزيادة عرضه */
+#evaluationsTableWrapper th.date-col,
+#evaluationsTableWrapper td.date-col {
+  direction: ltr;
+  text-align: center;
+  width: 100px;     /* ✅ عرض أكبر قليلاً */
+  max-width: 100px; /* ✅ لتثبيت العرض */
+}
+
+    
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h3 class="text-center mb-4">⚙️ إدارة تقييم اللجان</h3>
+
+    <!-- الفلاتر -->
+    <div class="filters row">
+      <div class="col-md-6 mb-2">
+        <label class="form-label">الكلية</label>
+        <select id="collegeFilter" class="form-select">
+          <option value="">جميع الكليات</option>
+        </select>
+      </div>
+      <div class="col-md-6 mb-2">
+        <label class="form-label">اسم المدقق</label>
+        <select id="auditorFilter" class="form-select">
+          <option value="">جميع المدققين</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- الجدول -->
+    <table class="table table-bordered table-striped table-responsive">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>الكلية</th>
+          <th>اسم اللجنة</th>
+          <th>اسم المدقق</th>
+          <th>تاريخ التدقيق</th>
+          <th>قرار التشكيل</th>
+          <th>خطة العمل</th>
+          <th>مؤشرات الأداء</th>
+          <th>عدد الاجتماعات</th>
+          <th>التوافق بين الدعوات والاجتماعات</th>
+          <th>كتب التغطية</th>
+          <th>تقرير إنجاز 1</th>
+          <th>تقرير إنجاز 2</th>
+          <th>تقرير إنجاز 3</th>
+          <th>التحليل الإحصائي</th>
+          <th>درجة التوفر</th>
+          <th>الملاحظات</th>
+          <th>إجراءات</th>
+        </tr>
+      </thead>
+      <tbody id="committeesTable">
+        <tr><td colspan="18" class="text-center">جاري التحميل...</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Modal لعرض الملاحظات -->
+  <div class="modal fade" id="notesModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">📝 الملاحظات</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body" id="notesContent"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal تعديل كامل -->
+  <div class="modal fade" id="editModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <form id="editForm">
+          <div class="modal-header">
+            <h5 class="modal-title">✏️ تعديل التقييم (كامل)</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body">
+            <input type="hidden" name="_id" id="edit_id">
+
+            <div class="mb-3">
+              <label class="form-label">الكلية</label>
+              <select class="form-select" id="editCollege" required></select>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">اسم اللجنة</label>
+              <input type="text" class="form-control" id="editCommittee" required>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">اسم المدقق</label>
+              <select class="form-select" id="editAuditor" required></select>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">تاريخ التدقيق</label>
+              <input type="date" class="form-control" id="editDate">
+            </div>
+            <div class="mb-3">
+              <label class="form-label">الملاحظات</label>
+              <div id="editEditor"></div>
+              <input type="hidden" id="editNotesInput">
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="submit" class="btn btn-primary">💾 حفظ</button>
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إغلاق</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toasts -->
+  <div class="toast-container">
+    <div id="toastSuccess" class="toast align-items-center text-bg-success border-0 mb-2" role="alert">
+      <div class="d-flex">
+        <div class="toast-body">✅ العملية نجحت</div>
+        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+      </div>
+    </div>
+    <div id="toastError" class="toast align-items-center text-bg-danger border-0 mb-2" role="alert">
+      <div class="d-flex">
+        <div class="toast-body">❌ حدث خطأ</div>
+        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+      </div>
+    </div>
+    <div id="toastConfirm" class="toast align-items-center text-bg-warning border-0 mb-2" role="alert">
+      <div class="d-flex">
+        <div class="toast-body" id="toastConfirmMsg">⚠️ هل أنت متأكد؟</div>
+        <div class="me-2 m-auto">
+          <button type="button" class="btn btn-sm btn-danger" id="confirmYes">نعم</button>
+          <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="toast">إلغاء</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- مكتبات -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+  <script src="https://cdn.quilljs.com/1.3.6/quill.min.js"></script>
+  <script>
+    const quillEdit = new Quill('#editEditor', { theme: 'snow' });
+    const toastSuccess = new bootstrap.Toast(document.getElementById('toastSuccess'));
+    const toastError = new bootstrap.Toast(document.getElementById('toastError'));
+    const toastConfirmEl = document.getElementById('toastConfirm');
+    const toastConfirm = new bootstrap.Toast(toastConfirmEl);
+    let confirmCallback = null;
+
+    function showSuccess(msg="✅ العملية نجحت") {
+      document.querySelector("#toastSuccess .toast-body").innerText = msg;
+      toastSuccess.show();
+    }
+    function showError(msg="❌ حدث خطأ") {
+      document.querySelector("#toastError .toast-body").innerText = msg;
+      toastError.show();
+    }
+    function showConfirm(msg, callback) {
+      document.getElementById("toastConfirmMsg").innerText = msg;
+      confirmCallback = callback;
+      toastConfirm.show();
+    }
+    document.getElementById("confirmYes").addEventListener("click", () => {
+      toastConfirm.hide();
+      if (confirmCallback) confirmCallback();
+    });
+
+    // تحميل خيارات الكليات والمدققين
+    async function loadOptions() {
+      const colleges = await axios.get('/api/colleges');
+      const collegeFilter = document.getElementById('collegeFilter');
+      const collegeSelect = document.getElementById('editCollege');
+      colleges.data.forEach(c => {
+        const opt1 = document.createElement('option');
+        opt1.value = c.name; opt1.textContent = c.name;
+        collegeFilter.appendChild(opt1);
+        const opt2 = document.createElement('option');
+        opt2.value = c.name; opt2.textContent = c.name;
+        collegeSelect.appendChild(opt2);
+      });
+
+      const auditors = await axios.get('/api/auditors');
+      const auditorFilter = document.getElementById('auditorFilter');
+      const auditorSelect = document.getElementById('editAuditor');
+      auditors.data.forEach(a => {
+        const opt1 = document.createElement('option');
+        opt1.value = a.name; opt1.textContent = a.name;
+        auditorFilter.appendChild(opt1);
+        const opt2 = document.createElement('option');
+        opt2.value = a.name; opt2.textContent = a.name;
+        auditorSelect.appendChild(opt2);
+      });
+    }
+    loadOptions();
+
+    // حساب درجة التوفر
+    function updateAvailability(row) {
+      let sum = 0;
+      const fields = [
+        "formation_decision","work_plan","performance_indicators",
+        "meetings","consistency","coverage_books","report1","report2","report3","statistical_analysis"
+      ];
+      fields.forEach(f => {
+        const cell = row.querySelector(`[data-field="${f}"]`);
+        sum += parseFloat(cell?.innerText) || 0;
+      });
+      const availabilityCell = row.querySelector(".availability-cell");
+      availabilityCell.innerText = sum.toFixed(2);
+      availabilityCell.classList.add("highlight");
+      setTimeout(() => availabilityCell.classList.remove("highlight"), 1500);
+    }
+
+    // إضافة مستمع لتحديد كامل النص عند التركيز
+    function attachCellListeners(tr) {
+      tr.querySelectorAll('[contenteditable="true"]').forEach(cell => {
+        cell.addEventListener('focus', () => {
+          const range = document.createRange();
+          range.selectNodeContents(cell);
+          const sel = window.getSelection();
+          sel.removeAllRanges();
+          sel.addRange(range);
+        });
+        cell.addEventListener('input', () => {
+          cell.classList.add("highlight");
+          setTimeout(() => cell.classList.remove("highlight"), 1500);
+          updateAvailability(tr);
+        });
+      });
+    }
+
+    // تحميل التقييمات
+    async function loadCommittees() {
+      try {
+        const college = document.getElementById('collegeFilter').value;
+        const auditor = document.getElementById('auditorFilter').value;
+        let url = '/api/committees';
+        const params = [];
+        if (college) params.push(`college=${encodeURIComponent(college)}`);
+        if (auditor) params.push(`auditor_name=${encodeURIComponent(auditor)}`);
+        if (params.length > 0) url += '?' + params.join('&');
+
+        const res = await axios.get(url);
+        const tbody = document.getElementById('committeesTable');
+        tbody.innerHTML = "";
+
+        if(res.data.length === 0){
+          tbody.innerHTML = `<tr><td colspan="18" class="text-center">لا توجد بيانات</td></tr>`;
+          return;
+        }
+
+        res.data.sort((a,b)=>(a.college||"").localeCompare(b.college||"","ar"));
+
+        res.data.forEach((c, idx) => {
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+            <td>${idx+1}</td>
+            <td>${c.college}</td>
+            <td>${c.committee_name}</td>
+            <td>${c.auditor_name}</td>
+            <td>${c.audit_date ? new Date(c.audit_date).toLocaleDateString('ar-EG'): '-'}</td>
+            <td contenteditable="true" data-field="formation_decision">${c.formation_decision ?? 0}</td>
+            <td contenteditable="true" data-field="work_plan">${c.work_plan ?? 0}</td>
+            <td contenteditable="true" data-field="performance_indicators">${c.performance_indicators ?? 0}</td>
+            <td contenteditable="true" data-field="meetings">${c.meetings ?? 0}</td>
+            <td contenteditable="true" data-field="consistency">${c.consistency ?? 0}</td>
+            <td contenteditable="true" data-field="coverage_books">${c.coverage_books ?? 0}</td>
+            <td contenteditable="true" data-field="report1">${c.report1 ?? 0}</td>
+            <td contenteditable="true" data-field="report2">${c.report2 ?? 0}</td>
+            <td contenteditable="true" data-field="report3">${c.report3 ?? 0}</td>
+            <td contenteditable="true" data-field="statistical_analysis">${c.statistical_analysis ?? 0}</td>
+            <td class="availability-cell">${c.availability_score ?? 0}</td>
+            <td>${
+  c.notes && c.notes.trim() !== "" && c.notes.trim() !== "<p><br></p>"
+    ? `<button class="btn btn-sm btn-info notes-btn" onclick="showNotes(\`${c.notes}\`)">🔍</button>` 
+    : '<span class="text-muted">لا توجد ملاحظات</span>'
+}</td>
+
+            <td>
+  <div class="action-buttons">
+    <button class="btn btn-sm btn-success" onclick="saveRow(this, '${c._id}')">💾</button>
+    <button class="btn btn-sm btn-primary" onclick='editCommittee(${JSON.stringify(c)})'>✏️</button>
+    <button class="btn btn-sm btn-danger" onclick="confirmDelete('${c._id}')">🗑️</button>
+  </div>
+</td>
+
+          `;
+          tbody.appendChild(tr);
+          attachCellListeners(tr);
+        });
+      } catch (err) { showError("❌ فشل تحميل البيانات"); console.error(err); }
+    }
+    loadCommittees();
+
+    document.getElementById('collegeFilter').addEventListener('change', loadCommittees);
+    document.getElementById('auditorFilter').addEventListener('change', loadCommittees);
+
+    function showNotes(html) {
+      document.getElementById('notesContent').innerHTML = html || "<i>لا توجد ملاحظات</i>";
+      new bootstrap.Modal(document.getElementById('notesModal')).show();
+    }
+
+    // فتح المودال الكامل
+    function editCommittee(c) {
+      document.getElementById('edit_id').value = c._id;
+      document.getElementById('editCollege').value = c.college;
+      document.getElementById('editCommittee').value = c.committee_name;
+      document.getElementById('editAuditor').value = c.auditor_name;
+      document.getElementById('editDate').value = c.audit_date ? c.audit_date.split("T")[0] : "";
+      quillEdit.root.innerHTML = c.notes || "";
+      new bootstrap.Modal(document.getElementById('editModal')).show();
+    }
+
+    // حفظ من المودال
+    document.getElementById('editForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      document.getElementById('editNotesInput').value = quillEdit.root.innerHTML;
+      const data = {
+        college: document.getElementById('editCollege').value,
+        committee_name: document.getElementById('editCommittee').value,
+        auditor_name: document.getElementById('editAuditor').value,
+        audit_date: document.getElementById('editDate').value,
+        notes: document.getElementById('editNotesInput').value
+      };
+      try {
+        await axios.put(`/api/committees/${document.getElementById('edit_id').value}`, data);
+        showSuccess("✅ تم حفظ التعديلات بنجاح");
+        bootstrap.Modal.getInstance(document.getElementById('editModal')).hide();
+        loadCommittees();
+      } catch (err) { console.error(err); showError("❌ خطأ أثناء الحفظ"); }
+    });
+
+    // حفظ من الجدول
+    async function saveRow(btn, id) {
+      const row = btn.closest('tr');
+      const updatedData = {};
+      row.querySelectorAll('[contenteditable="true"]').forEach(cell => {
+        updatedData[cell.getAttribute('data-field')] = parseFloat(cell.innerText) || 0;
+      });
+      updatedData.availability_score = parseFloat(row.querySelector(".availability-cell").innerText) || 0;
+      try {
+        await axios.put(`/api/committees/${id}`, updatedData);
+        showSuccess("✅ تم حفظ التعديلات");
+      } catch (err) { console.error(err); showError("❌ خطأ أثناء الحفظ"); }
+    }
+
+    // حذف
+    function confirmDelete(id) {
+      showConfirm("⚠️ هل أنت متأكد من الحذف؟", async () => {
+        try {
+          await axios.delete(`/api/committees/${id}`);
+          showSuccess("🗑️ تم حذف السجل بنجاح");
+          loadCommittees();
+        } catch (err) { console.error(err); showError("❌ فشل الحذف"); }
+      });
+    }
+  </script>
+</body>
+</html>
