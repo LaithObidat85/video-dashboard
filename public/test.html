@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
@@ -30,51 +31,45 @@
     }
 
     /* ✅ الطباعة */
-   @media print {
-  @page {
-    size: A4 landscape; /* ✅ ورق A4 بالعرض */
-    margin: 20mm;       /* ✅ هامش 20 ملم من كل الجهات */
-  }
+    @media print {
+      @page { size: landscape; } /* ✅ إجبار الطباعة أفقياً */
+      body * { visibility: hidden; }
+      #printHeader, #printHeader * ,
+      #evaluationsTableWrapper, #evaluationsTableWrapper * {
+        visibility: visible;
+      }
+      #printHeader {
+        display: block !important;
+        text-align: center;
+        margin-bottom: 20px;
+        position: absolute;
+        top: 20px;
+        left: 0;
+        width: 100%;
+      }
+      #evaluationsTableWrapper {
+        position: absolute;
+        left: 0; 
+        top: 150px;
+        width: 100%;
+      }
 
-  body * { visibility: hidden; }
-  #printHeader, #printHeader * ,
-  #evaluationsTableWrapper, #evaluationsTableWrapper * {
-    visibility: visible;
-  }
-
-  #printHeader {
-    display: block !important;
-    text-align: center;
-    margin-bottom: 20px;
-    position: relative;
-    width: 100%;
-  }
-
-  #evaluationsTableWrapper {
-    position: relative;
-    margin-top: 10px;
-    width: 100%;
-  }
-
-  /* ✅ منع تقسيم الصفوف */
-  #evaluationsTableWrapper tr {
-    page-break-inside: avoid;
-  }
-
-  /* ✅ منع تقسيم عمود الملاحظات */
-  #evaluationsTableWrapper td.notes-col {
-    page-break-inside: avoid;
-  }
-
-  /* ✅ تصغير خط الملاحظات إذا طويلة */
-  #evaluationsTableWrapper td.notes-col {
-    font-size: 12px;
-  }
-  #evaluationsTableWrapper td.notes-col.long-notes {
-    font-size: 9px;
-  }
-}
-
+      /* ✅ منع تقسيم الصفوف */
+      #evaluationsTableWrapper tr {
+        page-break-inside: avoid;
+      }
+      /* ✅ منع تقسيم عمود الملاحظات */
+      #evaluationsTableWrapper td.notes-col {
+        page-break-inside: avoid;
+      }
+      /* ✅ تصغير خط الملاحظات إذا طويلة */
+      #evaluationsTableWrapper td.notes-col {
+        font-size: 12px;
+      }
+      #evaluationsTableWrapper td.notes-col.long-notes {
+        font-size: 9px;
+      }
+    }
 
     /* ✅ إخفاء أعمدة */
     #evaluationsTableWrapper.hide-auditor th.auditor-col,
