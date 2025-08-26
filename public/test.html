@@ -12,17 +12,20 @@
     th { background-color: #0d6efd; color: #fff; text-align: center; }
     td { text-align: center; vertical-align: middle; }
     
-/* ✅ ضبط عرض التاريخ LTR مع التوسيط */
+/* ✅ ضبط عرض التاريخ LTR مع التوسيط وزيادة عرضه */
+#evaluationsTableWrapper th.date-col,
 #evaluationsTableWrapper td.date-col {
   direction: ltr;
   text-align: center;
+  width: 120px;     /* ✅ عرض أكبر قليلاً */
+  max-width: 120px; /* ✅ لتثبيت العرض */
 }
 
     /* تحديد عرض عمود الملاحظات */
     #evaluationsTableWrapper th.notes-col,
     #evaluationsTableWrapper td.notes-col {
-      width: 300px;
-      max-width: 300px;
+      width: 280px;
+      max-width: 280px;
       white-space: normal;
       word-wrap: break-word;
     }
