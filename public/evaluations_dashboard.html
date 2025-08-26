@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
@@ -11,9 +10,10 @@
     table { background: #fff; border-radius: 10px; overflow: hidden; font-size: 14px; }
     th { background-color: #0d6efd; color: #fff; text-align: center; }
     td { text-align: center; vertical-align: middle; }
-        /* تحديد عرض عمود الملاحظات (العمود 17) */
-    #evaluationsTableWrapper th:nth-child(17),
-    #evaluationsTableWrapper td:nth-child(17) {
+
+    /* تحديد عرض عمود الملاحظات */
+    #evaluationsTableWrapper th.notes-col,
+    #evaluationsTableWrapper td.notes-col {
       width: 300px;
       max-width: 300px;
       white-space: normal;
@@ -29,91 +29,73 @@
       color: #0d6efd;
     }
 
- /* ✅ الطباعة */
-@media print {
-  @page { size: landscape; } /* ✅ إجبار الطباعة أفقياً */
-  body * { visibility: hidden; }
-  #printHeader, #printHeader * ,
-  #evaluationsTableWrapper, #evaluationsTableWrapper * {
-    visibility: visible;
-  }
-  #printHeader {
-    display: block !important;
-    text-align: center;
-    margin-bottom: 20px;
-    position: absolute;
-    top: 20px;
-    left: 0;
-    width: 100%;
-  }
-  #evaluationsTableWrapper {
-    position: absolute;
-    left: 0; 
-    top: 150px;
-    width: 100%;
-  }
+    /* ✅ الطباعة */
+    @media print {
+      @page { size: landscape; } /* ✅ إجبار الطباعة أفقياً */
+      body * { visibility: hidden; }
+      #printHeader, #printHeader * ,
+      #evaluationsTableWrapper, #evaluationsTableWrapper * {
+        visibility: visible;
+      }
+      #printHeader {
+        display: block !important;
+        text-align: center;
+        margin-bottom: 20px;
+        position: absolute;
+        top: 20px;
+        left: 0;
+        width: 100%;
+      }
+      #evaluationsTableWrapper {
+        position: absolute;
+        left: 0; 
+        top: 150px;
+        width: 100%;
+      }
 
-   /* ✅ منع تقسيم الصفوف على صفحتين */
-  #evaluationsTableWrapper tr {
-    page-break-inside: avoid;
-  }
+      /* ✅ منع تقسيم الصفوف */
+      #evaluationsTableWrapper tr {
+        page-break-inside: avoid;
+      }
+      /* ✅ منع تقسيم عمود الملاحظات */
+      #evaluationsTableWrapper td.notes-col {
+        page-break-inside: avoid;
+      }
+      /* ✅ تصغير خط الملاحظات إذا طويلة */
+      #evaluationsTableWrapper td.notes-col {
+        font-size: 12px;
+      }
+      #evaluationsTableWrapper td.notes-col.long-notes {
+        font-size: 9px;
+      }
+    }
 
-  /* ✅ منع تقسيم الخلايا (خصوصاً عمود الملاحظات) على صفحتين */
-  #evaluationsTableWrapper td:nth-child(17) {
-    page-break-inside: avoid;
-  }
+    /* ✅ إخفاء أعمدة */
+    #evaluationsTableWrapper.hide-auditor th.auditor-col,
+    #evaluationsTableWrapper.hide-auditor td.auditor-col { display: none; }
 
-  /* ✅ إذا كانت الملاحظات طويلة جداً صغّر حجم الخط عند الطباعة */
-  #evaluationsTableWrapper td:nth-child(17) {
-    font-size: 12px; /* الحجم الافتراضي للطباعة */
-  }
-  #evaluationsTableWrapper td:nth-child(17).long-notes {
-    font-size: 9px;  /* تصغير الحجم إذا الملاحظات طويلة */
-  }
+    #evaluationsTableWrapper.hide-date th.date-col,
+    #evaluationsTableWrapper.hide-date td.date-col { display: none; }
 
-
-/* ✅ إخفاء عمود اسم المدقق */
-#evaluationsTableWrapper.hide-auditor th:nth-child(4),
-#evaluationsTableWrapper.hide-auditor td:nth-child(4) {
-  display: none;
-}
-
-/* ✅ إخفاء عمود تاريخ التدقيق */
-#evaluationsTableWrapper.hide-date th:nth-child(5),
-#evaluationsTableWrapper.hide-date td:nth-child(5) {
-  display: none;
-}
-
-/* ✅ إخفاء عمود الكلية */
-#evaluationsTableWrapper.hide-college th:nth-child(2),
-#evaluationsTableWrapper.hide-college td:nth-child(2) {
-  display: none;
-}
-
-    
+    #evaluationsTableWrapper.hide-college th.college-col,
+    #evaluationsTableWrapper.hide-college td.college-col { display: none; }
 
     #printHeader { display: none; }
 
-   /* زر الطباعة أعلى اليسار (مع RTL) */
-.print-btn {
-  position: absolute;
-  top: 10px;
-  left: 15px;
-  direction: ltr; /* ✅ يجبر المتصفح على اعتبار موضع الزر من اليسار */
-}
+    /* ✅ زر الطباعة أعلى اليسار */
+    .print-btn {
+      position: absolute;
+      top: 10px;
+      left: 15px;
+    }
 
-
-    /* ✅ في الشاشة: أخفي نص الملاحظات وأظهر الزر */
-.screen-notes { display: inline; }
-.print-notes { display: none; }
-
-/* ✅ في الطباعة: أظهر النص وأخفي الزر */
-@media print {
-  .screen-notes { display: none !important; }
-  .print-notes { display: inline !important; }
-}
-
-    
+    /* ✅ الملاحظات: في الشاشة زر – في الطباعة نص */
+    .screen-notes { display: inline; }
+    .print-notes { display: none; }
+    @media print {
+      .screen-notes { display: none !important; }
+      .print-notes { display: inline !important; }
+    }
   </style>
 </head>
 <body>
@@ -137,55 +119,54 @@
       </div>
     </div>
 
-  <!-- خيارات الإخفاء داخل كارد -->
-<div class="card mb-3">
-  <div class="card-body d-flex justify-content-center align-items-center gap-3">
-    <div class="form-check">
-      <input class="form-check-input" type="checkbox" id="hideAuditorCheckbox">
-      <label class="form-check-label ms-2" for="hideAuditorCheckbox">إخفاء اسم المدقق</label>
+    <!-- خيارات الإخفاء -->
+    <div class="card mb-3">
+      <div class="card-body d-flex justify-content-center align-items-center gap-3">
+        <div class="form-check">
+          <input class="form-check-input" type="checkbox" id="hideAuditorCheckbox">
+          <label class="form-check-label ms-2" for="hideAuditorCheckbox">إخفاء اسم المدقق</label>
+        </div>
+        <span>|</span>
+        <div class="form-check">
+          <input class="form-check-input" type="checkbox" id="hideDateCheckbox">
+          <label class="form-check-label ms-2" for="hideDateCheckbox">إخفاء تاريخ التدقيق</label>
+        </div>
+        <span>|</span>
+        <div class="form-check">
+          <input class="form-check-input" type="checkbox" id="hideCollegeCheckbox">
+          <label class="form-check-label ms-2" for="hideCollegeCheckbox">إخفاء الكلية</label>
+        </div>
+      </div>
     </div>
-    <span>|</span>
-    <div class="form-check">
-      <input class="form-check-input" type="checkbox" id="hideDateCheckbox">
-      <label class="form-check-label ms-2" for="hideDateCheckbox">إخفاء تاريخ التدقيق</label>
-    </div>
-    <span>|</span>
-    <div class="form-check">
-      <input class="form-check-input" type="checkbox" id="hideCollegeCheckbox">
-      <label class="form-check-label ms-2" for="hideCollegeCheckbox">إخفاء الكلية</label>
-    </div>
-  </div>
-</div>
-
-    
 
     <!-- نسبة الاكتمال -->
     <div id="completionRateContainer"></div>
 
     <!-- هيدر للطباعة -->
     <div id="printHeader"></div>
-<!-- Modal لعرض الملاحظات -->
-<div class="modal fade" id="notesModal" tabindex="-1">
-  <div class="modal-dialog modal-lg">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title">📝 الملاحظات</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+
+    <!-- Modal لعرض الملاحظات -->
+    <div class="modal fade" id="notesModal" tabindex="-1">
+      <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">📝 الملاحظات</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body" id="notesContent"></div>
+        </div>
       </div>
-      <div class="modal-body" id="notesContent"></div>
     </div>
-  </div>
-</div>
 
     <!-- الجدول -->
     <table class="table table-bordered table-striped" id="evaluationsTableWrapper">
       <thead>
         <tr>
           <th>#</th>
-          <th>الكلية</th>
+          <th class="college-col">الكلية</th>
           <th>اسم اللجنة</th>
-          <th>اسم المدقق</th>
-          <th>تاريخ التدقيق</th>
+          <th class="auditor-col">اسم المدقق</th>
+          <th class="date-col">تاريخ التدقيق</th>
           <th>قرار التشكيل</th>
           <th>خطة العمل</th>
           <th>مؤشرات الأداء</th>
@@ -197,7 +178,7 @@
           <th>تقرير إنجاز 3</th>
           <th>التحليل الإحصائي</th>
           <th>درجة التوفر</th>
-          <th>الملاحظات</th>
+          <th class="notes-col">الملاحظات</th>
         </tr>
       </thead>
       <tbody id="evaluationsTable">
@@ -292,50 +273,46 @@
           return;
         }
 
-        // ترتيب اللجان حسب الكلية
         res.data.sort((a, b) => (a.college || "").localeCompare(b.college || "", "ar"));
 
         let totalAvailability = 0;
         res.data.forEach((ev, index) => {
           totalAvailability += ev.availability_score ?? 0;
           const tr = document.createElement('tr');
- tr.innerHTML = `
-  <td>${index + 1}</td>
-  <td>${ev.college || '-'}</td>
-  <td>${ev.committee_name || '-'}</td>
-  <td>${ev.auditor_name || '-'}</td>
-  <td>${ev.audit_date ? new Date(ev.audit_date).toLocaleDateString('ar-EG') : '-'}</td>
-  <td>${ev.formation_decision ?? 0}</td>
-  <td>${ev.work_plan ?? 0}</td>
-  <td>${ev.performance_indicators ?? 0}</td>
-  <td>${ev.meetings ?? 0}</td>
-  <td>${ev.consistency ?? 0}</td>
-  <td>${ev.coverage_books ?? 0}</td>
-  <td>${ev.report1 ?? 0}</td>
-  <td>${ev.report2 ?? 0}</td>
-  <td>${ev.report3 ?? 0}</td>
-  <td>${ev.statistical_analysis ?? 0}</td>
-  <td>${ev.availability_score ?? 0}</td>
-
-  <!-- ✅ خلية الملاحظات -->
-  <td class="${ev.notes && ev.notes.length > 800 ? 'long-notes' : ''}">
-    <span class="screen-notes">
-      ${
-        ev.notes && ev.notes.trim() !== "" && ev.notes.trim() !== "<p><br></p>"
-          ? `<button class="btn btn-sm btn-info" onclick="showNotes(\`${ev.notes}\`)">🔍 عرض</button>`
-          : '<span class="text-muted">لا توجد ملاحظات</span>'
-      }
-    </span>
-    <span class="print-notes d-none">
-      ${
-        ev.notes && ev.notes.trim() !== "" && ev.notes.trim() !== "<p><br></p>"
-          ? ev.notes
-          : 'لا توجد ملاحظات'
-      }
-    </span>
-  </td>
-`;
-
+          tr.innerHTML = `
+            <td>${index + 1}</td>
+            <td class="college-col">${ev.college || '-'}</td>
+            <td>${ev.committee_name || '-'}</td>
+            <td class="auditor-col">${ev.auditor_name || '-'}</td>
+            <td class="date-col">${ev.audit_date ? new Date(ev.audit_date).toLocaleDateString('ar-EG') : '-'}</td>
+            <td>${ev.formation_decision ?? 0}</td>
+            <td>${ev.work_plan ?? 0}</td>
+            <td>${ev.performance_indicators ?? 0}</td>
+            <td>${ev.meetings ?? 0}</td>
+            <td>${ev.consistency ?? 0}</td>
+            <td>${ev.coverage_books ?? 0}</td>
+            <td>${ev.report1 ?? 0}</td>
+            <td>${ev.report2 ?? 0}</td>
+            <td>${ev.report3 ?? 0}</td>
+            <td>${ev.statistical_analysis ?? 0}</td>
+            <td>${ev.availability_score ?? 0}</td>
+            <td class="notes-col ${ev.notes && ev.notes.length > 800 ? 'long-notes' : ''}">
+              <span class="screen-notes">
+                ${
+                  ev.notes && ev.notes.trim() !== "" && ev.notes.trim() !== "<p><br></p>"
+                    ? `<button class="btn btn-sm btn-info" onclick="showNotes(\`${ev.notes}\`)">🔍 عرض</button>`
+                    : '<span class="text-muted">لا توجد ملاحظات</span>'
+                }
+              </span>
+              <span class="print-notes d-none">
+                ${
+                  ev.notes && ev.notes.trim() !== "" && ev.notes.trim() !== "<p><br></p>"
+                    ? ev.notes
+                    : 'لا توجد ملاحظات'
+                }
+              </span>
+            </td>
+          `;
           tbody.appendChild(tr);
         });
 
@@ -361,7 +338,6 @@
       }
     }
 
-    // 🔹 Print (عنوان + نسبة اكتمال + عدد اللجان)
     function printTable() {
       const headerDiv = document.getElementById("printHeader");
       if (lastCollegeName === "جميع الكليات") {
@@ -377,32 +353,25 @@
       headerDiv.innerHTML = "";
     }
 
-    // 🔹 عرض الملاحظات في مودال
-function showNotes(html) {
-  document.getElementById('notesContent').innerHTML = html || "<i>لا توجد ملاحظات</i>";
-  new bootstrap.Modal(document.getElementById('notesModal')).show();
-}
+    function showNotes(html) {
+      document.getElementById('notesContent').innerHTML = html || "<i>لا توجد ملاحظات</i>";
+      new bootstrap.Modal(document.getElementById('notesModal')).show();
+    }
 
-
- 
     loadFilters().then(loadEvaluations);
     document.getElementById('collegeFilter').addEventListener('change', loadEvaluations);
     document.getElementById('auditorFilter').addEventListener('change', loadEvaluations);
-        // ✅ التحكم في إخفاء/إظهار عمود اسم المدقق
+
+    // ✅ التحكم في إخفاء/إظهار الأعمدة
     document.getElementById('hideAuditorCheckbox').addEventListener('change', function () {
       document.getElementById('evaluationsTableWrapper').classList.toggle('hide-auditor', this.checked);
     });
-
-    // ✅ إخفاء/إظهار تاريخ التدقيق
     document.getElementById('hideDateCheckbox').addEventListener('change', function () {
       document.getElementById('evaluationsTableWrapper').classList.toggle('hide-date', this.checked);
     });
-
-    // ✅ إخفاء/إظهار الكلية
     document.getElementById('hideCollegeCheckbox').addEventListener('change', function () {
       document.getElementById('evaluationsTableWrapper').classList.toggle('hide-college', this.checked);
     });
-
   </script>
 </body>
 </html>
