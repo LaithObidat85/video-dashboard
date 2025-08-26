@@ -52,11 +52,24 @@
     width: 100%;
   }
 
-  /* ✅ منع تقسيم الصفوف على صفحتين */
+   /* ✅ منع تقسيم الصفوف على صفحتين */
   #evaluationsTableWrapper tr {
     page-break-inside: avoid;
   }
-}
+
+  /* ✅ منع تقسيم الخلايا (خصوصاً عمود الملاحظات) على صفحتين */
+  #evaluationsTableWrapper td:nth-child(17) {
+    page-break-inside: avoid;
+  }
+
+  /* ✅ إذا كانت الملاحظات طويلة جداً صغّر حجم الخط عند الطباعة */
+  #evaluationsTableWrapper td:nth-child(17) {
+    font-size: 12px; /* الحجم الافتراضي للطباعة */
+  }
+  #evaluationsTableWrapper td:nth-child(17).long-notes {
+    font-size: 9px;  /* تصغير الحجم إذا الملاحظات طويلة */
+  }
+
 
      
    /* إخفاء عمود اسم المدقق */
@@ -283,41 +296,43 @@
         res.data.forEach((ev, index) => {
           totalAvailability += ev.availability_score ?? 0;
           const tr = document.createElement('tr');
-          tr.innerHTML = `
-            <td>${index + 1}</td>
-            <td>${ev.college || '-'}</td>
-            <td>${ev.committee_name || '-'}</td>
-            <td>${ev.auditor_name || '-'}</td>
-            <td>${ev.audit_date ? new Date(ev.audit_date).toLocaleDateString('ar-EG') : '-'}</td>
-            <td>${ev.formation_decision ?? 0}</td>
-            <td>${ev.work_plan ?? 0}</td>
-            <td>${ev.performance_indicators ?? 0}</td>
-            <td>${ev.meetings ?? 0}</td>
-            <td>${ev.consistency ?? 0}</td>
-            <td>${ev.coverage_books ?? 0}</td>
-            <td>${ev.report1 ?? 0}</td>
-            <td>${ev.report2 ?? 0}</td>
-            <td>${ev.report3 ?? 0}</td>
-            <td>${ev.statistical_analysis ?? 0}</td>
-            <td>${ev.availability_score ?? 0}</td>
-            <td>
-  <span class="screen-notes">
-    ${
-      ev.notes && ev.notes.trim() !== "" && ev.notes.trim() !== "<p><br></p>"
-        ? `<button class="btn btn-sm btn-info" onclick="showNotes(\`${ev.notes}\`)">🔍 عرض</button>`
-        : '<span class="text-muted">لا توجد ملاحظات</span>'
-    }
-  </span>
-  <span class="print-notes d-none">
-    ${
-      ev.notes && ev.notes.trim() !== "" && ev.notes.trim() !== "<p><br></p>"
-        ? ev.notes
-        : 'لا توجد ملاحظات'
-    }
-  </span>
-</td>
+ tr.innerHTML = `
+  <td>${index + 1}</td>
+  <td>${ev.college || '-'}</td>
+  <td>${ev.committee_name || '-'}</td>
+  <td>${ev.auditor_name || '-'}</td>
+  <td>${ev.audit_date ? new Date(ev.audit_date).toLocaleDateString('ar-EG') : '-'}</td>
+  <td>${ev.formation_decision ?? 0}</td>
+  <td>${ev.work_plan ?? 0}</td>
+  <td>${ev.performance_indicators ?? 0}</td>
+  <td>${ev.meetings ?? 0}</td>
+  <td>${ev.consistency ?? 0}</td>
+  <td>${ev.coverage_books ?? 0}</td>
+  <td>${ev.report1 ?? 0}</td>
+  <td>${ev.report2 ?? 0}</td>
+  <td>${ev.report3 ?? 0}</td>
+  <td>${ev.statistical_analysis ?? 0}</td>
+  <td>${ev.availability_score ?? 0}</td>
 
-          `;
+  <!-- ✅ خلية الملاحظات -->
+  <td class="${ev.notes && ev.notes.length > 800 ? 'long-notes' : ''}">
+    <span class="screen-notes">
+      ${
+        ev.notes && ev.notes.trim() !== "" && ev.notes.trim() !== "<p><br></p>"
+          ? `<button class="btn btn-sm btn-info" onclick="showNotes(\`${ev.notes}\`)">🔍 عرض</button>`
+          : '<span class="text-muted">لا توجد ملاحظات</span>'
+      }
+    </span>
+    <span class="print-notes d-none">
+      ${
+        ev.notes && ev.notes.trim() !== "" && ev.notes.trim() !== "<p><br></p>"
+          ? ev.notes
+          : 'لا توجد ملاحظات'
+      }
+    </span>
+  </td>
+`;
+
           tbody.appendChild(tr);
         });
 
