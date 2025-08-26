@@ -28,7 +28,7 @@
       color: #0d6efd;
     }
 
-   /* ✅ الطباعة */
+ /* ✅ الطباعة */
 @media print {
   @page { size: landscape; } /* ✅ إجبار الطباعة أفقياً */
   body * { visibility: hidden; }
@@ -50,6 +50,11 @@
     left: 0; 
     top: 150px;
     width: 100%;
+  }
+
+  /* ✅ منع تقسيم الصفوف على صفحتين */
+  #evaluationsTableWrapper tr {
+    page-break-inside: avoid;
   }
 }
 
