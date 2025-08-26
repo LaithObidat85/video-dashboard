@@ -11,6 +11,12 @@
     table { background: #fff; border-radius: 10px; overflow: hidden; font-size: 14px; }
     th { background-color: #0d6efd; color: #fff; text-align: center; }
     td { text-align: center; vertical-align: middle; }
+    
+/* ✅ ضبط عرض التاريخ LTR مع التوسيط */
+#evaluationsTableWrapper td.date-col {
+  direction: ltr;
+  text-align: center;
+}
 
     /* تحديد عرض عمود الملاحظات */
     #evaluationsTableWrapper th.notes-col,
