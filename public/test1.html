@@ -45,15 +45,13 @@
     .hidden-col { display: none !important; }
 
     .sticky-header {
-      position: sticky;
-      top: 0;
-      z-index: 100;
       background: #f8f9fa;
       padding-top: 10px;
     }
 
     #evaluationsTableWrapper thead th {
       position: sticky;
+      top: 0;
       z-index: 99;
       background: #f8f9fa;
       color: #000;
@@ -200,8 +198,6 @@
     document.querySelectorAll('.col-toggle').forEach(cb => {cb.addEventListener('change', applyColumnVisibility);});
     function updateSelectedVisits() {const selected = Array.from(document.querySelectorAll('.visit-toggle:checked')).map(cb => cb.value);const container = document.getElementById('selectedVisitsContainer');container.innerHTML = selected.length > 0 ? "الزيارات المختارة: " + selected.join(" | ") : "لم يتم اختيار زيارة";}
     document.querySelectorAll('.visit-toggle').forEach(cb => {cb.addEventListener('change', updateSelectedVisits);});
-    function adjustTableHeadOffset() {const header = document.querySelector('.sticky-header');const headerHeight = header ? header.offsetHeight : 0;document.querySelectorAll('#evaluationsTableWrapper thead th').forEach(th => {th.style.top = headerHeight + "px";});}
-    window.addEventListener('load', adjustTableHeadOffset);window.addEventListener('resize', adjustTableHeadOffset);
   </script>
 </body>
 </html>
