@@ -541,7 +541,7 @@
     function updateSelectedVisits() {
       const selected = Array.from(document.querySelectorAll('.visit-toggle:checked')).map(cb => cb.value);
       const container = document.getElementById('selectedVisitsContainer');
-      container.innerHTML = selected.length > 0 ? "الزيارات المختارة: " + selected.join(" | ") : "لم يتم اختيار زيارة";
+      container.innerHTML = selected.length > 0 ? "الزيارات" + selected.join(" | ") : "لم يتم اختيار زيارة";
     }
     document.querySelectorAll('.visit-toggle').forEach(cb => {
       cb.addEventListener('change', updateSelectedVisits);
