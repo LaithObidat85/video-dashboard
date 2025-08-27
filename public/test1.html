@@ -94,7 +94,7 @@
         </div>
       </div>
       <div class="card mb-3">
-        <div class="card-body d-flex flex-wrap justify-content-center gap-3" id="columnToggles">
+        <div class="card-body d-flex flex-wrap justify-content-center gap-3 align-items-center" id="columnToggles">
           <div class="form-check"><input class="form-check-input col-toggle" type="checkbox" id="toggle_formation_decision" data-field="formation_decision" checked><label class="form-check-label" for="toggle_formation_decision">قرار التشكيل</label></div>
           <div class="form-check"><input class="form-check-input col-toggle" type="checkbox" id="toggle_work_plan" data-field="work_plan" checked><label class="form-check-label" for="toggle_work_plan">خطة العمل</label></div>
           <div class="form-check"><input class="form-check-input col-toggle" type="checkbox" id="toggle_performance_indicators" data-field="performance_indicators" checked><label class="form-check-label" for="toggle_performance_indicators">مؤشرات الأداء</label></div>
@@ -105,10 +105,11 @@
           <div class="form-check"><input class="form-check-input col-toggle" type="checkbox" id="toggle_report2" data-field="report2" checked><label class="form-check-label" for="toggle_report2">تقرير إنجاز 2</label></div>
           <div class="form-check"><input class="form-check-input col-toggle" type="checkbox" id="toggle_report3" data-field="report3" checked><label class="form-check-label" for="toggle_report3">تقرير إنجاز 3</label></div>
           <div class="form-check"><input class="form-check-input col-toggle" type="checkbox" id="toggle_statistical_analysis" data-field="statistical_analysis" checked><label class="form-check-label" for="toggle_statistical_analysis">التحليل الإحصائي</label></div>
+          <button class="btn btn-outline-primary btn-sm" id="saveSettingsBtn">💾 حفظ الإعدادات</button>
         </div>
       </div>
       <div id="infoContainer">
-        <div id="selectedVisitsContainer">الزيارات: لم يتم اختيار</div>
+        <div id="selectedVisitsContainer">الزيارات: لم يتم اختيار أي زيارة</div>
         <div id="completionRateContainer"></div>
       </div>
     </div>
@@ -178,7 +179,7 @@
         const college = document.getElementById('collegeFilter').value;const auditor = document.getElementById('auditorFilter').value;lastCollege = college || "جميع الكليات";let url = '/api/committees';const params = [];
         if (college) params.push(`college=${encodeURIComponent(college)}`);if (auditor) params.push(`auditor_name=${encodeURIComponent(auditor)}`);if (params.length > 0) url += '?' + params.join('&');
         const res = await axios.get(url);const tbody = document.getElementById('committeesTable');tbody.innerHTML = "";
-        if(res.data.length === 0){tbody.innerHTML = `<tr><td colspan="18" class="text-center">لا توجد بيانات</td></tr>`;document.getElementById("completionRateContainer").innerHTML = "";document.getElementById("selectedVisitsContainer").innerHTML = "الزيارات: لا توجد";return;}
+        if(res.data.length === 0){tbody.innerHTML = `<tr><td colspan="18" class="text-center">لا توجد بيانات</td></tr>`;document.getElementById("completionRateContainer").innerHTML = "";document.getElementById("selectedVisitsContainer").innerHTML = "الزيارات: لم يتم اختيار أي زيارة";return;}
         res.data.sort((a,b)=>(a.college||"").localeCompare(b.college||"","ar"));res.data.forEach((c, idx) => {
           const tr = document.createElement('tr');tr.innerHTML = `
             <td>${idx+1}</td><td>${c.college}</td><td>${c.committee_name}</td><td>${c.auditor_name}</td><td>${c.audit_date ? new Date(c.audit_date).toLocaleDateString('ar-EG'): '-'}</td>
@@ -230,7 +231,7 @@
     function updateSelectedVisits() {
       const selected = Array.from(document.querySelectorAll('.visit-toggle:checked')).map(cb => cb.value);
       const container = document.getElementById('selectedVisitsContainer');
-      container.innerHTML = selected.length > 0 ? "الزيارات: " + selected.join(" | ") : "الزيارات: لا توجد";
+      container.innerHTML = selected.length > 0 ? "الزيارات: " + selected.join(" | ") : "الزيارات: لم يتم إختيار أي زيارة";
     }
     document.querySelectorAll('.visit-toggle').forEach(cb => {cb.addEventListener('change', updateSelectedVisits);});
 
@@ -239,6 +240,45 @@
       document.getElementById("availabilityHeader").innerText = `درجة التوفر من (${visibleCols})`;
     }
     updateAvailabilityHeader();
+
+    // تحميل الإعدادات من السيرفر
+    async function loadSettings() {
+      try {
+        const res = await axios.get('/api/settings');
+        const settings = res.data;
+        if (settings.visibleColumns) {
+          document.querySelectorAll('.col-toggle').forEach(cb => {
+            cb.checked = settings.visibleColumns.includes(cb.getAttribute('data-field'));
+          });
+        }
+        if (settings.selectedVisits) {
+          document.querySelectorAll('.visit-toggle').forEach(cb => {
+            cb.checked = settings.selectedVisits.includes(cb.value);
+          });
+        }
+        applyColumnVisibility();
+        updateSelectedVisits();
+      } catch (err) {
+        console.error("❌ فشل تحميل الإعدادات", err);
+      }
+    }
+
+    // حفظ الإعدادات في السيرفر
+    async function saveSettings() {
+      try {
+        const visibleColumns = Array.from(document.querySelectorAll('.col-toggle:checked')).map(cb => cb.getAttribute('data-field'));
+        const selectedVisits = Array.from(document.querySelectorAll('.visit-toggle:checked')).map(cb => cb.value);
+        await axios.put('/api/settings', { visibleColumns, selectedVisits });
+        showSuccess("✅ تم حفظ الإعدادات بنجاح");
+      } catch (err) {
+        console.error("❌ فشل حفظ الإعدادات", err);
+        showError("❌ خطأ في حفظ الإعدادات");
+      }
+    }
+    document.getElementById('saveSettingsBtn').addEventListener('click', saveSettings);
+
+    // تحميل الإعدادات عند بداية التشغيل
+    loadSettings();
   </script>
 </body>
 </html>
