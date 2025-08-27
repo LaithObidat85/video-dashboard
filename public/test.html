@@ -325,20 +325,16 @@
       try {
         const res = await axios.get('/api/settings');
         const settings = res.data;
-        const allFields = ["formation_decision","work_plan","performance_indicators","meetings","consistency","coverage_books","report1","report2","report3","statistical_analysis"];
-        savedVisibleColumns = settings.visibleColumns || allFields;
+        savedVisibleColumns = settings.visibleColumns || [];
         if (settings.selectedVisits) {
-          currentVisitsText = settings.selectedVisits.join(" | ");
-          document.getElementById("selectedVisitsContainer").innerHTML = "الزيارات: " + currentVisitsText;
+          document.getElementById("selectedVisitsContainer").innerHTML = "الزيارات: " + settings.selectedVisits.join(" | ");
         } else {
-          currentVisitsText = "لم يتم إختيار أي زيارة";
-          document.getElementById("selectedVisitsContainer").innerHTML = "الزيارات: " + currentVisitsText;
+          document.getElementById("selectedVisitsContainer").innerHTML = "الزيارات: لم يتم إختيار أي زيارة";
         }
         applyColumnVisibility();
       } catch (err) {
         console.error("❌ فشل تحميل الإعدادات", err);
-        currentVisitsText = "لم يتم إختيار أي زيارة";
-        document.getElementById("selectedVisitsContainer").innerHTML = "الزيارات: " + currentVisitsText;
+        document.getElementById("selectedVisitsContainer").innerHTML = "الزيارات: لم يتم إختيار أي زيارة";
       }
       updatePrintHeader();
     }
