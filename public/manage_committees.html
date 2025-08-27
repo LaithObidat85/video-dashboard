@@ -119,7 +119,7 @@
           <th class="col-formation_decision">قرار التشكيل</th><th class="col-work_plan">خطة العمل</th><th class="col-performance_indicators">مؤشرات الأداء</th>
           <th class="col-meetings">عدد الاجتماعات</th><th class="col-consistency">التوافق بين الدعوات والاجتماعات</th><th class="col-coverage_books">كتب التغطية</th>
           <th class="col-report1">تقرير إنجاز 1</th><th class="col-report2">تقرير إنجاز 2</th><th class="col-report3">تقرير إنجاز 3</th><th class="col-statistical_analysis">التحليل الإحصائي</th>
-          <th>درجة التوفر</th><th>الملاحظات</th><th>إجراءات</th>
+          <th id="availabilityHeader">درجة التوفر من (9)</th><th>الملاحظات</th><th>إجراءات</th>
         </tr>
       </thead>
       <tbody id="committeesTable"><tr><td colspan="18" class="text-center">جاري التحميل...</td></tr></tbody>
@@ -143,10 +143,12 @@
     const toastConfirm = new bootstrap.Toast(toastConfirmEl);
     let confirmCallback = null;
     let lastCollege = "";
+
     function showSuccess(msg="✅ العملية نجحت") {document.querySelector("#toastSuccess .toast-body").innerText = msg;toastSuccess.show();}
     function showError(msg="❌ حدث خطأ") {document.querySelector("#toastError .toast-body").innerText = msg;toastError.show();}
     function showConfirm(msg, callback) {document.getElementById("toastConfirmMsg").innerText = msg;confirmCallback = callback;toastConfirm.show();}
     document.getElementById("confirmYes").addEventListener("click", () => {toastConfirm.hide();if (confirmCallback) confirmCallback();});
+
     async function loadOptions() {
       const colleges = await axios.get('/api/colleges');
       const collegeFilter = document.getElementById('collegeFilter');const collegeSelect = document.getElementById('editCollege');
@@ -156,18 +158,21 @@
       auditors.data.forEach(a => {const opt1 = document.createElement('option');opt1.value = a.name; opt1.textContent = a.name;auditorFilter.appendChild(opt1);const opt2 = document.createElement('option');opt2.value = a.name; opt2.textContent = a.name;auditorSelect.appendChild(opt2);});
     }
     loadOptions();
+
     function updateAvailability(row) {
       let sum = 0;
       const fields = ["formation_decision","work_plan","performance_indicators","meetings","consistency","coverage_books","report1","report2","report3","statistical_analysis"];
       fields.forEach(f => {const cell = row.querySelector(`[data-field="${f}"]`);if (!document.getElementById("toggle_" + f).checked) return;sum += parseFloat(cell?.innerText) || 0;});
       const availabilityCell = row.querySelector(".availability-cell");availabilityCell.innerText = sum.toFixed(2);availabilityCell.classList.add("highlight");setTimeout(() => availabilityCell.classList.remove("highlight"), 1500);
     }
+
     function attachCellListeners(tr) {
       tr.querySelectorAll('[contenteditable="true"]').forEach(cell => {
         cell.addEventListener('focus', () => {const range = document.createRange();range.selectNodeContents(cell);const sel = window.getSelection();sel.removeAllRanges();sel.addRange(range);});
         cell.addEventListener('input', () => {cell.classList.add("highlight");setTimeout(() => cell.classList.remove("highlight"), 1500);updateAvailability(tr);updateCompletionRate();});
       });
     }
+
     async function loadCommittees() {
       try {
         const college = document.getElementById('collegeFilter').value;const auditor = document.getElementById('auditorFilter').value;lastCollege = college || "جميع الكليات";let url = '/api/committees';const params = [];
@@ -196,18 +201,44 @@
       } catch (err) { showError("❌ فشل تحميل البيانات"); console.error(err); }
     }
     loadCommittees();
+
     document.getElementById('collegeFilter').addEventListener('change', loadCommittees);
     document.getElementById('auditorFilter').addEventListener('change', loadCommittees);
+
     function showNotes(html) {document.getElementById('notesContent').innerHTML = html || "<i>لا توجد ملاحظات</i>";new bootstrap.Modal(document.getElementById('notesModal')).show();}
     function editCommittee(c) {document.getElementById('edit_id').value = c._id;document.getElementById('editCollege').value = c.college;document.getElementById('editCommittee').value = c.committee_name;document.getElementById('editAuditor').value = c.auditor_name;document.getElementById('editDate').value = c.audit_date ? c.audit_date.split("T")[0] : "";quillEdit.root.innerHTML = c.notes || "";new bootstrap.Modal(document.getElementById('editModal')).show();}
     document.getElementById('editForm').addEventListener('submit', async (e) => {e.preventDefault();document.getElementById('editNotesInput').value = quillEdit.root.innerHTML;const data = {college: document.getElementById('editCollege').value,committee_name: document.getElementById('editCommittee').value,auditor_name: document.getElementById('editAuditor').value,audit_date: document.getElementById('editDate').value,notes: document.getElementById('editNotesInput').value};try {await axios.put(`/api/committees/${document.getElementById('edit_id').value}`, data);showSuccess("✅ تم حفظ التعديلات بنجاح");bootstrap.Modal.getInstance(document.getElementById('editModal')).hide();loadCommittees();} catch (err) { console.error(err); showError("❌ خطأ أثناء الحفظ"); }});
+
     async function saveRow(btn, id) {const row = btn.closest('tr');const updatedData = {};row.querySelectorAll('[contenteditable="true"]').forEach(cell => {if (!document.getElementById("toggle_" + cell.getAttribute('data-field')).checked) return;updatedData[cell.getAttribute('data-field')] = parseFloat(cell.innerText) || 0;});updatedData.availability_score = parseFloat(row.querySelector(".availability-cell").innerText) || 0;try {await axios.put(`/api/committees/${id}`, updatedData);showSuccess("✅ تم حفظ التعديلات");} catch (err) { console.error(err); showError("❌ خطأ أثناء الحفظ"); }}
+
     function confirmDelete(id) {showConfirm("⚠️ هل أنت متأكد من الحذف؟", async () => {try {await axios.delete(`/api/committees/${id}`);showSuccess("🗑️ تم حذف السجل بنجاح");loadCommittees();} catch (err) { console.error(err); showError("❌ فشل الحذف"); }});}
+
     function updateCompletionRate() {const rows = document.querySelectorAll('#committeesTable tr');let totalAvailability = 0;let numCommittees = 0;rows.forEach(row => {const availabilityCell = row.querySelector('.availability-cell');if (availabilityCell) {totalAvailability += parseFloat(availabilityCell.innerText) || 0;numCommittees++;}});const visibleCols = Array.from(document.querySelectorAll('.col-toggle:checked')).length;const denominator = numCommittees * visibleCols;const completionRate = denominator > 0 ? ((totalAvailability / denominator) * 100).toFixed(2) : 0;const completionDiv = document.getElementById("completionRateContainer");if (lastCollege && lastCollege !== "جميع الكليات") {completionDiv.innerHTML = `📌 نسبة الاكتمال لكلية ${lastCollege} = ${completionRate}%<br>📋 عدد لجان كلية ${lastCollege} = ${numCommittees}`;} else {completionDiv.innerHTML = `📌 نسبة الاكتمال لجميع الكليات = ${completionRate}%<br>📋 عدد لجان جميع الكليات = ${numCommittees}`;}}
-    function applyColumnVisibility() {document.querySelectorAll('.col-toggle').forEach(cb => {const field = cb.getAttribute('data-field');document.querySelectorAll('.col-' + field).forEach(cell => {cell.classList.toggle('hidden-col', !cb.checked);});});document.querySelectorAll('#committeesTable tr').forEach(tr => updateAvailability(tr));updateCompletionRate();}
+
+    function applyColumnVisibility() {
+      document.querySelectorAll('.col-toggle').forEach(cb => {
+        const field = cb.getAttribute('data-field');
+        document.querySelectorAll('.col-' + field).forEach(cell => {cell.classList.toggle('hidden-col', !cb.checked);});
+      });
+      document.querySelectorAll('#committeesTable tr').forEach(tr => updateAvailability(tr));
+      updateCompletionRate();
+      updateAvailabilityHeader();
+    }
+
     document.querySelectorAll('.col-toggle').forEach(cb => {cb.addEventListener('change', applyColumnVisibility);});
-    function updateSelectedVisits() {const selected = Array.from(document.querySelectorAll('.visit-toggle:checked')).map(cb => cb.value);const container = document.getElementById('selectedVisitsContainer');container.innerHTML = selected.length > 0 ? "الزيارات: " + selected.join(" | ") : "الزيارات: لا توجد";} 
+
+    function updateSelectedVisits() {
+      const selected = Array.from(document.querySelectorAll('.visit-toggle:checked')).map(cb => cb.value);
+      const container = document.getElementById('selectedVisitsContainer');
+      container.innerHTML = selected.length > 0 ? "الزيارات: " + selected.join(" | ") : "الزيارات: لا توجد";
+    }
     document.querySelectorAll('.visit-toggle').forEach(cb => {cb.addEventListener('change', updateSelectedVisits);});
+
+    function updateAvailabilityHeader() {
+      const visibleCols = Array.from(document.querySelectorAll('.col-toggle:checked')).length;
+      document.getElementById("availabilityHeader").innerText = `درجة التوفر من (${visibleCols})`;
+    }
+    updateAvailabilityHeader();
   </script>
 </body>
 </html>
