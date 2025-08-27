@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <title>عرض تقييم اللجان</title>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.rtl.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
   <style>
     body { background: #f8f9fa; font-family: 'Segoe UI', sans-serif; }
     .container { margin-top: 30px; }
@@ -12,7 +13,7 @@
     td { text-align: center; vertical-align: middle; }
     .highlight { background-color: #d4edda !important; transition: background-color 1s ease; }
     .toast-container { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); z-index: 2000; }
-    .filters { margin-bottom: 20px; width: 99%; margin-left: auto; margin-right: auto; }
+    .filters { margin-bottom: 20px; width: 99%; margin-left: auto; margin-right: auto; text-align: center; }
 
     #evaluationsTableWrapper th.date-col,
     #evaluationsTableWrapper td.date-col {
@@ -59,19 +60,25 @@
   <div class="container">
     <div class="sticky-header">
       <h3 class="text-center mb-4">📊 عرض تقييم اللجان</h3>
-      <div class="filters row">
-        <div class="col-md-3 mb-2">
-          <label class="form-label">الكلية</label>
+
+      <!-- الفلاتر في الوسط -->
+      <div class="filters row justify-content-center">
+        <div class="col-md-3 mb-2 text-center">
+          <label class="form-label d-block">الكلية</label>
           <select id="collegeFilter" class="form-select">
             <option value="">جميع الكليات</option>
           </select>
         </div>
-        <div class="col-md-3 mb-2">
-          <label class="form-label">البحث بإسم اللجنة</label>
+        <div class="col-md-3 mb-2 text-center">
+          <label class="form-label d-block">البحث بإسم اللجنة</label>
           <input type="text" id="committeeSearch" class="form-control" placeholder="اكتب للبحث...">
         </div>
-        <div class="col-md-3 mb-2 d-flex align-items-center">
-          <div class="form-check me-3">
+      </div>
+
+      <!-- checkboxes وزر الطباعة في الوسط -->
+      <div class="row mb-3 justify-content-center">
+        <div class="col-md-8 d-flex align-items-center justify-content-center gap-4">
+          <div class="form-check">
             <input class="form-check-input simple-toggle" type="checkbox" id="toggle_college" checked>
             <label class="form-check-label" for="toggle_college">إظهار الكلية</label>
           </div>
@@ -79,8 +86,10 @@
             <input class="form-check-input simple-toggle" type="checkbox" id="toggle_date">
             <label class="form-check-label" for="toggle_date">إظهار تاريخ التدقيق</label>
           </div>
+          <button class="btn btn-secondary" onclick="window.print()"><i class="bi bi-printer"></i></button>
         </div>
       </div>
+
       <div id="infoContainer">
         <div id="selectedVisitsContainer"></div>
         <div id="completionRateContainer"></div>
@@ -258,7 +267,6 @@
       document.querySelectorAll('.col-college').forEach(cell => {cell.classList.toggle('hidden-col', !showCollege);});
       document.querySelectorAll('.date-col').forEach(cell => {cell.classList.toggle('hidden-col', !showDate);});
 
-      // تطبيق إعدادات صفحة الإدارة
       const allFields = ["formation_decision","work_plan","performance_indicators","meetings","consistency","coverage_books","report1","report2","report3","statistical_analysis"];
       allFields.forEach(f => {
         document.querySelectorAll(`[data-field="${f}"]`).forEach(cell => {
