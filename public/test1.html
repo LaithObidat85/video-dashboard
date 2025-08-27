@@ -29,7 +29,7 @@
     #completionRateContainer {
       text-align: center;
       font-weight: bold;
-      margin: 15px 0;
+      margin: 5px 0;
       font-size: 18px;
       color: #0d6efd;
     }
@@ -37,9 +37,17 @@
     #selectedVisitsContainer {
       text-align: center;
       font-weight: bold;
-      margin: 10px 0;
-      font-size: 16px;
-      color: #198754;
+      margin: 5px 0;
+      font-size: 18px;
+      color: #0d6efd;
+    }
+
+    #infoContainer {
+      text-align: center;
+      font-weight: bold;
+      margin: 15px 0;
+      font-size: 18px;
+      color: #0d6efd;
     }
 
     .hidden-col { display: none !important; }
@@ -85,8 +93,6 @@
           <div class="form-check"><input class="form-check-input visit-toggle" type="checkbox" id="visit5" value="الزيارة النهائية"><label class="form-check-label" for="visit5">الزيارة النهائية</label></div>
         </div>
       </div>
-      <div id="selectedVisitsContainer">لم يتم اختيار زيارة</div>
-      <div id="completionRateContainer"></div>
       <div class="card mb-3">
         <div class="card-body d-flex flex-wrap justify-content-center gap-3" id="columnToggles">
           <div class="form-check"><input class="form-check-input col-toggle" type="checkbox" id="toggle_formation_decision" data-field="formation_decision" checked><label class="form-check-label" for="toggle_formation_decision">قرار التشكيل</label></div>
@@ -100,6 +106,10 @@
           <div class="form-check"><input class="form-check-input col-toggle" type="checkbox" id="toggle_report3" data-field="report3" checked><label class="form-check-label" for="toggle_report3">تقرير إنجاز 3</label></div>
           <div class="form-check"><input class="form-check-input col-toggle" type="checkbox" id="toggle_statistical_analysis" data-field="statistical_analysis" checked><label class="form-check-label" for="toggle_statistical_analysis">التحليل الإحصائي</label></div>
         </div>
+      </div>
+      <div id="infoContainer">
+        <div id="selectedVisitsContainer">الزيارات: لم يتم اختيار</div>
+        <div id="completionRateContainer"></div>
       </div>
     </div>
     <table class="table table-bordered table-striped table-responsive" id="evaluationsTableWrapper">
@@ -163,7 +173,7 @@
         const college = document.getElementById('collegeFilter').value;const auditor = document.getElementById('auditorFilter').value;lastCollege = college || "جميع الكليات";let url = '/api/committees';const params = [];
         if (college) params.push(`college=${encodeURIComponent(college)}`);if (auditor) params.push(`auditor_name=${encodeURIComponent(auditor)}`);if (params.length > 0) url += '?' + params.join('&');
         const res = await axios.get(url);const tbody = document.getElementById('committeesTable');tbody.innerHTML = "";
-        if(res.data.length === 0){tbody.innerHTML = `<tr><td colspan="18" class="text-center">لا توجد بيانات</td></tr>`;document.getElementById("completionRateContainer").innerHTML = "";return;}
+        if(res.data.length === 0){tbody.innerHTML = `<tr><td colspan="18" class="text-center">لا توجد بيانات</td></tr>`;document.getElementById("completionRateContainer").innerHTML = "";document.getElementById("selectedVisitsContainer").innerHTML = "الزيارات: لا توجد";return;}
         res.data.sort((a,b)=>(a.college||"").localeCompare(b.college||"","ar"));res.data.forEach((c, idx) => {
           const tr = document.createElement('tr');tr.innerHTML = `
             <td>${idx+1}</td><td>${c.college}</td><td>${c.committee_name}</td><td>${c.auditor_name}</td><td>${c.audit_date ? new Date(c.audit_date).toLocaleDateString('ar-EG'): '-'}</td>
@@ -196,7 +206,7 @@
     function updateCompletionRate() {const rows = document.querySelectorAll('#committeesTable tr');let totalAvailability = 0;let numCommittees = 0;rows.forEach(row => {const availabilityCell = row.querySelector('.availability-cell');if (availabilityCell) {totalAvailability += parseFloat(availabilityCell.innerText) || 0;numCommittees++;}});const visibleCols = Array.from(document.querySelectorAll('.col-toggle:checked')).length;const denominator = numCommittees * visibleCols;const completionRate = denominator > 0 ? ((totalAvailability / denominator) * 100).toFixed(2) : 0;const completionDiv = document.getElementById("completionRateContainer");if (lastCollege && lastCollege !== "جميع الكليات") {completionDiv.innerHTML = `📌 نسبة الاكتمال لكلية ${lastCollege} = ${completionRate}%<br>📋 عدد لجان كلية ${lastCollege} = ${numCommittees}`;} else {completionDiv.innerHTML = `📌 نسبة الاكتمال لجميع الكليات = ${completionRate}%<br>📋 عدد لجان جميع الكليات = ${numCommittees}`;}}
     function applyColumnVisibility() {document.querySelectorAll('.col-toggle').forEach(cb => {const field = cb.getAttribute('data-field');document.querySelectorAll('.col-' + field).forEach(cell => {cell.classList.toggle('hidden-col', !cb.checked);});});document.querySelectorAll('#committeesTable tr').forEach(tr => updateAvailability(tr));updateCompletionRate();}
     document.querySelectorAll('.col-toggle').forEach(cb => {cb.addEventListener('change', applyColumnVisibility);});
-    function updateSelectedVisits() {const selected = Array.from(document.querySelectorAll('.visit-toggle:checked')).map(cb => cb.value);const container = document.getElementById('selectedVisitsContainer');container.innerHTML = selected.length > 0 ? "الزيارات: " + selected.join(" | ") : "لم يتم اختيار زيارة";}
+    function updateSelectedVisits() {const selected = Array.from(document.querySelectorAll('.visit-toggle:checked')).map(cb => cb.value);const container = document.getElementById('selectedVisitsContainer');container.innerHTML = selected.length > 0 ? "الزيارات: " + selected.join(" | ") : "الزيارات: لا توجد";} 
     document.querySelectorAll('.visit-toggle').forEach(cb => {cb.addEventListener('change', updateSelectedVisits);});
   </script>
 </body>
