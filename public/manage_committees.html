@@ -230,7 +230,7 @@
     function updateSelectedVisits() {
       const selected = Array.from(document.querySelectorAll('.visit-toggle:checked')).map(cb => cb.value);
       const container = document.getElementById('selectedVisitsContainer');
-      container.innerHTML = selected.length > 0 ? "الزيارات: " + selected.join(" | ") : "الزيارات: لا توجد";
+      container.innerHTML = selected.length > 0 ? "الزيارات: " + selected.join(" | ") : "الزيارات: لم يتم إختيار أي زيارة";
     }
     document.querySelectorAll('.visit-toggle').forEach(cb => {cb.addEventListener('change', updateSelectedVisits);});
 
