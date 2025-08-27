@@ -55,11 +55,18 @@
       color: #000;
     }
 
+    .form-check { transform: translateY(4px); }
+
+    .screen-notes { display: inline; }
+    .print-notes { display: none; }
+
     @media print {
       @page { size: A4 landscape; margin: 10mm; }
       body { background: #fff; }
       .sticky-header, .toast-container { display: none !important; }
       table { font-size: 12px; }
+      .screen-notes { display: none !important; }
+      .print-notes { display: inline !important; white-space: pre-wrap; }
     }
   </style>
 </head>
@@ -215,9 +222,17 @@
             <td data-field="report3">${c.report3 ?? 0}</td>
             <td data-field="statistical_analysis">${c.statistical_analysis ?? 0}</td>
             <td class="availability-cell">${c.availability_score ?? 0}</td>
-            <td>${c.notes && c.notes.trim() !== "" && c.notes.trim() !== "<p><br></p>"? 
-              `<button class="btn btn-sm btn-info" onclick="showNotes(\`${c.notes}\`)">🔍</button>` 
-              : '<span class="text-muted">لا توجد ملاحظات</span>'}</td>`;
+            <td>
+              <span class="screen-notes">
+                ${c.notes && c.notes.trim() !== "" && c.notes.trim() !== "<p><br></p>"? 
+                  `<button class="btn btn-sm btn-info" onclick="showNotes(\`${c.notes}\`)">🔍</button>` 
+                  : '<span class="text-muted">لا توجد ملاحظات</span>'}
+              </span>
+              <span class="print-notes">
+                ${c.notes && c.notes.trim() !== "" && c.notes.trim() !== "<p><br></p>"? 
+                  c.notes : 'لا توجد ملاحظات'}
+              </span>
+            </td>`;
           tbody.appendChild(tr);
           updateAvailability(tr);
         });
