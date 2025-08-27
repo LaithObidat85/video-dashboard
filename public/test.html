@@ -2,7 +2,7 @@
 <html lang="ar" dir="rtl">
 <head>
   <meta charset="UTF-8">
-  <title>📊 عرض تقييم اللجان</title>
+  <title>عرض تقييم اللجان</title>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.rtl.min.css">
   <style>
     body { background: #f8f9fa; font-family: 'Segoe UI', sans-serif; }
@@ -22,15 +22,7 @@
       max-width: 100px;
     }
 
-    #completionRateContainer {
-      text-align: center;
-      font-weight: bold;
-      margin: 5px 0;
-      font-size: 18px;
-      color: #0d6efd;
-    }
-
-    #selectedVisitsContainer {
+    #completionRateContainer, #selectedVisitsContainer {
       text-align: center;
       font-weight: bold;
       margin: 5px 0;
@@ -79,14 +71,16 @@
           <input type="text" id="committeeSearch" class="form-control" placeholder="اكتب للبحث...">
         </div>
         <div class="col-md-4 mb-2">
-          <label class="form-label">خيارات العرض</label><br>
-          <div class="form-check form-check-inline">
-            <input class="form-check-input toggle-display" type="checkbox" id="toggleCollege" data-field="college" checked>
-            <label class="form-check-label" for="toggleCollege">إظهار عمود الكلية</label>
-          </div>
-          <div class="form-check form-check-inline">
-            <input class="form-check-input toggle-display" type="checkbox" id="toggleDate" data-field="date">
-            <label class="form-check-label" for="toggleDate">إظهار عمود تاريخ التدقيق</label>
+          <label class="form-label">خيارات العرض</label>
+          <div>
+            <div class="form-check">
+              <input class="form-check-input simple-toggle" type="checkbox" id="toggle_college" data-field="college" checked>
+              <label class="form-check-label" for="toggle_college">إظهار الكلية</label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input simple-toggle" type="checkbox" id="toggle_date" data-field="date" >
+              <label class="form-check-label" for="toggle_date">إظهار تاريخ التدقيق</label>
+            </div>
           </div>
         </div>
       </div>
@@ -101,7 +95,7 @@
           <th>#</th>
           <th class="col-college">الكلية</th>
           <th>اسم اللجنة</th>
-          <th class="date-col col-date">تاريخ التدقيق</th>
+          <th class="date-col hidden-col">تاريخ التدقيق</th>
           <th class="col-formation_decision">قرار التشكيل</th>
           <th class="col-work_plan">خطة العمل</th>
           <th class="col-performance_indicators">مؤشرات الأداء</th>
@@ -149,8 +143,12 @@
     const toastError = new bootstrap.Toast(document.getElementById('toastError'));
     let lastCollege = "";
 
-    function showSuccess(msg="✅ العملية نجحت") {document.querySelector("#toastSuccess .toast-body").innerText = msg;toastSuccess.show();}
-    function showError(msg="❌ حدث خطأ") {document.querySelector("#toastError .toast-body").innerText = msg;toastError.show();}
+    function showSuccess(msg="✅ العملية نجحت") {
+      document.querySelector("#toastSuccess .toast-body").innerText = msg;toastSuccess.show();
+    }
+    function showError(msg="❌ حدث خطأ") {
+      document.querySelector("#toastError .toast-body").innerText = msg;toastError.show();
+    }
 
     async function loadOptions() {
       const colleges = await axios.get('/api/colleges');
@@ -166,10 +164,7 @@
     function updateAvailability(row) {
       let sum = 0;
       const fields = ["formation_decision","work_plan","performance_indicators","meetings","consistency","coverage_books","report1","report2","report3","statistical_analysis"];
-      fields.forEach(f => {
-        const cell = row.querySelector(`[data-field="${f}"]`);
-        sum += parseFloat(cell?.innerText) || 0;
-      });
+      fields.forEach(f => {const cell = row.querySelector(`[data-field="${f}"]`);sum += parseFloat(cell?.innerText) || 0;});
       const availabilityCell = row.querySelector(".availability-cell");
       availabilityCell.innerText = sum.toFixed(2);
       availabilityCell.classList.add("highlight");
@@ -179,7 +174,6 @@
     async function loadCommittees() {
       try {
         const college = document.getElementById('collegeFilter').value;
-        const search = document.getElementById('committeeSearch').value.trim().toLowerCase();
         lastCollege = college || "جميع الكليات";
         let url = '/api/committees';
         const params = [];
@@ -196,36 +190,37 @@
         }
         res.data.sort((a,b)=>(a.college||"").localeCompare(b.college||"","ar"));
         res.data.forEach((c, idx) => {
-          if(search && !c.committee_name.toLowerCase().includes(search)) return;
           const tr = document.createElement('tr');
           tr.innerHTML = `
             <td>${idx+1}</td>
             <td class="col-college">${c.college}</td>
             <td>${c.committee_name}</td>
-            <td class="date-col col-date">${c.audit_date ? new Date(c.audit_date).toLocaleDateString('ar-EG'): '-'}</td>
-            <td data-field="formation_decision" class="col-formation_decision">${c.formation_decision ?? 0}</td>
-            <td data-field="work_plan" class="col-work_plan">${c.work_plan ?? 0}</td>
-            <td data-field="performance_indicators" class="col-performance_indicators">${c.performance_indicators ?? 0}</td>
-            <td data-field="meetings" class="col-meetings">${c.meetings ?? 0}</td>
-            <td data-field="consistency" class="col-consistency">${c.consistency ?? 0}</td>
-            <td data-field="coverage_books" class="col-coverage_books">${c.coverage_books ?? 0}</td>
-            <td data-field="report1" class="col-report1">${c.report1 ?? 0}</td>
-            <td data-field="report2" class="col-report2">${c.report2 ?? 0}</td>
-            <td data-field="report3" class="col-report3">${c.report3 ?? 0}</td>
-            <td data-field="statistical_analysis" class="col-statistical_analysis">${c.statistical_analysis ?? 0}</td>
+            <td class="date-col hidden-col">${c.audit_date ? new Date(c.audit_date).toLocaleDateString('ar-EG'): '-'}</td>
+            <td data-field="formation_decision">${c.formation_decision ?? 0}</td>
+            <td data-field="work_plan">${c.work_plan ?? 0}</td>
+            <td data-field="performance_indicators">${c.performance_indicators ?? 0}</td>
+            <td data-field="meetings">${c.meetings ?? 0}</td>
+            <td data-field="consistency">${c.consistency ?? 0}</td>
+            <td data-field="coverage_books">${c.coverage_books ?? 0}</td>
+            <td data-field="report1">${c.report1 ?? 0}</td>
+            <td data-field="report2">${c.report2 ?? 0}</td>
+            <td data-field="report3">${c.report3 ?? 0}</td>
+            <td data-field="statistical_analysis">${c.statistical_analysis ?? 0}</td>
             <td class="availability-cell">${c.availability_score ?? 0}</td>
-            <td>${c.notes && c.notes.trim() !== "" && c.notes.trim() !== "<p><br></p>"? `<button class="btn btn-sm btn-info" onclick="showNotes(\`${c.notes}\`)">🔍</button>` : '<span class="text-muted">لا توجد ملاحظات</span>'}</td>`;
+            <td>${c.notes && c.notes.trim() !== "" && c.notes.trim() !== "<p><br></p>"? 
+              `<button class="btn btn-sm btn-info" onclick="showNotes(\`${c.notes}\`)">🔍</button>` 
+              : '<span class="text-muted">لا توجد ملاحظات</span>'}</td>`;
           tbody.appendChild(tr);
           updateAvailability(tr);
         });
         updateCompletionRate();
-        applyDisplayToggles();
+        applyColumnVisibility();
+        applyCommitteeSearch();
       } catch (err) { showError("❌ فشل تحميل البيانات"); console.error(err); }
     }
     loadCommittees();
 
     document.getElementById('collegeFilter').addEventListener('change', loadCommittees);
-    document.getElementById('committeeSearch').addEventListener('input', loadCommittees);
 
     function showNotes(html) {
       document.getElementById('notesContent').innerHTML = html || "<i>لا توجد ملاحظات</i>";
@@ -243,7 +238,7 @@
           numCommittees++;
         }
       });
-      const visibleCols = 9; // ثوابت الأعمدة القابلة للحساب
+      const visibleCols = 9; 
       const denominator = numCommittees * visibleCols;
       const completionRate = denominator > 0 ? ((totalAvailability / denominator) * 100).toFixed(2) : 0;
       const completionDiv = document.getElementById("completionRateContainer");
@@ -254,21 +249,47 @@
       }
     }
 
-    function applyDisplayToggles() {
-      document.querySelectorAll('.toggle-display').forEach(cb => {
-        const field = cb.getAttribute('data-field');
-        if(field==="college"){
-          document.querySelectorAll('.col-college').forEach(cell => {cell.classList.toggle('hidden-col', !cb.checked);});
-        }
-        if(field==="date"){
-          document.querySelectorAll('.col-date').forEach(cell => {cell.classList.toggle('hidden-col', !cb.checked);});
-        }
+    function applyColumnVisibility() {
+      const showCollege = document.getElementById('toggle_college').checked;
+      const showDate = document.getElementById('toggle_date').checked;
+      document.querySelectorAll('.col-college').forEach(cell => {cell.classList.toggle('hidden-col', !showCollege);});
+      document.querySelectorAll('.date-col').forEach(cell => {cell.classList.toggle('hidden-col', !showDate);});
+      document.querySelectorAll('#committeesTable tr').forEach(tr => updateAvailability(tr));
+      updateCompletionRate();
+      updateAvailabilityHeader();
+    }
+    document.querySelectorAll('.simple-toggle').forEach(cb => {cb.addEventListener('change', applyColumnVisibility);});
+
+    function updateAvailabilityHeader() {
+      const visibleCols = 9;
+      document.getElementById("availabilityHeader").innerText = `درجة التوفر من (${visibleCols})`;
+    }
+    updateAvailabilityHeader();
+
+    function applyCommitteeSearch() {
+      const searchTerm = document.getElementById("committeeSearch").value.trim().toLowerCase();
+      document.querySelectorAll("#committeesTable tr").forEach(row => {
+        const committeeName = row.cells[2]?.innerText.trim().toLowerCase() || "";
+        row.style.display = committeeName.includes(searchTerm) ? "" : "none";
       });
     }
+    document.getElementById("committeeSearch").addEventListener("input", applyCommitteeSearch);
 
-    document.querySelectorAll('.toggle-display').forEach(cb => {
-      cb.addEventListener('change', applyDisplayToggles);
-    });
+    async function loadSettings() {
+      try {
+        const res = await axios.get('/api/settings');
+        const settings = res.data;
+        if (settings.selectedVisits) {
+          document.getElementById("selectedVisitsContainer").innerHTML = "الزيارات: " + settings.selectedVisits.join(" | ");
+        } else {
+          document.getElementById("selectedVisitsContainer").innerHTML = "الزيارات: لم يتم إختيار أي زيارة";
+        }
+      } catch (err) {
+        console.error("❌ فشل تحميل الإعدادات", err);
+        document.getElementById("selectedVisitsContainer").innerHTML = "الزيارات: لم يتم إختيار أي زيارة";
+      }
+    }
+    loadSettings();
   </script>
 </body>
 </html>
