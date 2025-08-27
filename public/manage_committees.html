@@ -37,75 +37,124 @@
       color: #0d6efd;
     }
 
+    /* ✅ سطر الزيارات */
+    #selectedVisitsContainer {
+      text-align: center;
+      font-weight: bold;
+      margin: 10px 0;
+      font-size: 16px;
+      color: #198754;
+    }
+
     /* ✅ إخفاء الأعمدة ديناميكي */
     .hidden-col { display: none !important; }
+
+    /* ✅ Freeze للجزء العلوي */
+    .sticky-header {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: #f8f9fa;
+      padding-top: 10px;
+    }
   </style>
 </head>
 <body>
   <div class="container">
-    <h3 class="text-center mb-4">⚙️ إدارة تقييم اللجان</h3>
+    <div class="sticky-header">
+      <h3 class="text-center mb-4">⚙️ إدارة تقييم اللجان</h3>
 
-    <!-- الفلاتر -->
-    <div class="filters row">
-      <div class="col-md-6 mb-2">
-        <label class="form-label">الكلية</label>
-        <select id="collegeFilter" class="form-select">
-          <option value="">جميع الكليات</option>
-        </select>
+      <!-- الفلاتر -->
+      <div class="filters row">
+        <div class="col-md-6 mb-2">
+          <label class="form-label">الكلية</label>
+          <select id="collegeFilter" class="form-select">
+            <option value="">جميع الكليات</option>
+          </select>
+        </div>
+        <div class="col-md-6 mb-2">
+          <label class="form-label">اسم المدقق</label>
+          <select id="auditorFilter" class="form-select">
+            <option value="">جميع المدققين</option>
+          </select>
+        </div>
       </div>
-      <div class="col-md-6 mb-2">
-        <label class="form-label">اسم المدقق</label>
-        <select id="auditorFilter" class="form-select">
-          <option value="">جميع المدققين</option>
-        </select>
+
+      <!-- ✅ كارد الزيارات -->
+      <div class="card mb-3">
+        <div class="card-body d-flex flex-wrap justify-content-center gap-3" id="visitsToggles">
+          <div class="form-check">
+            <input class="form-check-input visit-toggle" type="checkbox" id="visit1" value="الزيارة الأولى">
+            <label class="form-check-label" for="visit1">الزيارة الأولى</label>
+          </div>
+          <div class="form-check">
+            <input class="form-check-input visit-toggle" type="checkbox" id="visit2" value="الزيارة الثانية">
+            <label class="form-check-label" for="visit2">الزيارة الثانية</label>
+          </div>
+          <div class="form-check">
+            <input class="form-check-input visit-toggle" type="checkbox" id="visit3" value="الزيارة الثالثة">
+            <label class="form-check-label" for="visit3">الزيارة الثالثة</label>
+          </div>
+          <div class="form-check">
+            <input class="form-check-input visit-toggle" type="checkbox" id="visit4" value="الزيارة الرابعة">
+            <label class="form-check-label" for="visit4">الزيارة الرابعة</label>
+          </div>
+          <div class="form-check">
+            <input class="form-check-input visit-toggle" type="checkbox" id="visit5" value="الزيارة النهائية">
+            <label class="form-check-label" for="visit5">الزيارة النهائية</label>
+          </div>
+        </div>
       </div>
-    </div>
 
-    <!-- نسبة الاكتمال -->
-    <div id="completionRateContainer"></div>
+      <!-- ✅ سطر أسماء الزيارات -->
+      <div id="selectedVisitsContainer">لم يتم اختيار زيارة</div>
 
-    <!-- خيارات الأعمدة -->
-    <div class="card mb-3">
-      <div class="card-body d-flex flex-wrap justify-content-center gap-3" id="columnToggles">
-        <div class="form-check">
-          <input class="form-check-input col-toggle" type="checkbox" id="toggle_formation_decision" data-field="formation_decision" checked>
-          <label class="form-check-label" for="toggle_formation_decision">قرار التشكيل</label>
-        </div>
-        <div class="form-check">
-          <input class="form-check-input col-toggle" type="checkbox" id="toggle_work_plan" data-field="work_plan" checked>
-          <label class="form-check-label" for="toggle_work_plan">خطة العمل</label>
-        </div>
-        <div class="form-check">
-          <input class="form-check-input col-toggle" type="checkbox" id="toggle_performance_indicators" data-field="performance_indicators" checked>
-          <label class="form-check-label" for="toggle_performance_indicators">مؤشرات الأداء</label>
-        </div>
-        <div class="form-check">
-          <input class="form-check-input col-toggle" type="checkbox" id="toggle_meetings" data-field="meetings" checked>
-          <label class="form-check-label" for="toggle_meetings">عدد الاجتماعات</label>
-        </div>
-        <div class="form-check">
-          <input class="form-check-input col-toggle" type="checkbox" id="toggle_consistency" data-field="consistency" checked>
-          <label class="form-check-label" for="toggle_consistency">التوافق بين الدعوات والاجتماعات</label>
-        </div>
-        <div class="form-check">
-          <input class="form-check-input col-toggle" type="checkbox" id="toggle_coverage_books" data-field="coverage_books" checked>
-          <label class="form-check-label" for="toggle_coverage_books">كتب التغطية</label>
-        </div>
-        <div class="form-check">
-          <input class="form-check-input col-toggle" type="checkbox" id="toggle_report1" data-field="report1" checked>
-          <label class="form-check-label" for="toggle_report1">تقرير إنجاز 1</label>
-        </div>
-        <div class="form-check">
-          <input class="form-check-input col-toggle" type="checkbox" id="toggle_report2" data-field="report2" checked>
-          <label class="form-check-label" for="toggle_report2">تقرير إنجاز 2</label>
-        </div>
-        <div class="form-check">
-          <input class="form-check-input col-toggle" type="checkbox" id="toggle_report3" data-field="report3" checked>
-          <label class="form-check-label" for="toggle_report3">تقرير إنجاز 3</label>
-        </div>
-        <div class="form-check">
-          <input class="form-check-input col-toggle" type="checkbox" id="toggle_statistical_analysis" data-field="statistical_analysis" checked>
-          <label class="form-check-label" for="toggle_statistical_analysis">التحليل الإحصائي</label>
+      <!-- نسبة الاكتمال -->
+      <div id="completionRateContainer"></div>
+
+      <!-- خيارات الأعمدة -->
+      <div class="card mb-3">
+        <div class="card-body d-flex flex-wrap justify-content-center gap-3" id="columnToggles">
+          <div class="form-check">
+            <input class="form-check-input col-toggle" type="checkbox" id="toggle_formation_decision" data-field="formation_decision" checked>
+            <label class="form-check-label" for="toggle_formation_decision">قرار التشكيل</label>
+          </div>
+          <div class="form-check">
+            <input class="form-check-input col-toggle" type="checkbox" id="toggle_work_plan" data-field="work_plan" checked>
+            <label class="form-check-label" for="toggle_work_plan">خطة العمل</label>
+          </div>
+          <div class="form-check">
+            <input class="form-check-input col-toggle" type="checkbox" id="toggle_performance_indicators" data-field="performance_indicators" checked>
+            <label class="form-check-label" for="toggle_performance_indicators">مؤشرات الأداء</label>
+          </div>
+          <div class="form-check">
+            <input class="form-check-input col-toggle" type="checkbox" id="toggle_meetings" data-field="meetings" checked>
+            <label class="form-check-label" for="toggle_meetings">عدد الاجتماعات</label>
+          </div>
+          <div class="form-check">
+            <input class="form-check-input col-toggle" type="checkbox" id="toggle_consistency" data-field="consistency" checked>
+            <label class="form-check-label" for="toggle_consistency">التوافق بين الدعوات والاجتماعات</label>
+          </div>
+          <div class="form-check">
+            <input class="form-check-input col-toggle" type="checkbox" id="toggle_coverage_books" data-field="coverage_books" checked>
+            <label class="form-check-label" for="toggle_coverage_books">كتب التغطية</label>
+          </div>
+          <div class="form-check">
+            <input class="form-check-input col-toggle" type="checkbox" id="toggle_report1" data-field="report1" checked>
+            <label class="form-check-label" for="toggle_report1">تقرير إنجاز 1</label>
+          </div>
+          <div class="form-check">
+            <input class="form-check-input col-toggle" type="checkbox" id="toggle_report2" data-field="report2" checked>
+            <label class="form-check-label" for="toggle_report2">تقرير إنجاز 2</label>
+          </div>
+          <div class="form-check">
+            <input class="form-check-input col-toggle" type="checkbox" id="toggle_report3" data-field="report3" checked>
+            <label class="form-check-label" for="toggle_report3">تقرير إنجاز 3</label>
+          </div>
+          <div class="form-check">
+            <input class="form-check-input col-toggle" type="checkbox" id="toggle_statistical_analysis" data-field="statistical_analysis" checked>
+            <label class="form-check-label" for="toggle_statistical_analysis">التحليل الإحصائي</label>
+          </div>
         </div>
       </div>
     </div>
@@ -223,7 +272,7 @@
   <!-- مكتبات -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
-  <script src="https://cdn.quilljs.com/1.3.6/quill.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/quill@1.3.6/dist/quill.min.js"></script>
   <script>
     const quillEdit = new Quill('#editEditor', { theme: 'snow' });
     const toastSuccess = new bootstrap.Toast(document.getElementById('toastSuccess'));
@@ -288,7 +337,7 @@
       ];
       fields.forEach(f => {
         const cell = row.querySelector(`[data-field="${f}"]`);
-        if (!document.getElementById("toggle_" + f).checked) return; // استبعاد الأعمدة المخفية
+        if (!document.getElementById("toggle_" + f).checked) return;
         sum += parseFloat(cell?.innerText) || 0;
       });
       const availabilityCell = row.querySelector(".availability-cell");
@@ -311,7 +360,7 @@
           cell.classList.add("highlight");
           setTimeout(() => cell.classList.remove("highlight"), 1500);
           updateAvailability(tr);
-          updateCompletionRate(); // تحديث نسبة الاكتمال
+          updateCompletionRate();
         });
       });
     }
@@ -377,7 +426,7 @@
         });
 
         updateCompletionRate();
-        applyColumnVisibility(); // ✅ هنا الإضافة المهمة للحفاظ على حالة الأعمدة
+        applyColumnVisibility();
 
       } catch (err) { showError("❌ فشل تحميل البيانات"); console.error(err); }
     }
@@ -486,6 +535,16 @@
 
     document.querySelectorAll('.col-toggle').forEach(cb => {
       cb.addEventListener('change', applyColumnVisibility);
+    });
+
+    // ✅ التحكم في عرض الزيارات المختارة
+    function updateSelectedVisits() {
+      const selected = Array.from(document.querySelectorAll('.visit-toggle:checked')).map(cb => cb.value);
+      const container = document.getElementById('selectedVisitsContainer');
+      container.innerHTML = selected.length > 0 ? "الزيارات المختارة: " + selected.join(" | ") : "لم يتم اختيار زيارة";
+    }
+    document.querySelectorAll('.visit-toggle').forEach(cb => {
+      cb.addEventListener('change', updateSelectedVisits);
     });
   </script>
 </body>
