@@ -377,6 +377,8 @@
         });
 
         updateCompletionRate();
+        applyColumnVisibility(); // ✅ هنا الإضافة المهمة للحفاظ على حالة الأعمدة
+
       } catch (err) { showError("❌ فشل تحميل البيانات"); console.error(err); }
     }
     loadCommittees();
