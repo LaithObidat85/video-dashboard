@@ -40,6 +40,7 @@
       margin: 5px 0;
       font-size: 18px;
       color: #0d6efd;
+      min-height: 24px;
     }
 
     #infoContainer {
@@ -71,17 +72,21 @@
     <div class="sticky-header">
       <h3 class="text-center mb-4">⚙️ إدارة تقييم اللجان</h3>
       <div class="filters row">
-        <div class="col-md-6 mb-2">
+        <div class="col-md-4 mb-2">
           <label class="form-label">الكلية</label>
           <select id="collegeFilter" class="form-select">
             <option value="">جميع الكليات</option>
           </select>
         </div>
-        <div class="col-md-6 mb-2">
+        <div class="col-md-4 mb-2">
           <label class="form-label">اسم المدقق</label>
           <select id="auditorFilter" class="form-select">
             <option value="">جميع المدققين</option>
           </select>
+        </div>
+        <div class="col-md-4 mb-2">
+          <label class="form-label">بحث باسم اللجنة</label>
+          <input type="text" id="committeeSearch" class="form-control" placeholder="اكتب للبحث...">
         </div>
       </div>
       <div class="card mb-3">
@@ -109,7 +114,7 @@
         </div>
       </div>
       <div id="infoContainer">
-        <div id="selectedVisitsContainer">الزيارات: لم يتم إختيار أي زيارة</div>
+        <div id="selectedVisitsContainer"></div>
         <div id="completionRateContainer"></div>
       </div>
     </div>
@@ -198,7 +203,7 @@
             <td><div class="action-buttons"><button class="btn btn-sm btn-success" onclick="saveRow(this, '${c._id}')">💾</button><button class="btn btn-sm btn-primary" onclick='editCommittee(${JSON.stringify(c)})'>✏️</button><button class="btn btn-sm btn-danger" onclick="confirmDelete('${c._id}')">🗑️</button></div></td>`;
           tbody.appendChild(tr);attachCellListeners(tr);updateAvailability(tr);
         });
-        updateCompletionRate();applyColumnVisibility();
+        updateCompletionRate();applyColumnVisibility();applyCommitteeSearch();
       } catch (err) { showError("❌ فشل تحميل البيانات"); console.error(err); }
     }
     loadCommittees();
@@ -256,9 +261,10 @@
           });
         }
         applyColumnVisibility();
-        updateSelectedVisits(); // ✅ استدعاء مباشر بعد تحميل الإعدادات
+        updateSelectedVisits();
       } catch (err) {
         console.error("❌ فشل تحميل الإعدادات", err);
+        document.getElementById("selectedVisitsContainer").innerHTML = "الزيارات: لم يتم إختيار أي زيارة";
       }
     }
 
@@ -274,6 +280,15 @@
       }
     }
     document.getElementById('saveSettingsBtn').addEventListener('click', saveSettings);
+
+    function applyCommitteeSearch() {
+      const searchTerm = document.getElementById("committeeSearch").value.trim().toLowerCase();
+      document.querySelectorAll("#committeesTable tr").forEach(row => {
+        const committeeName = row.cells[2]?.innerText.trim().toLowerCase() || "";
+        row.style.display = committeeName.includes(searchTerm) ? "" : "none";
+      });
+    }
+    document.getElementById("committeeSearch").addEventListener("input", applyCommitteeSearch);
 
     loadSettings();
   </script>
