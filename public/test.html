@@ -13,7 +13,7 @@
     td { text-align: center; vertical-align: middle; }
     .highlight { background-color: #d4edda !important; transition: background-color 1s ease; }
     .toast-container { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); z-index: 2000; }
-    .filters { margin-bottom: 20px; width: 99%; margin-left: auto; margin-right: auto; }
+    .filters { margin-bottom: 10px; width: 99%; margin-left: auto; margin-right: auto; }
 
     #evaluationsTableWrapper th.date-col,
     #evaluationsTableWrapper td.date-col {
@@ -55,14 +55,6 @@
       color: #000;
     }
 
-    .form-check-input {
-      height: calc(2.25rem);
-      width: calc(2.25rem);
-    }
-    .form-check-label {
-      line-height: 2.25rem;
-    }
-
     .screen-notes { display: inline; }
     .print-notes { display: none; }
 
@@ -88,6 +80,8 @@
   <div class="container">
     <div class="sticky-header">
       <h3 class="text-center mb-4">📊 عرض تقييم اللجان</h3>
+
+      <!-- الفلاتر -->
       <div class="filters row align-items-center">
         <div class="col-md-3 mb-2">
           <label class="form-label">الكلية</label>
@@ -99,7 +93,11 @@
           <label class="form-label">البحث باسم اللجنة</label>
           <input type="text" id="committeeSearch" class="form-control" placeholder="اكتب للبحث...">
         </div>
-        <div class="col-md-4 mb-2 d-flex align-items-center gap-3">
+      </div>
+
+      <!-- checkboxes + زر الطباعة -->
+      <div class="row mb-3 align-items-center">
+        <div class="col-md-10 d-flex align-items-center gap-4">
           <div class="form-check">
             <input class="form-check-input simple-toggle" type="checkbox" id="toggle_college" data-field="college" checked>
             <label class="form-check-label" for="toggle_college">إظهار الكلية</label>
@@ -109,10 +107,11 @@
             <label class="form-check-label" for="toggle_date">إظهار تاريخ التدقيق</label>
           </div>
         </div>
-        <div class="col-md-2 mb-2 text-start">
+        <div class="col-md-2 text-start">
           <button class="btn btn-secondary" onclick="window.print()"><i class="bi bi-printer"></i></button>
         </div>
       </div>
+
       <div id="infoContainer">
         <div id="selectedVisitsContainer"></div>
         <div id="completionRateContainer"></div>
@@ -138,7 +137,7 @@
           <th class="col-report2">تقرير إنجاز 2</th>
           <th class="col-report3">تقرير إنجاز 3</th>
           <th class="col-statistical_analysis">التحليل الإحصائي</th>
-          <th id="availabilityHeader">درجة التوفر من (9)</th>
+          <th id="availabilityHeader">درجة التوفر من (0)</th>
           <th>الملاحظات</th>
         </tr>
       </thead>
@@ -176,6 +175,7 @@
     let lastCollege = "";
     let currentVisitsText = "";
     let currentCommitteesCount = 0;
+    let savedVisibleColumns = [];
 
     function showSuccess(msg="✅ العملية نجحت") {
       document.querySelector("#toastSuccess .toast-body").innerText = msg;toastSuccess.show();
@@ -197,8 +197,12 @@
 
     function updateAvailability(row) {
       let sum = 0;
-      const fields = ["formation_decision","work_plan","performance_indicators","meetings","consistency","coverage_books","report1","report2","report3","statistical_analysis"];
-      fields.forEach(f => {const cell = row.querySelector(`[data-field="${f}"]`);sum += parseFloat(cell?.innerText) || 0;});
+      savedVisibleColumns.forEach(f => {
+        const cell = row.querySelector(`[data-field="${f}"]`);
+        if (cell && !cell.classList.contains("hidden-col")) {
+          sum += parseFloat(cell?.innerText) || 0;
+        }
+      });
       const availabilityCell = row.querySelector(".availability-cell");
       availabilityCell.innerText = sum.toFixed(2);
       availabilityCell.classList.add("highlight");
@@ -276,13 +280,13 @@
       let numCommittees = 0;
       rows.forEach(row => {
         const availabilityCell = row.querySelector('.availability-cell');
-        if (availabilityCell) {
+        if (availabilityCell && row.style.display !== "none") {
           totalAvailability += parseFloat(availabilityCell.innerText) || 0;
           numCommittees++;
         }
       });
       currentCommitteesCount = numCommittees;
-      const visibleCols = 9; 
+      const visibleCols = savedVisibleColumns.length;
       const denominator = numCommittees * visibleCols;
       const completionRate = denominator > 0 ? ((totalAvailability / denominator) * 100).toFixed(2) : 0;
       const completionDiv = document.getElementById("completionRateContainer");
@@ -307,10 +311,8 @@
     document.querySelectorAll('.simple-toggle').forEach(cb => {cb.addEventListener('change', applyColumnVisibility);});
 
     function updateAvailabilityHeader() {
-      const visibleCols = 9;
-      document.getElementById("availabilityHeader").innerText = `درجة التوفر من (${visibleCols})`;
+      document.getElementById("availabilityHeader").innerText = `درجة التوفر من (${savedVisibleColumns.length})`;
     }
-    updateAvailabilityHeader();
 
     function applyCommitteeSearch() {
       const searchTerm = document.getElementById("committeeSearch").value.trim().toLowerCase();
@@ -325,13 +327,8 @@
       try {
         const res = await axios.get('/api/settings');
         const settings = res.data;
-        const allFields = ["college","date","formation_decision","work_plan","performance_indicators","meetings","consistency","coverage_books","report1","report2","report3","statistical_analysis"];
-        allFields.forEach(field => {
-          const isVisible = settings.visibleColumns?.includes(field);
-          document.querySelectorAll('.col-' + field).forEach(cell => cell.classList.toggle('hidden-col', !isVisible));
-          if(field==="college"){document.getElementById('toggle_college').checked = isVisible;}
-          if(field==="date"){document.getElementById('toggle_date').checked = isVisible;}
-        });
+        const allFields = ["formation_decision","work_plan","performance_indicators","meetings","consistency","coverage_books","report1","report2","report3","statistical_analysis"];
+        savedVisibleColumns = settings.visibleColumns || allFields;
         if (settings.selectedVisits) {
           currentVisitsText = settings.selectedVisits.join(" | ");
           document.getElementById("selectedVisitsContainer").innerHTML = "الزيارات: " + currentVisitsText;
@@ -339,6 +336,7 @@
           currentVisitsText = "لم يتم إختيار أي زيارة";
           document.getElementById("selectedVisitsContainer").innerHTML = "الزيارات: " + currentVisitsText;
         }
+        applyColumnVisibility();
       } catch (err) {
         console.error("❌ فشل تحميل الإعدادات", err);
         currentVisitsText = "لم يتم إختيار أي زيارة";
