@@ -57,6 +57,13 @@
       background: #f8f9fa;
       padding-top: 10px;
     }
+
+    /* ✅ Freeze للصف الأول من الجدول */
+    #evaluationsTableWrapper thead th {
+      position: sticky;
+      top: 260px; /* يتناسب مع ارتفاع الهيدر المثبت */
+      z-index: 99;
+    }
   </style>
 </head>
 <body>
