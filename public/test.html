@@ -55,10 +55,17 @@
       color: #000;
     }
 
-    .form-check { transform: translateY(4px); }
+    .form-check, .btn-secondary { transform: translateY(6px); }
 
     .screen-notes { display: inline; }
     .print-notes { display: none; }
+
+    #printHeader {
+      display: none;
+      text-align: center;
+      margin-bottom: 15px;
+      font-weight: bold;
+    }
 
     @media print {
       @page { size: A4 landscape; margin: 10mm; }
@@ -67,6 +74,7 @@
       table { font-size: 12px; }
       .screen-notes { display: none !important; }
       .print-notes { display: inline !important; white-space: pre-wrap; }
+      #printHeader { display: block !important; }
     }
   </style>
 </head>
@@ -104,6 +112,9 @@
         <div id="completionRateContainer"></div>
       </div>
     </div>
+
+    <div id="printHeader"></div>
+
     <table class="table table-bordered table-striped table-responsive" id="evaluationsTableWrapper">
       <thead>
         <tr>
@@ -157,6 +168,8 @@
     const toastSuccess = new bootstrap.Toast(document.getElementById('toastSuccess'));
     const toastError = new bootstrap.Toast(document.getElementById('toastError'));
     let lastCollege = "";
+    let currentVisitsText = "";
+    let currentCommitteesCount = 0;
 
     function showSuccess(msg="✅ العملية نجحت") {
       document.querySelector("#toastSuccess .toast-body").innerText = msg;toastSuccess.show();
@@ -236,6 +249,7 @@
           tbody.appendChild(tr);
           updateAvailability(tr);
         });
+        currentCommitteesCount = res.data.length;
         updateCompletionRate();
         applyColumnVisibility();
         applyCommitteeSearch();
@@ -261,6 +275,7 @@
           numCommittees++;
         }
       });
+      currentCommitteesCount = numCommittees;
       const visibleCols = 9; 
       const denominator = numCommittees * visibleCols;
       const completionRate = denominator > 0 ? ((totalAvailability / denominator) * 100).toFixed(2) : 0;
@@ -270,6 +285,7 @@
       } else {
         completionDiv.innerHTML = `📌 نسبة الاكتمال لجميع الكليات = ${completionRate}%<br>📋 عدد لجان جميع الكليات = ${numCommittees}`;
       }
+      updatePrintHeader();
     }
 
     function applyColumnVisibility() {
@@ -302,17 +318,34 @@
       try {
         const res = await axios.get('/api/settings');
         const settings = res.data;
+        if (settings.visibleColumns) {
+          document.querySelectorAll('.col-college').forEach(cell => cell.classList.toggle('hidden-col', !settings.visibleColumns.includes("college")));
+          document.querySelectorAll('.date-col').forEach(cell => cell.classList.toggle('hidden-col', !settings.visibleColumns.includes("date")));
+        }
         if (settings.selectedVisits) {
-          document.getElementById("selectedVisitsContainer").innerHTML = "الزيارات: " + settings.selectedVisits.join(" | ");
+          currentVisitsText = settings.selectedVisits.join(" | ");
+          document.getElementById("selectedVisitsContainer").innerHTML = "الزيارات: " + currentVisitsText;
         } else {
-          document.getElementById("selectedVisitsContainer").innerHTML = "الزيارات: لم يتم إختيار أي زيارة";
+          currentVisitsText = "لم يتم إختيار أي زيارة";
+          document.getElementById("selectedVisitsContainer").innerHTML = "الزيارات: " + currentVisitsText;
         }
       } catch (err) {
         console.error("❌ فشل تحميل الإعدادات", err);
-        document.getElementById("selectedVisitsContainer").innerHTML = "الزيارات: لم يتم إختيار أي زيارة";
+        currentVisitsText = "لم يتم إختيار أي زيارة";
+        document.getElementById("selectedVisitsContainer").innerHTML = "الزيارات: " + currentVisitsText;
       }
+      updatePrintHeader();
     }
     loadSettings();
+
+    function updatePrintHeader() {
+      const headerDiv = document.getElementById("printHeader");
+      headerDiv.innerHTML = `
+        📊 نتائج تقييم اللجان - ${lastCollege}<br>
+        الزيارات: ${currentVisitsText}<br>
+        📋 عدد اللجان = ${currentCommitteesCount}
+      `;
+    }
   </script>
 </body>
 </html>
