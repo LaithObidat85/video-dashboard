@@ -55,7 +55,13 @@
       color: #000;
     }
 
-    .form-check, .btn-secondary { transform: translateY(6px); }
+    .form-check-input {
+      height: calc(2.25rem);
+      width: calc(2.25rem);
+    }
+    .form-check-label {
+      line-height: 2.25rem;
+    }
 
     .screen-notes { display: inline; }
     .print-notes { display: none; }
@@ -224,16 +230,16 @@
             <td class="col-college">${c.college}</td>
             <td>${c.committee_name}</td>
             <td class="date-col hidden-col">${c.audit_date ? new Date(c.audit_date).toLocaleDateString('ar-EG'): '-'}</td>
-            <td data-field="formation_decision">${c.formation_decision ?? 0}</td>
-            <td data-field="work_plan">${c.work_plan ?? 0}</td>
-            <td data-field="performance_indicators">${c.performance_indicators ?? 0}</td>
-            <td data-field="meetings">${c.meetings ?? 0}</td>
-            <td data-field="consistency">${c.consistency ?? 0}</td>
-            <td data-field="coverage_books">${c.coverage_books ?? 0}</td>
-            <td data-field="report1">${c.report1 ?? 0}</td>
-            <td data-field="report2">${c.report2 ?? 0}</td>
-            <td data-field="report3">${c.report3 ?? 0}</td>
-            <td data-field="statistical_analysis">${c.statistical_analysis ?? 0}</td>
+            <td data-field="formation_decision" class="col-formation_decision">${c.formation_decision ?? 0}</td>
+            <td data-field="work_plan" class="col-work_plan">${c.work_plan ?? 0}</td>
+            <td data-field="performance_indicators" class="col-performance_indicators">${c.performance_indicators ?? 0}</td>
+            <td data-field="meetings" class="col-meetings">${c.meetings ?? 0}</td>
+            <td data-field="consistency" class="col-consistency">${c.consistency ?? 0}</td>
+            <td data-field="coverage_books" class="col-coverage_books">${c.coverage_books ?? 0}</td>
+            <td data-field="report1" class="col-report1">${c.report1 ?? 0}</td>
+            <td data-field="report2" class="col-report2">${c.report2 ?? 0}</td>
+            <td data-field="report3" class="col-report3">${c.report3 ?? 0}</td>
+            <td data-field="statistical_analysis" class="col-statistical_analysis">${c.statistical_analysis ?? 0}</td>
             <td class="availability-cell">${c.availability_score ?? 0}</td>
             <td>
               <span class="screen-notes">
@@ -293,6 +299,7 @@
       const showDate = document.getElementById('toggle_date').checked;
       document.querySelectorAll('.col-college').forEach(cell => {cell.classList.toggle('hidden-col', !showCollege);});
       document.querySelectorAll('.date-col').forEach(cell => {cell.classList.toggle('hidden-col', !showDate);});
+
       document.querySelectorAll('#committeesTable tr').forEach(tr => updateAvailability(tr));
       updateCompletionRate();
       updateAvailabilityHeader();
@@ -318,10 +325,13 @@
       try {
         const res = await axios.get('/api/settings');
         const settings = res.data;
-        if (settings.visibleColumns) {
-          document.querySelectorAll('.col-college').forEach(cell => cell.classList.toggle('hidden-col', !settings.visibleColumns.includes("college")));
-          document.querySelectorAll('.date-col').forEach(cell => cell.classList.toggle('hidden-col', !settings.visibleColumns.includes("date")));
-        }
+        const allFields = ["college","date","formation_decision","work_plan","performance_indicators","meetings","consistency","coverage_books","report1","report2","report3","statistical_analysis"];
+        allFields.forEach(field => {
+          const isVisible = settings.visibleColumns?.includes(field);
+          document.querySelectorAll('.col-' + field).forEach(cell => cell.classList.toggle('hidden-col', !isVisible));
+          if(field==="college"){document.getElementById('toggle_college').checked = isVisible;}
+          if(field==="date"){document.getElementById('toggle_date').checked = isVisible;}
+        });
         if (settings.selectedVisits) {
           currentVisitsText = settings.selectedVisits.join(" | ");
           document.getElementById("selectedVisitsContainer").innerHTML = "الزيارات: " + currentVisitsText;
