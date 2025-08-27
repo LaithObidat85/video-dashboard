@@ -5,21 +5,19 @@ const path = require('path');
 const bodyParser = require('body-parser');
 const session = require('express-session');
 const cors = require('cors');
-const multer = require('multer'); // ✅ لإدارة رفع الملفات
+const multer = require('multer');
 const fs = require('fs');
 require('dotenv').config();
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// ✅ تفعيل CORS للسماح بالطلبات القادمة من GitHub Pages
 app.use(cors({
   origin: "https://laithobidat85.github.io",
   methods: ["GET", "POST", "PUT", "DELETE"],
   credentials: true
 }));
 
-// الاتصال بـ MongoDB Atlas
 const MONGO_URI = process.env.MONGO_URI;
 mongoose.connect(MONGO_URI, {
   useNewUrlParser: true,
@@ -28,7 +26,6 @@ mongoose.connect(MONGO_URI, {
 .then(() => console.log('✅ Connected to MongoDB Atlas'))
 .catch(err => console.error('❌ MongoDB connection error:', err));
 
-// ====== النماذج (Models) ======
 const videoSchema = new mongoose.Schema({
   title: { type: String, required: true },
   url: { type: String, required: true },
@@ -61,18 +58,16 @@ const departmentSchema = new mongoose.Schema({
 });
 const Department = mongoose.model('Department', departmentSchema);
 
-// ✅ النسخ الاحتياطية الآن تشمل (فيديوهات + روابط + كلمات مرور + أقسام + كليات)
 const backupSchema = new mongoose.Schema({
   date: { type: Date, default: Date.now },
   videos: Array,
   links: Array,
   passwords: Array,
-  colleges: Array,   // ✅ إضافة الكليات
+  colleges: Array,
   departments: Array
 });
 const Backup = mongoose.model('Backup', backupSchema);
 
-// Middleware
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, 'public')));
@@ -85,16 +80,19 @@ app.use(session({
 }));
 
 const Evaluation = require('./models/evaluationSchema');
-
 const College = require('./models/collegeSchema');
-
 const Auditor = require('./models/auditorSchema');
 
+// ✅ Model جديد لإعدادات العرض
+const settingsSchema = new mongoose.Schema({
+  visibleColumns: [String],
+  selectedVisits: [String],
+  updatedAt: { type: Date, default: Date.now }
+});
+const Settings = mongoose.model('Settings', settingsSchema);
 
-// ✅ إعداد multer لحفظ الملفات مؤقتًا
 const upload = multer({ dest: 'uploads/' });
 
-// ==================== التحقق من كلمة المرور لكل قسم أو صفحة ====================
 app.post("/api/verify-password", async (req, res) => {
   const { section, password } = req.body;
   try {
@@ -110,7 +108,6 @@ app.post("/api/verify-password", async (req, res) => {
   }
 });
 
-// ✅ تحقق من حالة الجلسة
 app.get('/api/check-session/:section', (req, res) => {
   const { section } = req.params;
   if (req.session && req.session[`${section}Auth`]) {
@@ -120,14 +117,12 @@ app.get('/api/check-session/:section', (req, res) => {
   }
 });
 
-// ✅ تسجيل الخروج
 app.post('/api/logout/:section', (req, res) => {
   const { section } = req.params;
   if (req.session) req.session[`${section}Auth`] = false;
   return res.json({ success: true });
 });
 
-// ✅ حماية الصفحات
 function requireSectionAuth(section, page) {
   return (req, res) => {
     if (req.session && req.session[`${section}Auth`]) {
@@ -145,7 +140,6 @@ app.get('/add.html', requireSectionAuth('add', 'add.html'));
 app.get('/passwords.html', requireSectionAuth('passwords', 'passwords.html'));
 app.get('/index.html', requireSectionAuth('index', 'index.html'));
 
-// ====== إدارة كلمات المرور ======
 app.get('/api/passwords', async (req, res) => {
   try {
     const passwords = await Password.find();
@@ -180,7 +174,6 @@ app.delete('/api/passwords/:id', async (req, res) => {
   }
 });
 
-// ✅ التحقق المباشر من كلمة مرور قسم
 app.post('/api/check-section-password', async (req, res) => {
   const { section, password } = req.body;
   try {
@@ -193,7 +186,6 @@ app.post('/api/check-section-password', async (req, res) => {
   }
 });
 
-// ====== إدارة الأقسام ======
 app.get('/api/departments', async (req, res) => {
   try {
     const deps = await Department.find().sort({ name: 1 });
@@ -230,7 +222,6 @@ app.delete('/api/departments/:id', async (req, res) => {
   }
 });
 
-// ====== إدارة الفيديوهات ======
 app.get('/api/videos', async (req, res) => {
   try {
     const videos = await Video.find().sort({ dateAdded: -1 });
@@ -267,7 +258,6 @@ app.delete('/api/videos/:id', async (req, res) => {
   }
 });
 
-// ====== إدارة الروابط ======
 app.get('/api/links', async (req, res) => {
   try {
     const links = await Link.find().sort({ order: 1 });
@@ -328,7 +318,6 @@ app.post('/api/links/:id/move', async (req, res) => {
   }
 });
 
-// ====== إدارة النسخ الاحتياطية ======
 app.post('/api/backups/create', async (req, res) => {
   try {
     const videos = await Video.find();
@@ -383,9 +372,6 @@ app.post('/api/backups/restore/:id', async (req, res) => {
   }
 });
 
-// ====== إدارة تقييمات اللجان ======
-
-// إضافة تقييم لجنة
 app.post('/api/committees', async (req, res) => {
   try {
     const evaluation = new Evaluation(req.body);
@@ -396,13 +382,12 @@ app.post('/api/committees', async (req, res) => {
   }
 });
 
-// جلب كل التقييمات (مع إمكانية الفلترة حسب الكلية او المدقق)
 app.get('/api/committees', async (req, res) => {
   try {
     const { college, auditor_name } = req.query;
     let query = {};
     if (college) query.college = college;
-    if (auditor_name) query.auditor_name = auditor_name; // ✅ إضافة فلترة بالمدقق
+    if (auditor_name) query.auditor_name = auditor_name;
     const evaluations = await Evaluation.find(query).sort({ createdAt: -1 });
     res.json(evaluations);
   } catch (err) {
@@ -410,8 +395,6 @@ app.get('/api/committees', async (req, res) => {
   }
 });
 
-
-// تعديل تقييم لجنة
 app.put('/api/committees/:id', async (req, res) => {
   try {
     const updated = await Evaluation.findByIdAndUpdate(req.params.id, req.body, { new: true });
@@ -422,7 +405,6 @@ app.put('/api/committees/:id', async (req, res) => {
   }
 });
 
-// حذف تقييم لجنة
 app.delete('/api/committees/:id', async (req, res) => {
   try {
     const deleted = await Evaluation.findByIdAndDelete(req.params.id);
@@ -433,9 +415,6 @@ app.delete('/api/committees/:id', async (req, res) => {
   }
 });
 
-// ====== إدارة الكليات ======
-
-// جلب جميع الكليات
 app.get('/api/colleges', async (req, res) => {
   try {
     const colleges = await College.find().sort({ name: 1 });
@@ -445,7 +424,6 @@ app.get('/api/colleges', async (req, res) => {
   }
 });
 
-// إضافة كلية جديدة
 app.post('/api/colleges', async (req, res) => {
   try {
     const college = new College({ name: req.body.name });
@@ -456,7 +434,6 @@ app.post('/api/colleges', async (req, res) => {
   }
 });
 
-// تعديل كلية
 app.put('/api/colleges/:id', async (req, res) => {
   try {
     const updated = await College.findByIdAndUpdate(
@@ -471,7 +448,6 @@ app.put('/api/colleges/:id', async (req, res) => {
   }
 });
 
-// حذف كلية
 app.delete('/api/colleges/:id', async (req, res) => {
   try {
     const deleted = await College.findByIdAndDelete(req.params.id);
@@ -482,9 +458,6 @@ app.delete('/api/colleges/:id', async (req, res) => {
   }
 });
 
-// ====== إدارة المدققين ======
-
-// جلب جميع المدققين
 app.get('/api/auditors', async (req, res) => {
   try {
     const auditors = await Auditor.find().sort({ name: 1 });
@@ -494,7 +467,6 @@ app.get('/api/auditors', async (req, res) => {
   }
 });
 
-// إضافة مدقق جديد
 app.post('/api/auditors', async (req, res) => {
   try {
     const auditor = new Auditor({ name: req.body.name });
@@ -505,7 +477,6 @@ app.post('/api/auditors', async (req, res) => {
   }
 });
 
-// تعديل اسم مدقق
 app.put('/api/auditors/:id', async (req, res) => {
   try {
     const updated = await Auditor.findByIdAndUpdate(
@@ -520,7 +491,6 @@ app.put('/api/auditors/:id', async (req, res) => {
   }
 });
 
-// حذف مدقق
 app.delete('/api/auditors/:id', async (req, res) => {
   try {
     const deleted = await Auditor.findByIdAndDelete(req.params.id);
@@ -531,7 +501,6 @@ app.delete('/api/auditors/:id', async (req, res) => {
   }
 });
 
-// ✅ رفع نسخة من الجهاز
 app.post('/api/backups/upload', upload.single('backupFile'), async (req, res) => {
   try {
     const filePath = req.file.path;
@@ -541,7 +510,7 @@ app.post('/api/backups/upload', upload.single('backupFile'), async (req, res) =>
       videos: jsonData.videos || [],
       links: jsonData.links || [],
       passwords: jsonData.passwords || [],
-      colleges: jsonData.colleges || [],   // ✅ إضافة الكليات هنا أيضًا
+      colleges: jsonData.colleges || [],
       departments: jsonData.departments || []
     });
     await backup.save();
@@ -552,7 +521,6 @@ app.post('/api/backups/upload', upload.single('backupFile'), async (req, res) =>
   }
 });
 
-// ✅ إعادة التوجيه
 app.get('/api/redirect/:id', async (req, res) => {
   try {
     const link = await Link.findById(req.params.id);
@@ -563,7 +531,6 @@ app.get('/api/redirect/:id', async (req, res) => {
   }
 });
 
-// ====== تسجيل الدخول ======
 app.get('/auth/login', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'login.html'));
 });
@@ -582,7 +549,6 @@ app.get('/auth/logout', (req, res) => {
   });
 });
 
-// ====== صفحة الروابط المحمية ======
 app.get('/protected', async (req, res) => {
   if (!req.session.user) return res.redirect('/auth/login');
   const linkId = req.query.id;
@@ -596,7 +562,37 @@ app.get('/protected', async (req, res) => {
   }
 });
 
-// ▶️ تشغيل الخادم
+// ✅ API جديد للإعدادات
+app.get('/api/settings', async (req, res) => {
+  try {
+    let settings = await Settings.findOne();
+    if (!settings) {
+      settings = new Settings({ visibleColumns: [], selectedVisits: [] });
+      await settings.save();
+    }
+    res.json(settings);
+  } catch (err) {
+    res.status(500).json({ message: '❌ خطأ في جلب الإعدادات', error: err.message });
+  }
+});
+
+app.put('/api/settings', async (req, res) => {
+  try {
+    let settings = await Settings.findOne();
+    if (!settings) {
+      settings = new Settings(req.body);
+    } else {
+      settings.visibleColumns = req.body.visibleColumns || [];
+      settings.selectedVisits = req.body.selectedVisits || [];
+      settings.updatedAt = new Date();
+    }
+    await settings.save();
+    res.json(settings);
+  } catch (err) {
+    res.status(400).json({ message: '❌ خطأ في حفظ الإعدادات', error: err.message });
+  }
+});
+
 app.listen(PORT, () => {
   console.log(`🚀 الخادم يعمل على: http://localhost:${PORT}`);
 });
