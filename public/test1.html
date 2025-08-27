@@ -417,7 +417,7 @@
         bootstrap.Modal.getInstance(document.getElementById('editModal')).hide();
         loadCommittees();
       } catch (err) { console.error(err); showError("❌ خطأ أثناء الحفظ"); }
-    }
+    });
 
     // حفظ من الجدول
     async function saveRow(btn, id) {
