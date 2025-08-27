@@ -58,12 +58,14 @@
       padding-top: 10px;
     }
 
-    /* ✅ Freeze للصف الأول من الجدول */
-    #evaluationsTableWrapper thead th {
-      position: sticky;
-      top: 260px; /* يتناسب مع ارتفاع الهيدر المثبت */
-      z-index: 99;
-    }
+   /* بدون رقم ثابت */
+#evaluationsTableWrapper thead th {
+  position: sticky;
+  z-index: 99;
+  background: #0d6efd; /* ضروري للخلفية حتى لا تختفي مع التمرير */
+  color: #fff;
+}
+
   </style>
 </head>
 <body>
@@ -553,6 +555,19 @@
     document.querySelectorAll('.visit-toggle').forEach(cb => {
       cb.addEventListener('change', updateSelectedVisits);
     });
+
+// ✅ حساب ارتفاع الهيدر تلقائيًا وتطبيقه على thead
+  function adjustTableHeadOffset() {
+    const header = document.querySelector('.sticky-header');
+    const headerHeight = header ? header.offsetHeight : 0;
+    document.querySelectorAll('#evaluationsTableWrapper thead th').forEach(th => {
+      th.style.top = headerHeight + "px";
+    });
+  }
+
+  // استدعاء عند التحميل وتغيير حجم النافذة
+  window.addEventListener('load', adjustTableHeadOffset);
+  window.addEventListener('resize', adjustTableHeadOffset);
   </script>
 </body>
 </html>
