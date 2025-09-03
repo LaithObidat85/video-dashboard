@@ -238,6 +238,23 @@ document.getElementById('cancelBtn').addEventListener('click', ()=>{
   document.getElementById('addLinkForm').style.display='none';
 });
 
+
+  // ✅ إظهار/إخفاء نموذج إضافة رابط جديد
+document.getElementById('showFormBtn').addEventListener('click', () => {
+  const form = document.getElementById('addLinkForm');
+  const isHidden = (form.style.display === '' || form.style.display === 'none');
+
+  if (isHidden) {
+    form.reset();                         // تهيئة الحقول
+    document.getElementById('id').value = ''; // تفريغ حقل id (لإنشاء جديد)
+    form.style.display = 'block';         // إظهار النموذج
+    activateTooltips();                   // تفعيل التولتيب لعناصر النموذج
+    form.scrollIntoView({ behavior: 'smooth', block: 'start' }); // (اختياري) تمرير للنموذج
+  } else {
+    form.style.display = 'none';          // إخفاؤه إذا كان ظاهرًا
+  }
+});
+
 // 🔴 تسجيل خروج
 document.getElementById("logoutBtn").addEventListener("click", ()=>{
   sessionStorage.removeItem("loggedInAt_links");
