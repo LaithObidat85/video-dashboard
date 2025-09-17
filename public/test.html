@@ -2,317 +2,254 @@
 <html lang="ar" dir="rtl">
 <head>
   <meta charset="UTF-8">
-  <title>عرض تقييم اللجان</title>
+  <title>إدخال تقييم لجنة</title>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.rtl.min.css">
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
+  <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
   <style>
-    body { background: #f8f9fa; font-family: 'Segoe UI', sans-serif; }
-    .container { margin-top: 30px; }
-    table { background: #fff; border-radius: 10px; overflow: hidden; font-size: 14px; width: 99%; margin: auto; }
-    th { text-align: center; vertical-align: middle; background-color: #f8f9fa; color: #000; }
-    td { text-align: center; vertical-align: middle; }
-    .highlight { background-color: #d4edda !important; transition: background-color 1s ease; }
-    .toast-container { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); z-index: 2000; }
-    .filters { margin-bottom: 20px; width: 99%; margin-left: auto; margin-right: auto; text-align: center; }
-
-    #evaluationsTableWrapper th.date-col,
-    #evaluationsTableWrapper td.date-col {
-      direction: ltr;
-      text-align: center;
-      width: 100px;
-      max-width: 100px;
-    }
-
-    #completionRateContainer, #selectedVisitsContainer {
-      text-align: center;
-      font-weight: bold;
-      margin: 5px 0;
-      font-size: 18px;
-      color: #0d6efd;
-      min-height: 24px;
-    }
-
-    #infoContainer {
-      text-align: center;
-      font-weight: bold;
-      margin: 15px 0;
-      font-size: 18px;
-      color: #0d6efd;
-    }
-
-    .hidden-col { display: none !important; }
-
-    .sticky-header {
-      background: #f8f9fa;
-      padding-top: 10px;
-    }
-
-    #evaluationsTableWrapper thead th {
-      position: sticky;
-      top: 0;
-      z-index: 99;
-      background: #f8f9fa;
-      color: #000;
-    }
+    body { background-color: #f8f9fa; font-family: 'Segoe UI', sans-serif; }
+    .form-container { max-width: 800px; margin: 40px auto; background: #fff; padding: 25px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+    .form-section { margin-bottom: 20px; padding: 15px; border: 1px solid #dee2e6; border-radius: 10px; background: #fdfdfd; }
+    .form-section h6 { margin-bottom: 15px; font-weight: bold; color: #0d6efd; }
+    .toast-container { position: fixed; top: 20px; left: 20px; z-index: 2000; }
+    #editor { height: 150px; background: #fff; }
   </style>
 </head>
 <body>
-  <div class="container">
-    <div class="sticky-header">
-      <h3 class="text-center mb-4">📊 عرض تقييم اللجان</h3>
+  <div class="form-container">
+    <h4 class="mb-4 text-center">📝 إدخال تقييم لجنة</h4>
+    <form id="committeeForm">
 
-      <!-- الفلاتر في الوسط -->
-      <div class="filters row justify-content-center">
-        <div class="col-md-3 mb-2 text-center">
-          <label class="form-label d-block">الكلية</label>
-          <select id="collegeFilter" class="form-select">
-            <option value="">جميع الكليات</option>
+      <!-- بيانات اللجنة -->
+      <div class="form-section">
+        <h6>بيانات اللجنة</h6>
+        <div class="mb-3">
+          <label class="form-label">الكلية</label>
+          <select class="form-select" name="college" id="collegeSelect" required>
+            <option value="">اختر الكلية...</option>
           </select>
         </div>
-        <div class="col-md-3 mb-2 text-center">
-          <label class="form-label d-block">البحث بإسم اللجنة</label>
-          <input type="text" id="committeeSearch" class="form-control" placeholder="اكتب للبحث...">
+        <div class="mb-3">
+          <label class="form-label">اسم اللجنة</label>
+          <input type="text" class="form-control" name="committee_name" required>
         </div>
       </div>
 
-      <!-- checkboxes وزر الطباعة وزر الاستعلام -->
-      <div class="row mb-3 justify-content-center">
-        <div class="col-md-8 d-flex align-items-center justify-content-center gap-4">
-          <div class="form-check">
-            <input class="form-check-input simple-toggle" type="checkbox" id="toggle_college" checked>
-            <label class="form-check-label" for="toggle_college">إظهار الكلية</label>
+      <!-- عناصر التقييم (بهيئة جدول) -->
+      <div class="form-section">
+        <h6 class="d-flex align-items-center justify-content-between">
+          التقييم التفصيلي
+          <div class="form-check form-switch">
+            <input class="form-check-input" type="checkbox" id="fillOnes">
+            <label class="form-check-label" for="fillOnes">تعبئة تلقائية بالرقم 1</label>
           </div>
-          <div class="form-check">
-            <input class="form-check-input simple-toggle" type="checkbox" id="toggle_date">
-            <label class="form-check-label" for="toggle_date">إظهار تاريخ التدقيق</label>
-          </div>
-          <button class="btn btn-secondary" onclick="window.print()"><i class="bi bi-printer"></i></button>
-          <button class="btn btn-info" onclick="loadSettings()"><i class="bi bi-arrow-repeat"></i></button>
+        </h6>
+
+        <div class="table-responsive">
+          <table class="table table-bordered align-middle mb-0">
+            <thead class="table-light">
+              <tr>
+                <th style="width:70%">البند</th>
+                <th style="width:30%">الدرجة</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><label for="formation_decision">قرار التشكيل</label></td>
+                <td><input type="number" step="0.25" min="0" max="1" class="form-control score" name="formation_decision" id="formation_decision" placeholder="0"></td>
+              </tr>
+              <tr>
+                <td><label for="work_plan">خطة عمل اللجنة</label></td>
+                <td><input type="number" step="0.25" min="0" max="1" class="form-control score" name="work_plan" id="work_plan" placeholder="0"></td>
+              </tr>
+              <tr>
+                <td><label for="performance_indicators">مؤشرات أداء خطة عمل اللجنة قابلة للقياس</label></td>
+                <td><input type="number" step="0.25" min="0" max="1" class="form-control score" name="performance_indicators" id="performance_indicators" placeholder="0"></td>
+              </tr>
+              <tr>
+                <td><label for="meetings">عدد الاجتماعات</label></td>
+                <td><input type="number" step="0.25" min="0" max="1" class="form-control score" name="meetings" id="meetings" placeholder="0"></td>
+              </tr>
+              <tr>
+                <td><label for="consistency">التوافق بين الدعوات والاجتماعات</label></td>
+                <td><input type="number" step="0.25" min="0" max="1" class="form-control score" name="consistency" id="consistency" placeholder="0"></td>
+              </tr>
+              <tr>
+                <td><label for="coverage_books">كتب التغطية</label></td>
+                <td><input type="number" step="0.25" min="0" max="1" class="form-control score" name="coverage_books" id="coverage_books" placeholder="0"></td>
+              </tr>
+              <tr>
+                <td><label for="report1">تقرير إنجاز 1</label></td>
+                <td><input type="number" step="0.25" min="0" max="1" class="form-control score" name="report1" id="report1" placeholder="0"></td>
+              </tr>
+              <tr>
+                <td><label for="report2">تقرير إنجاز 2</label></td>
+                <td><input type="number" step="0.25" min="0" max="1" class="form-control score" name="report2" id="report2" placeholder="0"></td>
+              </tr>
+              <tr>
+                <td><label for="report3">تقرير إنجاز 3</label></td>
+                <td><input type="number" step="0.25" min="0" max="1" class="form-control score" name="report3" id="report3" placeholder="0"></td>
+              </tr>
+              <tr>
+                <td><label for="statistical_analysis">تقييم أداء اللجنة (التحليل الإحصائي)</label></td>
+                <td><input type="number" step="0.25" min="0" max="1" class="form-control score" name="statistical_analysis" id="statistical_analysis" placeholder="0"></td>
+              </tr>
+            </tbody>
+          </table>
         </div>
       </div>
 
-      <div id="infoContainer">
-        <div id="selectedVisitsContainer"></div>
-        <div id="completionRateContainer"></div>
+      <!-- درجة التوفر والملاحظات -->
+      <div class="form-section">
+        <h6>النتائج النهائية</h6>
+        <div class="mb-3">
+          <label class="form-label">درجة التوفر (تُحسب تلقائيًا)</label>
+          <input type="number" class="form-control" id="availability_score" name="availability_score" readonly>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">ملاحظات</label>
+          <div id="editor"></div>
+          <input type="hidden" name="notes" id="notesInput">
+        </div>
+        <div class="row">
+          <div class="col-md-6 mb-3"><label class="form-label">تاريخ التدقيق</label><input type="date" class="form-control" name="audit_date"></div>
+          <div class="col-md-6 mb-3">
+            <label class="form-label">اسم المدقق</label>
+            <select class="form-select" name="auditor_name" id="auditorSelect" required>
+              <option value="">اختر المدقق...</option>
+            </select>
+          </div>
+        </div>
       </div>
-    </div>
-    <table class="table table-bordered table-striped table-responsive" id="evaluationsTableWrapper">
-      <thead>
-        <tr>
-          <th>#</th>
-          <th class="col-college">الكلية</th>
-          <th>اسم اللجنة</th>
-          <th class="date-col hidden-col">تاريخ التدقيق</th>
-          <th class="col-formation_decision">قرار التشكيل</th>
-          <th class="col-work_plan">خطة العمل</th>
-          <th class="col-performance_indicators">مؤشرات الأداء</th>
-          <th class="col-meetings">عدد الاجتماعات</th>
-          <th class="col-consistency">التوافق بين الدعوات والاجتماعات</th>
-          <th class="col-coverage_books">كتب التغطية</th>
-          <th class="col-report1">تقرير إنجاز 1</th>
-          <th class="col-report2">تقرير إنجاز 2</th>
-          <th class="col-report3">تقرير إنجاز 3</th>
-          <th class="col-statistical_analysis">التحليل الإحصائي</th>
-          <th id="availabilityHeader">درجة التوفر من (9)</th>
-          <th>الملاحظات</th>
-        </tr>
-      </thead>
-      <tbody id="committeesTable"><tr><td colspan="16" class="text-center">جاري التحميل...</td></tr></tbody>
-    </table>
+
+      <button type="submit" class="btn btn-primary w-100">💾 حفظ التقييم</button>
+    </form>
   </div>
 
-  <div class="modal fade" id="notesModal" tabindex="-1">
-    <div class="modal-dialog modal-lg"><div class="modal-content">
-      <div class="modal-header"><h5 class="modal-title">📝 الملاحظات</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-      </div>
-      <div class="modal-body" id="notesContent"></div>
-    </div></div>
-  </div>
-
+  <!-- Toasts -->
   <div class="toast-container">
-    <div id="toastSuccess" class="toast align-items-center text-bg-success border-0 mb-2" role="alert">
-      <div class="d-flex"><div class="toast-body">✅ العملية نجحت</div>
-        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
-      </div>
+    <div id="successToast" class="toast align-items-center text-bg-success border-0" role="alert">
+      <div class="d-flex"><div class="toast-body">✅ تم حفظ التقييم بنجاح</div><button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button></div>
     </div>
-    <div id="toastError" class="toast align-items-center text-bg-danger border-0 mb-2" role="alert">
-      <div class="d-flex"><div class="toast-body">❌ حدث خطأ</div>
-        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
-      </div>
+    <div id="errorToast" class="toast align-items-center text-bg-danger border-0" role="alert">
+      <div class="d-flex"><div class="toast-body">❌ حدث خطأ أثناء الحفظ</div><button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button></div>
     </div>
   </div>
 
+  <!-- مكتبات -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+  <script src="https://cdn.quilljs.com/1.3.6/quill.min.js"></script>
   <script>
-    const toastSuccess = new bootstrap.Toast(document.getElementById('toastSuccess'));
-    const toastError = new bootstrap.Toast(document.getElementById('toastError'));
-    let lastCollege = "";
-    let savedVisibleColumns = [];
+    const quill = new Quill('#editor', { theme: 'snow' });
 
-    function showSuccess(msg="✅ العملية نجحت") {
-      document.querySelector("#toastSuccess .toast-body").innerText = msg;toastSuccess.show();
-    }
-    function showError(msg="❌ حدث خطأ") {
-      document.querySelector("#toastError .toast-body").innerText = msg;toastError.show();
-    }
+    const successToast = new bootstrap.Toast(document.getElementById('successToast'));
+    const errorToast = new bootstrap.Toast(document.getElementById('errorToast'));
 
-    async function loadOptions() {
-      const colleges = await axios.get('/api/colleges');
-      const collegeFilter = document.getElementById('collegeFilter');
-      colleges.data.forEach(c => {
-        const opt1 = document.createElement('option');
-        opt1.value = c.name; opt1.textContent = c.name;
-        collegeFilter.appendChild(opt1);
-      });
-    }
-    loadOptions();
-
-    function updateAvailability(row) {
-      let sum = 0;
-      const fields = ["formation_decision","work_plan","performance_indicators","meetings","consistency","coverage_books","report1","report2","report3","statistical_analysis"];
-      fields.forEach(f => {
-        const cell = row.querySelector(`[data-field="${f}"]`);
-        if (cell && !cell.classList.contains("hidden-col")) {
-          sum += parseFloat(cell?.innerText) || 0;
-        }
-      });
-      const availabilityCell = row.querySelector(".availability-cell");
-      availabilityCell.innerText = sum.toFixed(2);
-      availabilityCell.classList.add("highlight");
-      setTimeout(() => availabilityCell.classList.remove("highlight"), 1500);
-    }
-
-    async function loadCommittees() {
+    // جلب الكليات من قاعدة البيانات
+    async function loadColleges() {
       try {
-        const college = document.getElementById('collegeFilter').value;
-        lastCollege = college || "جميع الكليات";
-        let url = '/api/committees';
-        const params = [];
-        if (college) params.push(`college=${encodeURIComponent(college)}`);
-        if (params.length > 0) url += '?' + params.join('&');
-        const res = await axios.get(url);
-        const tbody = document.getElementById('committeesTable');
-        tbody.innerHTML = "";
-        if(res.data.length === 0){
-          tbody.innerHTML = `<tr><td colspan="16" class="text-center">لا توجد بيانات</td></tr>`;
-          document.getElementById("completionRateContainer").innerHTML = "";
-          document.getElementById("selectedVisitsContainer").innerHTML = "الزيارات: لم يتم إختيار أي زيارة";
-          return;
-        }
-        res.data.sort((a,b)=>(a.college||"").localeCompare(b.college||"","ar"));
-        res.data.forEach((c, idx) => {
-          const tr = document.createElement('tr');
-          tr.innerHTML = `
-            <td>${idx+1}</td>
-            <td class="col-college">${c.college}</td>
-            <td>${c.committee_name}</td>
-            <td class="date-col hidden-col">${c.audit_date ? new Date(c.audit_date).toLocaleDateString('ar-EG'): '-'}</td>
-            <td data-field="formation_decision">${c.formation_decision ?? 0}</td>
-            <td data-field="work_plan">${c.work_plan ?? 0}</td>
-            <td data-field="performance_indicators">${c.performance_indicators ?? 0}</td>
-            <td data-field="meetings">${c.meetings ?? 0}</td>
-            <td data-field="consistency">${c.consistency ?? 0}</td>
-            <td data-field="coverage_books">${c.coverage_books ?? 0}</td>
-            <td data-field="report1">${c.report1 ?? 0}</td>
-            <td data-field="report2">${c.report2 ?? 0}</td>
-            <td data-field="report3">${c.report3 ?? 0}</td>
-            <td data-field="statistical_analysis">${c.statistical_analysis ?? 0}</td>
-            <td class="availability-cell">${c.availability_score ?? 0}</td>
-            <td>${c.notes && c.notes.trim() !== "" && c.notes.trim() !== "<p><br></p>"? 
-              `<button class="btn btn-sm btn-info" onclick="showNotes(\`${c.notes}\`)">🔍</button>` 
-              : '<span class="text-muted">لا توجد ملاحظات</span>'}</td>`;
-          tbody.appendChild(tr);
-          updateAvailability(tr);
+        const res = await axios.get('/api/colleges');
+        const select = document.getElementById('collegeSelect');
+        res.data.forEach(c => {
+          const opt = document.createElement('option');
+          opt.value = c.name;
+          opt.textContent = c.name;
+          select.appendChild(opt);
         });
-        applyColumnVisibility();
-        updateCompletionRate();
-        applyCommitteeSearch();
-      } catch (err) { showError("❌ فشل تحميل البيانات"); console.error(err); }
-    }
-    loadCommittees();
-
-    document.getElementById('collegeFilter').addEventListener('change', loadCommittees);
-
-    function showNotes(html) {
-      document.getElementById('notesContent').innerHTML = html || "<i>لا توجد ملاحظات</i>";
-      new bootstrap.Modal(document.getElementById('notesModal')).show();
-    }
-
-    function updateCompletionRate() {
-      const rows = document.querySelectorAll('#committeesTable tr');
-      let totalAvailability = 0;
-      let numCommittees = 0;
-      rows.forEach(row => {
-        const availabilityCell = row.querySelector('.availability-cell');
-        if (availabilityCell && row.style.display !== "none") {
-          totalAvailability += parseFloat(availabilityCell.innerText) || 0;
-          numCommittees++;
-        }
-      });
-      const visibleCols = savedVisibleColumns.length;
-      const denominator = numCommittees * visibleCols;
-      const completionRate = denominator > 0 ? ((totalAvailability / denominator) * 100).toFixed(2) : 0;
-      const completionDiv = document.getElementById("completionRateContainer");
-      if (lastCollege && lastCollege !== "جميع الكليات") {
-        completionDiv.innerHTML = `📌 نسبة الاكتمال لكلية ${lastCollege} = ${completionRate}%<br>📋 عدد لجان كلية ${lastCollege} = ${numCommittees}`;
-      } else {
-        completionDiv.innerHTML = `📌 نسبة الاكتمال لجميع الكليات = ${completionRate}%<br>📋 عدد لجان جميع الكليات = ${numCommittees}`;
-      }
-    }
-
-    function applyColumnVisibility() {
-      const showCollege = document.getElementById('toggle_college').checked;
-      const showDate = document.getElementById('toggle_date').checked;
-      document.querySelectorAll('.col-college').forEach(cell => {cell.classList.toggle('hidden-col', !showCollege);});
-      document.querySelectorAll('.date-col').forEach(cell => {cell.classList.toggle('hidden-col', !showDate);});
-
-      const allFields = ["formation_decision","work_plan","performance_indicators","meetings","consistency","coverage_books","report1","report2","report3","statistical_analysis"];
-      allFields.forEach(f => {
-        document.querySelectorAll(`[data-field="${f}"]`).forEach(cell => {
-          cell.classList.toggle('hidden-col', !savedVisibleColumns.includes(f));
-        });
-        const th = document.querySelector(`.col-${f}`);
-        if (th) th.classList.toggle('hidden-col', !savedVisibleColumns.includes(f));
-      });
-
-      document.querySelectorAll('#committeesTable tr').forEach(tr => updateAvailability(tr));
-      updateCompletionRate();
-      updateAvailabilityHeader();
-    }
-    document.querySelectorAll('.simple-toggle').forEach(cb => {cb.addEventListener('change', applyColumnVisibility);});
-
-    function updateAvailabilityHeader() {
-      document.getElementById("availabilityHeader").innerText = `درجة التوفر من (${savedVisibleColumns.length})`;
-    }
-
-    function applyCommitteeSearch() {
-      const searchTerm = document.getElementById("committeeSearch").value.trim().toLowerCase();
-      document.querySelectorAll("#committeesTable tr").forEach(row => {
-        const committeeName = row.cells[2]?.innerText.trim().toLowerCase() || "";
-        row.style.display = committeeName.includes(searchTerm) ? "" : "none";
-      });
-    }
-    document.getElementById("committeeSearch").addEventListener("input", applyCommitteeSearch);
-
-    async function loadSettings() {
-      try {
-        const res = await axios.get('/api/settings');
-        const settings = res.data;
-        savedVisibleColumns = settings.visibleColumns || [];
-        if (settings.selectedVisits) {
-          document.getElementById("selectedVisitsContainer").innerHTML = "الزيارات: " + settings.selectedVisits.join(" | ");
-        } else {
-          document.getElementById("selectedVisitsContainer").innerHTML = "الزيارات: لم يتم إختيار أي زيارة";
-        }
-        applyColumnVisibility();
       } catch (err) {
-        console.error("❌ فشل تحميل الإعدادات", err);
-        document.getElementById("selectedVisitsContainer").innerHTML = "الزيارات: لم يتم إختيار أي زيارة";
+        console.error("خطأ في جلب الكليات:", err);
       }
     }
-    loadSettings();
+    loadColleges();
+
+    // جلب المدققين من قاعدة البيانات
+    async function loadAuditors() {
+      try {
+        const res = await axios.get('/api/auditors');
+        const select = document.getElementById('auditorSelect');
+        res.data.forEach(a => {
+          const opt = document.createElement('option');
+          opt.value = a.name;
+          opt.textContent = a.name;
+          select.appendChild(opt);
+        });
+      } catch (err) {
+        console.error("خطأ في جلب المدققين:", err);
+      }
+    }
+    loadAuditors();
+
+    // التأكد من أن المدخلات تبقى بين 0 و 1
+    function clampScoreInput(el) {
+      const min = 0;
+      const max = 1;
+      let v = parseFloat(el.value);
+      if (isNaN(v)) return;
+      if (v < min) v = min;
+      if (v > max) v = max;
+      el.value = v;
+    }
+
+    // حساب درجة التوفر تلقائيًا
+    function recomputeAvailability() {
+      let sum = 0;
+      document.querySelectorAll('.score').forEach(i => {
+        const val = parseFloat(i.value);
+        if (!isNaN(val)) sum += val;
+      });
+      document.getElementById('availability_score').value = sum;
+    }
+
+    document.querySelectorAll('.score').forEach(input => {
+      input.addEventListener('input', () => {
+        clampScoreInput(input);
+        recomputeAvailability();
+      });
+      input.addEventListener('change', () => {
+        clampScoreInput(input);
+        recomputeAvailability();
+      });
+    });
+
+    // Checkbox للتعبئة التلقائية بالقيمة 1
+    const fillOnesCheckbox = document.getElementById('fillOnes');
+    if (fillOnesCheckbox) {
+      fillOnesCheckbox.addEventListener('change', (e) => {
+        const v = e.target.checked ? 1 : '';
+        document.querySelectorAll('.score').forEach(i => {
+          i.value = v;
+          clampScoreInput(i);
+        });
+        recomputeAvailability();
+      });
+    }
+
+    // إرسال النموذج
+    document.getElementById("committeeForm").addEventListener("submit", async function(e){
+      e.preventDefault();
+      document.getElementById("notesInput").value = quill.root.innerHTML;
+
+      const formData = new FormData(this);
+      const data = Object.fromEntries(formData.entries());
+
+      try {
+        const res = await axios.post('/api/committees', data);
+        if(res.status === 201){
+          successToast.show();
+          this.reset();
+          quill.setContents([]);
+          document.getElementById('availability_score').value = 0;
+          // إعادة إلغاء تفعيل Checkbox إن كان مفعلاً
+          if (fillOnesCheckbox && fillOnesCheckbox.checked) fillOnesCheckbox.checked = false;
+        }
+      } catch (err) {
+        console.error(err);
+        errorToast.show();
+      }
+    });
+
+    // تهيئة أولية
+    recomputeAvailability();
   </script>
 </body>
 </html>
