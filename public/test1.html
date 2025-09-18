@@ -181,12 +181,12 @@
     }
     loadAuditors();
 
-    // تهيئة Tom Select لحقل اسم اللجنة
+    // تهيئة Tom Select لحقل اسم اللجنة (مع التعديل المقترح)
     let committeeTS = new TomSelect('#committeeSelect', {
       valueField: 'name',
       labelField: 'name',
       searchField: 'name',
-      create: true,
+      create: (input) => ({ name: input }),
       persist: false,
       maxItems: 1,
       placeholder: 'اكتب للبحث أو أضف اسمًا جديدًا',
