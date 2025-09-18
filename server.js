@@ -58,6 +58,12 @@ const departmentSchema = new mongoose.Schema({
 });
 const Department = mongoose.model('Department', departmentSchema);
 
+// Committees master (dictionary)
+const committeeSchema = new mongoose.Schema({
+  name: { type: String, required: true, unique: true }
+});
+const Committee = mongoose.model('Committee', committeeSchema);
+
 const backupSchema = new mongoose.Schema({
   date: { type: Date, default: Date.now },
   videos: Array,
@@ -242,7 +248,7 @@ app.post('/api/videos', async (req, res) => {
 app.put('/api/videos/:id', async (req, res) => {
   try {
     const updated = await Video.findByIdAndUpdate(req.params.id, req.body, { new: true });
-    if (!updated) return res.status(404).json({ message: 'الفيديو غير موجود' });
+  if (!updated) return res.status(404).json({ message: 'الفيديو غير موجود' });
     res.json(updated);
   } catch (err) {
     res.status(400).json({ message: 'خطأ في التعديل', error: err.message });
@@ -372,8 +378,29 @@ app.post('/api/backups/restore/:id', async (req, res) => {
   }
 });
 
+app.get('/api/committee-names', async (req, res) => {
+  try {
+    const q = (req.query.q || '').trim();
+    let filter = {};
+    if (q) {
+      const safe = q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      filter.name = { $regex: new RegExp(safe, 'i') };
+    }
+    const items = await Committee.find(filter).sort({ name: 1 }).limit(50).select('name');
+    res.json(items);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 app.post('/api/committees', async (req, res) => {
   try {
+    await Committee.updateOne(
+      { name: req.body.committee_name },
+      { $setOnInsert: { name: req.body.committee_name } },
+      { upsert: true }
+    );
+
     const evaluation = new Evaluation(req.body);
     await evaluation.save();
     res.status(201).json({ message: '✅ تم حفظ التقييم بنجاح', evaluation });
@@ -453,6 +480,49 @@ app.delete('/api/colleges/:id', async (req, res) => {
     const deleted = await College.findByIdAndDelete(req.params.id);
     if (!deleted) return res.status(404).json({ message: '❌ الكلية غير موجودة' });
     res.json({ message: '🗑️ تم حذف الكلية' });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+app.get('/api/committees-master', async (req, res) => {
+  try {
+    const items = await Committee.find().sort({ name: 1 });
+    res.json(items);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/committees-master', async (req, res) => {
+  try {
+    const item = new Committee({ name: req.body.name });
+    await item.save();
+    res.status(201).json(item);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+app.put('/api/committees-master/:id', async (req, res) => {
+  try {
+    const updated = await Committee.findByIdAndUpdate(
+      req.params.id,
+      { name: req.body.name },
+      { new: true }
+    );
+    if (!updated) return res.status(404).json({ message: '❌ اللجنة غير موجودة' });
+    res.json(updated);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+app.delete('/api/committees-master/:id', async (req, res) => {
+  try {
+    const deleted = await Committee.findByIdAndDelete(req.params.id);
+    if (!deleted) return res.status(404).json({ message: '❌ اللجنة غير موجودة' });
+    res.json({ message: '🗑️ تم حذف اللجنة' });
   } catch (err) {
     res.status(400).json({ error: err.message });
   }
