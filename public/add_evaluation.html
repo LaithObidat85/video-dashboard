@@ -5,6 +5,7 @@
   <title>إدخال تقييم لجنة</title>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.rtl.min.css">
   <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tom-select/dist/css/tom-select.bootstrap5.min.css">
   <style>
     body { background-color: #f8f9fa; font-family: 'Segoe UI', sans-serif; }
     .form-container { max-width: 800px; margin: 40px auto; background: #fff; padding: 25px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
@@ -29,25 +30,72 @@
           </select>
         </div>
         <div class="mb-3">
-          <label class="form-label">اسم اللجنة</label>
-          <input type="text" class="form-control" name="committee_name" required>
+          <label class="form-label" for="committeeSelect">اسم اللجنة</label>
+          <select class="form-select" name="committee_name" id="committeeSelect" required placeholder="اكتب للبحث أو أضف اسمًا جديدًا"></select>
         </div>
       </div>
 
-      <!-- عناصر التقييم -->
+      <!-- عناصر التقييم (بهيئة جدول) -->
       <div class="form-section">
-        <h6>التقييم التفصيلي</h6>
-        <div class="row">
-          <div class="col-md-6 mb-3"><label class="form-label">قرار التشكيل</label><input type="number" step="0.25" min="0" class="form-control score" name="formation_decision"></div>
-          <div class="col-md-6 mb-3"><label class="form-label">خطة عمل اللجنة</label><input type="number" step="0.25" min="0" class="form-control score" name="work_plan"></div>
-          <div class="col-md-6 mb-3"><label class="form-label">مؤشرات أداء خطة عمل اللجنة قابلة للقياس</label><input type="number" step="0.25" min="0" class="form-control score" name="performance_indicators"></div>
-          <div class="col-md-6 mb-3"><label class="form-label">عدد الاجتماعات</label><input type="number" step="0.25" min="0" class="form-control score" name="meetings"></div>
-          <div class="col-md-6 mb-3"><label class="form-label">التوافق بين الدعوات والاجتماعات</label><input type="number" step="0.25" min="0" class="form-control score" name="consistency"></div>
-          <div class="col-md-6 mb-3"><label class="form-label">كتب التغطية</label><input type="number" step="0.25" min="0" class="form-control score" name="coverage_books"></div>
-          <div class="col-md-4 mb-3"><label class="form-label">تقرير إنجاز 1</label><input type="number" step="0.25" min="0" class="form-control score" name="report1"></div>
-          <div class="col-md-4 mb-3"><label class="form-label">تقرير إنجاز 2</label><input type="number" step="0.25" min="0" class="form-control score" name="report2"></div>
-          <div class="col-md-4 mb-3"><label class="form-label">تقرير إنجاز 3</label><input type="number" step="0.25" min="0" class="form-control score" name="report3"></div>
-          <div class="col-md-6 mb-3"><label class="form-label">تقييم أداء اللجنة (التحليل الإحصائي)</label><input type="number" step="0.25" min="0" class="form-control score" name="statistical_analysis"></div>
+        <h6 class="d-flex align-items-center justify-content-between">
+          التقييم التفصيلي
+          <div class="form-check form-switch">
+            <input class="form-check-input" type="checkbox" id="fillOnes">
+            <label class="form-check-label" for="fillOnes">تعبئة تلقائية بالرقم 1</label>
+          </div>
+        </h6>
+
+        <div class="table-responsive">
+          <table class="table table-bordered align-middle mb-0">
+            <thead class="table-light">
+              <tr>
+                <th style="width:70%">البند</th>
+                <th style="width:30%">الدرجة</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><label for="formation_decision">قرار التشكيل</label></td>
+                <td><input type="number" step="0.25" min="0" max="1" class="form-control score" name="formation_decision" id="formation_decision" placeholder="0"></td>
+              </tr>
+              <tr>
+                <td><label for="work_plan">خطة عمل اللجنة</label></td>
+                <td><input type="number" step="0.25" min="0" max="1" class="form-control score" name="work_plan" id="work_plan" placeholder="0"></td>
+              </tr>
+              <tr>
+                <td><label for="performance_indicators">مؤشرات أداء خطة عمل اللجنة قابلة للقياس</label></td>
+                <td><input type="number" step="0.25" min="0" max="1" class="form-control score" name="performance_indicators" id="performance_indicators" placeholder="0"></td>
+              </tr>
+              <tr>
+                <td><label for="meetings">عدد الاجتماعات</label></td>
+                <td><input type="number" step="0.25" min="0" max="1" class="form-control score" name="meetings" id="meetings" placeholder="0"></td>
+              </tr>
+              <tr>
+                <td><label for="consistency">التوافق بين الدعوات والاجتماعات</label></td>
+                <td><input type="number" step="0.25" min="0" max="1" class="form-control score" name="consistency" id="consistency" placeholder="0"></td>
+              </tr>
+              <tr>
+                <td><label for="coverage_books">كتب التغطية</label></td>
+                <td><input type="number" step="0.25" min="0" max="1" class="form-control score" name="coverage_books" id="coverage_books" placeholder="0"></td>
+              </tr>
+              <tr>
+                <td><label for="report1">تقرير إنجاز 1</label></td>
+                <td><input type="number" step="0.25" min="0" max="1" class="form-control score" name="report1" id="report1" placeholder="0"></td>
+              </tr>
+              <tr>
+                <td><label for="report2">تقرير إنجاز 2</label></td>
+                <td><input type="number" step="0.25" min="0" max="1" class="form-control score" name="report2" id="report2" placeholder="0"></td>
+              </tr>
+              <tr>
+                <td><label for="report3">تقرير إنجاز 3</label></td>
+                <td><input type="number" step="0.25" min="0" max="1" class="form-control score" name="report3" id="report3" placeholder="0"></td>
+              </tr>
+              <tr>
+                <td><label for="statistical_analysis">تقييم أداء اللجنة (التحليل الإحصائي)</label></td>
+                <td><input type="number" step="0.25" min="0" max="1" class="form-control score" name="statistical_analysis" id="statistical_analysis" placeholder="0"></td>
+              </tr>
+            </tbody>
+          </table>
         </div>
       </div>
 
@@ -92,13 +140,14 @@
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
   <script src="https://cdn.quilljs.com/1.3.6/quill.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/tom-select/dist/js/tom-select.complete.min.js"></script>
   <script>
     const quill = new Quill('#editor', { theme: 'snow' });
 
     const successToast = new bootstrap.Toast(document.getElementById('successToast'));
     const errorToast = new bootstrap.Toast(document.getElementById('errorToast'));
 
-    // 🔹 جلب الكليات من قاعدة البيانات
+    // جلب الكليات من قاعدة البيانات
     async function loadColleges() {
       try {
         const res = await axios.get('/api/colleges');
@@ -115,7 +164,7 @@
     }
     loadColleges();
 
-    // 🔹 جلب المدققين من قاعدة البيانات
+    // جلب المدققين من قاعدة البيانات
     async function loadAuditors() {
       try {
         const res = await axios.get('/api/auditors');
@@ -132,16 +181,71 @@
     }
     loadAuditors();
 
-    // 🔹 حساب درجة التوفر تلقائيًا
+    // تهيئة Tom Select لحقل اسم اللجنة (مع التعديل المقترح)
+    let committeeTS = new TomSelect('#committeeSelect', {
+      valueField: 'name',
+      labelField: 'name',
+      searchField: 'name',
+      create: (input) => ({ name: input }),
+      persist: false,
+      maxItems: 1,
+      placeholder: 'اكتب للبحث أو أضف اسمًا جديدًا',
+      load: function (query, callback) {
+        const q = encodeURIComponent(query || '');
+        fetch(`/api/committee-names?q=${q}`)
+          .then(res => res.json())
+          .then(list => callback(list))
+          .catch(() => callback());
+      },
+      createFilter: function(input){ return !!input.trim(); }
+    });
+
+    // التأكد من أن المدخلات تبقى بين 0 و 1
+    function clampScoreInput(el) {
+      const min = 0;
+      const max = 1;
+      let v = parseFloat(el.value);
+      if (isNaN(v)) return;
+      if (v < min) v = min;
+      if (v > max) v = max;
+      el.value = v;
+    }
+
+    // حساب درجة التوفر تلقائيًا
+    function recomputeAvailability() {
+      let sum = 0;
+      document.querySelectorAll('.score').forEach(i => {
+        const val = parseFloat(i.value);
+        if (!isNaN(val)) sum += val;
+      });
+      document.getElementById('availability_score').value = sum;
+    }
+
     document.querySelectorAll('.score').forEach(input => {
       input.addEventListener('input', () => {
-        let sum = 0;
-        document.querySelectorAll('.score').forEach(i => sum += parseFloat(i.value) || 0);
-        document.getElementById('availability_score').value = sum;
+        clampScoreInput(input);
+        recomputeAvailability();
+      });
+      input.addEventListener('change', () => {
+        clampScoreInput(input);
+        recomputeAvailability();
       });
     });
 
-    // 🔹 إرسال النموذج
+    // Checkbox للتعبئة التلقائية بالقيمة 1
+    const fillOnesCheckbox = document.getElementById('fillOnes');
+    if (fillOnesCheckbox) {
+      fillOnesCheckbox.addEventListener('change', (e) => {
+        const v = e.target.checked ? 1 : '';
+        document.querySelectorAll('.score').forEach(i => {
+          i.value = v;
+          clampScoreInput(i);
+        });
+        recomputeAvailability();
+      });
+    }
+
+    // إرسال النموذج
     document.getElementById("committeeForm").addEventListener("submit", async function(e){
       e.preventDefault();
       document.getElementById("notesInput").value = quill.root.innerHTML;
@@ -156,12 +260,17 @@
           this.reset();
           quill.setContents([]);
           document.getElementById('availability_score').value = 0;
+          if (fillOnesCheckbox && fillOnesCheckbox.checked) fillOnesCheckbox.checked = false;
+          if (committeeTS) committeeTS.clear();
         }
       } catch (err) {
         console.error(err);
         errorToast.show();
       }
     });
+
+    // تهيئة أولية
+    recomputeAvailability();
   </script>
 </body>
 </html>
