@@ -548,6 +548,7 @@ app.post('/auth/committees/init-admin', async (req, res) => {
 
 // تسجيل الدخول لنظام اللجان
 // (جديد 2025-09-19) تسجيل الدخول لنظام اللجان باسم المستخدم أو الإيميل (توسعة بدون كسر التوافق)
+// جديد 2025-09-19: تسجيل الدخول بالـ username (مع دعم البريد كخيار احتياطي)
 app.post('/auth/committees/login', async (req, res) => {
   try {
     const { username, email, password } = req.body || {};
@@ -555,9 +556,10 @@ app.post('/auth/committees/login', async (req, res) => {
       return res.status(400).json({ message: 'اسم المستخدم/البريد وكلمة المرور مطلوبة' });
     }
 
+    // لو أُرسل username نبحث به، وإلا نبحث بالبريد
     const query = username
-      ? { username: String(username).trim().toLowerCase(), isActive: true }
-      : { email: String(email).trim().toLowerCase(), isActive: true };
+      ? { username: username.trim(), isActive: true }
+      : { email: (email || '').toLowerCase().trim(), isActive: true };
 
     const user = await User.findOne(query);
     if (!user) return res.status(401).json({ message: 'بيانات الدخول غير صحيحة' });
@@ -565,35 +567,62 @@ app.post('/auth/committees/login', async (req, res) => {
     const ok = await bcrypt.compare(password, user.password);
     if (!ok) return res.status(401).json({ message: 'بيانات الدخول غير صحيحة' });
 
-    // (جديد 2025-09-19) نخزن الـ username أيضًا عند توفره
+    // نخزن كل شيء مهم في الجلسة، الآن مع username أيضًا
     req.session.user = {
       id: String(user._id),
       name: user.name,
       email: user.email,
-      role: user.role,
-      username: user.username || null
+      username: user.username || (user.email ? user.email.split('@')[0] : undefined),
+      role: user.role
     };
 
-    return res.json({ message: '✅ تم تسجيل الدخول', user: req.session.user });
+    res.json({ message: '✅ تم تسجيل الدخول', user: req.session.user });
   } catch (err) {
-    return res.status(500).json({ message: '❌ خطأ في تسجيل الدخول', error: err.message });
+    res.status(500).json({ message: '❌ خطأ في تسجيل الدخول', error: err.message });
   }
 });
+
 
 
 // إنشاء مستخدم جديد (لنظام اللجان) - admin فقط
+// جديد 2025-09-19: إنشاء مستخدم مع username (admin فقط) + معالجة تكرار الاسم/البريد
 app.post('/auth/committees/register', authRequired, requireRole('admin'), async (req, res) => {
   try {
-    const { name, email, password, role } = req.body || {};
-    if (!name || !email || !password) return res.status(400).json({ message: 'الاسم/الإيميل/كلمة المرور مطلوبة' });
+    const { name, username, email, password, role } = req.body || {};
+    if (!name || !username || !email || !password) {
+      return res.status(400).json({ message: 'الاسم واسم المستخدم والبريد وكلمة المرور مطلوبة' });
+    }
+
     const hash = await bcrypt.hash(password, 10);
-    const user = await User.create({ name, email: email.toLowerCase().trim(), password: hash, role: role === 'admin' ? 'admin' : 'user', isActive: true });
-    await logAudit(req, { model: 'User', action: 'create', docId: user._id, payload: { name: user.name, email: user.email, role: user.role } });
-    res.status(201).json({ message: '✅ تم إنشاء المستخدم', user: { id: user._id, name: user.name, email: user.email, role: user.role } });
+    const user = await User.create({
+      name: name.trim(),
+      username: username.trim(),
+      email: email.toLowerCase().trim(),
+      password: hash,
+      role: role === 'admin' ? 'admin' : 'user',
+      isActive: true
+    });
+
+    await logAudit(req, {
+      model: 'User',
+      action: 'create',
+      docId: user._id,
+      payload: { name: user.name, username: user.username, email: user.email, role: user.role }
+    });
+
+    res.status(201).json({
+      message: '✅ تم إنشاء المستخدم',
+      user: { id: user._id, name: user.name, username: user.username, email: user.email, role: user.role }
+    });
   } catch (err) {
+    // كود الخطأ 11000 = مفتاح مكرر (username أو email موجود)
+    if (err && err.code === 11000) {
+      return res.status(409).json({ message: 'اسم المستخدم أو البريد مستخدم مسبقًا' });
+    }
     res.status(500).json({ message: '❌ فشل إنشاء المستخدم', error: err.message });
   }
 });
+
 
 // الخروج من نظام اللجان
 app.post('/auth/committees/logout', (req, res) => {
@@ -912,6 +941,65 @@ app.get('/protected', async (req, res) => {
     res.redirect('/auth/login');
   }
 });
+
+// جديد 2025-09-19: قائمة المستخدمين (admin فقط) لصفحة users-manage.html
+app.get('/api/users', authRequired, requireRole('admin'), async (req, res) => {
+  try {
+    const users = await User.find({}, 'name username email role isActive createdAt')
+      .sort({ createdAt: -1 })
+      .lean();
+
+    res.json(users);
+  } catch (err) {
+    res.status(500).json({ message: '❌ خطأ في جلب المستخدمين', error: err.message });
+  }
+});
+
+
+// جديد 2025-09-19: سرد سجلات التدقيق مع عوامل تصفية + تقسيم صفحات (admin فقط)
+app.get('/api/audit-logs', authRequired, requireRole('admin'), async (req, res) => {
+  try {
+    let { model, action, q, from, to, page = 1, limit = 20 } = req.query;
+    page = Math.max(1, parseInt(page, 10) || 1);
+    limit = Math.min(100, Math.max(1, parseInt(limit, 10) || 20));
+
+    const filter = {};
+    if (model)  filter.model  = model;
+    if (action) filter.action = action;
+
+    if (from || to) {
+      filter.createdAt = {};
+      if (from) filter.createdAt.$gte = new Date(from);
+      if (to) {
+        const end = new Date(to);
+        end.setHours(23, 59, 59, 999);
+        filter.createdAt.$lte = end;
+      }
+    }
+
+    if (q) {
+      const rx = new RegExp(q.trim(), 'i');
+      filter.$or = [
+        { 'user.name': rx },
+        { 'user.email': rx },
+        { 'user.username': rx }
+      ];
+    }
+
+    const skip = (page - 1) * limit;
+
+    const [items, total] = await Promise.all([
+      AuditLog.find(filter).sort({ createdAt: -1 }).skip(skip).limit(limit).lean(),
+      AuditLog.countDocuments(filter)
+    ]);
+
+    const hasMore = skip + items.length < total;
+    res.json({ items, hasMore, total });
+  } catch (err) {
+    res.status(500).json({ message: '❌ خطأ في جلب السجلات', error: err.message });
+  }
+});
+
 
 /****************************************************
  * تشغيل الخادم
