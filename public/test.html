@@ -16,6 +16,7 @@
     .payload-card dd{margin-bottom:.5rem}
     .payload-json{direction:ltr;background:#f6f8fa;border-radius:8px;padding:8px;max-height:180px;overflow:auto}
     .filters .form-control, .filters .form-select{min-width:160px}
+    .minw-60{min-width:60px}
     .minw-120{min-width:120px}
   </style>
 </head>
@@ -91,21 +92,24 @@
           <table class="table table-hover align-middle">
             <thead class="table-light">
               <tr>
+                <th class="minw-60">#</th>
                 <th class="minw-120">الوقت</th>
                 <th>الصفحة</th>
                 <th>العملية</th>
                 <th>المعرّف</th>
                 <th>المستخدم</th>
-                <th style="width:48%">البيانات</th>
+                <th style="width:22%">البيانات قبل</th>
+                <th style="width:22%">البيانات بعد</th>
               </tr>
             </thead>
             <tbody id="logsTbody">
-              <tr class="text-center text-muted"><td colspan="6">جاري التحميل…</td></tr>
+              <tr class="text-center text-muted"><td colspan="8">جاري التحميل…</td></tr>
             </tbody>
           </table>
         </div>
-        <div class="text-center">
+        <div class="d-flex justify-content-center gap-2">
           <button id="btnMore" class="btn btn-outline-secondary">تحميل المزيد</button>
+          <button id="btnPurge" class="btn btn-outline-danger"><i class="bi bi-trash3"></i> حذف كل السجلات</button>
         </div>
       </div>
     </div>
@@ -202,56 +206,101 @@
       const role  = u.role  ? ` <span class="badge text-bg-secondary">${u.role}</span>` : '';
       return `${full} <span class="badge text-bg-info">${uname}</span>${email}${role}`;
     }
+
+    // ترجمة أسماء الأعمدة من الإنجليزية إلى العربية (لـ Settings وغيرها)
+    const colNameArMap = {
+      committee_name:'اسم اللجنة',
+      college:'الكلية',
+      auditor_name:'المدقق',
+      createdAt:'تاريخ الإنشاء',
+      updatedAt:'تاريخ التحديث',
+      notes:'ملاحظات',
+      score:'النتيجة',
+      visibleColumns:'الأعمدة المرئية',
+      selectedVisits:'الزيارات المحددة',
+    };
+    function toArabicLabel(k){ return colNameArMap[k] || k; }
+    function toArabicColumns(list){
+      if(!Array.isArray(list)) return list;
+      return list.map(k=>toArabicLabel(k)).join('، ');
+    }
+
     function kv(label, value){
       if(value===undefined || value===null || value==='') return '';
       return `<dt>${label}</dt><dd>${String(value)}</dd>`;
-    }
-    // عرض منسّق لبيانات السجل حسب النموذج/العملية
-    function renderPayloadCard(log){
-      const p = log.payload || {};
-      let html = '<div class="payload-card"><dl class="row mb-0">';
-      if(log.model==='Evaluation'){
-        html += kv('اسم اللجنة', p.committee_name);
-        html += kv('الكلية', p.college);
-        html += kv('المدقق', p.auditor_name);
-        html += kv('تاريخ/إنشاء', p.createdAt ? new Date(p.createdAt).toLocaleString('ar-EG') : '');
-        html += kv('ملاحظات', p.notes);
-      }else if(log.model==='College'){
-        html += kv('الكلية', p.name);
-      }else if(log.model==='Auditor'){
-        html += kv('المدقق', p.name);
-      }else if(log.model==='Committee'){
-        html += kv('اسم اللجنة', p.name);
-      }else if(log.model==='Settings'){
-        if(p.visibleColumns) html += kv('أعمدة مرئية', Array.isArray(p.visibleColumns)? p.visibleColumns.join('، ') : p.visibleColumns);
-        if(p.selectedVisits) html += kv('زيارات محددة', Array.isArray(p.selectedVisits)? p.selectedVisits.join('، ') : p.selectedVisits);
-        if(!p.visibleColumns && !p.selectedVisits) html += kv('تغييرات', Object.keys(p).join('، '));
-      }else if(log.model==='User'){
-        html += kv('الاسم', p.name);
-        html += kv('اسم المستخدم', p.username);
-        html += kv('الدور', p.role);
-        html += kv('البريد', p.email);
-        html += kv('نشط؟', p.isActive);
-      }else{
-        // غير معروف → أظهر JSON منسق
-        html += '</dl><div class="payload-json"><code>'+escapeHtml(JSON.stringify(p, null, 2))+'</code></div>';
-        html += '</div>';
-        return html;
-      }
-      html += '</dl>';
-      // إن لم نجد أي حقل مفيد، أظهر JSON
-      if(!html.match(/<dd>/)){
-        html += '<div class="payload-json"><code>'+escapeHtml(JSON.stringify(p, null, 2))+'</code></div>';
-      }
-      html += '</div>';
-      return html;
     }
     function escapeHtml(s){
       return s.replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
     }
 
+    // عرض مُنسّق لمحتوى payload (قبل/بعد)
+    function renderCardFromObject(model, obj){
+      if(!obj) return '<div class="text-muted">—</div>';
+      let html = '<div class="payload-card"><dl class="row mb-0">';
+      if(model==='Evaluation'){
+        html += kv('اسم اللجنة', obj.committee_name);
+        html += kv('الكلية', obj.college);
+        html += kv('المدقق', obj.auditor_name);
+        html += kv('تاريخ الإنشاء', obj.createdAt ? new Date(obj.createdAt).toLocaleString('ar-EG') : '');
+        html += kv('ملاحظات', obj.notes);
+        html += kv('النتيجة', obj.score);
+      }else if(model==='College'){
+        html += kv('الكلية', obj.name);
+      }else if(model==='Auditor'){
+        html += kv('المدقق', obj.name);
+      }else if(model==='Committee'){
+        html += kv('اسم اللجنة', obj.name);
+      }else if(model==='Settings'){
+        if(obj.visibleColumns) html += kv('الأعمدة المرئية', toArabicColumns(obj.visibleColumns));
+        if(obj.selectedVisits) html += kv('الزيارات المحددة', toArabicColumns(obj.selectedVisits));
+        if(!obj.visibleColumns && !obj.selectedVisits){
+          const keys = Object.keys(obj||{}).map(toArabicLabel).join('، ');
+          if(keys) html += kv('تغييرات', keys);
+        }
+      }else if(model==='User'){
+        html += kv('الاسم', obj.name);
+        html += kv('اسم المستخدم', obj.username);
+        html += kv('الدور', obj.role);
+        html += kv('البريد', obj.email);
+        if(obj.isActive!==undefined) html += kv('نشط؟', obj.isActive ? 'نعم' : 'لا');
+      }else{
+        html += '</dl><div class="payload-json"><code>'+escapeHtml(JSON.stringify(obj, null, 2))+'</code></div>';
+        html += '</div>';
+        return html;
+      }
+      html += '</dl>';
+      // إن لم نجد أي حقل مفيد، أظهر JSON كامل
+      const hasDD = /<dd>/.test(html);
+      if(!hasDD){
+        html += '<div class="payload-json"><code>'+escapeHtml(JSON.stringify(obj, null, 2))+'</code></div>';
+      }
+      html += '</div>';
+      return html;
+    }
+
+    function renderBeforeCell(log){
+      const p = log.payload || {};
+      if(log.action==='create') return '<div class="text-muted">كانت فارغة</div>';
+      if(log.action==='delete'){
+        return renderCardFromObject(log.model, p); // snapshot قبل الحذف
+      }
+      if(p && p.before) return renderCardFromObject(log.model, p.before);
+      // لا تتوفر لقطة قبل — fallback
+      return '<div class="text-muted">—</div>';
+    }
+    function renderAfterCell(log){
+      const p = log.payload || {};
+      if(log.action==='delete') return '<div class="text-muted">تم الحذف</div>';
+      if(log.action==='create') return renderCardFromObject(log.model, p);
+      if(p && p.after) return renderCardFromObject(log.model, p.after);
+      // لا تتوفر لقطة بعد — استعرض ما هو متاح
+      return renderCardFromObject(log.model, p);
+    }
+
     // ===== listing =====
     let page = 1, limit = 20, reachedEnd = false;
+    let rowCounterStart = 1;
+
     function buildQuery(){
       const m = document.getElementById('fModel').value.trim();
       const a = document.getElementById('fAction').value.trim();
@@ -268,39 +317,48 @@
       params.set('limit',limit);
       return params.toString();
     }
+
     async function loadLogs({append=false}={}){
       if(reachedEnd && append) return;
       const tbody = document.getElementById('logsTbody');
-      if(!append) tbody.innerHTML = `<tr class="text-center text-muted"><td colspan="6">جاري التحميل…</td></tr>`;
+      if(!append){
+        tbody.innerHTML = `<tr class="text-center text-muted"><td colspan="8">جاري التحميل…</td></tr>`;
+        rowCounterStart = (page-1)*limit + 1;
+      }
       try{
         const r = await fetch('/api/audit-logs?'+buildQuery(),{credentials:'include'});
         if(!r.ok) throw new Error('HTTP '+r.status);
-        const data = await r.json(); // {items, hasMore} أو مصفوفة
+        const data = await r.json(); // {items, hasMore}
         const items = Array.isArray(data)? data : (data.items||[]);
         reachedEnd = Array.isArray(data)? items.length<limit : (data.hasMore===false);
 
         if(!append) tbody.innerHTML = '';
         if(items.length===0 && !append){
-          tbody.innerHTML = `<tr class="text-center text-muted"><td colspan="6">لا توجد سجلات</td></tr>`;
+          tbody.innerHTML = `<tr class="text-center text-muted"><td colspan="8">لا توجد سجلات</td></tr>`;
           return;
         }
+        let n = rowCounterStart;
         items.forEach(log=>{
           const when = log.createdAt ? new Date(log.createdAt).toLocaleString('ar-EG') : '—';
           const row = document.createElement('tr');
           row.innerHTML = `
+            <td class="text-muted">${n++}</td>
             <td>${when}</td>
             <td>${modelToPage(log.model)}</td>
             <td>${badgeAction(log.action)}</td>
             <td class="text-muted">${log.docId||'—'}</td>
             <td>${fmtUser(log.user)}</td>
-            <td>${renderPayloadCard(log)}</td>
+            <td>${renderBeforeCell(log)}</td>
+            <td>${renderAfterCell(log)}</td>
           `;
           tbody.appendChild(row);
         });
+        rowCounterStart = n;
       }catch(err){
-        tbody.innerHTML = `<tr class="text-center text-danger"><td colspan="6">حدث خطأ في جلب السجلات</td></tr>`;
+        tbody.innerHTML = `<tr class="text-center text-danger"><td colspan="8">حدث خطأ في جلب السجلات</td></tr>`;
       }
     }
+
     document.getElementById('btnSearch').addEventListener('click', ()=>{
       page = 1; reachedEnd = false; loadLogs({append:false});
     });
@@ -315,6 +373,19 @@
     document.getElementById('btnMore').addEventListener('click', ()=>{
       if(!reachedEnd){ page++; loadLogs({append:true}); }
       else{ setToast(toastInfo,'لا مزيد من السجلات'); toastInfo.show(); }
+    });
+
+    // حذف كل السجلات
+    document.getElementById('btnPurge').addEventListener('click', async ()=>{
+      if(!confirm('هل أنت متأكد من حذف جميع سجلات العمليات؟ هذا الإجراء لا يمكن التراجع عنه.')) return;
+      try{
+        const r = await fetch('/api/audit-logs', { method:'DELETE', credentials:'include' });
+        if(!r.ok) throw new Error('HTTP '+r.status);
+        setToast(toastSuccess,'🧹 تم حذف جميع السجلات'); toastSuccess.show();
+        page=1; reachedEnd=false; loadLogs({append:false});
+      }catch(e){
+        setToast(toastError,'❌ فشل حذف السجلات'); toastError.show();
+      }
     });
 
     // boot
