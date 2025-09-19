@@ -11,21 +11,26 @@
     .container{max-width:1200px;margin-top:40px}
     .card{border-radius:16px;box-shadow:0 6px 18px rgba(0,0,0,.06)}
     .user-chip{font-size:.9rem}
-    .log-json{max-width:460px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;direction:ltr}
-    .muted{opacity:.75}
+    .payload-card{background:#fff;border:1px solid #e9ecef;border-radius:12px;padding:10px}
+    .payload-card dt{color:#6c757d;font-weight:600}
+    .payload-card dd{margin-bottom:.5rem}
+    .payload-json{direction:ltr;background:#f6f8fa;border-radius:8px;padding:8px;max-height:180px;overflow:auto}
     .filters .form-control, .filters .form-select{min-width:160px}
+    .minw-40{min-width:40px}
+    .minw-60{min-width:60px}
+    .minw-120{min-width:120px}
+    .diff-added{color:#198754;font-weight:600;}   /* أخضر: مُضاف/بعد */
+    .diff-removed{color:#dc3545;font-weight:600;} /* أحمر: مُزال/قبل */
+    .table thead th{vertical-align:middle}
+    .sticky-actions{position:sticky;bottom:0;background:#fff;border-top:1px solid #e9ecef;padding:12px;border-radius:0 0 16px 16px}
+    .count-badge{font-size:.85rem}
   </style>
 </head>
 <body>
   <div class="container">
     <!-- Header -->
     <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-2">
-      <div class="d-flex align-items-center gap-2">
-        <a class="btn btn-outline-primary" href="/committees-home.html">
-          <i class="bi bi-arrow-right-circle"></i> لوحة التحكم
-        </a>
-        <h3 class="mb-0">سجل العمليات</h3>
-      </div>
+      <h3 class="mb-0">سجل العمليات</h3>
       <div class="d-flex align-items-center gap-2">
         <span id="userInfo" class="user-chip badge bg-light text-dark border">
           <i class="bi bi-person"></i>
@@ -34,25 +39,29 @@
           <span id="userFullName">—</span>
           <span class="ms-2 badge bg-secondary" id="userRole">—</span>
         </span>
+        <a class="btn btn-outline-primary" href="/committees-home.html">
+          <i class="bi bi-grid"></i> لوحة التحكم
+        </a>
         <button id="logoutBtn" class="btn btn-danger">
           <i class="bi bi-box-arrow-right"></i> خروج
         </button>
       </div>
     </div>
 
+    <!-- فلاتر -->
     <div class="card mb-3">
       <div class="card-body">
         <div class="filters d-flex flex-wrap align-items-end gap-2">
           <div>
-            <label class="form-label">النموذج</label>
+            <label class="form-label">الصفحة</label>
             <select id="fModel" class="form-select">
               <option value="">الكل</option>
-              <option>Evaluation</option>
-              <option>College</option>
-              <option>Auditor</option>
-              <option>Committee</option>
-              <option>Settings</option>
-              <option>User</option>
+              <option value="Evaluation">تقييم اللجان</option>
+              <option value="College">الكليات</option>
+              <option value="Auditor">المدققون</option>
+              <option value="Committee">أسماء اللجان</option>
+              <option value="Settings">الإعدادات</option>
+              <option value="User">المستخدمون</option>
             </select>
           </div>
           <div>
@@ -65,7 +74,7 @@
             </select>
           </div>
           <div>
-            <label class="form-label">بحث (اسم/بريد/مستخدم)</label>
+            <label class="form-label">بحث (اسم/إيميل/اسم مستخدم)</label>
             <input id="fQuery" type="text" class="form-control" placeholder="مثل: laith أو b01578">
           </div>
           <div>
@@ -81,39 +90,56 @@
             <button id="btnClear" class="btn btn-outline-secondary"><i class="bi bi-x-circle"></i> تفريغ</button>
           </div>
         </div>
-        <div class="mt-2 muted">
-          تُجلب السجلات من <code>GET /api/audit-logs</code> إذا كان المسار متاحًا في الخادم.
-        </div>
       </div>
     </div>
 
+    <!-- الجدول -->
     <div class="card">
-      <div class="card-body">
-        <div id="logsApiMissing" class="alert alert-info d-none">
-          لا يوجد مسار API لسجل العمليات حتى الآن. الواجهة جاهزة وستعمل تلقائيًا عند إضافة
-          <code>GET /api/audit-logs</code> (تدعم عوامل التصفية الظاهرة).
-        </div>
-
+      <div class="card-body p-0">
         <div class="table-responsive">
-          <table class="table table-hover align-middle">
+          <table class="table table-hover align-middle mb-0">
             <thead class="table-light">
               <tr>
-                <th>الوقت</th>
-                <th>النموذج</th>
+                <th class="minw-40 text-center">
+                  <input class="form-check-input" type="checkbox" id="chkAll" title="تحديد/إلغاء تحديد الكل">
+                </th>
+                <th class="minw-60">#</th>
+                <th class="minw-120">الوقت</th>
+                <th>الصفحة</th>
                 <th>العملية</th>
                 <th>المعرّف</th>
                 <th>المستخدم</th>
-                <th>البيانات</th>
+                <th style="width:22%">البيانات قبل</th>
+                <th style="width:22%">البيانات بعد</th>
               </tr>
             </thead>
             <tbody id="logsTbody">
-              <tr class="text-center text-muted"><td colspan="6">جاري التحميل…</td></tr>
+              <tr class="text-center text-muted"><td colspan="9">جاري التحميل…</td></tr>
             </tbody>
           </table>
         </div>
 
-        <div class="text-center">
-          <button id="btnMore" class="btn btn-outline-secondary">تحميل المزيد</button>
+        <!-- شريط الإجراءات -->
+        <div class="sticky-actions d-flex flex-wrap justify-content-between align-items-center gap-2">
+          <div class="d-flex flex-wrap gap-2">
+            <button id="btnMore" class="btn btn-outline-secondary">
+              <i class="bi bi-plus-circle"></i> تحميل المزيد
+            </button>
+            <button id="btnPurge" class="btn btn-outline-danger">
+              <i class="bi bi-trash3"></i> حذف كل السجلات
+            </button>
+            <button id="btnPurgeRange" class="btn btn-outline-warning">
+              <i class="bi bi-calendar-x"></i> حذف حسب التاريخ
+            </button>
+            <button id="btnDeleteSelected" class="btn btn-danger" disabled>
+              <i class="bi bi-check2-square"></i> حذف السجلات المحددة
+            </button>
+          </div>
+          <div>
+            <span class="badge text-bg-light count-badge">
+              المحدد: <span id="selectedCount">0</span>
+            </span>
+          </div>
         </div>
       </div>
     </div>
@@ -121,19 +147,19 @@
 
   <!-- Toasts -->
   <div class="toast-container position-fixed top-0 start-50 translate-middle-x p-3" style="z-index:2000">
-    <div id="toastSuccess" class="toast align-items-center text-bg-success border-0 mb-2" role="alert">
+    <div id="toastSuccess" class="toast align-items-center text-bg-success border-0 mb-2" role="alert" aria-live="assertive" aria-atomic="true">
       <div class="d-flex">
         <div class="toast-body">✅ تم التنفيذ بنجاح</div>
         <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
       </div>
     </div>
-    <div id="toastError" class="toast align-items-center text-bg-danger border-0 mb-2" role="alert">
+    <div id="toastError" class="toast align-items-center text-bg-danger border-0 mb-2" role="alert" aria-live="assertive" aria-atomic="true">
       <div class="d-flex">
         <div class="toast-body">❌ حدث خطأ</div>
         <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
       </div>
     </div>
-    <div id="toastInfo" class="toast align-items-center text-bg-primary border-0 mb-2" role="alert">
+    <div id="toastInfo" class="toast align-items-center text-bg-primary border-0 mb-2" role="status" aria-live="polite" aria-atomic="true">
       <div class="d-flex">
         <div class="toast-body">ℹ️ معلومات</div>
         <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
@@ -141,14 +167,59 @@
     </div>
   </div>
 
+  <!-- Modal تأكيد (بدل أي alert/confirm) -->
+  <div class="modal fade" id="confirmModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 id="confirmModalTitle" class="modal-title">تأكيد</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="إغلاق"></button>
+        </div>
+        <div class="modal-body" id="confirmModalBody">هل تريد المتابعة؟</div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+          <button type="button" class="btn btn-danger" id="confirmModalConfirmBtn">تأكيد</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scripts -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
   <script>
+    /* ===== Toast helpers ===== */
     const toastSuccess = new bootstrap.Toast(document.getElementById('toastSuccess'));
     const toastError   = new bootstrap.Toast(document.getElementById('toastError'));
     const toastInfo    = new bootstrap.Toast(document.getElementById('toastInfo'));
     function setToast(el, msg){ el._element.querySelector('.toast-body').innerText = msg; }
 
-    // ===== auth helpers =====
+    /* ===== Modal confirm helper (بدون أي alert/confirm تقليدي) ===== */
+    const confirmModalEl = document.getElementById('confirmModal');
+    const confirmModal = new bootstrap.Modal(confirmModalEl);
+    const confirmTitle = document.getElementById('confirmModalTitle');
+    const confirmBody  = document.getElementById('confirmModalBody');
+    const confirmBtn   = document.getElementById('confirmModalConfirmBtn');
+
+    function showConfirm({title='تأكيد', message='هل تريد المتابعة؟', confirmText='تأكيد', confirmBtnClass='btn-danger'}={}){
+      return new Promise(resolve=>{
+        confirmTitle.textContent = title;
+        confirmBody.textContent  = message;
+        // إعادة ضبط نمط الزر
+        confirmBtn.className = 'btn ' + confirmBtnClass;
+        confirmBtn.textContent = confirmText;
+
+        let resolved = false;
+        const onConfirm = () => { resolved = true; confirmModal.hide(); resolve(true); };
+        const onHidden  = () => { confirmModalEl.removeEventListener('hidden.bs.modal', onHidden); confirmBtn.removeEventListener('click', onConfirm); if(!resolved) resolve(false); };
+
+        confirmBtn.addEventListener('click', onConfirm, { once:true });
+        confirmModalEl.addEventListener('hidden.bs.modal', onHidden, { once:true });
+
+        confirmModal.show();
+      });
+    }
+
+    /* ===== auth helpers ===== */
     async function fetchMe(){
       try{
         const r = await fetch('/auth/committees/me',{credentials:'include'});
@@ -186,8 +257,170 @@
     }
     document.getElementById('logoutBtn').addEventListener('click', logout);
 
-    // ===== logs listing (optional API) =====
+    /* ===== mapping helpers ===== */
+    function modelToPage(model){
+      switch(model){
+        case 'Evaluation': return 'تقييم اللجان';
+        case 'College':    return 'الكليات';
+        case 'Auditor':    return 'المدققون';
+        case 'Committee':  return 'أسماء اللجان';
+        case 'Settings':   return 'الإعدادات';
+        case 'User':       return 'المستخدمون';
+        default:           return model||'—';
+      }
+    }
+    function badgeAction(action){
+      const cls = action==='delete'?'text-bg-danger':(action==='update'?'text-bg-warning':'text-bg-success');
+      return `<span class="badge ${cls}">${action||'—'}</span>`;
+    }
+    function fmtUser(u){
+      if(!u) return '—';
+      const full = u.name || '—';
+      const uname = u.username || (u.email? u.email.split('@')[0] : '—');
+      const email = u.email ? ` <span class="badge text-bg-light">${u.email}</span>` : '';
+      const role  = u.role  ? ` <span class="badge text-bg-secondary">${u.role}</span>` : '';
+      return `${full} <span class="badge text-bg-info">${uname}</span>${email}${role}`;
+    }
+
+    // ترجمة أسماء الأعمدة الإنجليزية إلى العربية (خاصة Settings)
+    const colNameArMap = {
+      committee_name:'اسم اللجنة',
+      college:'الكلية',
+      auditor_name:'المدقق',
+      createdAt:'تاريخ الإنشاء',
+      updatedAt:'تاريخ التحديث',
+      notes:'ملاحظات',
+      score:'النتيجة',
+      visibleColumns:'الأعمدة المرئية',
+      selectedVisits:'الزيارات المحددة',
+      name:'الاسم',
+      username:'اسم المستخدم',
+      role:'الدور',
+      email:'البريد',
+      isActive:'نشط؟'
+    };
+    function toArabicLabel(k){ return colNameArMap[k] || k; }
+    function toArabicColumns(list){
+      if(!Array.isArray(list)) return list;
+      return list.map(k=>toArabicLabel(k)).join('، ');
+    }
+
+    /* ===== utils: escape/diff ===== */
+    function escapeHtml(s){
+      return String(s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+    }
+    function normalizeValue(v){
+      if (v === null || v === undefined) return '';
+      if (v instanceof Date) return v.toISOString();
+      if (Array.isArray(v)) return JSON.stringify(v);
+      if (typeof v === 'object') return JSON.stringify(v);
+      return String(v);
+    }
+    function computeDiffKeys(before, after){
+      const b = before || {}, a = after || {};
+      const keys = new Set([...Object.keys(b), ...Object.keys(a)]);
+      const changed = new Set();
+      keys.forEach(k=>{
+        if (normalizeValue(b[k]) !== normalizeValue(a[k])) changed.add(k);
+      });
+      return changed;
+    }
+
+    /* ===== بطاقات البيانات مع تمييز الفروق ===== */
+    function kvDiff(label, value, key, diffKeys, mode){
+      if(value===undefined || value===null || value==='') return '';
+      const cls = diffKeys && diffKeys.has(key)
+        ? (mode==='before' ? 'diff-removed' : 'diff-added')
+        : '';
+      return `<dt>${label}</dt><dd class="${cls}">${escapeHtml(value)}</dd>`;
+    }
+    function renderCardFromObjectWithDiff(model, obj, diffKeys, mode){
+      if(!obj) return '<div class="text-muted">—</div>';
+      let html = '<div class="payload-card"><dl class="row mb-0">';
+      const d = obj;
+
+      if(model==='Evaluation'){
+        html += kvDiff('اسم اللجنة', d.committee_name, 'committee_name', diffKeys, mode);
+        html += kvDiff('الكلية', d.college, 'college', diffKeys, mode);
+        html += kvDiff('المدقق', d.auditor_name, 'auditor_name', diffKeys, mode);
+        html += kvDiff('تاريخ الإنشاء', d.createdAt ? new Date(d.createdAt).toLocaleString('ar-EG') : '', 'createdAt', diffKeys, mode);
+        html += kvDiff('ملاحظات', d.notes, 'notes', diffKeys, mode);
+        html += kvDiff('النتيجة', d.score, 'score', diffKeys, mode);
+      }else if(model==='College'){
+        html += kvDiff('الكلية', d.name, 'name', diffKeys, mode);
+      }else if(model==='Auditor'){
+        html += kvDiff('المدقق', d.name, 'name', diffKeys, mode);
+      }else if(model==='Committee'){
+        html += kvDiff('اسم اللجنة', d.name, 'name', diffKeys, mode);
+      }else if(model==='Settings'){
+        if(d.visibleColumns) html += kvDiff('الأعمدة المرئية', toArabicColumns(d.visibleColumns), 'visibleColumns', diffKeys, mode);
+        if(d.selectedVisits) html += kvDiff('الزيارات المحددة', toArabicColumns(d.selectedVisits), 'selectedVisits', diffKeys, mode);
+        if(!d.visibleColumns && !d.selectedVisits){
+          const keys = Object.keys(d||{}).map(toArabicLabel).join('، ');
+          if(keys) html += kvDiff('تغييرات', keys, '__misc', diffKeys, mode);
+        }
+      }else if(model==='User'){
+        html += kvDiff('الاسم', d.name, 'name', diffKeys, mode);
+        html += kvDiff('اسم المستخدم', d.username, 'username', diffKeys, mode);
+        html += kvDiff('الدور', d.role, 'role', diffKeys, mode);
+        html += kvDiff('البريد', d.email, 'email', diffKeys, mode);
+        if(d.isActive!==undefined) html += kvDiff('نشط؟', d.isActive ? 'نعم' : 'لا', 'isActive', diffKeys, mode);
+      }else{
+        html += '</dl><div class="payload-json"><code>'+escapeHtml(JSON.stringify(obj, null, 2))+'</code></div>';
+        html += '</div>';
+        return html;
+      }
+
+      html += '</dl>';
+      if(!/<dd[^>]*>/.test(html)){
+        html += '<div class="payload-json"><code>'+escapeHtml(JSON.stringify(obj, null, 2))+'</code></div>';
+      }
+      html += '</div>';
+      return html;
+    }
+    function renderBeforeCell(log){
+      const p = log.payload || {};
+      if(log.action==='create') return '<div class="text-muted">كانت فارغة</div>';
+      if(log.action==='delete'){
+        const allKeys = p ? new Set(Object.keys(p)) : new Set();
+        return renderCardFromObjectWithDiff(log.model, p, allKeys, 'before'); // كل شيء مُزال
+      }
+      if(p && p.before && p.after){
+        const diff = computeDiffKeys(p.before, p.after);
+        return renderCardFromObjectWithDiff(log.model, p.before, diff, 'before');
+      }
+      if(p && p.before){
+        return renderCardFromObjectWithDiff(log.model, p.before, null, 'before');
+      }
+      return '<div class="text-muted">—</div>';
+    }
+    function renderAfterCell(log){
+      const p = log.payload || {};
+      if(log.action==='delete') return '<div class="text-muted">تم الحذف</div>';
+      if(log.action==='create'){
+        const allKeys = p ? new Set(Object.keys(p)) : new Set();
+        return renderCardFromObjectWithDiff(log.model, p, allKeys, 'after'); // كل شيء مُضاف
+      }
+      if(p && p.after && p.before){
+        const diff = computeDiffKeys(p.before, p.after);
+        return renderCardFromObjectWithDiff(log.model, p.after, diff, 'after');
+      }
+      if(p && p.after){
+        return renderCardFromObjectWithDiff(log.model, p.after, null, 'after');
+      }
+      return renderCardFromObjectWithDiff(log.model, p, null, 'after');
+    }
+
+    /* ===== listing & selection ===== */
     let page = 1, limit = 20, reachedEnd = false;
+    let rowCounterStart = 1;
+    const selectedIds = new Set();
+
+    function updateSelectedCount(){
+      document.getElementById('selectedCount').textContent = selectedIds.size;
+      document.getElementById('btnDeleteSelected').disabled = selectedIds.size === 0;
+    }
+
     function buildQuery(){
       const m = document.getElementById('fModel').value.trim();
       const a = document.getElementById('fAction').value.trim();
@@ -204,59 +437,59 @@
       params.set('limit',limit);
       return params.toString();
     }
-    function fmtUser(u){
-      if(!u) return '—';
-      const uname = u.name || '—';
-      const acc = u.username || u.email || '—';
-      const role = u.role ? ` <span class="badge text-bg-secondary">${u.role}</span>` : '';
-      return `${uname} <span class="badge text-bg-light">${acc}</span>${role}`;
-    }
-    function fmtJson(o){
-      if(!o) return '—';
-      try{
-        const s = JSON.stringify(o);
-        return s.length>120 ? s.slice(0,120)+'…' : s;
-      }catch{ return '—'; }
-    }
+
     async function loadLogs({append=false}={}){
       if(reachedEnd && append) return;
       const tbody = document.getElementById('logsTbody');
-      if(!append) tbody.innerHTML = `<tr class="text-center text-muted"><td colspan="6">جاري التحميل…</td></tr>`;
+      if(!append){
+        tbody.innerHTML = `<tr class="text-center text-muted"><td colspan="9">جاري التحميل…</td></tr>`;
+        rowCounterStart = (page-1)*limit + 1;
+        selectedIds.clear();
+        updateSelectedCount();
+        document.getElementById('chkAll').checked = false;
+      }
       try{
         const r = await fetch('/api/audit-logs?'+buildQuery(),{credentials:'include'});
-        if(r.status===404) throw new Error('__MISSING__');
         if(!r.ok) throw new Error('HTTP '+r.status);
-        const data = await r.json(); // توقع: {items:[], hasMore:true/false} أو مصفوفة
+        const data = await r.json(); // {items, hasMore}
         const items = Array.isArray(data)? data : (data.items||[]);
         reachedEnd = Array.isArray(data)? items.length<limit : (data.hasMore===false);
 
         if(!append) tbody.innerHTML = '';
         if(items.length===0 && !append){
-          tbody.innerHTML = `<tr class="text-center text-muted"><td colspan="6">لا توجد سجلات</td></tr>`;
+          tbody.innerHTML = `<tr class="text-center text-muted"><td colspan="9">لا توجد سجلات</td></tr>`;
           return;
         }
+        let n = rowCounterStart;
         items.forEach(log=>{
           const when = log.createdAt ? new Date(log.createdAt).toLocaleString('ar-EG') : '—';
+          const id = log._id || log.id || '';
+          const disabled = id ? '' : 'disabled';
+          const checked = (id && selectedIds.has(id)) ? 'checked' : '';
           const row = document.createElement('tr');
+          row.setAttribute('data-id', id);
           row.innerHTML = `
+            <td class="text-center">
+              <input class="form-check-input chkRow" type="checkbox" value="${id}" ${checked} ${disabled}>
+            </td>
+            <td class="text-muted">${n++}</td>
             <td>${when}</td>
-            <td>${log.model||'—'}</td>
-            <td><span class="badge ${log.action==='delete'?'text-bg-danger':(log.action==='update'?'text-bg-warning':'text-bg-success')}">${log.action||'—'}</span></td>
-            <td class="text-muted">${log.docId||'—'}</td>
+            <td>${modelToPage(log.model)}</td>
+            <td>${badgeAction(log.action)}</td>
+            <td class="text-muted">${escapeHtml(log.docId||'—')}</td>
             <td>${fmtUser(log.user)}</td>
-            <td class="log-json"><code>${fmtJson(log.payload)}</code></td>
+            <td>${renderBeforeCell(log)}</td>
+            <td>${renderAfterCell(log)}</td>
           `;
           tbody.appendChild(row);
         });
+        rowCounterStart = n;
       }catch(err){
-        if(err.message==='__MISSING__'){
-          document.getElementById('logsApiMissing').classList.remove('d-none');
-          tbody.innerHTML = `<tr class="text-center text-muted"><td colspan="6">—</td></tr>`;
-        }else{
-          tbody.innerHTML = `<tr class="text-center text-danger"><td colspan="6">حدث خطأ في جلب السجلات</td></tr>`;
-        }
+        tbody.innerHTML = `<tr class="text-center text-danger"><td colspan="9">حدث خطأ في جلب السجلات</td></tr>`;
       }
     }
+
+    /* ===== تحكم الفلاتر ===== */
     document.getElementById('btnSearch').addEventListener('click', ()=>{
       page = 1; reachedEnd = false; loadLogs({append:false});
     });
@@ -270,10 +503,125 @@
     });
     document.getElementById('btnMore').addEventListener('click', ()=>{
       if(!reachedEnd){ page++; loadLogs({append:true}); }
-      else{ setToast(toastInfo,'لا مزيد من السجلات'); toastInfo.show(); }
+      else{ setToast(toastInfo,'لا يوجد مزيد من السجلات'); toastInfo.show(); }
     });
 
-    // boot
+    /* ===== تحديد الكل/الفردي ===== */
+    document.getElementById('chkAll').addEventListener('change', (e)=>{
+      const chk = e.target.checked;
+      document.querySelectorAll('#logsTbody .chkRow:not([disabled])').forEach(input=>{
+        input.checked = chk;
+        const id = input.value;
+        if(chk) selectedIds.add(id); else selectedIds.delete(id);
+      });
+      updateSelectedCount();
+    });
+    document.getElementById('logsTbody').addEventListener('change', (e)=>{
+      if(e.target.classList.contains('chkRow')){
+        const id = e.target.value;
+        if(e.target.checked) selectedIds.add(id); else selectedIds.delete(id);
+        const all = document.querySelectorAll('#logsTbody .chkRow:not([disabled])');
+        const allChecked = all.length>0 && Array.from(all).every(x=>x.checked);
+        document.getElementById('chkAll').checked = allChecked;
+        updateSelectedCount();
+      }
+    });
+
+    /* ===== حذف كل السجلات (Toast + Modal فقط) ===== */
+    document.getElementById('btnPurge').addEventListener('click', async ()=>{
+      const ok = await showConfirm({
+        title:'تأكيد حذف الكل',
+        message:'سيتم حذف جميع سجلات العمليات، ولا يمكن التراجع. هل تريد المتابعة؟',
+        confirmText:'نعم، احذف الكل',
+        confirmBtnClass:'btn-danger'
+      });
+      if(!ok) return;
+      try{
+        const r = await fetch('/api/audit-logs', { method:'DELETE', credentials:'include' });
+        if(!r.ok) throw new Error('HTTP '+r.status);
+        const data = await r.json().catch(()=>({}));
+        setToast(toastSuccess, data?.message || '🧹 تم حذف جميع السجلات'); toastSuccess.show();
+        page=1; reachedEnd=false; loadLogs({append:false});
+      }catch(e){
+        setToast(toastError,'❌ فشل حذف السجلات'); toastError.show();
+      }
+    });
+
+    /* ===== حذف حسب التاريخ (باستخدام حقلي من/إلى) ===== */
+    document.getElementById('btnPurgeRange').addEventListener('click', async ()=>{
+      const f = document.getElementById('fFrom').value;
+      const t = document.getElementById('fTo').value;
+
+      if(!f && !t){
+        setToast(toastInfo,'الرجاء تحديد تاريخ "من" أو "إلى" أولًا'); toastInfo.show();
+        return;
+      }
+      if(f && t && (new Date(f) > new Date(t))){
+        setToast(toastError,'❌ نطاق التاريخ غير صحيح: "من" أكبر من "إلى"'); toastError.show();
+        return;
+      }
+
+      const ok = await showConfirm({
+        title:'تأكيد الحذف حسب التاريخ',
+        message:`سيتم حذف السجلات ضمن النطاق: ${f||'—'} → ${t||'—'}. هل تريد المتابعة؟`,
+        confirmText:'حذف ضمن النطاق',
+        confirmBtnClass:'btn-warning'
+      });
+      if(!ok) return;
+
+      const qs = new URLSearchParams();
+      if(f) qs.set('from',f);
+      if(t) qs.set('to',t);
+
+      try{
+        const r = await fetch('/api/audit-logs?'+qs.toString(), { method:'DELETE', credentials:'include' });
+        if(!r.ok) throw new Error('HTTP '+r.status);
+        const data = await r.json().catch(()=>({}));
+        const msg = (typeof data?.deletedCount === 'number')
+          ? `🗂️ تم حذف ${data.deletedCount} سجل ضمن النطاق`
+          : (data?.message || '🗂️ تم حذف السجلات ضمن النطاق');
+        setToast(toastSuccess, msg); toastSuccess.show();
+        page=1; reachedEnd=false; loadLogs({append:false});
+      }catch(e){
+        setToast(toastError,'❌ فشل حذف السجلات ضمن النطاق'); toastError.show();
+      }
+    });
+
+    /* ===== حذف السجلات المحددة ===== */
+    document.getElementById('btnDeleteSelected').addEventListener('click', async ()=>{
+      const count = selectedIds.size;
+      if(count===0){
+        setToast(toastInfo,'لم يتم تحديد أي سجلات'); toastInfo.show();
+        return;
+      }
+      const ok = await showConfirm({
+        title:'تأكيد حذف المحدد',
+        message:`سيتم حذف ${count} من السجلات المحددة. هل تريد المتابعة؟`,
+        confirmText:'حذف المحدد',
+        confirmBtnClass:'btn-danger'
+      });
+      if(!ok) return;
+
+      try{
+        const r = await fetch('/api/audit-logs/by-ids', {
+          method:'DELETE',
+          headers:{'Content-Type':'application/json'},
+          credentials:'include',
+          body: JSON.stringify({ ids: Array.from(selectedIds) })
+        });
+        if(!r.ok) throw new Error('HTTP '+r.status);
+        const data = await r.json().catch(()=>({}));
+        const msg = (typeof data?.deletedCount === 'number')
+          ? `🗑️ تم حذف ${data.deletedCount} سجل محدد`
+          : (data?.message || '🗑️ تم حذف السجلات المحددة');
+        setToast(toastSuccess, msg); toastSuccess.show();
+        page=1; reachedEnd=false; loadLogs({append:false});
+      }catch(e){
+        setToast(toastError,'❌ فشل حذف السجلات المحددة'); toastError.show();
+      }
+    });
+
+    /* ===== إقلاع الصفحة ===== */
     ensureAdmin().then(()=>loadLogs({append:false}));
   </script>
 </body>
