@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <title>سجل العمليات - نظام اللجان</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.rtl.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
+  <style>
+    body{background:#f8f9fa;font-family:'Segoe UI',sans-serif}
+    .container{max-width:1200px;margin-top:40px}
+    .card{border-radius:16px;box-shadow:0 6px 18px rgba(0,0,0,.06)}
+    .user-chip{font-size:.9rem}
+    .log-json{max-width:460px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;direction:ltr}
+    .muted{opacity:.75}
+    .filters .form-control, .filters .form-select{min-width:160px}
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Header -->
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-2">
+      <div class="d-flex align-items-center gap-2">
+        <a class="btn btn-outline-primary" href="/committees-home.html">
+          <i class="bi bi-arrow-right-circle"></i> لوحة التحكم
+        </a>
+        <h3 class="mb-0">سجل العمليات</h3>
+      </div>
+      <div class="d-flex align-items-center gap-2">
+        <span id="userInfo" class="user-chip badge bg-light text-dark border">
+          <i class="bi bi-person"></i>
+          <span id="userUsername">—</span>
+          <span class="mx-1">—</span>
+          <span id="userFullName">—</span>
+          <span class="ms-2 badge bg-secondary" id="userRole">—</span>
+        </span>
+        <button id="logoutBtn" class="btn btn-danger">
+          <i class="bi bi-box-arrow-right"></i> خروج
+        </button>
+      </div>
+    </div>
+
+    <div class="card mb-3">
+      <div class="card-body">
+        <div class="filters d-flex flex-wrap align-items-end gap-2">
+          <div>
+            <label class="form-label">النموذج</label>
+            <select id="fModel" class="form-select">
+              <option value="">الكل</option>
+              <option>Evaluation</option>
+              <option>College</option>
+              <option>Auditor</option>
+              <option>Committee</option>
+              <option>Settings</option>
+              <option>User</option>
+            </select>
+          </div>
+          <div>
+            <label class="form-label">العملية</label>
+            <select id="fAction" class="form-select">
+              <option value="">الكل</option>
+              <option>create</option>
+              <option>update</option>
+              <option>delete</option>
+            </select>
+          </div>
+          <div>
+            <label class="form-label">بحث (اسم/بريد/مستخدم)</label>
+            <input id="fQuery" type="text" class="form-control" placeholder="مثل: laith أو b01578">
+          </div>
+          <div>
+            <label class="form-label">من تاريخ</label>
+            <input id="fFrom" type="date" class="form-control">
+          </div>
+          <div>
+            <label class="form-label">إلى تاريخ</label>
+            <input id="fTo" type="date" class="form-control">
+          </div>
+          <div class="ms-auto d-flex gap-2">
+            <button id="btnSearch" class="btn btn-primary"><i class="bi bi-search"></i> بحث</button>
+            <button id="btnClear" class="btn btn-outline-secondary"><i class="bi bi-x-circle"></i> تفريغ</button>
+          </div>
+        </div>
+        <div class="mt-2 muted">
+          تُجلب السجلات من <code>GET /api/audit-logs</code> إذا كان المسار متاحًا في الخادم.
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-body">
+        <div id="logsApiMissing" class="alert alert-info d-none">
+          لا يوجد مسار API لسجل العمليات حتى الآن. الواجهة جاهزة وستعمل تلقائيًا عند إضافة
+          <code>GET /api/audit-logs</code> (تدعم عوامل التصفية الظاهرة).
+        </div>
+
+        <div class="table-responsive">
+          <table class="table table-hover align-middle">
+            <thead class="table-light">
+              <tr>
+                <th>الوقت</th>
+                <th>النموذج</th>
+                <th>العملية</th>
+                <th>المعرّف</th>
+                <th>المستخدم</th>
+                <th>البيانات</th>
+              </tr>
+            </thead>
+            <tbody id="logsTbody">
+              <tr class="text-center text-muted"><td colspan="6">جاري التحميل…</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="text-center">
+          <button id="btnMore" class="btn btn-outline-secondary">تحميل المزيد</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toasts -->
+  <div class="toast-container position-fixed top-0 start-50 translate-middle-x p-3" style="z-index:2000">
+    <div id="toastSuccess" class="toast align-items-center text-bg-success border-0 mb-2" role="alert">
+      <div class="d-flex">
+        <div class="toast-body">✅ تم التنفيذ بنجاح</div>
+        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+      </div>
+    </div>
+    <div id="toastError" class="toast align-items-center text-bg-danger border-0 mb-2" role="alert">
+      <div class="d-flex">
+        <div class="toast-body">❌ حدث خطأ</div>
+        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+      </div>
+    </div>
+    <div id="toastInfo" class="toast align-items-center text-bg-primary border-0 mb-2" role="alert">
+      <div class="d-flex">
+        <div class="toast-body">ℹ️ معلومات</div>
+        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    const toastSuccess = new bootstrap.Toast(document.getElementById('toastSuccess'));
+    const toastError   = new bootstrap.Toast(document.getElementById('toastError'));
+    const toastInfo    = new bootstrap.Toast(document.getElementById('toastInfo'));
+    function setToast(el, msg){ el._element.querySelector('.toast-body').innerText = msg; }
+
+    // ===== auth helpers =====
+    async function fetchMe(){
+      try{
+        const r = await fetch('/auth/committees/me',{credentials:'include'});
+        if(!r.ok) throw new Error();
+        return await r.json();
+      }catch{ return {authenticated:false}; }
+    }
+    function renderUser(user){
+      const username = user?.username || (user?.email? user.email.split('@')[0] : '—');
+      document.getElementById('userUsername').textContent = username;
+      document.getElementById('userFullName').textContent = user?.name || '—';
+      document.getElementById('userRole').textContent = user?.role || '—';
+    }
+    async function ensureAdmin(){
+      const me = await fetchMe();
+      if(!me.authenticated){
+        const next = encodeURIComponent('/audit-logs.html');
+        location.href = `/committees-login.html?next=${next}`;
+        return Promise.reject();
+      }
+      if((me.user?.role||'').toLowerCase()!=='admin'){
+        setToast(toastError,'❌ هذه الصفحة للمشرفين فقط'); toastError.show();
+        setTimeout(()=>location.href='/committees-home.html',900);
+        return Promise.reject();
+      }
+      renderUser(me.user);
+      return me.user;
+    }
+    async function logout(){
+      try{
+        const r = await fetch('/auth/committees/logout',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'include'});
+        if(r.ok){ setToast(toastSuccess,'✅ تم تسجيل الخروج'); toastSuccess.show(); setTimeout(()=>location.href='/committees-login.html',700); }
+        else{ setToast(toastError,'❌ تعذر تسجيل الخروج'); toastError.show(); }
+      }catch{ setToast(toastError,'❌ خطأ في الاتصال'); toastError.show(); }
+    }
+    document.getElementById('logoutBtn').addEventListener('click', logout);
+
+    // ===== logs listing (optional API) =====
+    let page = 1, limit = 20, reachedEnd = false;
+    function buildQuery(){
+      const m = document.getElementById('fModel').value.trim();
+      const a = document.getElementById('fAction').value.trim();
+      const q = document.getElementById('fQuery').value.trim();
+      const f = document.getElementById('fFrom').value;
+      const t = document.getElementById('fTo').value;
+      const params = new URLSearchParams();
+      if(m) params.set('model',m);
+      if(a) params.set('action',a);
+      if(q) params.set('q',q);
+      if(f) params.set('from',f);
+      if(t) params.set('to',t);
+      params.set('page',page);
+      params.set('limit',limit);
+      return params.toString();
+    }
+    function fmtUser(u){
+      if(!u) return '—';
+      const uname = u.name || '—';
+      const acc = u.username || u.email || '—';
+      const role = u.role ? ` <span class="badge text-bg-secondary">${u.role}</span>` : '';
+      return `${uname} <span class="badge text-bg-light">${acc}</span>${role}`;
+    }
+    function fmtJson(o){
+      if(!o) return '—';
+      try{
+        const s = JSON.stringify(o);
+        return s.length>120 ? s.slice(0,120)+'…' : s;
+      }catch{ return '—'; }
+    }
+    async function loadLogs({append=false}={}){
+      if(reachedEnd && append) return;
+      const tbody = document.getElementById('logsTbody');
+      if(!append) tbody.innerHTML = `<tr class="text-center text-muted"><td colspan="6">جاري التحميل…</td></tr>`;
+      try{
+        const r = await fetch('/api/audit-logs?'+buildQuery(),{credentials:'include'});
+        if(r.status===404) throw new Error('__MISSING__');
+        if(!r.ok) throw new Error('HTTP '+r.status);
+        const data = await r.json(); // توقع: {items:[], hasMore:true/false} أو مصفوفة
+        const items = Array.isArray(data)? data : (data.items||[]);
+        reachedEnd = Array.isArray(data)? items.length<limit : (data.hasMore===false);
+
+        if(!append) tbody.innerHTML = '';
+        if(items.length===0 && !append){
+          tbody.innerHTML = `<tr class="text-center text-muted"><td colspan="6">لا توجد سجلات</td></tr>`;
+          return;
+        }
+        items.forEach(log=>{
+          const when = log.createdAt ? new Date(log.createdAt).toLocaleString('ar-EG') : '—';
+          const row = document.createElement('tr');
+          row.innerHTML = `
+            <td>${when}</td>
+            <td>${log.model||'—'}</td>
+            <td><span class="badge ${log.action==='delete'?'text-bg-danger':(log.action==='update'?'text-bg-warning':'text-bg-success')}">${log.action||'—'}</span></td>
+            <td class="text-muted">${log.docId||'—'}</td>
+            <td>${fmtUser(log.user)}</td>
+            <td class="log-json"><code>${fmtJson(log.payload)}</code></td>
+          `;
+          tbody.appendChild(row);
+        });
+      }catch(err){
+        if(err.message==='__MISSING__'){
+          document.getElementById('logsApiMissing').classList.remove('d-none');
+          tbody.innerHTML = `<tr class="text-center text-muted"><td colspan="6">—</td></tr>`;
+        }else{
+          tbody.innerHTML = `<tr class="text-center text-danger"><td colspan="6">حدث خطأ في جلب السجلات</td></tr>`;
+        }
+      }
+    }
+    document.getElementById('btnSearch').addEventListener('click', ()=>{
+      page = 1; reachedEnd = false; loadLogs({append:false});
+    });
+    document.getElementById('btnClear').addEventListener('click', ()=>{
+      document.getElementById('fModel').value='';
+      document.getElementById('fAction').value='';
+      document.getElementById('fQuery').value='';
+      document.getElementById('fFrom').value='';
+      document.getElementById('fTo').value='';
+      page=1; reachedEnd=false; loadLogs({append:false});
+    });
+    document.getElementById('btnMore').addEventListener('click', ()=>{
+      if(!reachedEnd){ page++; loadLogs({append:true}); }
+      else{ setToast(toastInfo,'لا مزيد من السجلات'); toastInfo.show(); }
+    });
+
+    // boot
+    ensureAdmin().then(()=>loadLogs({append:false}));
+  </script>
+</body>
+</html>
