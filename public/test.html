@@ -1,255 +1,324 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-  <meta charset="UTF-8">
-  <title>إدخال تقييم لجنة</title>
+  <meta charset="UTF-8" />
+  <title>سجل العمليات - نظام اللجان</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.rtl.min.css">
-  <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
   <style>
-    body { background-color: #f8f9fa; font-family: 'Segoe UI', sans-serif; }
-    .form-container { max-width: 800px; margin: 40px auto; background: #fff; padding: 25px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
-    .form-section { margin-bottom: 20px; padding: 15px; border: 1px solid #dee2e6; border-radius: 10px; background: #fdfdfd; }
-    .form-section h6 { margin-bottom: 15px; font-weight: bold; color: #0d6efd; }
-    .toast-container { position: fixed; top: 20px; left: 20px; z-index: 2000; }
-    #editor { height: 150px; background: #fff; }
+    body{background:#f8f9fa;font-family:'Segoe UI',sans-serif}
+    .container{max-width:1200px;margin-top:40px}
+    .card{border-radius:16px;box-shadow:0 6px 18px rgba(0,0,0,.06)}
+    .user-chip{font-size:.9rem}
+    .payload-card{background:#fff;border:1px solid #e9ecef;border-radius:12px;padding:10px}
+    .payload-card dt{color:#6c757d;font-weight:600}
+    .payload-card dd{margin-bottom:.5rem}
+    .payload-json{direction:ltr;background:#f6f8fa;border-radius:8px;padding:8px;max-height:180px;overflow:auto}
+    .filters .form-control, .filters .form-select{min-width:160px}
+    .minw-120{min-width:120px}
   </style>
 </head>
 <body>
-  <div class="form-container">
-    <h4 class="mb-4 text-center">📝 إدخال تقييم لجنة</h4>
-    <form id="committeeForm">
+  <div class="container">
+    <!-- Header -->
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-2">
+      <h3 class="mb-0">سجل العمليات</h3>
+      <div class="d-flex align-items-center gap-2">
+        <span id="userInfo" class="user-chip badge bg-light text-dark border">
+          <i class="bi bi-person"></i>
+          <span id="userUsername">—</span>
+          <span class="mx-1">—</span>
+          <span id="userFullName">—</span>
+          <span class="ms-2 badge bg-secondary" id="userRole">—</span>
+        </span>
+        <a class="btn btn-outline-primary" href="/committees-home.html">
+          <i class="bi bi-grid"></i> لوحة التحكم
+        </a>
+        <button id="logoutBtn" class="btn btn-danger">
+          <i class="bi bi-box-arrow-right"></i> خروج
+        </button>
+      </div>
+    </div>
 
-      <!-- بيانات اللجنة -->
-      <div class="form-section">
-        <h6>بيانات اللجنة</h6>
-        <div class="mb-3">
-          <label class="form-label">الكلية</label>
-          <select class="form-select" name="college" id="collegeSelect" required>
-            <option value="">اختر الكلية...</option>
-          </select>
-        </div>
-        <div class="mb-3">
-          <label class="form-label">اسم اللجنة</label>
-          <input type="text" class="form-control" name="committee_name" required>
+    <div class="card mb-3">
+      <div class="card-body">
+        <div class="filters d-flex flex-wrap align-items-end gap-2">
+          <div>
+            <label class="form-label">الصفحة</label>
+            <select id="fModel" class="form-select">
+              <option value="">الكل</option>
+              <option value="Evaluation">تقييم اللجان</option>
+              <option value="College">الكليات</option>
+              <option value="Auditor">المدققون</option>
+              <option value="Committee">أسماء اللجان</option>
+              <option value="Settings">الإعدادات</option>
+              <option value="User">المستخدمون</option>
+            </select>
+          </div>
+          <div>
+            <label class="form-label">العملية</label>
+            <select id="fAction" class="form-select">
+              <option value="">الكل</option>
+              <option>create</option>
+              <option>update</option>
+              <option>delete</option>
+            </select>
+          </div>
+          <div>
+            <label class="form-label">بحث (اسم/إيميل/اسم مستخدم)</label>
+            <input id="fQuery" type="text" class="form-control" placeholder="مثل: laith أو b01578">
+          </div>
+          <div>
+            <label class="form-label">من تاريخ</label>
+            <input id="fFrom" type="date" class="form-control">
+          </div>
+          <div>
+            <label class="form-label">إلى تاريخ</label>
+            <input id="fTo" type="date" class="form-control">
+          </div>
+          <div class="ms-auto d-flex gap-2">
+            <button id="btnSearch" class="btn btn-primary"><i class="bi bi-search"></i> بحث</button>
+            <button id="btnClear" class="btn btn-outline-secondary"><i class="bi bi-x-circle"></i> تفريغ</button>
+          </div>
         </div>
       </div>
+    </div>
 
-      <!-- عناصر التقييم (بهيئة جدول) -->
-      <div class="form-section">
-        <h6 class="d-flex align-items-center justify-content-between">
-          التقييم التفصيلي
-          <div class="form-check form-switch">
-            <input class="form-check-input" type="checkbox" id="fillOnes">
-            <label class="form-check-label" for="fillOnes">تعبئة تلقائية بالرقم 1</label>
-          </div>
-        </h6>
-
+    <div class="card">
+      <div class="card-body">
         <div class="table-responsive">
-          <table class="table table-bordered align-middle mb-0">
+          <table class="table table-hover align-middle">
             <thead class="table-light">
               <tr>
-                <th style="width:70%">البند</th>
-                <th style="width:30%">الدرجة</th>
+                <th class="minw-120">الوقت</th>
+                <th>الصفحة</th>
+                <th>العملية</th>
+                <th>المعرّف</th>
+                <th>المستخدم</th>
+                <th style="width:48%">البيانات</th>
               </tr>
             </thead>
-            <tbody>
-              <tr>
-                <td><label for="formation_decision">قرار التشكيل</label></td>
-                <td><input type="number" step="0.25" min="0" max="1" class="form-control score" name="formation_decision" id="formation_decision" placeholder="0"></td>
-              </tr>
-              <tr>
-                <td><label for="work_plan">خطة عمل اللجنة</label></td>
-                <td><input type="number" step="0.25" min="0" max="1" class="form-control score" name="work_plan" id="work_plan" placeholder="0"></td>
-              </tr>
-              <tr>
-                <td><label for="performance_indicators">مؤشرات أداء خطة عمل اللجنة قابلة للقياس</label></td>
-                <td><input type="number" step="0.25" min="0" max="1" class="form-control score" name="performance_indicators" id="performance_indicators" placeholder="0"></td>
-              </tr>
-              <tr>
-                <td><label for="meetings">عدد الاجتماعات</label></td>
-                <td><input type="number" step="0.25" min="0" max="1" class="form-control score" name="meetings" id="meetings" placeholder="0"></td>
-              </tr>
-              <tr>
-                <td><label for="consistency">التوافق بين الدعوات والاجتماعات</label></td>
-                <td><input type="number" step="0.25" min="0" max="1" class="form-control score" name="consistency" id="consistency" placeholder="0"></td>
-              </tr>
-              <tr>
-                <td><label for="coverage_books">كتب التغطية</label></td>
-                <td><input type="number" step="0.25" min="0" max="1" class="form-control score" name="coverage_books" id="coverage_books" placeholder="0"></td>
-              </tr>
-              <tr>
-                <td><label for="report1">تقرير إنجاز 1</label></td>
-                <td><input type="number" step="0.25" min="0" max="1" class="form-control score" name="report1" id="report1" placeholder="0"></td>
-              </tr>
-              <tr>
-                <td><label for="report2">تقرير إنجاز 2</label></td>
-                <td><input type="number" step="0.25" min="0" max="1" class="form-control score" name="report2" id="report2" placeholder="0"></td>
-              </tr>
-              <tr>
-                <td><label for="report3">تقرير إنجاز 3</label></td>
-                <td><input type="number" step="0.25" min="0" max="1" class="form-control score" name="report3" id="report3" placeholder="0"></td>
-              </tr>
-              <tr>
-                <td><label for="statistical_analysis">تقييم أداء اللجنة (التحليل الإحصائي)</label></td>
-                <td><input type="number" step="0.25" min="0" max="1" class="form-control score" name="statistical_analysis" id="statistical_analysis" placeholder="0"></td>
-              </tr>
+            <tbody id="logsTbody">
+              <tr class="text-center text-muted"><td colspan="6">جاري التحميل…</td></tr>
             </tbody>
           </table>
         </div>
-      </div>
-
-      <!-- درجة التوفر والملاحظات -->
-      <div class="form-section">
-        <h6>النتائج النهائية</h6>
-        <div class="mb-3">
-          <label class="form-label">درجة التوفر (تُحسب تلقائيًا)</label>
-          <input type="number" class="form-control" id="availability_score" name="availability_score" readonly>
-        </div>
-        <div class="mb-3">
-          <label class="form-label">ملاحظات</label>
-          <div id="editor"></div>
-          <input type="hidden" name="notes" id="notesInput">
-        </div>
-        <div class="row">
-          <div class="col-md-6 mb-3"><label class="form-label">تاريخ التدقيق</label><input type="date" class="form-control" name="audit_date"></div>
-          <div class="col-md-6 mb-3">
-            <label class="form-label">اسم المدقق</label>
-            <select class="form-select" name="auditor_name" id="auditorSelect" required>
-              <option value="">اختر المدقق...</option>
-            </select>
-          </div>
+        <div class="text-center">
+          <button id="btnMore" class="btn btn-outline-secondary">تحميل المزيد</button>
         </div>
       </div>
-
-      <button type="submit" class="btn btn-primary w-100">💾 حفظ التقييم</button>
-    </form>
+    </div>
   </div>
 
   <!-- Toasts -->
-  <div class="toast-container">
-    <div id="successToast" class="toast align-items-center text-bg-success border-0" role="alert">
-      <div class="d-flex"><div class="toast-body">✅ تم حفظ التقييم بنجاح</div><button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button></div>
+  <div class="toast-container position-fixed top-0 start-50 translate-middle-x p-3" style="z-index:2000">
+    <div id="toastSuccess" class="toast align-items-center text-bg-success border-0 mb-2" role="alert">
+      <div class="d-flex">
+        <div class="toast-body">✅ تم التنفيذ بنجاح</div>
+        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+      </div>
     </div>
-    <div id="errorToast" class="toast align-items-center text-bg-danger border-0" role="alert">
-      <div class="d-flex"><div class="toast-body">❌ حدث خطأ أثناء الحفظ</div><button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button></div>
+    <div id="toastError" class="toast align-items-center text-bg-danger border-0 mb-2" role="alert">
+      <div class="d-flex">
+        <div class="toast-body">❌ حدث خطأ</div>
+        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+      </div>
+    </div>
+    <div id="toastInfo" class="toast align-items-center text-bg-primary border-0 mb-2" role="alert">
+      <div class="d-flex">
+        <div class="toast-body">ℹ️ معلومات</div>
+        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+      </div>
     </div>
   </div>
 
-  <!-- مكتبات -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
-  <script src="https://cdn.quilljs.com/1.3.6/quill.min.js"></script>
   <script>
-    const quill = new Quill('#editor', { theme: 'snow' });
+    const toastSuccess = new bootstrap.Toast(document.getElementById('toastSuccess'));
+    const toastError   = new bootstrap.Toast(document.getElementById('toastError'));
+    const toastInfo    = new bootstrap.Toast(document.getElementById('toastInfo'));
+    function setToast(el, msg){ el._element.querySelector('.toast-body').innerText = msg; }
 
-    const successToast = new bootstrap.Toast(document.getElementById('successToast'));
-    const errorToast = new bootstrap.Toast(document.getElementById('errorToast'));
+    // ===== auth helpers =====
+    async function fetchMe(){
+      try{
+        const r = await fetch('/auth/committees/me',{credentials:'include'});
+        if(!r.ok) throw new Error();
+        return await r.json();
+      }catch{ return {authenticated:false}; }
+    }
+    function renderUser(user){
+      const username = user?.username || (user?.email? user.email.split('@')[0] : '—');
+      document.getElementById('userUsername').textContent = username;
+      document.getElementById('userFullName').textContent = user?.name || '—';
+      document.getElementById('userRole').textContent = user?.role || '—';
+    }
+    async function ensureAdmin(){
+      const me = await fetchMe();
+      if(!me.authenticated){
+        const next = encodeURIComponent('/audit-logs.html');
+        location.href = `/committees-login.html?next=${next}`;
+        return Promise.reject();
+      }
+      if((me.user?.role||'').toLowerCase()!=='admin'){
+        setToast(toastError,'❌ هذه الصفحة للمشرفين فقط'); toastError.show();
+        setTimeout(()=>location.href='/committees-home.html',900);
+        return Promise.reject();
+      }
+      renderUser(me.user);
+      return me.user;
+    }
+    async function logout(){
+      try{
+        const r = await fetch('/auth/committees/logout',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'include'});
+        if(r.ok){ setToast(toastSuccess,'✅ تم تسجيل الخروج'); toastSuccess.show(); setTimeout(()=>location.href='/committees-login.html',700); }
+        else{ setToast(toastError,'❌ تعذر تسجيل الخروج'); toastError.show(); }
+      }catch{ setToast(toastError,'❌ خطأ في الاتصال'); toastError.show(); }
+    }
+    document.getElementById('logoutBtn').addEventListener('click', logout);
 
-    // جلب الكليات من قاعدة البيانات
-    async function loadColleges() {
-      try {
-        const res = await axios.get('/api/colleges');
-        const select = document.getElementById('collegeSelect');
-        res.data.forEach(c => {
-          const opt = document.createElement('option');
-          opt.value = c.name;
-          opt.textContent = c.name;
-          select.appendChild(opt);
-        });
-      } catch (err) {
-        console.error("خطأ في جلب الكليات:", err);
+    // ===== mapping helpers =====
+    function modelToPage(model){
+      switch(model){
+        case 'Evaluation': return 'تقييم اللجان';
+        case 'College':    return 'الكليات';
+        case 'Auditor':    return 'المدققون';
+        case 'Committee':  return 'أسماء اللجان';
+        case 'Settings':   return 'الإعدادات';
+        case 'User':       return 'المستخدمون';
+        default:           return model||'—';
       }
     }
-    loadColleges();
-
-    // جلب المدققين من قاعدة البيانات
-    async function loadAuditors() {
-      try {
-        const res = await axios.get('/api/auditors');
-        const select = document.getElementById('auditorSelect');
-        res.data.forEach(a => {
-          const opt = document.createElement('option');
-          opt.value = a.name;
-          opt.textContent = a.name;
-          select.appendChild(opt);
-        });
-      } catch (err) {
-        console.error("خطأ في جلب المدققين:", err);
+    function badgeAction(action){
+      const cls = action==='delete'?'text-bg-danger':(action==='update'?'text-bg-warning':'text-bg-success');
+      return `<span class="badge ${cls}">${action||'—'}</span>`;
+    }
+    function fmtUser(u){
+      if(!u) return '—';
+      const full = u.name || '—';
+      const uname = u.username || (u.email? u.email.split('@')[0] : '—');
+      const email = u.email ? ` <span class="badge text-bg-light">${u.email}</span>` : '';
+      const role  = u.role  ? ` <span class="badge text-bg-secondary">${u.role}</span>` : '';
+      return `${full} <span class="badge text-bg-info">${uname}</span>${email}${role}`;
+    }
+    function kv(label, value){
+      if(value===undefined || value===null || value==='') return '';
+      return `<dt>${label}</dt><dd>${String(value)}</dd>`;
+    }
+    // عرض منسّق لبيانات السجل حسب النموذج/العملية
+    function renderPayloadCard(log){
+      const p = log.payload || {};
+      let html = '<div class="payload-card"><dl class="row mb-0">';
+      if(log.model==='Evaluation'){
+        html += kv('اسم اللجنة', p.committee_name);
+        html += kv('الكلية', p.college);
+        html += kv('المدقق', p.auditor_name);
+        html += kv('تاريخ/إنشاء', p.createdAt ? new Date(p.createdAt).toLocaleString('ar-EG') : '');
+        html += kv('ملاحظات', p.notes);
+      }else if(log.model==='College'){
+        html += kv('الكلية', p.name);
+      }else if(log.model==='Auditor'){
+        html += kv('المدقق', p.name);
+      }else if(log.model==='Committee'){
+        html += kv('اسم اللجنة', p.name);
+      }else if(log.model==='Settings'){
+        if(p.visibleColumns) html += kv('أعمدة مرئية', Array.isArray(p.visibleColumns)? p.visibleColumns.join('، ') : p.visibleColumns);
+        if(p.selectedVisits) html += kv('زيارات محددة', Array.isArray(p.selectedVisits)? p.selectedVisits.join('، ') : p.selectedVisits);
+        if(!p.visibleColumns && !p.selectedVisits) html += kv('تغييرات', Object.keys(p).join('، '));
+      }else if(log.model==='User'){
+        html += kv('الاسم', p.name);
+        html += kv('اسم المستخدم', p.username);
+        html += kv('الدور', p.role);
+        html += kv('البريد', p.email);
+        html += kv('نشط؟', p.isActive);
+      }else{
+        // غير معروف → أظهر JSON منسق
+        html += '</dl><div class="payload-json"><code>'+escapeHtml(JSON.stringify(p, null, 2))+'</code></div>';
+        html += '</div>';
+        return html;
       }
+      html += '</dl>';
+      // إن لم نجد أي حقل مفيد، أظهر JSON
+      if(!html.match(/<dd>/)){
+        html += '<div class="payload-json"><code>'+escapeHtml(JSON.stringify(p, null, 2))+'</code></div>';
+      }
+      html += '</div>';
+      return html;
     }
-    loadAuditors();
-
-    // التأكد من أن المدخلات تبقى بين 0 و 1
-    function clampScoreInput(el) {
-      const min = 0;
-      const max = 1;
-      let v = parseFloat(el.value);
-      if (isNaN(v)) return;
-      if (v < min) v = min;
-      if (v > max) v = max;
-      el.value = v;
+    function escapeHtml(s){
+      return s.replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
     }
 
-    // حساب درجة التوفر تلقائيًا
-    function recomputeAvailability() {
-      let sum = 0;
-      document.querySelectorAll('.score').forEach(i => {
-        const val = parseFloat(i.value);
-        if (!isNaN(val)) sum += val;
-      });
-      document.getElementById('availability_score').value = sum;
+    // ===== listing =====
+    let page = 1, limit = 20, reachedEnd = false;
+    function buildQuery(){
+      const m = document.getElementById('fModel').value.trim();
+      const a = document.getElementById('fAction').value.trim();
+      const q = document.getElementById('fQuery').value.trim();
+      const f = document.getElementById('fFrom').value;
+      const t = document.getElementById('fTo').value;
+      const params = new URLSearchParams();
+      if(m) params.set('model',m);
+      if(a) params.set('action',a);
+      if(q) params.set('q',q);            // يشمل: الاسم، البريد، واسم المستخدم
+      if(f) params.set('from',f);
+      if(t) params.set('to',t);
+      params.set('page',page);
+      params.set('limit',limit);
+      return params.toString();
     }
+    async function loadLogs({append=false}={}){
+      if(reachedEnd && append) return;
+      const tbody = document.getElementById('logsTbody');
+      if(!append) tbody.innerHTML = `<tr class="text-center text-muted"><td colspan="6">جاري التحميل…</td></tr>`;
+      try{
+        const r = await fetch('/api/audit-logs?'+buildQuery(),{credentials:'include'});
+        if(!r.ok) throw new Error('HTTP '+r.status);
+        const data = await r.json(); // {items, hasMore} أو مصفوفة
+        const items = Array.isArray(data)? data : (data.items||[]);
+        reachedEnd = Array.isArray(data)? items.length<limit : (data.hasMore===false);
 
-    document.querySelectorAll('.score').forEach(input => {
-      input.addEventListener('input', () => {
-        clampScoreInput(input);
-        recomputeAvailability();
-      });
-      input.addEventListener('change', () => {
-        clampScoreInput(input);
-        recomputeAvailability();
-      });
-    });
-
-    // Checkbox للتعبئة التلقائية بالقيمة 1
-    const fillOnesCheckbox = document.getElementById('fillOnes');
-    if (fillOnesCheckbox) {
-      fillOnesCheckbox.addEventListener('change', (e) => {
-        const v = e.target.checked ? 1 : '';
-        document.querySelectorAll('.score').forEach(i => {
-          i.value = v;
-          clampScoreInput(i);
-        });
-        recomputeAvailability();
-      });
-    }
-
-    // إرسال النموذج
-    document.getElementById("committeeForm").addEventListener("submit", async function(e){
-      e.preventDefault();
-      document.getElementById("notesInput").value = quill.root.innerHTML;
-
-      const formData = new FormData(this);
-      const data = Object.fromEntries(formData.entries());
-
-      try {
-        const res = await axios.post('/api/committees', data);
-        if(res.status === 201){
-          successToast.show();
-          this.reset();
-          quill.setContents([]);
-          document.getElementById('availability_score').value = 0;
-          // إعادة إلغاء تفعيل Checkbox إن كان مفعلاً
-          if (fillOnesCheckbox && fillOnesCheckbox.checked) fillOnesCheckbox.checked = false;
+        if(!append) tbody.innerHTML = '';
+        if(items.length===0 && !append){
+          tbody.innerHTML = `<tr class="text-center text-muted"><td colspan="6">لا توجد سجلات</td></tr>`;
+          return;
         }
-      } catch (err) {
-        console.error(err);
-        errorToast.show();
+        items.forEach(log=>{
+          const when = log.createdAt ? new Date(log.createdAt).toLocaleString('ar-EG') : '—';
+          const row = document.createElement('tr');
+          row.innerHTML = `
+            <td>${when}</td>
+            <td>${modelToPage(log.model)}</td>
+            <td>${badgeAction(log.action)}</td>
+            <td class="text-muted">${log.docId||'—'}</td>
+            <td>${fmtUser(log.user)}</td>
+            <td>${renderPayloadCard(log)}</td>
+          `;
+          tbody.appendChild(row);
+        });
+      }catch(err){
+        tbody.innerHTML = `<tr class="text-center text-danger"><td colspan="6">حدث خطأ في جلب السجلات</td></tr>`;
       }
+    }
+    document.getElementById('btnSearch').addEventListener('click', ()=>{
+      page = 1; reachedEnd = false; loadLogs({append:false});
+    });
+    document.getElementById('btnClear').addEventListener('click', ()=>{
+      document.getElementById('fModel').value='';
+      document.getElementById('fAction').value='';
+      document.getElementById('fQuery').value='';
+      document.getElementById('fFrom').value='';
+      document.getElementById('fTo').value='';
+      page=1; reachedEnd=false; loadLogs({append:false});
+    });
+    document.getElementById('btnMore').addEventListener('click', ()=>{
+      if(!reachedEnd){ page++; loadLogs({append:true}); }
+      else{ setToast(toastInfo,'لا مزيد من السجلات'); toastInfo.show(); }
     });
 
-    // تهيئة أولية
-    recomputeAvailability();
+    // boot
+    ensureAdmin().then(()=>loadLogs({append:false}));
   </script>
 </body>
 </html>
