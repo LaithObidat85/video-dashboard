@@ -116,7 +116,7 @@ app.use(session({
   secret: 'secret123',               // يُفضّل وضعه في ENV
   resave: false,
   saveUninitialized: true,
-  cookie: { maxAge: 10 * 60 * 1000 } // 10 دقائق
+  cookie: { maxAge: 60 * 60 * 1000 } // 60 دقيقة
 }));
 
 /****************************************************
@@ -902,6 +902,58 @@ app.put('/api/settings', authRequired, requireRole('admin'), async (req, res) =>
     res.status(400).json({ message: '❌ خطأ في حفظ الإعدادات', error: err.message });
   }
 });
+
+// جديد 2025-09-19: قائمة سجل العمليات مع فلاتر + بحث بالاسم/الإيميل/اسم المستخدم
+app.get('/api/audit-logs', authRequired, requireRole('admin'), async (req, res) => {
+  try {
+    const {
+      model = '',
+      action = '',
+      q = '',
+      from = '',
+      to = '',
+      page = 1,
+      limit = 20
+    } = req.query;
+
+    const where = {};
+    if (model) where.model = model;
+    if (action) where.action = action;
+
+    // نطاق التواريخ
+    if (from || to) {
+      where.createdAt = {};
+      if (from) where.createdAt.$gte = new Date(from + 'T00:00:00Z');
+      if (to)   where.createdAt.$lte = new Date(to   + 'T23:59:59Z');
+    }
+
+    // بحث نصي في user.name / user.email / user.username
+    if (q) {
+      const safe = q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const rx = new RegExp(safe, 'i');
+      where.$or = [
+        { 'user.name': rx },
+        { 'user.email': rx },
+        { 'user.username': rx }
+      ];
+    }
+
+    const skip = (Number(page) - 1) * Number(limit);
+    const items = await AuditLog.find(where)
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(Number(limit));
+
+    const countNext = await AuditLog.countDocuments(where);
+    const hasMore = skip + items.length < countNext;
+
+    res.json({ items, hasMore });
+  } catch (err) {
+    res.status(500).json({ message: '❌ فشل في جلب السجلات', error: err.message });
+  }
+});
+
+
 
 /****************************************************
  * نظام المصادقة القديم لعرض الروابط داخل iFrame (الفيديو) - كما هو
