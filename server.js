@@ -144,7 +144,7 @@ app.get('/links.html', requireSectionAuth('links', 'links.html'));
 app.get('/backups.html', requireSectionAuth('backups', 'backups.html'));
 app.get('/add.html', requireSectionAuth('add', 'add.html'));
 app.get('/passwords.html', requireSectionAuth('passwords', 'passwords.html'));
-app.get('/committees-manage.html', requireSectionAuth('dashboard', 'ommittees-names-manage.html'));
+app.get('/committees-manage.html', requireSectionAuth('dashboard', 'committees-names-manage.html'));
 app.get('/index.html', requireSectionAuth('index', 'index.html'));
 
 app.get('/api/passwords', async (req, res) => {
