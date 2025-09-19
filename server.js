@@ -1,4 +1,7 @@
 // server.js
+const bcrypt = require('bcryptjs');
+const User = require('./models/userSchema');
+
 const express = require('express');
 const mongoose = require('mongoose');
 const path = require('path');
@@ -76,7 +79,6 @@ const Backup = mongoose.model('Backup', backupSchema);
 
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
-app.use(express.static(path.join(__dirname, 'public')));
 
 app.use(session({
   secret: 'secret123',
@@ -138,14 +140,29 @@ function requireSectionAuth(section, page) {
     }
   };
 }
+
+// صفحات قديمة (نظام الفيديوهات) محمية بأقسامها
 app.get('/dashboard.html', requireSectionAuth('dashboard', 'dashboard.html'));
 app.get('/edit.html', requireSectionAuth('edit', 'edit.html'));
 app.get('/links.html', requireSectionAuth('links', 'links.html'));
 app.get('/backups.html', requireSectionAuth('backups', 'backups.html'));
 app.get('/add.html', requireSectionAuth('add', 'add.html'));
 app.get('/passwords.html', requireSectionAuth('passwords', 'passwords.html'));
-app.get('/committees-manage.html', requireSectionAuth('dashboard', 'committees-names-manage.html'));
 app.get('/index.html', requireSectionAuth('index', 'index.html'));
+
+// الصفحات الخاصة بنظام اللجان
+// صفحة عامة بدون حماية
+app.get('/evaluations_dashboard.html', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'evaluations_dashboard.html'));
+});
+// صفحات محمية بقسم "committees"
+app.get('/manage_committees.html',       requireSectionAuth('committees', 'manage_committees.html'));
+app.get('/add_evaluation.html',          requireSectionAuth('committees', 'add_evaluation.html'));
+app.get('/committees-names-manage.html', requireSectionAuth('committees', 'committees-names-manage.html'));
+app.get('/manage_colleges.html',         requireSectionAuth('committees', 'manage_colleges.html'));
+app.get('/manage_auditors.html',         requireSectionAuth('committees', 'manage_auditors.html'));
+// (اختياري) مسار alias قديم إن وُجد
+app.get('/committees-manage.html',       requireSectionAuth('dashboard', 'committees-names-manage.html'));
 
 app.get('/api/passwords', async (req, res) => {
   try {
@@ -663,6 +680,9 @@ app.put('/api/settings', async (req, res) => {
     res.status(400).json({ message: '❌ خطأ في حفظ الإعدادات', error: err.message });
   }
 });
+
+// 👇 بعد تعريف جميع المسارات، خدم ملفات الواجهة من مجلد public
+app.use(express.static(path.join(__dirname, 'public')));
 
 app.listen(PORT, () => {
   console.log(`🚀 الخادم يعمل على: http://localhost:${PORT}`);
