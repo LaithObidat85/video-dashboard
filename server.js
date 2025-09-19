@@ -1054,15 +1054,51 @@ app.get('/api/audit-logs', authRequired, requireRole('admin'), async (req, res) 
   }
 });
 
-// جديد 2 (2025-09-19): حذف جميع سجلات التدقيق (admin فقط)
+// جديد 2 (2025-09-19): حذف السجلات (الكل أو ضمن نطاق تاريخ)
+// - بدون from/to  => حذف جميع السجلات (السلوك السابق)
+// - مع from/to    => حذف السجلات ضمن النطاق الزمني فقط
 app.delete('/api/audit-logs', authRequired, requireRole('admin'), async (req, res) => {
   try {
-    await AuditLog.deleteMany({});
-    res.json({ message: '🧹 تم حذف جميع السجلات' });
+    const { from, to } = req.query || {};
+    const filter = {};
+
+    if (from || to) {
+      filter.createdAt = {};
+      if (from) filter.createdAt.$gte = new Date(from + 'T00:00:00Z');
+      if (to)   filter.createdAt.$lte = new Date(to   + 'T23:59:59Z');
+    }
+
+    const result = await AuditLog.deleteMany(filter);
+    res.json({
+      message: (from || to)
+        ? '🗂️ تم حذف السجلات ضمن النطاق الزمني المحدد'
+        : '🧹 تم حذف جميع السجلات',
+      deletedCount: result.deletedCount
+    });
   } catch (err) {
     res.status(500).json({ message: '❌ فشل في حذف السجلات', error: err.message });
   }
 });
+
+
+// جديد 2 (2025-09-19): حذف سجلات محددة بالمعرفات (Batch)
+app.delete('/api/audit-logs/by-ids', authRequired, requireRole('admin'), async (req, res) => {
+  try {
+    const ids = Array.isArray(req.body?.ids) ? req.body.ids.filter(Boolean) : [];
+    if (ids.length === 0) {
+      return res.status(400).json({ message: 'قائمة المعرفات (ids) مطلوبة' });
+    }
+
+    const result = await AuditLog.deleteMany({ _id: { $in: ids } });
+    res.json({
+      message: '🗑️ تم حذف السجلات المحددة',
+      deletedCount: result.deletedCount
+    });
+  } catch (err) {
+    res.status(500).json({ message: '❌ فشل في حذف السجلات المحددة', error: err.message });
+  }
+});
+
 
 /****************************************************
  * نظام المصادقة القديم للفيديو — فصل الجلسة عن نظام اللجان
