@@ -547,22 +547,39 @@ app.post('/auth/committees/init-admin', async (req, res) => {
 });
 
 // تسجيل الدخول لنظام اللجان
+// (جديد 2025-09-19) تسجيل الدخول لنظام اللجان باسم المستخدم أو الإيميل (توسعة بدون كسر التوافق)
 app.post('/auth/committees/login', async (req, res) => {
   try {
-    const { email, password } = req.body || {};
-    if (!email || !password) return res.status(400).json({ message: 'الإيميل وكلمة المرور مطلوبان' });
-    const user = await User.findOne({ email: email.toLowerCase().trim(), isActive: true });
+    const { username, email, password } = req.body || {};
+    if ((!username && !email) || !password) {
+      return res.status(400).json({ message: 'اسم المستخدم/البريد وكلمة المرور مطلوبة' });
+    }
+
+    const query = username
+      ? { username: String(username).trim().toLowerCase(), isActive: true }
+      : { email: String(email).trim().toLowerCase(), isActive: true };
+
+    const user = await User.findOne(query);
     if (!user) return res.status(401).json({ message: 'بيانات الدخول غير صحيحة' });
+
     const ok = await bcrypt.compare(password, user.password);
     if (!ok) return res.status(401).json({ message: 'بيانات الدخول غير صحيحة' });
 
-    // نخزن بصمة المستخدم في الجلسة (لنظام اللجان)
-    req.session.user = { id: String(user._id), name: user.name, email: user.email, role: user.role };
-    res.json({ message: '✅ تم تسجيل الدخول', user: req.session.user });
+    // (جديد 2025-09-19) نخزن الـ username أيضًا عند توفره
+    req.session.user = {
+      id: String(user._id),
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      username: user.username || null
+    };
+
+    return res.json({ message: '✅ تم تسجيل الدخول', user: req.session.user });
   } catch (err) {
-    res.status(500).json({ message: '❌ خطأ في تسجيل الدخول', error: err.message });
+    return res.status(500).json({ message: '❌ خطأ في تسجيل الدخول', error: err.message });
   }
 });
+
 
 // إنشاء مستخدم جديد (لنظام اللجان) - admin فقط
 app.post('/auth/committees/register', authRequired, requireRole('admin'), async (req, res) => {
