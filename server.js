@@ -45,7 +45,7 @@ mongoose.connect(MONGO_URI, {
 .catch(err => console.error('❌ MongoDB connection error:', err));
 
 /****************************************************
- * مخططات نظام الفيديوهات (بدون أي تعديل)
+ * مخططات نظام الفيديوهات (بدون أي تعديل وظيفي)
  ****************************************************/
 const videoSchema = new mongoose.Schema({
   title: { type: String, required: true },
@@ -141,16 +141,17 @@ const Settings = mongoose.model('Settings', settingsSchema);
  * - لا يغير أي مخطط آخر، فقط يسجل من فعل ماذا ومتى
  ****************************************************/
 const auditLogSchema = new mongoose.Schema({
-  model:    { type: String, required: true },                  // مثل: Evaluation/College/Auditor/Committee/Settings
+  model:    { type: String, required: true },                  // مثل: Evaluation/College/Auditor/Committee/Settings/User
   action:   { type: String, required: true },                  // create/update/delete
   docId:    { type: String },                                  // معرف المستند المتأثر
   user:     {                                                  // بصمة المستخدم من الجلسة
     id:    String,
     name:  String,
     email: String,
+    username: String,                                          // جديد 2025-09-19
     role:  String
   },
-  payload:  { type: Object },                                  // بيانات مُرسلة/معدّلة (اختياري)
+  payload:  { type: Object },                                  // بيانات مُرسلة/معدّلة/قبل الحذف
   createdAt:{ type: Date, default: Date.now }
 });
 const AuditLog = mongoose.model('AuditLog', auditLogSchema);
@@ -193,12 +194,12 @@ function requireRole(...roles) {
 // تسجيل حدث في سجلات التدقيق (للّجان)
 async function logAudit(req, { model, action, docId, payload }) {
   try {
-    const user = currentUser(req);
+    const u = currentUser(req);
     await AuditLog.create({
       model,
       action,
       docId: docId ? String(docId) : undefined,
-      user: user ? { id: user.id, name: user.name, email: user.email, role: user.role } : undefined,
+      user: u ? { id: u.id, name: u.name, email: u.email, username: u.username, role: u.role } : undefined, // جديد 2025-09-19
       payload
     });
   } catch (e) {
@@ -334,7 +335,7 @@ app.post('/api/departments', async (req, res) => {
 app.put('/api/departments/:id', async (req, res) => {
   try {
     const updated = await Department.findByIdAndUpdate(req.params.id, { name: req.body.name }, { new: true });
-    if (!updated) return res.status(404).json({ message: '❌ القسم غير موجود' });
+  if (!updated) return res.status(404).json({ message: '❌ القسم غير موجود' });
     res.json(updated);
   } catch (err) {
     res.status(400).json({ error: err.message });
@@ -373,7 +374,7 @@ app.post('/api/videos', async (req, res) => {
 app.put('/api/videos/:id', async (req, res) => {
   try {
     const updated = await Video.findByIdAndUpdate(req.params.id, req.body, { new: true });
-    if (!updated) return res.status(404).json({ message: 'الفيديو غير موجود' });
+  if (!updated) return res.status(404).json({ message: 'الفيديو غير موجود' });
     res.json(updated);
   } catch (err) {
     res.status(400).json({ message: 'خطأ في التعديل', error: err.message });
@@ -509,6 +510,27 @@ app.post('/api/backups/restore/:id', async (req, res) => {
   }
 });
 
+// جديد 2025-09-19: رفع ملف نسخة احتياطية وحفظه بالقاعدة (إبقاء الوظيفة القديمة)
+app.post('/api/backups/upload', upload.single('backupFile'), async (req, res) => {
+  try {
+    const filePath = req.file.path;
+    const rawData = fs.readFileSync(filePath, 'utf-8');
+    const jsonData = JSON.parse(rawData);
+    const backup = new Backup({
+      videos: jsonData.videos || [],
+      links: jsonData.links || [],
+      passwords: jsonData.passwords || [],
+      colleges: jsonData.colleges || [],
+      departments: jsonData.departments || []
+    });
+    await backup.save();
+    fs.unlinkSync(filePath);
+    res.json({ message: '✅ تم رفع النسخة وحفظها في قاعدة البيانات' });
+  } catch (err) {
+    res.status(500).json({ message: '❌ فشل في رفع النسخة', error: err.message });
+  }
+});
+
 /****************************************************
  * أسماء اللجان (Autocomplete) - للّجان - عامة (GET فقط)
  ****************************************************/
@@ -531,24 +553,34 @@ app.get('/api/committee-names', async (req, res) => {
  * مصادقة خاصة بنظام اللجان فقط (لا تؤثر على نظام الفيديو)
  ****************************************************/
 
-// تهيئة أول مدير (مرة واحدة فقط): إذا لا يوجد أي مستخدم بالمجموعة
+// جديد 2025-09-19: تهيئة أول مدير يدعم username
 app.post('/auth/committees/init-admin', async (req, res) => {
   try {
     const count = await User.countDocuments();
     if (count > 0) return res.status(403).json({ message: 'تمت التهيئة مسبقًا' });
-    const { name, email, password } = req.body;
-    if (!name || !email || !password) return res.status(400).json({ message: 'الاسم/الإيميل/كلمة المرور مطلوبة' });
+    const { name, username, email, password } = req.body;
+    if (!name || !username || !email || !password) {
+      return res.status(400).json({ message: 'الاسم واسم المستخدم والبريد وكلمة المرور مطلوبة' });
+    }
     const hash = await bcrypt.hash(password, 10);
-    const user = await User.create({ name, email, password: hash, role: 'admin', isActive: true });
-    res.status(201).json({ message: '✅ تم إنشاء المدير الأول', user: { id: user._id, name: user.name, email: user.email, role: user.role } });
+    const user = await User.create({
+      name: name.trim(),
+      username: username.trim(),
+      email: email.toLowerCase().trim(),
+      password: hash,
+      role: 'admin',
+      isActive: true
+    });
+    res.status(201).json({
+      message: '✅ تم إنشاء المدير الأول',
+      user: { id: user._id, name: user.name, username: user.username, email: user.email, role: user.role }
+    });
   } catch (err) {
     res.status(500).json({ message: '❌ فشل تهيئة المدير', error: err.message });
   }
 });
 
-// تسجيل الدخول لنظام اللجان
-// (جديد 2025-09-19) تسجيل الدخول لنظام اللجان باسم المستخدم أو الإيميل (توسعة بدون كسر التوافق)
-// جديد 2025-09-19: تسجيل الدخول بالـ username (مع دعم البريد كخيار احتياطي)
+// (جديد 2025-09-19) تسجيل الدخول لنظام اللجان باسم المستخدم أو الإيميل
 app.post('/auth/committees/login', async (req, res) => {
   try {
     const { username, email, password } = req.body || {};
@@ -556,9 +588,8 @@ app.post('/auth/committees/login', async (req, res) => {
       return res.status(400).json({ message: 'اسم المستخدم/البريد وكلمة المرور مطلوبة' });
     }
 
-    // لو أُرسل username نبحث به، وإلا نبحث بالبريد
     const query = username
-      ? { username: username.trim(), isActive: true }
+      ? { username: (username || '').trim(), isActive: true }
       : { email: (email || '').toLowerCase().trim(), isActive: true };
 
     const user = await User.findOne(query);
@@ -582,10 +613,8 @@ app.post('/auth/committees/login', async (req, res) => {
   }
 });
 
-
-
 // إنشاء مستخدم جديد (لنظام اللجان) - admin فقط
-// جديد 2025-09-19: إنشاء مستخدم مع username (admin فقط) + معالجة تكرار الاسم/البريد
+// جديد 2025-09-19: مع username + تسجيل في AuditLog
 app.post('/auth/committees/register', authRequired, requireRole('admin'), async (req, res) => {
   try {
     const { name, username, email, password, role } = req.body || {};
@@ -615,7 +644,6 @@ app.post('/auth/committees/register', authRequired, requireRole('admin'), async 
       user: { id: user._id, name: user.name, username: user.username, email: user.email, role: user.role }
     });
   } catch (err) {
-    // كود الخطأ 11000 = مفتاح مكرر (username أو email موجود)
     if (err && err.code === 11000) {
       return res.status(409).json({ message: 'اسم المستخدم أو البريد مستخدم مسبقًا' });
     }
@@ -623,6 +651,89 @@ app.post('/auth/committees/register', authRequired, requireRole('admin'), async 
   }
 });
 
+// جديد 2025-09-19: قائمة المستخدمين (admin فقط) لصفحة users-manage.html
+app.get('/api/users', authRequired, requireRole('admin'), async (req, res) => {
+  try {
+    const users = await User.find({}, 'name username email role isActive createdAt')
+      .sort({ createdAt: -1 })
+      .lean();
+    res.json(users);
+  } catch (err) {
+    res.status(500).json({ message: '❌ خطأ في جلب المستخدمين', error: err.message });
+  }
+});
+
+// جديد 2025-09-19: تعديل بيانات مستخدم (admin فقط)
+app.put('/api/users/:id', authRequired, requireRole('admin'), async (req, res) => {
+  try {
+    const { name, username, role, isActive } = req.body || {};
+    const update = {};
+    if (typeof name === 'string') update.name = name.trim();
+    if (typeof username === 'string') update.username = username.trim();
+    if (role === 'admin' || role === 'user') update.role = role;
+    if (typeof isActive === 'boolean') update.isActive = isActive;
+
+    const before = await User.findById(req.params.id);
+    if (!before) return res.status(404).json({ message: '❌ المستخدم غير موجود' });
+
+    const updated = await User.findByIdAndUpdate(req.params.id, update, { new: true });
+    await logAudit(req, {
+      model: 'User',
+      action: 'update',
+      docId: req.params.id,
+      payload: { before: { name: before.name, username: before.username, role: before.role, isActive: before.isActive },
+                 after:  { name: updated.name, username: updated.username, role: updated.role, isActive: updated.isActive } }
+    });
+
+    res.json({ message: '✅ تم التعديل', user: { id: updated._id, name: updated.name, username: updated.username, role: updated.role, isActive: updated.isActive } });
+  } catch (err) {
+    if (err && err.code === 11000) {
+      return res.status(409).json({ message: 'اسم المستخدم مستخدم مسبقًا' });
+    }
+    res.status(500).json({ message: '❌ خطأ في تعديل المستخدم', error: err.message });
+  }
+});
+
+// جديد 2025-09-19: تغيير كلمة مرور مستخدم (admin فقط)
+app.put('/api/users/:id/password', authRequired, requireRole('admin'), async (req, res) => {
+  try {
+    const { newPassword } = req.body || {};
+    if (!newPassword) return res.status(400).json({ message: 'كلمة المرور الجديدة مطلوبة' });
+
+    const user = await User.findById(req.params.id);
+    if (!user) return res.status(404).json({ message: '❌ المستخدم غير موجود' });
+
+    const hash = await bcrypt.hash(newPassword, 10);
+    user.password = hash;
+    await user.save();
+
+    await logAudit(req, { model: 'User', action: 'update', docId: user._id, payload: { passwordChanged: true } });
+
+    res.json({ message: '✅ تم تغيير كلمة المرور' });
+  } catch (err) {
+    res.status(500).json({ message: '❌ خطأ في تغيير كلمة المرور', error: err.message });
+  }
+});
+
+// جديد 2025-09-19: حذف مستخدم (admin فقط)
+app.delete('/api/users/:id', authRequired, requireRole('admin'), async (req, res) => {
+  try {
+    const before = await User.findById(req.params.id);
+    if (!before) return res.status(404).json({ message: '❌ المستخدم غير موجود' });
+
+    await User.findByIdAndDelete(req.params.id);
+    await logAudit(req, {
+      model: 'User',
+      action: 'delete',
+      docId: req.params.id,
+      payload: { name: before.name, username: before.username, email: before.email, role: before.role }
+    });
+
+    res.json({ message: '🗑️ تم حذف المستخدم' });
+  } catch (err) {
+    res.status(500).json({ message: '❌ خطأ في حذف المستخدم', error: err.message });
+  }
+});
 
 // الخروج من نظام اللجان
 app.post('/auth/committees/logout', (req, res) => {
@@ -645,7 +756,6 @@ app.get('/auth/committees/me', (req, res) => {
 // إضافة تقييم لجنة: يحتاج user أو admin + تسجيل تدقيق
 app.post('/api/committees', authRequired, async (req, res) => {
   try {
-    // يحفظ اسم اللجنة في قاموس اللجان إن لم يكن موجودًا (كما لديك)
     await Committee.updateOne(
       { name: req.body.committee_name },
       { $setOnInsert: { name: req.body.committee_name } },
@@ -655,7 +765,6 @@ app.post('/api/committees', authRequired, async (req, res) => {
     const evaluation = new Evaluation(req.body);
     await evaluation.save();
 
-    // سجل تدقيق
     await logAudit(req, { model: 'Evaluation', action: 'create', docId: evaluation._id, payload: req.body });
 
     res.status(201).json({ message: '✅ تم حفظ التقييم بنجاح', evaluation });
@@ -664,7 +773,7 @@ app.post('/api/committees', authRequired, async (req, res) => {
   }
 });
 
-// عرض التقييمات: عام للجميع (كما طلبت)
+// عرض التقييمات: عام للجميع
 app.get('/api/committees', async (req, res) => {
   try {
     const { college, auditor_name } = req.query;
@@ -684,7 +793,6 @@ app.put('/api/committees/:id', authRequired, async (req, res) => {
     const updated = await Evaluation.findByIdAndUpdate(req.params.id, req.body, { new: true });
     if (!updated) return res.status(404).json({ message: '❌ التقييم غير موجود' });
 
-    // سجل تدقيق
     await logAudit(req, { model: 'Evaluation', action: 'update', docId: req.params.id, payload: req.body });
 
     res.json(updated);
@@ -693,9 +801,7 @@ app.put('/api/committees/:id', authRequired, async (req, res) => {
   }
 });
 
-// حذف تقييم: admin فقط + تسجيل تدقيق
-// جديد 2025-09-19: تسجيل snapshot للعنصر قبل حذفه في سجلات التدقيق
-
+// حذف تقييم: admin فقط + تسجيل Snapshot قبل الحذف
 app.delete('/api/committees/:id', authRequired, requireRole('admin'), async (req, res) => {
   try {
     const before = await Evaluation.findById(req.params.id);
@@ -762,6 +868,7 @@ app.delete('/api/colleges/:id', authRequired, requireRole('admin'), async (req, 
     res.status(400).json({ error: err.message });
   }
 });
+
 /****************************************************
  * قاموس أسماء اللجان (للّجان) - قراءة عامة / كتابة admin فقط
  ****************************************************/
@@ -903,60 +1010,50 @@ app.put('/api/settings', authRequired, requireRole('admin'), async (req, res) =>
   }
 });
 
-// جديد 2025-09-19: قائمة سجل العمليات مع فلاتر + بحث بالاسم/الإيميل/اسم المستخدم
+/****************************************************
+ * سرد سجلات التدقيق (admin فقط) مع فلاتر وباجنة
+ ****************************************************/
 app.get('/api/audit-logs', authRequired, requireRole('admin'), async (req, res) => {
   try {
-    const {
-      model = '',
-      action = '',
-      q = '',
-      from = '',
-      to = '',
-      page = 1,
-      limit = 20
-    } = req.query;
+    let { model, action, q, from, to, page = 1, limit = 20 } = req.query;
+    page = Math.max(1, parseInt(page, 10) || 1);
+    limit = Math.min(100, Math.max(1, parseInt(limit, 10) || 20));
 
-    const where = {};
-    if (model) where.model = model;
-    if (action) where.action = action;
+    const filter = {};
+    if (model)  filter.model  = model;
+    if (action) filter.action = action;
 
-    // نطاق التواريخ
     if (from || to) {
-      where.createdAt = {};
-      if (from) where.createdAt.$gte = new Date(from + 'T00:00:00Z');
-      if (to)   where.createdAt.$lte = new Date(to   + 'T23:59:59Z');
+      filter.createdAt = {};
+      if (from) filter.createdAt.$gte = new Date(from + 'T00:00:00Z');
+      if (to)   filter.createdAt.$lte = new Date(to   + 'T23:59:59Z');
     }
 
-    // بحث نصي في user.name / user.email / user.username
     if (q) {
       const safe = q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
       const rx = new RegExp(safe, 'i');
-      where.$or = [
+      filter.$or = [
         { 'user.name': rx },
         { 'user.email': rx },
-        { 'user.username': rx }
+        { 'user.username': rx } // جديد 2025-09-19: البحث باليوزرنيم
       ];
     }
 
-    const skip = (Number(page) - 1) * Number(limit);
-    const items = await AuditLog.find(where)
-      .sort({ createdAt: -1 })
-      .skip(skip)
-      .limit(Number(limit));
+    const skip = (page - 1) * limit;
+    const [items, total] = await Promise.all([
+      AuditLog.find(filter).sort({ createdAt: -1 }).skip(skip).limit(limit).lean(),
+      AuditLog.countDocuments(filter)
+    ]);
 
-    const countNext = await AuditLog.countDocuments(where);
-    const hasMore = skip + items.length < countNext;
-
-    res.json({ items, hasMore });
+    const hasMore = skip + items.length < total;
+    res.json({ items, hasMore, total });
   } catch (err) {
     res.status(500).json({ message: '❌ فشل في جلب السجلات', error: err.message });
   }
 });
 
-
-
 /****************************************************
- * نظام المصادقة القديم لعرض الروابط داخل iFrame (الفيديو) - كما هو
+ * نظام المصادقة القديم للفيديو — جديد 2025-09-19: فصل الجلسة
  ****************************************************/
 app.get('/api/redirect/:id', async (req, res) => {
   try {
@@ -971,22 +1068,23 @@ app.get('/api/redirect/:id', async (req, res) => {
 app.get('/auth/login', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'login.html'));
 });
+// جديد 2025-09-19: استخدام videoUser بدل user حتى لا يؤثر على جلسة اللجان
 app.post('/auth/login', (req, res) => {
   const { email, password, id } = req.body;
   if (email && email.endsWith('@iu.edu.jo')) {
-    req.session.user = { email };
+    req.session.videoUser = { email }; // كان سابقًا user
     return res.redirect(`/protected?id=${id}`);
   } else {
-    return res.send('❌ يجب إدخال بريد ينتهي بـ @iu.edu.jo');
+    return res.send('❌ يجب إدخال بريد ينتهي بـ @iu.edu.jو');
   }
 });
 app.get('/auth/logout', (req, res) => {
-  req.session.destroy(() => {
-    res.redirect('/viewlinks.html');
-  });
+  // جديد 2025-09-19: لا ندمّر الجلسة كلها حتى لا نلغي جلسة اللجان
+  if (req.session) delete req.session.videoUser;
+  res.redirect('/viewlinks.html');
 });
 app.get('/protected', async (req, res) => {
-  if (!req.session.user) return res.redirect('/auth/login');
+  if (!req.session.videoUser) return res.redirect('/auth/login'); // كان سابقًا user
   const linkId = req.query.id;
   if (!linkId) return res.redirect('/auth/login');
   try {
@@ -997,65 +1095,6 @@ app.get('/protected', async (req, res) => {
     res.redirect('/auth/login');
   }
 });
-
-// جديد 2025-09-19: قائمة المستخدمين (admin فقط) لصفحة users-manage.html
-app.get('/api/users', authRequired, requireRole('admin'), async (req, res) => {
-  try {
-    const users = await User.find({}, 'name username email role isActive createdAt')
-      .sort({ createdAt: -1 })
-      .lean();
-
-    res.json(users);
-  } catch (err) {
-    res.status(500).json({ message: '❌ خطأ في جلب المستخدمين', error: err.message });
-  }
-});
-
-
-// جديد 2025-09-19: سرد سجلات التدقيق مع عوامل تصفية + تقسيم صفحات (admin فقط)
-app.get('/api/audit-logs', authRequired, requireRole('admin'), async (req, res) => {
-  try {
-    let { model, action, q, from, to, page = 1, limit = 20 } = req.query;
-    page = Math.max(1, parseInt(page, 10) || 1);
-    limit = Math.min(100, Math.max(1, parseInt(limit, 10) || 20));
-
-    const filter = {};
-    if (model)  filter.model  = model;
-    if (action) filter.action = action;
-
-    if (from || to) {
-      filter.createdAt = {};
-      if (from) filter.createdAt.$gte = new Date(from);
-      if (to) {
-        const end = new Date(to);
-        end.setHours(23, 59, 59, 999);
-        filter.createdAt.$lte = end;
-      }
-    }
-
-    if (q) {
-      const rx = new RegExp(q.trim(), 'i');
-      filter.$or = [
-        { 'user.name': rx },
-        { 'user.email': rx },
-        { 'user.username': rx }
-      ];
-    }
-
-    const skip = (page - 1) * limit;
-
-    const [items, total] = await Promise.all([
-      AuditLog.find(filter).sort({ createdAt: -1 }).skip(skip).limit(limit).lean(),
-      AuditLog.countDocuments(filter)
-    ]);
-
-    const hasMore = skip + items.length < total;
-    res.json({ items, hasMore, total });
-  } catch (err) {
-    res.status(500).json({ message: '❌ خطأ في جلب السجلات', error: err.message });
-  }
-});
-
 
 /****************************************************
  * تشغيل الخادم
