@@ -5,6 +5,8 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
+     "seed-admin": "node seed_admin.js",
+    "postinstall": "node seed_admin.js",
     "dev": "nodemon server.js"
   },
   "dependencies": {
