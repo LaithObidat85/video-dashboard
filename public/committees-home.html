@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <title>لوحة نظام اللجان</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.rtl.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
+  <style>
+    body{background:#f8f9fa;font-family:'Segoe UI',sans-serif}
+    .container{max-width:1100px;margin-top:40px}
+    .card-link{display:block;text-decoration:none;color:inherit;border-radius:16px;box-shadow:0 6px 18px rgba(0,0,0,.08);transition:.2s}
+    .card-link:hover{transform:translateY(-3px);box-shadow:0 8px 24px rgba(0,0,0,.12)}
+    .icon{font-size:38px}
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+      <h3 class="mb-0">🧭 لوحة نظام اللجان</h3>
+      <div class="d-flex gap-2">
+        <a class="btn btn-outline-secondary" href="/evaluations_dashboard.html" target="_blank">
+          <i class="bi bi-bar-chart-line"></i> عرض عام (بدون تسجيل)
+        </a>
+        <a class="btn btn-danger" href="/auth/committees-logout"><i class="bi bi-box-arrow-right"></i> خروج</a>
+      </div>
+    </div>
+
+    <div class="row g-4">
+      <!-- add_evaluation.html (user/admin) -->
+      <div class="col-12 col-sm-6 col-lg-4">
+        <a href="/add_evaluation.html" class="card-link p-4 bg-white d-block h-100">
+          <div class="icon text-primary"><i class="bi bi-journal-plus"></i></div>
+          <h5 class="mt-3">إدخال تقييم لجنة</h5>
+          <p class="mb-0 text-muted">إضافة تقييم جديد</p>
+        </a>
+      </div>
+
+      <!-- manage_committees.html (admin) -->
+      <div class="col-12 col-sm-6 col-lg-4">
+        <a href="/manage_committees.html" class="card-link p-4 bg-white d-block h-100">
+          <div class="icon text-success"><i class="bi bi-gear"></i></div>
+          <h5 class="mt-3">إدارة تقييم اللجان</h5>
+          <p class="mb-0 text-muted">تحرير/حذف التقييمات</p>
+        </a>
+      </div>
+
+      <!-- committees-names-manage.html (admin) -->
+      <div class="col-12 col-sm-6 col-lg-4">
+        <a href="/committees-names-manage.html" class="card-link p-4 bg-white d-block h-100">
+          <div class="icon text-info"><i class="bi bi-list-check"></i></div>
+          <h5 class="mt-3">إدارة أسماء اللجان</h5>
+          <p class="mb-0 text-muted">قاموس أسماء اللجان</p>
+        </a>
+      </div>
+
+      <!-- manage_colleges.html (admin) -->
+      <div class="col-12 col-sm-6 col-lg-4">
+        <a href="/manage_colleges.html" class="card-link p-4 bg-white d-block h-100">
+          <div class="icon text-warning"><i class="bi bi-building"></i></div>
+          <h5 class="mt-3">إدارة الكليات</h5>
+          <p class="mb-0 text-muted">إضافة/تعديل/حذف</p>
+        </a>
+      </div>
+
+      <!-- manage_auditors.html (admin) -->
+      <div class="col-12 col-sm-6 col-lg-4">
+        <a href="/manage_auditors.html" class="card-link p-4 bg-white d-block h-100">
+          <div class="icon text-danger"><i class="bi bi-person-badge"></i></div>
+          <h5 class="mt-3">إدارة المدققين</h5>
+          <p class="mb-0 text-muted">إضافة/تعديل/حذف</p>
+        </a>
+      </div>
+
+      <!-- evaluations_dashboard.html (عام) -->
+      <div class="col-12 col-sm-6 col-lg-4">
+        <a href="/evaluations_dashboard.html" class="card-link p-4 bg-white d-block h-100" target="_blank">
+          <div class="icon text-secondary"><i class="bi bi-bar-chart-line"></i></div>
+          <h5 class="mt-3">عرض تقييم اللجان (عام)</h5>
+          <p class="mb-0 text-muted">يفتح في تبويب جديد</p>
+        </a>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
