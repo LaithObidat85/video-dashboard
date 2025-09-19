@@ -11,19 +11,37 @@
     .container{max-width:1200px;margin-top:40px}
     .card{border-radius:16px;box-shadow:0 6px 18px rgba(0,0,0,.06)}
     .user-chip{font-size:.9rem}
-    .payload-card{background:#fff;border:1px solid #e9ecef;border-radius:12px;padding:10px}
+    /* بطاقات عرض الـ payload: نفس الارتفاع مع سكرول */
+    .payload-card{
+      background:#fff;border:1px solid #e9ecef;border-radius:12px;padding:10px;
+      height:220px; /* ارتفاع موحّد للبيانات قبل/بعد */
+      overflow:auto; /* scroll down */
+    }
     .payload-card dt{color:#6c757d;font-weight:600}
     .payload-card dd{margin-bottom:.5rem}
-    .payload-json{direction:ltr;background:#f6f8fa;border-radius:8px;padding:8px;max-height:180px;overflow:auto}
+    .payload-json{
+      direction:ltr;background:#f6f8fa;border-radius:8px;padding:8px;max-height:none;
+      font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace
+    }
     .filters .form-control, .filters .form-select{min-width:160px}
     .minw-40{min-width:40px}
     .minw-60{min-width:60px}
     .minw-120{min-width:120px}
-    .diff-added{color:#198754;font-weight:600;}   /* أخضر: مُضاف/بعد */
-    .diff-removed{color:#dc3545;font-weight:600;} /* أحمر: مُزال/قبل */
     .table thead th{vertical-align:middle}
     .sticky-actions{position:sticky;bottom:0;background:#fff;border-top:1px solid #e9ecef;padding:12px;border-radius:0 0 16px 16px}
     .count-badge{font-size:.85rem}
+
+    /* تمييز الاختلافات (تظليل واضح) */
+    .diff-added{
+      color:#198754;font-weight:600;
+      background:rgba(25,135,84,.12);
+      border-radius:6px; padding:2px 6px;
+    }
+    .diff-removed{
+      color:#dc3545;font-weight:600;
+      background:rgba(220,53,69,.12);
+      border-radius:6px; padding:2px 6px;
+    }
   </style>
 </head>
 <body>
@@ -167,7 +185,7 @@
     </div>
   </div>
 
-  <!-- Modal تأكيد (بدل أي alert/confirm) -->
+  <!-- Modal تأكيد (بدون أي alert/confirm متصفح) -->
   <div class="modal fade" id="confirmModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content">
@@ -193,18 +211,17 @@
     const toastInfo    = new bootstrap.Toast(document.getElementById('toastInfo'));
     function setToast(el, msg){ el._element.querySelector('.toast-body').innerText = msg; }
 
-    /* ===== Modal confirm helper (بدون أي alert/confirm تقليدي) ===== */
+    /* ===== Modal confirm helper ===== */
     const confirmModalEl = document.getElementById('confirmModal');
-    const confirmModal = new bootstrap.Modal(confirmModalEl);
-    const confirmTitle = document.getElementById('confirmModalTitle');
-    const confirmBody  = document.getElementById('confirmModalBody');
-    const confirmBtn   = document.getElementById('confirmModalConfirmBtn');
+    const confirmModal   = new bootstrap.Modal(confirmModalEl);
+    const confirmTitle   = document.getElementById('confirmModalTitle');
+    const confirmBody    = document.getElementById('confirmModalBody');
+    const confirmBtn     = document.getElementById('confirmModalConfirmBtn');
 
     function showConfirm({title='تأكيد', message='هل تريد المتابعة؟', confirmText='تأكيد', confirmBtnClass='btn-danger'}={}){
       return new Promise(resolve=>{
         confirmTitle.textContent = title;
         confirmBody.textContent  = message;
-        // إعادة ضبط نمط الزر
         confirmBtn.className = 'btn ' + confirmBtnClass;
         confirmBtn.textContent = confirmText;
 
@@ -282,7 +299,7 @@
       return `${full} <span class="badge text-bg-info">${uname}</span>${email}${role}`;
     }
 
-    // ترجمة أسماء الأعمدة الإنجليزية إلى العربية (خاصة Settings)
+    /* أسماء الأعمدة (خاصة visibleColumns) إلى العربية */
     const colNameArMap = {
       committee_name:'اسم اللجنة',
       college:'الكلية',
@@ -291,13 +308,28 @@
       updatedAt:'تاريخ التحديث',
       notes:'ملاحظات',
       score:'النتيجة',
-      visibleColumns:'الأعمدة المرئية',
-      selectedVisits:'الزيارات المحددة',
+      // المطلوب:
+      work_plan:'خطة العمل',
+      performance_indicators:'مؤشرات الاداء',
+      meetings:'عدد الاجتماعات',
+      consistency:'التوافق بين الدعوات والاجتماعات',
+      coverage_books:'كتب التغطية',
+      report1:'تقرير إنجاز 1',
+      report2:'تقرير إنجاز 2',
+      report3:'تقرير إنجاز 3',
+      statistical_analysis:'التحليل الإحصائي',
+      // حقول المستخدم
       name:'الاسم',
       username:'اسم المستخدم',
       role:'الدور',
       email:'البريد',
-      isActive:'نشط؟'
+      isActive:'نشط؟',
+      // قرار التشكيل
+      formation_decision:'قرار التشكيل',
+      formationDecision:'قرار التشكيل',
+      decision:'قرار التشكيل',
+      decision_number:'قرار التشكيل',
+      decisionNumber:'قرار التشكيل'
     };
     function toArabicLabel(k){ return colNameArMap[k] || k; }
     function toArabicColumns(list){
@@ -305,7 +337,7 @@
       return list.map(k=>toArabicLabel(k)).join('، ');
     }
 
-    /* ===== utils: escape/diff ===== */
+    /* ===== utils ===== */
     function escapeHtml(s){
       return String(s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
     }
@@ -325,9 +357,57 @@
       });
       return changed;
     }
+    function findKey(obj, candidates){
+      return candidates.find(k => Object.prototype.hasOwnProperty.call(obj||{}, k));
+    }
+    function firstVal(obj, candidates){
+      const k = findKey(obj, candidates);
+      return k ? obj[k] : undefined;
+    }
+
+
+// تُرجع HTML لقائمة عناصر مع تظليل الفروق فقط (المضاف/المحذوف حسب العمود)
+  function renderArrayDiff(beforeArr, afterArr, mode){
+    const b = Array.isArray(beforeArr) ? beforeArr : [];
+    const a = Array.isArray(afterArr)  ? afterArr  : [];
+    const beforeSet = new Set(b);
+    const afterSet  = new Set(a);
+
+    // نعرض ترتيب القائمة بحسب العمود
+    const list = mode === 'before' ? b : a;
+
+    const parts = list.map(k=>{
+      const isAdded   = !beforeSet.has(k) && afterSet.has(k); // ظهر لاحقًا
+      const isRemoved =  beforeSet.has(k) && !afterSet.has(k); // اختفى لاحقًا
+      const cls = (mode === 'after'  && isAdded)   ? 'diff-added'
+                : (mode === 'before' && isRemoved) ? 'diff-removed'
+                : '';
+      return `<span class="${cls}">${escapeHtml(toArabicLabel(k))}</span>`;
+    });
+
+    // عناصر لا تظهر في هذا العمود (مثلاً عنصر أُضيف لاحقًا، لن يظهر في "قبل") لن تُعرض بتظليل
+    return parts.length ? parts.join('، ') : '—';
+  }
+
+  // بطاقة مخصصة لإظهار Settings مع قوائم مُظلّلة عنصرًا عنصرًا
+  function renderSettingsDiff(before, after, mode){
+    const vBefore = before?.visibleColumns || [];
+    const vAfter  =  after?.visibleColumns || [];
+    const sBefore = before?.selectedVisits || [];
+    const sAfter  =  after?.selectedVisits || [];
+
+    let html = '<div class="payload-card"><dl class="row mb-0">';
+    html += `<dt>الأعمدة المرئية</dt><dd>${renderArrayDiff(vBefore, vAfter, mode)}</dd>`;
+    html += `<dt>الزيارات المحددة</dt><dd>${renderArrayDiff(sBefore, sAfter, mode)}</dd>`;
+    html += '</dl></div>';
+    return html;
+  }
+
+    
 
     /* ===== بطاقات البيانات مع تمييز الفروق ===== */
     function kvDiff(label, value, key, diffKeys, mode){
+      // إظهار 0 و false أيضًا (لا نخفيها)
       if(value===undefined || value===null || value==='') return '';
       const cls = diffKeys && diffKeys.has(key)
         ? (mode==='before' ? 'diff-removed' : 'diff-added')
@@ -335,7 +415,7 @@
       return `<dt>${label}</dt><dd class="${cls}">${escapeHtml(value)}</dd>`;
     }
     function renderCardFromObjectWithDiff(model, obj, diffKeys, mode){
-      if(!obj) return '<div class="text-muted">—</div>';
+      if(!obj) return '<div class="payload-card text-muted">—</div>';
       let html = '<div class="payload-card"><dl class="row mb-0">';
       const d = obj;
 
@@ -346,25 +426,46 @@
         html += kvDiff('تاريخ الإنشاء', d.createdAt ? new Date(d.createdAt).toLocaleString('ar-EG') : '', 'createdAt', diffKeys, mode);
         html += kvDiff('ملاحظات', d.notes, 'notes', diffKeys, mode);
         html += kvDiff('النتيجة', d.score, 'score', diffKeys, mode);
+
+        // قرار التشكيل (أرقام 0/1 أو نص) — يدعم عدة مفاتيح محتملة
+        const decisionKeys = ['formation_decision','formationDecision','decision','decision_number','decisionNumber','formation_no','formationNo'];
+        const decisionKey  = findKey(d, decisionKeys) || 'formation_decision';
+        const decisionVal  = firstVal(d, decisionKeys);
+        if(decisionVal!==undefined){
+          html += kvDiff('قرار التشكيل', decisionVal, decisionKey, diffKeys, mode);
+        }
+
+        // الحقول المخصصة للـ visibleColumns إن وجدت في التقييم نفسه
+        ['work_plan','performance_indicators','meetings','consistency','coverage_books','report1','report2','report3','statistical_analysis']
+          .forEach(k=>{
+            if(d[k]!==undefined) html += kvDiff(toArabicLabel(k), d[k], k, diffKeys, mode);
+          });
+
       }else if(model==='College'){
         html += kvDiff('الكلية', d.name, 'name', diffKeys, mode);
+
       }else if(model==='Auditor'){
         html += kvDiff('المدقق', d.name, 'name', diffKeys, mode);
+
       }else if(model==='Committee'){
         html += kvDiff('اسم اللجنة', d.name, 'name', diffKeys, mode);
+
       }else if(model==='Settings'){
         if(d.visibleColumns) html += kvDiff('الأعمدة المرئية', toArabicColumns(d.visibleColumns), 'visibleColumns', diffKeys, mode);
         if(d.selectedVisits) html += kvDiff('الزيارات المحددة', toArabicColumns(d.selectedVisits), 'selectedVisits', diffKeys, mode);
-        if(!d.visibleColumns && !d.selectedVisits){
-          const keys = Object.keys(d||{}).map(toArabicLabel).join('، ');
-          if(keys) html += kvDiff('تغييرات', keys, '__misc', diffKeys, mode);
+        // عرض أي مفاتيح أخرى بشكل عام
+        const otherKeys = Object.keys(d||{}).filter(k=>!['visibleColumns','selectedVisits','_id','updatedAt','createdAt','__v'].includes(k));
+        if(otherKeys.length){
+          html += kvDiff('تغييرات أخرى', otherKeys.map(toArabicLabel).join('، '), '__misc', diffKeys, mode);
         }
+
       }else if(model==='User'){
         html += kvDiff('الاسم', d.name, 'name', diffKeys, mode);
         html += kvDiff('اسم المستخدم', d.username, 'username', diffKeys, mode);
         html += kvDiff('الدور', d.role, 'role', diffKeys, mode);
         html += kvDiff('البريد', d.email, 'email', diffKeys, mode);
         if(d.isActive!==undefined) html += kvDiff('نشط؟', d.isActive ? 'نعم' : 'لا', 'isActive', diffKeys, mode);
+
       }else{
         html += '</dl><div class="payload-json"><code>'+escapeHtml(JSON.stringify(obj, null, 2))+'</code></div>';
         html += '</div>';
@@ -372,44 +473,69 @@
       }
 
       html += '</dl>';
+      // لو لم تُطبع أي dd، أعرض JSON كامل
       if(!/<dd[^>]*>/.test(html)){
         html += '<div class="payload-json"><code>'+escapeHtml(JSON.stringify(obj, null, 2))+'</code></div>';
       }
       html += '</div>';
       return html;
     }
-    function renderBeforeCell(log){
-      const p = log.payload || {};
-      if(log.action==='create') return '<div class="text-muted">كانت فارغة</div>';
-      if(log.action==='delete'){
-        const allKeys = p ? new Set(Object.keys(p)) : new Set();
-        return renderCardFromObjectWithDiff(log.model, p, allKeys, 'before'); // كل شيء مُزال
-      }
-      if(p && p.before && p.after){
-        const diff = computeDiffKeys(p.before, p.after);
-        return renderCardFromObjectWithDiff(log.model, p.before, diff, 'before');
-      }
-      if(p && p.before){
-        return renderCardFromObjectWithDiff(log.model, p.before, null, 'before');
-      }
-      return '<div class="text-muted">—</div>';
+
+   function renderBeforeCell(log){
+    const p = log.payload || {};
+
+    // تخصيص Settings لعرض الفروق عنصرًا عنصرًا
+    if (log.model === 'Settings') {
+      if (log.action === 'create') return '<div class="payload-card text-muted">كانت فارغة</div>';
+      if (log.action === 'delete') return renderSettingsDiff(p, {}, 'before');
+      if (p && p.before && p.after) return renderSettingsDiff(p.before, p.after, 'before');
+      if (p && p.before) return renderSettingsDiff(p.before, {}, 'before');
+      return '<div class="payload-card text-muted">—</div>';
     }
-    function renderAfterCell(log){
-      const p = log.payload || {};
-      if(log.action==='delete') return '<div class="text-muted">تم الحذف</div>';
-      if(log.action==='create'){
-        const allKeys = p ? new Set(Object.keys(p)) : new Set();
-        return renderCardFromObjectWithDiff(log.model, p, allKeys, 'after'); // كل شيء مُضاف
-      }
-      if(p && p.after && p.before){
-        const diff = computeDiffKeys(p.before, p.after);
-        return renderCardFromObjectWithDiff(log.model, p.after, diff, 'after');
-      }
-      if(p && p.after){
-        return renderCardFromObjectWithDiff(log.model, p.after, null, 'after');
-      }
-      return renderCardFromObjectWithDiff(log.model, p, null, 'after');
+
+    // باقي النماذج كما هي
+    if (log.action === 'create') return '<div class="payload-card text-muted">كانت فارغة</div>';
+    if (log.action === 'delete'){
+      const allKeys = p ? new Set(Object.keys(p)) : new Set();
+      return renderCardFromObjectWithDiff(log.model, p, allKeys, 'before'); // كل شيء مُزال
     }
+    if (p && p.before && p.after){
+      const diff = computeDiffKeys(p.before, p.after);
+      return renderCardFromObjectWithDiff(log.model, p.before, diff, 'before');
+    }
+    if (p && p.before){
+      return renderCardFromObjectWithDiff(log.model, p.before, null, 'before');
+    }
+    return '<div class="payload-card text-muted">—</div>';
+  }
+
+  function renderAfterCell(log){
+    const p = log.payload || {};
+
+    // تخصيص Settings لعرض الفروق عنصرًا عنصرًا
+    if (log.model === 'Settings') {
+      if (log.action === 'delete') return '<div class="payload-card text-muted">تم الحذف</div>';
+      if (log.action === 'create') return renderSettingsDiff({}, p, 'after');
+      if (p && p.before && p.after) return renderSettingsDiff(p.before, p.after, 'after');
+      if (p && p.after) return renderSettingsDiff({}, p.after, 'after');
+      return renderSettingsDiff({}, p, 'after');
+    }
+
+    // باقي النماذج كما هي
+    if (log.action === 'delete') return '<div class="payload-card text-muted">تم الحذف</div>';
+    if (log.action === 'create'){
+      const allKeys = p ? new Set(Object.keys(p)) : new Set();
+      return renderCardFromObjectWithDiff(log.model, p, allKeys, 'after'); // كل شيء مُضاف
+    }
+    if (p && p.after && p.before){
+      const diff = computeDiffKeys(p.before, p.after);
+      return renderCardFromObjectWithDiff(log.model, p.after, diff, 'after');
+    }
+    if (p && p.after){
+      return renderCardFromObjectWithDiff(log.model, p.after, null, 'after');
+    }
+    return renderCardFromObjectWithDiff(log.model, p, null, 'after');
+  }
 
     /* ===== listing & selection ===== */
     let page = 1, limit = 20, reachedEnd = false;
@@ -527,7 +653,7 @@
       }
     });
 
-    /* ===== حذف كل السجلات (Toast + Modal فقط) ===== */
+    /* ===== حذف كل السجلات ===== */
     document.getElementById('btnPurge').addEventListener('click', async ()=>{
       const ok = await showConfirm({
         title:'تأكيد حذف الكل',
@@ -547,7 +673,7 @@
       }
     });
 
-    /* ===== حذف حسب التاريخ (باستخدام حقلي من/إلى) ===== */
+    /* ===== حذف حسب التاريخ (من/إلى) ===== */
     document.getElementById('btnPurgeRange').addEventListener('click', async ()=>{
       const f = document.getElementById('fFrom').value;
       const t = document.getElementById('fTo').value;
