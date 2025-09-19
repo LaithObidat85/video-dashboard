@@ -694,13 +694,15 @@ app.put('/api/committees/:id', authRequired, async (req, res) => {
 });
 
 // حذف تقييم: admin فقط + تسجيل تدقيق
+// جديد 2025-09-19: تسجيل snapshot للعنصر قبل حذفه في سجلات التدقيق
+
 app.delete('/api/committees/:id', authRequired, requireRole('admin'), async (req, res) => {
   try {
+    const before = await Evaluation.findById(req.params.id);
     const deleted = await Evaluation.findByIdAndDelete(req.params.id);
     if (!deleted) return res.status(404).json({ message: '❌ التقييم غير موجود' });
 
-    // سجل تدقيق
-    await logAudit(req, { model: 'Evaluation', action: 'delete', docId: req.params.id, payload: null });
+    await logAudit(req, { model: 'Evaluation', action: 'delete', docId: req.params.id, payload: before ? before.toObject() : null });
 
     res.json({ message: '🗑️ تم حذف التقييم' });
   } catch (err) {
@@ -749,17 +751,17 @@ app.put('/api/colleges/:id', authRequired, requireRole('admin'), async (req, res
 });
 app.delete('/api/colleges/:id', authRequired, requireRole('admin'), async (req, res) => {
   try {
+    const before = await College.findById(req.params.id);
     const deleted = await College.findByIdAndDelete(req.params.id);
     if (!deleted) return res.status(404).json({ message: '❌ الكلية غير موجودة' });
 
-    await logAudit(req, { model: 'College', action: 'delete', docId: req.params.id, payload: null });
+    await logAudit(req, { model: 'College', action: 'delete', docId: req.params.id, payload: before ? before.toObject() : null });
 
     res.json({ message: '🗑️ تم حذف الكلية' });
   } catch (err) {
     res.status(400).json({ error: err.message });
   }
 });
-
 /****************************************************
  * قاموس أسماء اللجان (للّجان) - قراءة عامة / كتابة admin فقط
  ****************************************************/
@@ -801,10 +803,11 @@ app.put('/api/committees-master/:id', authRequired, requireRole('admin'), async 
 });
 app.delete('/api/committees-master/:id', authRequired, requireRole('admin'), async (req, res) => {
   try {
+    const before = await Committee.findById(req.params.id);
     const deleted = await Committee.findByIdAndDelete(req.params.id);
     if (!deleted) return res.status(404).json({ message: '❌ اللجنة غير موجودة' });
 
-    await logAudit(req, { model: 'Committee', action: 'delete', docId: req.params.id, payload: null });
+    await logAudit(req, { model: 'Committee', action: 'delete', docId: req.params.id, payload: before ? before.toObject() : null });
 
     res.json({ message: '🗑️ تم حذف اللجنة' });
   } catch (err) {
@@ -853,10 +856,11 @@ app.put('/api/auditors/:id', authRequired, requireRole('admin'), async (req, res
 });
 app.delete('/api/auditors/:id', authRequired, requireRole('admin'), async (req, res) => {
   try {
+    const before = await Auditor.findById(req.params.id);
     const deleted = await Auditor.findByIdAndDelete(req.params.id);
     if (!deleted) return res.status(404).json({ message: '❌ المدقق غير موجود' });
 
-    await logAudit(req, { model: 'Auditor', action: 'delete', docId: req.params.id, payload: null });
+    await logAudit(req, { model: 'Auditor', action: 'delete', docId: req.params.id, payload: before ? before.toObject() : null });
 
     res.json({ message: '🗑️ تم حذف المدقق' });
   } catch (err) {
