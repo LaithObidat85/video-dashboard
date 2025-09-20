@@ -9,14 +9,11 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
   <style>
     :root{
-      /* اضبط العروض كما تحب */
-      --w-chk: 46px;
-      --w-idx: 64px;
-      --w-time: 140px;
-      --w-page: 140px;
-      --w-action: 110px;
-      --w-user: 260px;
-      /* بقية العرض يذهب لقبل/بعد مناصفة */
+      --w-chk: 46px;   /* عمود التحديد */
+      --w-idx: 64px;   /* عمود الرقم */
+      /* بقية الأعمدة تصبح تلقائية حسب المحتوى */
+      --before-w: 35%;
+      --after-w: 35%;
     }
 
     body{background:#f8f9fa;font-family:'Segoe UI',sans-serif}
@@ -24,28 +21,26 @@
     .card{border-radius:16px;box-shadow:0 6px 18px rgba(0,0,0,.06)}
     .user-chip{font-size:.9rem}
 
-    /* جدول رئيسي ثابت التوزيع */
-    .table { table-layout: fixed; width:100%; }
+    /* جدول رئيسي يعتمد العرض على المحتوى */
+    .table { table-layout: auto; width:100%; }
     .table thead th{vertical-align:middle;white-space:nowrap}
-    /* محاذاة جسم الجدول للأعلى لتناسق البطاقات */
     #logsTbody > tr > td{ vertical-align: top; }
 
-    /* بطاقات المحتوى في عمودي "قبل/بعد"  */
+    /* بطاقات "قبل/بعد" بخط أصغر */
     .payload-card{
       background:#fff;border:1px solid #e9ecef;border-radius:12px;padding:10px;
-      height:220px;overflow:auto
+      height:220px;overflow:auto;
+      font-size: .9rem;        /* تصغير الخط هنا */
+      line-height: 1.35;
     }
     .payload-card dt{color:#6c757d;font-weight:600}
-    .payload-card dd{margin-bottom:.5rem}
+    .payload-card dd{margin-bottom:.45rem}
     .payload-json{
       direction:ltr;background:#f6f8fa;border-radius:8px;padding:8px;
       font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace
     }
 
     .filters .form-control, .filters .form-select{min-width:160px}
-    .minw-40{min-width:40px}
-    .minw-60{min-width:60px}
-    .minw-120{min-width:120px}
 
     .sticky-actions{position:sticky;bottom:0;background:#fff;border-top:1px solid #e9ecef;padding:12px;border-radius:0 0 16px 16px}
     .count-badge{font-size:.85rem}
@@ -54,45 +49,32 @@
     .diff-added{color:#198754;font-weight:600;background:rgba(25,135,84,.12);border-radius:6px;padding:2px 6px}
     .diff-removed{color:#dc3545;font-weight:600;background:rgba(220,53,69,.12);border-radius:6px;padding:2px 6px}
 
-    /* توزيع الأعمدة الدلالية (تُستعمل لأسماء الأعمدة فقط لو احتجت) */
-    .col-user{width:var(--w-user)}
-    .col-before{width:auto}
-    .col-after{width:auto}
-
-    /* الجداول داخل بطاقة “البيانات قبل/بعد” لا تتمدد خارج البطاقة */
+    /* الجداول داخل بطاقات “البيانات قبل/بعد” */
     .payload-card .table{ table-layout: fixed; width:100%; }
     .payload-card .table th,
     .payload-card .table td{
       white-space: normal;
-      word-break: break-word;       /* Chrome/Edge */
-      overflow-wrap: anywhere;      /* Safari/Firefox */
+      word-break: break-word;
+      overflow-wrap: anywhere;
     }
-
-    /* كي لا تتجاوز البادجات حدود الخلية */
     .payload-card .badge { white-space: nowrap; }
-
-    /* ساعد النصوص اللاتينية/الإيميل على الانكسار بشكل صحي */
     .payload-card { direction: rtl; }
     .payload-card .email,
     .payload-card code,
     .payload-card .payload-json {
-      direction: ltr;
-      unicode-bidi: plaintext;
-      word-break: break-all;
+      direction: ltr; unicode-bidi: plaintext; word-break: break-all;
     }
 
-    /* شارة "لا تغيير فعلي" */
     .nochange-note{
       border:1px solid rgba(13,110,253,.25);
       background:rgba(13,110,253,.06);
-      color:#0d6efd;
-      border-radius:10px;
-      padding:4px 8px;
-      font-size:.85rem;
+      color:#0d6efd;border-radius:10px;padding:4px 8px;font-size:.85rem;
     }
-
-    /* رؤوس داخل بطاقات التعديل الجماعي */
     .payload-card .table thead th{white-space:nowrap}
+
+    /* تنسيق خلية الوقت كسطرين */
+    .date-cell .d{font-weight:600}
+    .date-cell .t{font-size:.875rem;color:#6c757d;margin-top:2px}
   </style>
 </head>
 <body>
@@ -167,23 +149,20 @@
       <div class="card-body p-0">
         <div class="table-responsive">
           <table class="table table-hover mb-0">
-            <!-- تثبيت الأعمدة -->
             <colgroup>
-              <col style="width:var(--w-chk)">
-              <col style="width:var(--w-idx)">
-              <col style="width:var(--w-time)">
-              <col style="width:var(--w-page)">
-              <col style="width:var(--w-action)">
-              <col style="width:var(--w-user)">
-              <col><!-- قبل: يتمدد -->
-              <col><!-- بعد: يتمدد -->
+              <col style="width:var(--w-chk)"><!-- اختيار -->
+              <col style="width:var(--w-idx)"><!-- # -->
+              <col><!-- الوقت: تلقائي -->
+              <col><!-- الصفحة: تلقائي -->
+              <col><!-- العملية: تلقائي -->
+              <col><!-- المستخدم: تلقائي -->
+              <col style="width:var(--before-w)"><!-- قبل -->
+              <col style="width:var(--after-w)"><!-- بعد -->
             </colgroup>
 
             <thead class="table-light">
               <tr>
-                <th class="text-center">
-                  <input class="form-check-input" type="checkbox" id="chkAll" title="تحديد/إلغاء تحديد الكل">
-                </th>
+                <th class="text-center"><input class="form-check-input" type="checkbox" id="chkAll" title="تحديد/إلغاء تحديد الكل"></th>
                 <th>#</th>
                 <th>الوقت</th>
                 <th>الصفحة</th>
@@ -202,23 +181,13 @@
         <!-- شريط الإجراءات -->
         <div class="sticky-actions d-flex flex-wrap justify-content-between align-items-center gap-2">
           <div class="d-flex flex-wrap gap-2">
-            <button id="btnMore" class="btn btn-outline-secondary">
-              <i class="bi bi-plus-circle"></i> تحميل المزيد
-            </button>
-            <button id="btnPurge" class="btn btn-outline-danger">
-              <i class="bi bi-trash3"></i> حذف كل السجلات
-            </button>
-            <button id="btnPurgeRange" class="btn btn-outline-warning">
-              <i class="bi bi-calendar-x"></i> حذف حسب التاريخ
-            </button>
-            <button id="btnDeleteSelected" class="btn btn-danger" disabled>
-              <i class="bi bi-check2-square"></i> حذف السجلات المحددة
-            </button>
+            <button id="btnMore" class="btn btn-outline-secondary"><i class="bi bi-plus-circle"></i> تحميل المزيد</button>
+            <button id="btnPurge" class="btn btn-outline-danger"><i class="bi bi-trash3"></i> حذف كل السجلات</button>
+            <button id="btnPurgeRange" class="btn btn-outline-warning"><i class="bi bi-calendar-x"></i> حذف حسب التاريخ</button>
+            <button id="btnDeleteSelected" class="btn btn-danger" disabled><i class="bi bi-check2-square"></i> حذف السجلات المحددة</button>
           </div>
           <div>
-            <span class="badge text-bg-light count-badge">
-              المحدد: <span id="selectedCount">0</span>
-            </span>
+            <span class="badge text-bg-light count-badge">المحدد: <span id="selectedCount">0</span></span>
           </div>
         </div>
       </div>
@@ -239,7 +208,7 @@
         <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
       </div>
     </div>
-    <div id="toastInfo" class="toast align-items-center text-bg-primary border-0 mb-2" role="status" aria-live="polite" aria-atomic="true">
+    <div id="toastInfo" class="toast align-items-center text-bg-primary border-0 mb-2" role="status" aria-live="polite">
       <div class="d-flex">
         <div class="toast-body">ℹ️ معلومات</div>
         <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
@@ -302,9 +271,7 @@
   async function fetchJSON(url, options={}){
     const r = await fetch(url, { credentials:'include', headers:{'Accept':'application/json', ...(options.headers||{})}, ...options });
     const ctype = (r.headers.get('content-type')||'').toLowerCase();
-    if(!ctype.includes('application/json')){
-      return { __nonJSON__: true, status: r.status };
-    }
+    if(!ctype.includes('application/json')) return { __nonJSON__: true, status: r.status };
     let data;
     try { data = await r.json(); }
     catch { return { __badJSON__: true, status: r.status }; }
@@ -357,8 +324,16 @@
 
   /* ===== مساعدات عرض ===== */
   function modelToPage(m){ return ({Evaluation:'تقييم اللجان',College:'الكليات',Auditor:'المدققون',Committee:'أسماء اللجان',Settings:'الإعدادات',User:'المستخدمون'})[m] || (m||'—'); }
-  function badgeAction(a){ const cls = a==='delete'?'text-bg-danger':(a==='update'?'text-bg-warning':'text-bg-success'); return `<span class="badge ${cls}">${a||'—'}</span>`; }
-  function fmtUser(uRaw){ const u=normalizeUser(uRaw); const email=u.email?` <span class="badge text-bg-light">${u.email}</span>`:''; const role=u.role?` <span class="badge text-bg-secondary">${u.role}</span>`:''; return `${u.name} <span class="badge text-bg-info">${u.username}</span>${email}${role}`; }
+  function badgeAction(a){
+    const cls = a==='delete'?'text-bg-danger':(a==='update'?'text-bg-warning':'text-bg-success');
+    return `<span class="badge ${cls}">${a||'—'}</span>`;
+  }
+
+  /* اسم المستخدم فقط (بدون إيميل/يوزرنيم) */
+  function fmtUser(uRaw){
+    const u = normalizeUser(uRaw);
+    return `${u.name||'—'}`;
+  }
 
   /* ===== diff helpers ===== */
   const colNameArMap={ committee_name:'اسم اللجنة', college:'الكلية', auditor_name:'المدقق', createdAt:'تاريخ الإنشاء', updatedAt:'تاريخ التحديث', notes:'ملاحظات', score:'النتيجة', work_plan:'خطة العمل', performance_indicators:'مؤشرات الاداء', meetings:'عدد الاجتماعات', consistency:'التوافق بين الدعوات والاجتماعات', coverage_books:'كتب التغطية', report1:'تقرير إنجاز 1', report2:'تقرير إنجاز 2', report3:'تقرير إنجاز 3', statistical_analysis:'التحليل الإحصائي', name:'الاسم', username:'اسم المستخدم', role:'الدور', email:'البريد', isActive:'الحالة', formation_decision:'قرار التشكيل', formationDecision:'قرار التشكيل', decision:'قرار التشكيل', decision_number:'قرار التشكيل', decisionNumber:'قرار التشكيل', formation_no:'قرار التشكيل', formationNo:'قرار التشكيل' };
@@ -404,7 +379,6 @@
     return h;
   }
 
-  /* ===== كتلة عرض "التعديل الجماعي" ===== */
   function synthesizeBulkAfter(p){
     if (!Array.isArray(p?.before)) return null;
     const action=p?.action;
@@ -456,7 +430,7 @@
         cell = mode==='after' ? '<span class="badge text-bg-danger">تم الحذف</span>' : roleAr(u.role);
       }
       return `<tr>
-        <td>${U.name} <span class="badge text-bg-info">${U.username}</span> ${U.email?`<span class="badge text-bg-light">${U.email}</span>`:''}</td>
+        <td>${U.name}</td>
         <td class="text-nowrap">${cell}</td>
       </tr>`;
     }).join('');
@@ -480,15 +454,20 @@
     </div>`;
   }
 
-  /* ===== before/after ===== */
-  function isBulkUserPayload(log){
+     function isBulkUserPayload(log){
     const p = log.payload || {};
-    return log.model==='User' && (p.bulk || Array.isArray(p.before) || Array.isArray(p.after) || Array.isArray(p.ids));
+    return log.model==='User' &&
+           (p.bulk || Array.isArray(p.before) || Array.isArray(p.after) || Array.isArray(p.ids));
   }
 
   function renderSettingsDiff(before,after,mode){
     const list=(arr)=> (Array.isArray(arr)&&arr.length)?arr.map(toArabicLabel).join('، '):'—';
-    return `<div class="payload-card"><dl class="row mb-0"><dt>الأعمدة المرئية</dt><dd>${list((mode==='before'?before:after)?.visibleColumns)}</dd><dt>الزيارات المحددة</dt><dd>${list((mode==='before'?before:after)?.selectedVisits)}</dd></dl></div>`;
+    return `<div class="payload-card">
+      <dl class="row mb-0">
+        <dt>الأعمدة المرئية</dt><dd>${list((mode==='before'?before:after)?.visibleColumns)}</dd>
+        <dt>الزيارات المحددة</dt><dd>${list((mode==='before'?before:after)?.selectedVisits)}</dd>
+      </dl>
+    </div>`;
   }
 
   function renderBeforeCell(log){
@@ -501,7 +480,7 @@
       return '<div class="payload-card text-muted">—</div>';
     }
     if(isBulkUserPayload(log)) return renderBulkUsersList(p,'before');
-    if(log.action==='create') return '<div class="payload-card text-muted">كانت فارغة</div>';
+    if(log.action==='create')  return '<div class="payload-card text-muted">كانت فارغة</div>';
     if(log.action==='delete'){ const ks=p?new Set(Object.keys(p)):new Set(); return renderCardFromObjectWithDiff(log.model,p,ks,'before',{}); }
     if(p.before&&p.after){ const diff=computeDiffKeys(p.before,p.after); return renderCardFromObjectWithDiff(log.model,p.before,diff,'before',p.after); }
     if(p.before){ return renderCardFromObjectWithDiff(log.model,p.before,null,'before',{}); }
@@ -530,6 +509,9 @@
   const selectedIds=new Set();
   const updateSelectedCount=()=>{ document.getElementById('selectedCount').textContent=selectedIds.size; document.getElementById('btnDeleteSelected').disabled=selectedIds.size===0; };
 
+  const fFrom = document.getElementById('fFrom');
+  const fTo   = document.getElementById('fTo');
+
   function buildQuery(){
     const m=document.getElementById('fModel').value.trim();
     const a=document.getElementById('fAction').value.trim();
@@ -540,13 +522,30 @@
     p.set('page',page); p.set('limit',limit); return p.toString();
   }
 
+  function formatDateParts(iso){
+    try{
+      if(!iso) return {date:'—',time:''};
+      const d = new Date(iso);
+      // نضمن عدم الرمي حتى لو كان iso غير صالح
+      if (isNaN(+d)) return {date:'—',time:''};
+      const date = d.toLocaleDateString('ar-EG',{year:'numeric',month:'numeric',day:'numeric'});
+      const time = d.toLocaleTimeString('ar-EG',{hour:'2-digit',minute:'2-digit'});
+      return {date,time};
+    }catch{ return {date:'—',time:''}; }
+  }
+
   async function loadLogs({append=false}={}){
     if(reachedEnd && append) return;
     const tbody=document.getElementById('logsTbody');
+
     if(!append){
       tbody.innerHTML = `<tr class="text-center text-muted"><td colspan="8">جاري التحميل…</td></tr>`;
-      rowCounterStart=(page-1)*limit + 1; selectedIds.clear(); updateSelectedCount(); document.getElementById('chkAll').checked=false;
+      rowCounterStart=(page-1)*limit + 1;
+      selectedIds.clear();
+      updateSelectedCount();
+      document.getElementById('chkAll').checked=false;
     }
+
     const res = await fetchJSON(api('/api/audit-logs?')+buildQuery());
     if(res.__nonJSON__ || res.__badJSON__ || !res.ok){
       tbody.innerHTML = `<tr class="text-center text-danger"><td colspan="8">انتهت الجلسة أو تعذّر الاتصال. يُرجى تسجيل الدخول.</td></tr>`;
@@ -557,34 +556,54 @@
       }, 800);
       return;
     }
-    const data = res.data;
+
+    const data  = res.data;
     const items = Array.isArray(data) ? data : (data.items||[]);
-    reachedEnd = Array.isArray(data) ? (items.length<limit) : (data.hasMore===false);
+    reachedEnd  = Array.isArray(data) ? (items.length<limit) : (data.hasMore===false);
+
     if(!append) tbody.innerHTML='';
-    if(items.length===0 && !append){ tbody.innerHTML = `<tr class="text-center text-muted"><td colspan="8">لا توجد سجلات</td></tr>`; return; }
+
+    if(items.length===0 && !append){
+      tbody.innerHTML = `<tr class="text-center text-muted"><td colspan="8">لا توجد سجلات</td></tr>`;
+      return;
+    }
+
     let n=rowCounterStart;
-    items.forEach(log=>{
-      const when = log.createdAt ? new Date(log.createdAt).toLocaleString('ar-EG') : '—';
-      const id   = log._id || log.id || '';
-      const row  = document.createElement('tr');
-      row.setAttribute('data-id',id);
-      row.innerHTML = `
-        <td class="text-center"><input class="form-check-input chkRow" type="checkbox" value="${id}" ${id?'':'disabled'} ${selectedIds.has(id)?'checked':''}></td>
-        <td class="text-muted">${n++}</td>
-        <td>${when}</td>
-        <td>${modelToPage(log.model)}</td>
-        <td>${badgeAction(log.action)}</td>
-        <td class="col-user">${fmtUser(log.user)}</td>
-        <td class="col-before">${renderBeforeCell(log)}</td>
-        <td class="col-after">${renderAfterCell(log)}</td>`;
-      tbody.appendChild(row);
+    items.forEach((log, idx)=>{
+      try{
+        if(!log){ throw new Error('سجل فارغ'); }
+        const id    = log._id || log.id || '';
+        const parts = formatDateParts(log.createdAt);
+        const when  = `<div class="date-cell"><div class="d">${parts.date}</div><div class="t">${parts.time}</div></div>`;
+
+        const row  = document.createElement('tr');
+        row.setAttribute('data-id',id);
+        row.innerHTML = `
+          <td class="text-center"><input class="form-check-input chkRow" type="checkbox" value="${id}" ${id?'':'disabled'} ${selectedIds.has(id)?'checked':''}></td>
+          <td class="text-muted">${n++}</td>
+          <td>${when}</td>
+          <td>${modelToPage(log.model)}</td>
+          <td>${badgeAction(log.action)}</td>
+          <td>${fmtUser(log.user)}</td>
+          <td class="col-before">${renderBeforeCell(log)}</td>
+          <td class="col-after">${renderAfterCell(log)}</td>`;
+        tbody.appendChild(row);
+      }catch(err){
+        console.error('تعذّر رسم سجل', err, items[idx]);
+        const badId = (log && (log._id || log.id)) || '';
+        const row = document.createElement('tr');
+        row.innerHTML = `
+          <td class="text-center">—</td>
+          <td class="text-muted">${n++}</td>
+          <td colspan="6" class="text-danger">
+            تعذّر عرض هذا السجل ${badId?`(ID: ${badId})`:''}. السبب: ${err && err.message ? err.message : 'خطأ غير معروف'}.
+          </td>`;
+        tbody.appendChild(row);
+      }
     });
+
     rowCounterStart = n;
   }
-
-  const fFrom = document.getElementById('fFrom');
-  const fTo   = document.getElementById('fTo');
-
   /* ===== تحكم الأزرار ===== */
   document.getElementById('btnSearch').addEventListener('click', ()=>{ page=1; reachedEnd=false; loadLogs({append:false}); });
   document.getElementById('btnClear').addEventListener('click', ()=>{
