@@ -41,6 +41,43 @@
     .col-user{width:18%}
     .col-before{width:40%}
     .col-after{width:40%}
+
+/* اجبر الجدول الأساسي على توزيع ثابت حتى لا “ينفش” بسبب خلية واحدة */
+.table { table-layout: fixed; }
+
+/* خفف نسب الأعمدة الكبيرة أو اجعلها مرنة */
+.col-user{width:16%}
+.col-before{width:34%}
+.col-after{width:34%}
+/* أو بدلاً من width استخدم min-width واترك الباقي للمتصفح:
+.col-user{min-width:200px}
+.col-before{min-width:360px}
+.col-after{min-width:360px}
+*/
+
+/* الجداول داخل بطاقة “البيانات قبل/بعد” لا تتمدد خارج البطاقة */
+.payload-card .table{ table-layout: fixed; width:100%; }
+.payload-card .table th,
+.payload-card .table td{ 
+  white-space: normal; 
+  word-break: break-word;       /* Chrome/Edge */
+  overflow-wrap: anywhere;      /* Safari/Firefox */
+}
+
+/* كي لا تتجاوز البادجات حدود الخلية */
+.payload-card .badge { white-space: nowrap; }
+
+/* ساعد النصوص اللاتينية/الإيميل على الانكسار بشكل صحي */
+.payload-card { direction: rtl; }
+.payload-card .email, 
+.payload-card code, 
+.payload-card .payload-json { 
+  direction: ltr; 
+  unicode-bidi: plaintext; 
+  word-break: break-all; 
+}
+
+    
   </style>
 </head>
 <body>
