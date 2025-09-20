@@ -792,48 +792,70 @@ app.post('/api/users/bulk', authRequired, requireRole('admin'), async (req, res)
     const action = req.body?.action;
     if (ids.length === 0) return res.status(400).json({ message: 'قائمة المعرفات مطلوبة' });
 
-    if (action === 'activate') {
+    // --- activate ---
+if (action === 'activate') {
   const before = await User.find({ _id: { $in: ids } }, 'name username email role isActive').lean();
   await User.updateMany({ _id: { $in: ids } }, { $set: { isActive: true } });
+
+  // after = before مع isActive=true
+  const after = before.map(u => ({ ...u, isActive: true }));
+
   await logAudit(req, {
     model: 'User', action: 'update', docId: '__bulk__',
-    payload: { bulk: true, action: 'activate', ids, before }
+    payload: { bulk: true, action: 'activate', ids, before, after }
   });
+
   return res.json({ message: '✅ تم تفعيل المستخدمين' });
 }
 
+// --- deactivate ---
 if (action === 'deactivate') {
   const before = await User.find({ _id: { $in: ids } }, 'name username email role isActive').lean();
   await User.updateMany({ _id: { $in: ids } }, { $set: { isActive: false } });
+
+  // after = before مع isActive=false
+  const after = before.map(u => ({ ...u, isActive: false }));
+
   await logAudit(req, {
     model: 'User', action: 'update', docId: '__bulk__',
-    payload: { bulk: true, action: 'deactivate', ids, before }
+    payload: { bulk: true, action: 'deactivate', ids, before, after }
   });
+
   return res.json({ message: '✅ تم تعطيل المستخدمين' });
 }
 
+// --- set-role ---
 if (action === 'set-role') {
   const role = req.body?.role === 'admin' ? 'admin' : 'user';
   const before = await User.find({ _id: { $in: ids } }, 'name username email role isActive').lean();
   await User.updateMany({ _id: { $in: ids } }, { $set: { role } });
+
+  // after = before مع role الجديد
+  const after = before.map(u => ({ ...u, role }));
+
   await logAudit(req, {
     model: 'User', action: 'update', docId: '__bulk__',
-    payload: { bulk: true, action: 'set-role', role, ids, before }
+    payload: { bulk: true, action: 'set-role', role, ids, before, after }
   });
+
   return res.json({ message: '✅ تم تغيير الأدوار' });
 }
-    if (action === 'delete') {
-      const before = await User.find({ _id: { $in: ids } }, 'name username email role').lean();
-      await User.deleteMany({ _id: { $in: ids } });
-      await logAudit(req, { model: 'User', action: 'delete', docId: '__bulk__', payload: { bulk: true, ids, before } });
-      return res.json({ message: '🗑️ تم حذف المستخدمين' });
-    }
 
-    return res.status(400).json({ message: 'نوع الإجراء غير مدعوم' });
-  } catch (err) {
-    res.status(500).json({ message: '❌ فشل في تنفيذ الإجراء الجماعي', error: err.message });
-  }
-});
+// --- delete (اختياري: علّم أنها محذوفة) ---
+if (action === 'delete') {
+  const before = await User.find({ _id: { $in: ids } }, 'name username email role').lean();
+  await User.deleteMany({ _id: { $in: ids } });
+
+  const after = before.map(u => ({ ...u, _deleted: true }));
+
+  await logAudit(req, {
+    model: 'User', action: 'delete', docId: '__bulk__',
+    payload: { bulk: true, action: 'delete', ids, before, after }
+  });
+
+  return res.json({ message: '🗑️ تم حذف المستخدمين' });
+}
+
 
 /****************************************************
  * الخروج/المستخدم الحالي (اللجان)
