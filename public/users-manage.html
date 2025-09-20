@@ -68,9 +68,11 @@
         <button id="logoutBtn" class="btn btn-danger">
           <i class="bi bi-box-arrow-right"></i> خروج
         </button>
-        <a class="btn btn-outline-primary" id="homeBtn" href="/committees-home.html">
-          <i class="bi bi-arrow-right-circle"></i> لوحة التحكم
-        </a>
+      <a class="btn btn-outline-primary" id="homeBtn" href="/committees-home.html">
+  <i class="bi bi-grid"></i> لوحة التحكم
+</a>
+
+        
       </div>
     </div>
 
@@ -295,18 +297,21 @@
     // عندما تكون على Render نستخدم نفس الأصل (سلسلة فارغة).
     // محليًا نوجّه إلى بورت 3000.
     const API_BASE = isGithub ? RENDER_BASE : (isLocal ? 'http://localhost:3000' : '');
+     
+  // Helper لتحويل الروابط (login/home) لنفس أصل الـ API عند تشغيل الصفحة من GitHub Pages
+const go = (path) => isGithub ? (RENDER_BASE + path) : path;
 
-    // Helper لتحويل الروابط (login/home) لنفس أصل الـ API عند تشغيل الصفحة من GitHub Pages
-    const go = (path) => isGithub ? (RENDER_BASE + path) : path;
+const apiFetch = (path, opts = {}) =>
+  fetch(`${API_BASE}${path}`, { credentials: 'include', ...opts });
 
-    const apiFetch = (path, opts = {}) =>
-      fetch(`${API_BASE}${path}`, { credentials: 'include', ...opts });
+/* عدّل زر "لوحة التحكم" ليوجَّه حسب البيئة */
+document.addEventListener('DOMContentLoaded', () => {
+  const homeBtn = document.getElementById('homeBtn');
+  if (homeBtn) homeBtn.href = go('/committees-home.html');
+});
 
-    /* عدّل زر "لوحة التحكم" ليوجَّه حسب البيئة */
-    document.addEventListener('DOMContentLoaded', () => {
-      const homeBtn = document.getElementById('homeBtn');
-      if (homeBtn) homeBtn.href = go('/committees-home.html');
-    });
+
+    
 
     /* ====== Toasts ====== */
     const toastSuccess = new bootstrap.Toast(document.getElementById('toastSuccess'));
