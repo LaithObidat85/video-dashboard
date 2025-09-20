@@ -454,6 +454,56 @@
     </div>`;
   }
 
+     function isBulkUserPayload(log){
+    const p = log.payload || {};
+    return log.model==='User' &&
+           (p.bulk || Array.isArray(p.before) || Array.isArray(p.after) || Array.isArray(p.ids));
+  }
+
+  function renderSettingsDiff(before,after,mode){
+    const list=(arr)=> (Array.isArray(arr)&&arr.length)?arr.map(toArabicLabel).join('، '):'—';
+    return `<div class="payload-card">
+      <dl class="row mb-0">
+        <dt>الأعمدة المرئية</dt><dd>${list((mode==='before'?before:after)?.visibleColumns)}</dd>
+        <dt>الزيارات المحددة</dt><dd>${list((mode==='before'?before:after)?.selectedVisits)}</dd>
+      </dl>
+    </div>`;
+  }
+
+  function renderBeforeCell(log){
+    const p=log.payload||{};
+    if(log.model==='Settings'){
+      if(log.action==='create') return '<div class="payload-card text-muted">كانت فارغة</div>';
+      if(log.action==='delete') return renderSettingsDiff(p,{},'before');
+      if(p.before&&p.after)     return renderSettingsDiff(p.before,p.after,'before');
+      if(p.before)              return renderSettingsDiff(p.before,{},'before');
+      return '<div class="payload-card text-muted">—</div>';
+    }
+    if(isBulkUserPayload(log)) return renderBulkUsersList(p,'before');
+    if(log.action==='create')  return '<div class="payload-card text-muted">كانت فارغة</div>';
+    if(log.action==='delete'){ const ks=p?new Set(Object.keys(p)):new Set(); return renderCardFromObjectWithDiff(log.model,p,ks,'before',{}); }
+    if(p.before&&p.after){ const diff=computeDiffKeys(p.before,p.after); return renderCardFromObjectWithDiff(log.model,p.before,diff,'before',p.after); }
+    if(p.before){ return renderCardFromObjectWithDiff(log.model,p.before,null,'before',{}); }
+    return '<div class="payload-card text-muted">—</div>';
+  }
+
+  function renderAfterCell(log){
+    const p=log.payload||{};
+    if(log.model==='Settings'){
+      if(log.action==='delete') return '<div class="payload-card text-muted">تم الحذف</div>';
+      if(log.action==='create') return renderSettingsDiff({},p,'after');
+      if(p.before&&p.after)     return renderSettingsDiff(p.before,p.after,'after');
+      if(p.after)               return renderSettingsDiff({},p.after,'after');
+      return renderSettingsDiff({},p,'after');
+    }
+    if(isBulkUserPayload(log)) return renderBulkUsersList(p,'after');
+    if(log.action==='delete')  return '<div class="payload-card text-muted">تم الحذف</div>';
+    if(log.action==='create'){ const ks=p?new Set(Object.keys(p)):new Set(); return renderCardFromObjectWithDiff(log.model,p,ks,'after',{}); }
+    if(p.after&&p.before){ const diff=computeDiffKeys(p.before,p.after); return renderCardFromObjectWithDiff(log.model,p.after,diff,'after',p.before); }
+    if(p.after){ return renderCardFromObjectWithDiff(log.model,p.after,null,'after',{}); }
+    return renderCardFromObjectWithDiff(log.model,p,null,'after',{});
+  }
+
   /* ===== تحميل السجلات ===== */
   let page=1, limit=20, reachedEnd=false, rowCounterStart=1;
   const selectedIds=new Set();
@@ -473,20 +523,29 @@
   }
 
   function formatDateParts(iso){
-    if(!iso) return {date:'—',time:''};
-    const d = new Date(iso);
-    const date = d.toLocaleDateString('ar-EG',{year:'numeric',month:'numeric',day:'numeric'});
-    const time = d.toLocaleTimeString('ar-EG',{hour:'2-digit',minute:'2-digit'});
-    return {date,time};
+    try{
+      if(!iso) return {date:'—',time:''};
+      const d = new Date(iso);
+      // نضمن عدم الرمي حتى لو كان iso غير صالح
+      if (isNaN(+d)) return {date:'—',time:''};
+      const date = d.toLocaleDateString('ar-EG',{year:'numeric',month:'numeric',day:'numeric'});
+      const time = d.toLocaleTimeString('ar-EG',{hour:'2-digit',minute:'2-digit'});
+      return {date,time};
+    }catch{ return {date:'—',time:''}; }
   }
 
   async function loadLogs({append=false}={}){
     if(reachedEnd && append) return;
     const tbody=document.getElementById('logsTbody');
+
     if(!append){
       tbody.innerHTML = `<tr class="text-center text-muted"><td colspan="8">جاري التحميل…</td></tr>`;
-      rowCounterStart=(page-1)*limit + 1; selectedIds.clear(); updateSelectedCount(); document.getElementById('chkAll').checked=false;
+      rowCounterStart=(page-1)*limit + 1;
+      selectedIds.clear();
+      updateSelectedCount();
+      document.getElementById('chkAll').checked=false;
     }
+
     const res = await fetchJSON(api('/api/audit-logs?')+buildQuery());
     if(res.__nonJSON__ || res.__badJSON__ || !res.ok){
       tbody.innerHTML = `<tr class="text-center text-danger"><td colspan="8">انتهت الجلسة أو تعذّر الاتصال. يُرجى تسجيل الدخول.</td></tr>`;
@@ -497,32 +556,54 @@
       }, 800);
       return;
     }
-    const data = res.data;
+
+    const data  = res.data;
     const items = Array.isArray(data) ? data : (data.items||[]);
-    reachedEnd = Array.isArray(data) ? (items.length<limit) : (data.hasMore===false);
+    reachedEnd  = Array.isArray(data) ? (items.length<limit) : (data.hasMore===false);
+
     if(!append) tbody.innerHTML='';
-    if(items.length===0 && !append){ tbody.innerHTML = `<tr class="text-center text-muted"><td colspan="8">لا توجد سجلات</td></tr>`; return; }
+
+    if(items.length===0 && !append){
+      tbody.innerHTML = `<tr class="text-center text-muted"><td colspan="8">لا توجد سجلات</td></tr>`;
+      return;
+    }
+
     let n=rowCounterStart;
-    items.forEach(log=>{
-      const id   = log._id || log.id || '';
-      const parts= formatDateParts(log.createdAt);
-      const when = `<div class="date-cell"><div class="d">${parts.date}</div><div class="t">${parts.time}</div></div>`;
-      const row  = document.createElement('tr');
-      row.setAttribute('data-id',id);
-      row.innerHTML = `
-        <td class="text-center"><input class="form-check-input chkRow" type="checkbox" value="${id}" ${id?'':'disabled'} ${selectedIds.has(id)?'checked':''}></td>
-        <td class="text-muted">${n++}</td>
-        <td>${when}</td>
-        <td>${modelToPage(log.model)}</td>
-        <td>${badgeAction(log.action)}</td>
-        <td>${fmtUser(log.user)}</td>
-        <td class="col-before">${renderBeforeCell(log)}</td>
-        <td class="col-after">${renderAfterCell(log)}</td>`;
-      tbody.appendChild(row);
+    items.forEach((log, idx)=>{
+      try{
+        if(!log){ throw new Error('سجل فارغ'); }
+        const id    = log._id || log.id || '';
+        const parts = formatDateParts(log.createdAt);
+        const when  = `<div class="date-cell"><div class="d">${parts.date}</div><div class="t">${parts.time}</div></div>`;
+
+        const row  = document.createElement('tr');
+        row.setAttribute('data-id',id);
+        row.innerHTML = `
+          <td class="text-center"><input class="form-check-input chkRow" type="checkbox" value="${id}" ${id?'':'disabled'} ${selectedIds.has(id)?'checked':''}></td>
+          <td class="text-muted">${n++}</td>
+          <td>${when}</td>
+          <td>${modelToPage(log.model)}</td>
+          <td>${badgeAction(log.action)}</td>
+          <td>${fmtUser(log.user)}</td>
+          <td class="col-before">${renderBeforeCell(log)}</td>
+          <td class="col-after">${renderAfterCell(log)}</td>`;
+        tbody.appendChild(row);
+      }catch(err){
+        console.error('تعذّر رسم سجل', err, items[idx]);
+        const badId = (log && (log._id || log.id)) || '';
+        const row = document.createElement('tr');
+        row.innerHTML = `
+          <td class="text-center">—</td>
+          <td class="text-muted">${n++}</td>
+          <td colspan="6" class="text-danger">
+            تعذّر عرض هذا السجل ${badId?`(ID: ${badId})`:''}. السبب: ${err && err.message ? err.message : 'خطأ غير معروف'}.
+          </td>`;
+        tbody.appendChild(row);
+      }
     });
+
     rowCounterStart = n;
   }
-
   /* ===== تحكم الأزرار ===== */
   document.getElementById('btnSearch').addEventListener('click', ()=>{ page=1; reachedEnd=false; loadLogs({append:false}); });
   document.getElementById('btnClear').addEventListener('click', ()=>{
