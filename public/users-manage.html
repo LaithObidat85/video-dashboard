@@ -644,12 +644,13 @@
       updateBulkBar();
     });
 
-    tbody.addEventListener('change', (e)=>{
+    const tbodyEl = document.getElementById('usersTbody');
+    tbodyEl.addEventListener('change', (e)=>{
       const t = e.target;
       if(t.classList.contains('chkRow')){
         const id = t.value;
         if(t.checked) state.selected.add(id); else state.selected.delete(id);
-        const all = Array.from(tbody.querySelectorAll('.chkRow'));
+        const all = Array.from(tbodyEl.querySelectorAll('.chkRow'));
         document.getElementById('chkAll').checked = (all.length>0 && all.every(x=>x.checked));
         updateBulkBar();
       } else if(t.classList.contains('inline-role')){
@@ -661,7 +662,7 @@
       }
     });
 
-    tbody.addEventListener('click', (e)=>{
+    tbodyEl.addEventListener('click', (e)=>{
       const btn = e.target.closest('button');
       if(!btn) return;
       if(btn.classList.contains('delBtn')){
@@ -691,13 +692,20 @@
       }
     });
 
-    /* ====== إقلاع ====== */
-    await ensureAdmin();
-    loadFilters();
-    const urlp = new URLSearchParams(location.search);
-    state.page  = parseInt(urlp.get('page')||'1',10);
-    renderPwMeter(); // تحديث مبدئي لشريط القوة
-    fetchUsers();
+    /* ====== إقلاع (IIFE بدل top-level await) ====== */
+    (async function init(){
+      try{
+        await ensureAdmin();      // يتحقق أنه admin ويعرض الشارة
+        loadFilters();            // يسترجع الفلاتر المخزنة
+        const urlp = new URLSearchParams(location.search);
+        state.page  = parseInt(urlp.get('page')||'1',10);
+        renderPwMeter();          // يرسم مقياس قوة كلمة المرور مبدئياً
+        await fetchUsers();       // يجلب المستخدمين ويعرضهم
+      }catch(e){
+        console.error('init error:', e);
+      }
+    })();
+
   </script>
 </body>
 </html>
