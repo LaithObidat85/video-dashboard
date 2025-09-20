@@ -37,6 +37,15 @@
 
     /* أدوات أعلى الجدول */
     .toolbar{gap:.5rem}
+/* تحرير مباشر داخل الجدول */
+.inline-edit{
+  font-size:.9rem;
+  padding:.25rem .5rem;
+  height:2rem;
+}
+.cell-saving{ opacity:.6; }
+
+    
   </style>
 </head>
 <body>
@@ -186,7 +195,7 @@
                 <th>البريد</th>
                 <th>الدور</th>
                 <th>الحالة</th>
-                <th>آخر إنشاء</th>
+                <th>آخر تحديث</th>
                 <th>إجراءات</th>
               </tr>
             </thead>
@@ -373,31 +382,62 @@
       </div>`; }
 
     function renderRows(users, offset=0){
-      if(!Array.isArray(users) || users.length===0){
-        tbody.innerHTML = `<tr class="text-center text-muted"><td colspan="9">لا يوجد نتائج</td></tr>`;
-        return;
-      }
-      tbody.innerHTML = users.map((u,i)=>`
-        <tr data-id="${u._id||u.id}">
-          <td class="text-center">${rowCheckbox(u._id||u.id, state.selected.has(u._id||u.id))}</td>
-          <td>${offset + i + 1}</td>
-          <td>${u.name||'—'}</td>
-          <td><span class="badge text-bg-light">${u.username||'—'}</span></td>
-          <td>${u.email||'—'}</td>
-          <td style="width:140px">${roleSelect(u._id||u.id, u.role||'user')}</td>
-          <td style="width:110px">
-            ${u.isActive===false?'<span class="badge badge-inactive">معطّل</span>':'<span class="badge badge-active">نشط</span>'}
-            ${activeToggle(u._id||u.id, u.isActive!==false)}
-          </td>
-          <td>${u.createdAt? new Date(u.createdAt).toLocaleString('ar-EG') : '—'}</td>
-          <td>
-            <button class="btn btn-sm btn-outline-primary resetBtn" data-id="${u._id||u.id}" data-name="${u.name||u.username||'—'}"><i class="bi bi-key"></i></button>
-            <button class="btn btn-sm btn-outline-danger delBtn" data-id="${u._id||u.id}" data-name="${u.name||u.username||'—'}"><i class="bi bi-trash3"></i></button>
-          </td>
-        </tr>
-      `).join('');
-      updateBulkBar();
-    }
+  const esc = s => String(s ?? '').replace(/"/g,'&quot;');
+
+  if(!Array.isArray(users) || users.length===0){
+    tbody.innerHTML = `<tr class="text-center text-muted"><td colspan="9">لا يوجد نتائج</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = users.map((u,i)=>`
+    <tr data-id="${u._id||u.id}">
+      <td class="text-center">
+        <input class="form-check-input chkRow" type="checkbox" value="${u._id||u.id}" ${state.selected.has(u._id||u.id)?'checked':''}>
+      </td>
+      <td>${offset + i + 1}</td>
+
+      <!-- الاسم الكامل (قابل للتحرير) -->
+      <td>
+        <input class="form-control form-control-sm inline-edit"
+               data-id="${u._id||u.id}" data-field="name"
+               value="${esc(u.name)}" placeholder="—">
+      </td>
+
+      <!-- اسم المستخدم (قابل للتحرير) -->
+      <td>
+        <input class="form-control form-control-sm inline-edit"
+               data-id="${u._id||u.id}" data-field="username"
+               value="${esc(u.username)}" placeholder="—">
+      </td>
+
+      <!-- البريد (قابل للتحرير) -->
+      <td>
+        <input class="form-control form-control-sm inline-edit"
+               data-id="${u._id||u.id}" data-field="email"
+               value="${esc(u.email)}" placeholder="—">
+      </td>
+
+      <td style="width:140px">${roleSelect(u._id||u.id, u.role||'user')}</td>
+      <td style="width:110px">
+        ${u.isActive===false?'<span class="badge badge-inactive">معطّل</span>':'<span class="badge badge-active">نشط</span>'}
+        ${activeToggle(u._id||u.id, u.isActive!==false)}
+      </td>
+
+      <!-- سنحدّث هذه الخلية بعد الحفظ مباشرة -->
+      <td class="cell-created">
+        ${ (u.updatedAt||u.createdAt) ? new Date(u.updatedAt||u.createdAt).toLocaleString('ar-EG') : '—' }
+      </td>
+
+      <td>
+        <button class="btn btn-sm btn-outline-primary resetBtn" data-id="${u._id||u.id}" data-name="${u.name||u.username||'—'}"><i class="bi bi-key"></i></button>
+        <button class="btn btn-sm btn-outline-danger delBtn" data-id="${u._id||u.id}" data-name="${u.name||u.username||'—'}"><i class="bi bi-trash3"></i></button>
+      </td>
+    </tr>
+  `).join('');
+
+  updateBulkBar();
+}
+
 
     function updateBulkBar(){
       const any = state.selected.size>0;
@@ -674,6 +714,51 @@
         resetModal.show();
       }
     });
+
+    /* ====== تحرير مباشر (name/username/email) مع حفظ تلقائي ====== */
+async function saveInline(inputEl){
+  const id    = inputEl.dataset.id;
+  const field = inputEl.dataset.field;
+  const value = inputEl.value.trim();
+
+  if(!id || !field) return;
+
+  // منع حفظ لا يلزم: قارن بالقيمة الأصلية إن أردت (اختياري)
+  // هنا نحفظ دائمًا بمجرد الخروج أو Enter
+  const row = tbody.querySelector(`tr[data-id="${id}"]`);
+  row?.classList.add('cell-saving');
+
+  // إعادة استخدام دالتك الموجودة لتحديث جزئي
+  const ok = await updateUserPartial(id, { [field]: value });
+
+  if(ok){
+    // حدّث خانة التاريخ/الوقت مباشرةً إلى الآن (كما طلبت)
+    const createdCell = row?.querySelector('.cell-created');
+    if(createdCell){
+      createdCell.textContent = new Date().toLocaleString('ar-EG');
+    }
+  }
+
+  row?.classList.remove('cell-saving');
+}
+
+// حفظ عند الخروج من الحقل
+tbodyEl.addEventListener('blur', (e)=>{
+  const t = e.target;
+  if(t.classList.contains('inline-edit')){
+    saveInline(t);
+  }
+}, true);
+
+// حفظ عند Enter
+tbodyEl.addEventListener('keydown', (e)=>{
+  const t = e.target;
+  if(t.classList.contains('inline-edit') && e.key === 'Enter'){
+    e.preventDefault();
+    t.blur(); // سيشغّل الحفظ عبر حدث blur
+  }
+});
+
 
     // تغيير الدور جماعيًا من القائمة
     document.querySelectorAll('.dropdown-menu [data-role]').forEach(a=>{
