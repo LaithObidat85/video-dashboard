@@ -72,9 +72,18 @@
     }
     .payload-card .table thead th{white-space:nowrap}
 
-    /* تنسيق خلية الوقت كسطرين */
-    .date-cell .d{font-weight:600}
-    .date-cell .t{font-size:.875rem;color:#6c757d;margin-top:2px}
+    /* نفس حجم خط payload-card على كل خلايا الجدول */
+.table thead th,
+.table tbody td { font-size: .9rem; }
+
+/* اجعل وقت/تاريخ يعتمدان نفس المقاس */
+.date-cell .d,
+.date-cell .t { font-size: .9rem; }
+
+/* إبقاء التاريخ أوضح قليلاً */
+.date-cell .d { font-weight: 600; }
+.date-cell .t { color:#6c757d; margin-top:2px; }
+
   </style>
 </head>
 <body>
@@ -460,15 +469,41 @@
            (p.bulk || Array.isArray(p.before) || Array.isArray(p.after) || Array.isArray(p.ids));
   }
 
-  function renderSettingsDiff(before,after,mode){
-    const list=(arr)=> (Array.isArray(arr)&&arr.length)?arr.map(toArabicLabel).join('، '):'—';
-    return `<div class="payload-card">
-      <dl class="row mb-0">
-        <dt>الأعمدة المرئية</dt><dd>${list((mode==='before'?before:after)?.visibleColumns)}</dd>
-        <dt>الزيارات المحددة</dt><dd>${list((mode==='before'?before:after)?.selectedVisits)}</dd>
-      </dl>
-    </div>`;
-  }
+  function renderSettingsDiff(before, after, mode){
+  const bCols = Array.isArray(before?.visibleColumns) ? before.visibleColumns : [];
+  const aCols = Array.isArray(after?.visibleColumns)  ? after.visibleColumns  : [];
+  const bVisits = Array.isArray(before?.selectedVisits) ? before.selectedVisits : [];
+  const aVisits = Array.isArray(after?.selectedVisits)  ? after.selectedVisits  : [];
+
+  // في "قبل": نعرض قائمة قبل، وما سيُزال يظهَر أحمر.
+  // في "بعد": نعرض قائمة بعد، وما أضيف يظهَر أخضر.
+  const listWithDiff = (arrShown, arrOther, paintAdded) => {
+    if(!arrShown.length) return '—';
+    return arrShown.map(k=>{
+      const inOther = arrOther.includes(k);
+      // العنصر جديد (غير موجود في الآخر) => أخضر إذا كنا في "بعد"
+      // العنصر سيُحذف (غير موجود في الآخر) => أحمر إذا كنا في "قبل"
+      const cls = (!inOther && paintAdded) ? 'diff-added' : (!inOther && !paintAdded ? 'diff-removed' : '');
+      return `<span class="${cls}">${toArabicLabel(k)}</span>`;
+    }).join('، ');
+  };
+
+  const colsHTML   = mode==='after'
+      ? listWithDiff(aCols, bCols, /*paintAdded*/true)
+      : listWithDiff(bCols, aCols, /*paintAdded*/false);
+
+  const visitsHTML = mode==='after'
+      ? listWithDiff(aVisits, bVisits, true)
+      : listWithDiff(bVisits, aVisits, false);
+
+  return `<div class="payload-card">
+    <dl class="row mb-0">
+      <dt>الأعمدة المرئية</dt><dd>${colsHTML || '—'}</dd>
+      <dt>الزيارات المحددة</dt><dd>${visitsHTML || '—'}</dd>
+    </dl>
+  </div>`;
+}
+
 
   function renderBeforeCell(log){
     const p=log.payload||{};
@@ -523,16 +558,27 @@
   }
 
   function formatDateParts(iso){
-    try{
-      if(!iso) return {date:'—',time:''};
-      const d = new Date(iso);
-      // نضمن عدم الرمي حتى لو كان iso غير صالح
-      if (isNaN(+d)) return {date:'—',time:''};
-      const date = d.toLocaleDateString('ar-EG',{year:'numeric',month:'numeric',day:'numeric'});
-      const time = d.toLocaleTimeString('ar-EG',{hour:'2-digit',minute:'2-digit'});
-      return {date,time};
-    }catch{ return {date:'—',time:''}; }
+  try{
+    if(!iso) return {date:'—',time:''};
+    const d = new Date(iso);
+    if (isNaN(+d)) return {date:'—',time:''};
+
+    // تاريخ كامل بسطر واحد (اليوم، اليوم من الشهر، الشهر كتابة، السنة)
+    const date = d.toLocaleDateString('ar-EG', {
+      weekday: 'short', year: 'numeric', month: 'long', day: 'numeric'
+    });
+
+    // الوقت بسطر تحته مع ص/م
+    const time = d.toLocaleTimeString('ar-EG', {
+      hour: '2-digit', minute: '2-digit', hour12: true
+    });
+
+    return {date, time};
+  }catch{
+    return {date:'—',time:''};
   }
+}
+
 
   async function loadLogs({append=false}={}){
     if(reachedEnd && append) return;
