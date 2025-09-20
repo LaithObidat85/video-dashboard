@@ -650,13 +650,46 @@ app.post('/auth/committees/register', authRequired, requireRole('admin'), async 
   }
 });
 
-// جديد 2 (2025-09-19): قائمة المستخدمين (admin فقط) لصفحة users-manage.html
+// قائمة المستخدمين مع بحث/ترشيح/ترتيب/تقسيم صفحات
 app.get('/api/users', authRequired, requireRole('admin'), async (req, res) => {
   try {
-    const users = await User.find({}, 'name username email role isActive createdAt')
-      .sort({ createdAt: -1 })
-      .lean();
-    res.json(users);
+    let { search = '', role = '', active = '', page = 1, limit = 20, sort = '-createdAt' } = req.query;
+    page  = Math.max(1, parseInt(page, 10)  || 1);
+    limit = Math.min(100, Math.max(1, parseInt(limit, 10) || 20));
+
+    const filter = {};
+    if (search) {
+      const safe = search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const rx = new RegExp(safe, 'i');
+      filter.$or = [{ name: rx }, { username: rx }, { email: rx }];
+    }
+    if (role === 'admin' || role === 'user') filter.role = role;
+    if (active === 'true')  filter.isActive = true;
+    if (active === 'false') filter.isActive = false;
+
+    // تحويل sort إلى كائن {field: dir}
+    const sortObj = {};
+    if (sort) {
+      const fields = String(sort).split(','); // يدعم عدة حقول لاحقًا
+      fields.forEach(f => {
+        f = f.trim();
+        if (!f) return;
+        if (f.startsWith('-')) sortObj[f.substring(1)] = -1; else sortObj[f] = 1;
+      });
+    } else {
+      sortObj.createdAt = -1;
+    }
+
+    const skip = (page - 1) * limit;
+    const [items, total] = await Promise.all([
+      User.find(filter, 'name username email role isActive createdAt').sort(sortObj).skip(skip).limit(limit).lean(),
+      User.countDocuments(filter)
+    ]);
+
+    res.json({
+      data: items,
+      meta: { page, limit, total, hasMore: skip + items.length < total }
+    });
   } catch (err) {
     res.status(500).json({ message: '❌ خطأ في جلب المستخدمين', error: err.message });
   }
@@ -735,6 +768,45 @@ app.delete('/api/users/:id', authRequired, requireRole('admin'), async (req, res
     res.status(500).json({ message: '❌ خطأ في حذف المستخدم', error: err.message });
   }
 });
+
+// إجراءات جماعية على المستخدمين (admin فقط)
+// body: { ids:[], action: 'activate'|'deactivate'|'set-role'|'delete', role?:'admin'|'user' }
+app.post('/api/users/bulk', authRequired, requireRole('admin'), async (req, res) => {
+  try {
+    const ids = Array.isArray(req.body?.ids) ? req.body.ids.filter(Boolean) : [];
+    const action = req.body?.action;
+    if (ids.length === 0) return res.status(400).json({ message: 'قائمة المعرفات مطلوبة' });
+
+    if (action === 'activate') {
+      await User.updateMany({ _id: { $in: ids } }, { $set: { isActive: true } });
+      await logAudit(req, { model:'User', action:'update', docId:'__bulk__', payload:{ bulk:true, action:'activate', ids } });
+      return res.json({ message: '✅ تم تفعيل المستخدمين' });
+    }
+    if (action === 'deactivate') {
+      await User.updateMany({ _id: { $in: ids } }, { $set: { isActive: false } });
+      await logAudit(req, { model:'User', action:'update', docId:'__bulk__', payload:{ bulk:true, action:'deactivate', ids } });
+      return res.json({ message: '✅ تم تعطيل المستخدمين' });
+    }
+    if (action === 'set-role') {
+      const role = req.body?.role === 'admin' ? 'admin' : 'user';
+      await User.updateMany({ _id: { $in: ids } }, { $set: { role } });
+      await logAudit(req, { model:'User', action:'update', docId:'__bulk__', payload:{ bulk:true, action:'set-role', role, ids } });
+      return res.json({ message: '✅ تم تغيير الأدوار' });
+    }
+    if (action === 'delete') {
+      // snapshot بسيط للأسماء لحفظها في السجل
+      const before = await User.find({ _id: { $in: ids } }, 'name username email role').lean();
+      await User.deleteMany({ _id: { $in: ids } });
+      await logAudit(req, { model:'User', action:'delete', docId:'__bulk__', payload:{ bulk:true, ids, before } });
+      return res.json({ message: '🗑️ تم حذف المستخدمين' });
+    }
+
+    return res.status(400).json({ message: 'نوع الإجراء غير مدعوم' });
+  } catch (err) {
+    res.status(500).json({ message: '❌ فشل في تنفيذ الإجراء الجماعي', error: err.message });
+  }
+});
+
 
 // الخروج من نظام اللجان
 app.post('/auth/committees/logout', (req, res) => {
