@@ -323,7 +323,7 @@
     const toArabicLabel = k => colNameArMap[k] || k;
 
     /* ===== utils (diff) ===== */
-    const escapeHtml = s => String(s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&gt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+    const escapeHtml = s => String(s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
     const normalizeValue = v => v==null ? '' : (v instanceof Date ? v.toISOString() : (Array.isArray(v)||typeof v==='object') ? JSON.stringify(v) : String(v));
     function computeDiffKeys(before, after){
       const b = before || {}, a = after || {};
@@ -452,64 +452,79 @@
       return html;
     }
 
+    /* ===== تجميع after تلقائياً إن لم يرسله السيرفر (للعمليات الجماعية) ===== */
+    function synthesizeBulkAfter(p){
+      if (!Array.isArray(p?.before)) return null;
+      const action = p?.action;
+      if (action === 'activate')   return p.before.map(u => ({ ...u, isActive: true }));
+      if (action === 'deactivate') return p.before.map(u => ({ ...u, isActive: false }));
+      if (action === 'set-role')   return p.before.map(u => ({ ...u, role: p.role === 'admin' ? 'admin' : 'user' }));
+      if (action === 'delete')     return p.before.map(u => ({ ...u, _deleted: true }));
+      return null;
+    }
+
     /* ===== كتلة عرض مفصلة للعمليات الجماعية على المستخدمين ===== */
     function renderBulkUsersList(p, mode){
-      // نحاول استعمال قائمة "before" القادمة من السيرفر (مستحسن تعديل السيرفر لتسجيلها)
-      const list = Array.isArray(p?.before) ? p.before : [];
+      const listBefore = Array.isArray(p?.before) ? p.before : [];
+      const listAfter  = Array.isArray(p?.after)  ? p.after  : synthesizeBulkAfter(p);
       const action = p?.action;
       const idsCount = Array.isArray(p?.ids) ? p.ids.length : 0;
 
-      // لو ما في قائمة أسماء، نعرض ملخصًا مفيدًا على الأقل
-      if(list.length === 0){
+      if(listBefore.length === 0){
         const actionAr = action==='set-role' ? `تغيير الدور إلى ${roleAr(p.role)}`
                         : action==='activate' ? 'تفعيل المستخدمين'
                         : action==='deactivate' ? 'تعطيل المستخدمين'
                         : (action || 'تعديل جماعي');
         return `<div class="payload-card"><dl class="row mb-0">
           <dt>عملية جماعية</dt><dd>${escapeHtml(actionAr)} (عدد: ${idsCount||'—'})</dd>
-          <dt>ملاحظة</dt><dd class="text-muted">لإظهار أسماء المستخدمين بالتفصيل يُفضّل تسجيل <code>payload.before</code> في السيرفر.</dd>
+          <dt>ملاحظة</dt><dd class="text-muted">يمكن إظهار أسماء المستخدمين إذا قام الخادم بتسجيل <code>payload.before</code> (وأفضل أيضًا <code>payload.after</code>).</dd>
         </dl></div>`;
       }
 
-      // بناء صف لكل مستخدم متأثر
-      const rows = list.map(u=>{
+      const rows = listBefore.map((u, i)=>{
+        const a = (listAfter && listAfter[i]) || {};
         const name  = u.name || '—';
         const uname = u.username || (u.email? u.email.split('@')[0] : '—');
         const email = u.email ? `<span class="badge text-bg-light">${u.email}</span>` : '';
-        const base  = `${name} <span class="badge text-bg-info">${uname}</span> ${email}`;
-
-        let beforeCell = '', afterCell = '';
+        let beforeCell = '—', afterCell = '—';
 
         if(action === 'activate' || action === 'deactivate'){
           const beforeBadge = u.isActive ? '<span class="badge text-bg-success">نشط</span>' : '<span class="badge text-bg-danger">معطّل</span>';
-          const afterBadge  = (action==='activate') ? '<span class="badge text-bg-success">نشط</span>' : '<span class="badge text-bg-danger">معطّل</span>';
+          const afterBadge  = a.isActive ? '<span class="badge text-bg-success">نشط</span>' : '<span class="badge text-bg-danger">معطّل</span>';
           beforeCell = beforeBadge;
-          afterCell  = (action==='activate') ? `<span class="diff-added">نشط</span>` : `<span class="diff-removed">معطّل</span>`;
-          // نضع الشارة الملونة أيضًا:
-          afterCell += ` <span class="ms-1">${afterBadge}</span>`;
+          afterCell  = (a.isActive ? '<span class="diff-added">نشط</span>' : '<span class="diff-removed">معطّل</span>') + ` <span class="ms-1">${afterBadge}</span>`;
         }else if(action === 'set-role'){
-          const beforeRole = roleAr(u.role);
-          const afterRole  = roleAr(p.role);
-          beforeCell = `<span class="diff-removed">${beforeRole}</span>`;
-          afterCell  = `<span class="diff-added">${afterRole}</span>`;
-        }else{
-          beforeCell = '—';
-          afterCell  = '—';
+          beforeCell = `<span class="diff-removed">${roleAr(u.role)}</span>`;
+          afterCell  = `<span class="diff-added">${roleAr(a.role)}</span>`;
+        }else if(action === 'delete'){
+          beforeCell = `${roleAr(u.role)}`;
+          afterCell  = '<span class="badge text-bg-danger">تم الحذف</span>';
         }
 
         return `<tr>
-          <td>${base}</td>
+          <td>${name} <span class="badge text-bg-info">${uname}</span> ${email}</td>
           <td class="text-nowrap">${beforeCell}</td>
           <td class="text-nowrap">${afterCell}</td>
         </tr>`;
       }).join('');
 
       const secondColTitle = (action==='set-role') ? 'الدور' : 'الحالة';
+      const titleBefore = `${secondColTitle} قبل`;
+      const titleAfter  = `${secondColTitle} بعد`;
+
       return `<div class="payload-card">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <div><strong>عملية جماعية:</strong> ${
+            action==='set-role' ? ('تغيير الدور → ' + roleAr(p.role)) :
+            action==='activate'  ? 'تفعيل' :
+            action==='deactivate'? 'تعطيل' : (action||'—')
+          }</div>
+          <span class="badge text-bg-light">عدد: ${idsCount || listBefore.length}</span>
+        </div>
         <div class="table-responsive">
           <table class="table table-sm mb-0">
-            <thead>
-              <tr><th>المستخدم</th><th>${secondColTitle} قبل</th><th>${secondColTitle} بعد</th></tr>
+            <thead class="table-light">
+              <tr><th>المستخدم</th><th>${titleBefore}</th><th>${titleAfter}</th></tr>
             </thead>
             <tbody>${rows}</tbody>
           </table>
