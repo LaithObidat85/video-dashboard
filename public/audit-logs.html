@@ -679,7 +679,7 @@
       const f = document.getElementById('fFrom').value, t = document.getElementById('fTo').value;
       if(!f && !t){ setToast(toastInfo,'الرجاء تحديد تاريخ "من" أو "إلى" أولًا'); toastInfo.show(); return; }
       if(f && t && (new Date(f) > new Date(t))){ setToast(toastError,'❌ نطاق التاريخ غير صحيح'); toastError.show(); return; }
-      const ok = await showConfirm({ title:'تأكيد الحذف حسب التاريخ', message:`سيتم حذف السجلات ضمن النطاق: ${f||'—'} → ${t||'—'}.`, confirmText:'حذف ضمن النطاق', confirmBtnClass:'btn-warning' });
+      const ok = await showConfirm({ title:'تأكيد الحذف حسب التاريخ', message:`سيتم حذف السجلات ضمن النطاق: ${f||'—'} — ${t||'—'}.`, confirmText:'حذف ضمن النطاق', confirmBtnClass:'btn-warning' });
       if(!ok) return;
       const qs = new URLSearchParams(); if(f) qs.set('from',f); if(t) qs.set('to',t);
       try{
