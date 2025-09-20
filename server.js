@@ -23,13 +23,41 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 /****************************************************
- * CORS: اسمح للفرونت-إند على GitHub بالوصول
- * (لا تغيير على الإعداد السابق)
+ * CORS + الجلسة عبر النطاقات
+ * جديد 3 (2025-09-20): تهيئة CORS ديناميكي وCookie للجلسة
+ * للعمل من واجهة GitHub Pages (Cross-Site cookies)
  ****************************************************/
+// إذا كان الخادم خلف بروكسي/SSL (Render/NGINX/Cloudflare...)
+app.set('trust proxy', 1);
+
+const ALLOWED_ORIGINS = [
+  'https://laithobidat85.github.io', // الواجهة على GitHub Pages
+  'http://localhost:5500',
+  'http://127.0.0.1:5500'
+];
+
 app.use(cors({
-  origin: "https://laithobidat85.github.io",
-  methods: ["GET", "POST", "PUT", "DELETE"],
-  credentials: true
+  origin: (origin, cb) => {
+    if (!origin) return cb(null, true);                   // يسمح لطلبات داخلية/صحية بدون Origin
+    cb(null, ALLOWED_ORIGINS.includes(origin));
+  },
+  credentials: true,
+  methods: ['GET','POST','PUT','DELETE','OPTIONS'],
+  allowedHeaders: ['Content-Type','Authorization']
+}));
+
+const isProd = process.env.NODE_ENV === 'production';
+app.use(session({
+  name: 'cmts.sid',                                       // اسم كوكي الجلسة
+  secret: process.env.SESSION_SECRET || 'secret123',
+  resave: false,
+  saveUninitialized: false,                               // لا تنشئ جلسات فارغة
+  cookie: {
+    httpOnly: true,
+    maxAge: 60 * 60 * 1000,                               // 60 دقيقة
+    sameSite: isProd ? 'none' : 'lax',                    // none مطلوبة لعبور النطاقات
+    secure:   isProd                                      // يتطلب HTTPS في الإنتاج
+  }
 }));
 
 /****************************************************
@@ -106,18 +134,6 @@ const Backup = mongoose.model('Backup', backupSchema);
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, 'public')));
-
-/****************************************************
- * جلسات (Sessions)
- * - تُستخدم سابقًا لكلمات مرور الأقسام في نظام الفيديو
- * - سنستخدم نفس الجلسة أيضًا لمستخدمين نظام اللجان
- ****************************************************/
-app.use(session({
-  secret: 'secret123',               // يُفضّل وضعه في ENV
-  resave: false,
-  saveUninitialized: true,
-  cookie: { maxAge: 60 * 60 * 1000 } // 60 دقيقة
-}));
 
 /****************************************************
  * نماذج نظام اللجان (كما لديك)
@@ -670,7 +686,7 @@ app.get('/api/users', authRequired, requireRole('admin'), async (req, res) => {
     // تحويل sort إلى كائن {field: dir}
     const sortObj = {};
     if (sort) {
-      const fields = String(sort).split(','); // يدعم عدة حقول لاحقًا
+      const fields = String(sort).split(',');
       fields.forEach(f => {
         f = f.trim();
         if (!f) return;
@@ -1127,8 +1143,6 @@ app.get('/api/audit-logs', authRequired, requireRole('admin'), async (req, res) 
 });
 
 // جديد 2 (2025-09-19): حذف السجلات (الكل أو ضمن نطاق تاريخ)
-// - بدون from/to  => حذف جميع السجلات (السلوك السابق)
-// - مع from/to    => حذف السجلات ضمن النطاق الزمني فقط
 app.delete('/api/audit-logs', authRequired, requireRole('admin'), async (req, res) => {
   try {
     const { from, to } = req.query || {};
@@ -1195,7 +1209,7 @@ app.post('/auth/login', (req, res) => {
     req.session.videoUser = { email }; // كان سابقًا user
     return res.redirect(`/protected?id=${id}`);
   } else {
-    return res.send('❌ يجب إدخال بريد ينتهي بـ @iu.edu.jo'); // جديد 2: تصحيح نص الرسالة
+    return res.send('❌ يجب إدخال بريد ينتهي بـ @iu.edu.jو'); // جديد 2: تصحيح نص الرسالة
   }
 });
 app.get('/auth/logout', (req, res) => {
