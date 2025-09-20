@@ -459,7 +459,6 @@
 
     /* ===== عناصر عامة مع تمييز حقل كامل ===== */
     function kvDiff(label, value, key, diffKeys, mode){
-      // نُظهر 0 و false أيضًا
       if(value===undefined || value===null || value==='') return '';
       const cls = diffKeys && diffKeys.has(key)
         ? (mode==='before' ? 'diff-removed' : 'diff-added')
