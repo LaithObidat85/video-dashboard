@@ -11,10 +11,11 @@
     .container{max-width:1200px;margin-top:40px}
     .card{border-radius:16px;box-shadow:0 6px 18px rgba(0,0,0,.06)}
     .user-chip{font-size:.9rem}
-    /* بطاقات عرض الـ payload: نفس الارتفاع مع سكرول */
+
+    /* بطاقات عرض الـ payload: نفس الارتفاع + سكرول */
     .payload-card{
       background:#fff;border:1px solid #e9ecef;border-radius:12px;padding:10px;
-      height:220px; /* ارتفاع موحّد للبيانات قبل/بعد */
+      height:220px; /* ارتفاع موحَّد للبيانات قبل/بعد */
       overflow:auto; /* scroll down */
     }
     .payload-card dt{color:#6c757d;font-weight:600}
@@ -23,6 +24,7 @@
       direction:ltr;background:#f6f8fa;border-radius:8px;padding:8px;max-height:none;
       font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace
     }
+
     .filters .form-control, .filters .form-select{min-width:160px}
     .minw-40{min-width:40px}
     .minw-60{min-width:60px}
@@ -299,7 +301,7 @@
       return `${full} <span class="badge text-bg-info">${uname}</span>${email}${role}`;
     }
 
-    /* أسماء الأعمدة (خاصة visibleColumns) إلى العربية */
+    /* ===== أسماء الأعمدة للعرض العربي (including visibleColumns) ===== */
     const colNameArMap = {
       committee_name:'اسم اللجنة',
       college:'الكلية',
@@ -308,7 +310,8 @@
       updatedAt:'تاريخ التحديث',
       notes:'ملاحظات',
       score:'النتيجة',
-      // المطلوب:
+
+      /* المطلوب (visibleColumns) */
       work_plan:'خطة العمل',
       performance_indicators:'مؤشرات الاداء',
       meetings:'عدد الاجتماعات',
@@ -318,18 +321,22 @@
       report2:'تقرير إنجاز 2',
       report3:'تقرير إنجاز 3',
       statistical_analysis:'التحليل الإحصائي',
-      // حقول المستخدم
+
+      /* حقول المستخدم */
       name:'الاسم',
       username:'اسم المستخدم',
       role:'الدور',
       email:'البريد',
       isActive:'نشط؟',
-      // قرار التشكيل
+
+      /* قرار التشكيل (احتمالات متعددة) */
       formation_decision:'قرار التشكيل',
       formationDecision:'قرار التشكيل',
       decision:'قرار التشكيل',
       decision_number:'قرار التشكيل',
-      decisionNumber:'قرار التشكيل'
+      decisionNumber:'قرار التشكيل',
+      formation_no:'قرار التشكيل',
+      formationNo:'قرار التشكيل'
     };
     function toArabicLabel(k){ return colNameArMap[k] || k; }
     function toArabicColumns(list){
@@ -365,81 +372,160 @@
       return k ? obj[k] : undefined;
     }
 
+    /* ===== تحويل HTML إلى نص مع الحفاظ على فواصل الأسطر (للملاحظات) ===== */
+    function stripHtmlPreserveBreaks(html) {
+      try {
+        const doc = new DOMParser().parseFromString(String(html), 'text/html');
+        const blockBreak = new Set(['P','DIV','LI','BR','H1','H2','H3','H4','H5','H6']);
+        function walk(node) {
+          let out = '';
+          node.childNodes.forEach(n => {
+            if (n.nodeType === 3) { // Text
+              out += n.textContent;
+            } else if (n.nodeType === 1) { // Element
+              const tag = n.nodeName;
+              if (tag === 'BR') out += '\n';
+              out += walk(n);
+              if (blockBreak.has(tag) && out.slice(-1) !== '\n') out += '\n';
+            }
+          });
+          return out;
+        }
+        return walk(doc.body).replace(/\n{3,}/g, '\n\n').trim();
+      } catch {
+        return String(html).replace(/<[^>]+>/g, '\n').replace(/\n{3,}/g, '\n\n').trim();
+      }
+    }
 
-// تُرجع HTML لقائمة عناصر مع تظليل الفروق فقط (المضاف/المحذوف حسب العمود)
-  function renderArrayDiff(beforeArr, afterArr, mode){
-    const b = Array.isArray(beforeArr) ? beforeArr : [];
-    const a = Array.isArray(afterArr)  ? afterArr  : [];
-    const beforeSet = new Set(b);
-    const afterSet  = new Set(a);
+    /* ===== Diff للكلمات داخل النصوص الطويلة (notes) ===== */
+    function splitTokens(str){
+      const plain = stripHtmlPreserveBreaks(str);
+      return plain.split(/(\s+|[.,;:!?،؛()\[\]{}"«»]+)/g).filter(t => t !== '');
+    }
+    // LCS diff على مستوى التوكن
+    function diffTokens(aTokens, bTokens){
+      const m = aTokens.length, n = bTokens.length;
+      const dp = Array(m+1).fill(null).map(()=>Array(n+1).fill(0));
+      for(let i=m-1;i>=0;i--){
+        for(let j=n-1;j>=0;j--){
+          dp[i][j] = (aTokens[i]===bTokens[j]) ? dp[i+1][j+1]+1 : Math.max(dp[i+1][j], dp[i][j+1]);
+        }
+      }
+      const ops = [];
+      let i=0, j=0;
+      while(i<m && j<n){
+        if(aTokens[i]===bTokens[j]){ ops.push({type:'eq', token:aTokens[i]}); i++; j++; }
+        else if(dp[i+1][j] >= dp[i][j+1]){ ops.push({type:'del', token:aTokens[i++]}); }
+        else{ ops.push({type:'add', token:bTokens[j++]}); }
+      }
+      while(i<m) ops.push({type:'del', token:aTokens[i++]});
+      while(j<n) ops.push({type:'add', token:bTokens[j++]});
+      return ops;
+    }
+    function renderTextDiff(beforeText, afterText, mode){
+      const a = splitTokens(beforeText || '');
+      const b = splitTokens(afterText  || '');
+      const ops = diffTokens(a, b);
+      let html = '';
+      for (const op of ops){
+        if (op.type === 'eq') {
+          html += escapeHtml(op.token);
+        } else if (op.type === 'add') {
+          html += (mode === 'after')
+            ? `<span class="diff-added">${escapeHtml(op.token)}</span>`
+            : escapeHtml(op.token);
+        } else if (op.type === 'del') {
+          html += (mode === 'before')
+            ? `<span class="diff-removed">${escapeHtml(op.token)}</span>`
+            : '';
+        }
+      }
+      html = html.replace(/\n/g, '<br>');
+      return html || '—';
+    }
+    function kvTextDiff(label, key, beforeObj, afterObj, mode, diffKeys){
+      const changed = diffKeys && diffKeys.has(key);
+      const currentVal = (mode==='before') ? (beforeObj?.[key]) : (afterObj?.[key]);
+      if(currentVal===undefined || currentVal===null || currentVal==='') return '';
+      if(changed && typeof (beforeObj?.[key] ?? '') === 'string' && typeof (afterObj?.[key] ?? '') === 'string'){
+        const html = renderTextDiff(beforeObj?.[key] ?? '', afterObj?.[key] ?? '', mode);
+        return `<dt>${label}</dt><dd>${html}</dd>`;
+      }
+      const cls = changed ? (mode==='before' ? 'diff-removed' : 'diff-added') : '';
+      return `<dt>${label}</dt><dd class="${cls}">${escapeHtml(currentVal)}</dd>`;
+    }
 
-    // نعرض ترتيب القائمة بحسب العمود
-    const list = mode === 'before' ? b : a;
+    /* ===== إبراز قوائم Settings عنصرًا-بعنصر (visibleColumns / selectedVisits) ===== */
+    function renderArrayDiff(beforeArr, afterArr, mode){
+      const b = Array.isArray(beforeArr) ? beforeArr : [];
+      const a = Array.isArray(afterArr)  ? afterArr  : [];
+      const beforeSet = new Set(b);
+      const afterSet  = new Set(a);
+      const list = mode === 'before' ? b : a;
+      const parts = list.map(k=>{
+        const isAdded   = !beforeSet.has(k) && afterSet.has(k);
+        const isRemoved =  beforeSet.has(k) && !afterSet.has(k);
+        const cls = (mode === 'after'  && isAdded)   ? 'diff-added'
+                  : (mode === 'before' && isRemoved) ? 'diff-removed'
+                  : '';
+        return `<span class="${cls}">${escapeHtml(toArabicLabel(k))}</span>`;
+      });
+      return parts.length ? parts.join('، ') : '—';
+    }
+    function renderSettingsDiff(before, after, mode){
+      const vBefore = before?.visibleColumns || [];
+      const vAfter  =  after?.visibleColumns || [];
+      const sBefore = before?.selectedVisits || [];
+      const sAfter  =  after?.selectedVisits || [];
+      let html = '<div class="payload-card"><dl class="row mb-0">';
+      html += `<dt>الأعمدة المرئية</dt><dd>${renderArrayDiff(vBefore, vAfter, mode)}</dd>`;
+      html += `<dt>الزيارات المحددة</dt><dd>${renderArrayDiff(sBefore, sAfter, mode)}</dd>`;
+      html += '</dl></div>';
+      return html;
+    }
 
-    const parts = list.map(k=>{
-      const isAdded   = !beforeSet.has(k) && afterSet.has(k); // ظهر لاحقًا
-      const isRemoved =  beforeSet.has(k) && !afterSet.has(k); // اختفى لاحقًا
-      const cls = (mode === 'after'  && isAdded)   ? 'diff-added'
-                : (mode === 'before' && isRemoved) ? 'diff-removed'
-                : '';
-      return `<span class="${cls}">${escapeHtml(toArabicLabel(k))}</span>`;
-    });
-
-    // عناصر لا تظهر في هذا العمود (مثلاً عنصر أُضيف لاحقًا، لن يظهر في "قبل") لن تُعرض بتظليل
-    return parts.length ? parts.join('، ') : '—';
-  }
-
-  // بطاقة مخصصة لإظهار Settings مع قوائم مُظلّلة عنصرًا عنصرًا
-  function renderSettingsDiff(before, after, mode){
-    const vBefore = before?.visibleColumns || [];
-    const vAfter  =  after?.visibleColumns || [];
-    const sBefore = before?.selectedVisits || [];
-    const sAfter  =  after?.selectedVisits || [];
-
-    let html = '<div class="payload-card"><dl class="row mb-0">';
-    html += `<dt>الأعمدة المرئية</dt><dd>${renderArrayDiff(vBefore, vAfter, mode)}</dd>`;
-    html += `<dt>الزيارات المحددة</dt><dd>${renderArrayDiff(sBefore, sAfter, mode)}</dd>`;
-    html += '</dl></div>';
-    return html;
-  }
-
-    
-
-    /* ===== بطاقات البيانات مع تمييز الفروق ===== */
+    /* ===== عناصر عامة مع تمييز حقل كامل ===== */
     function kvDiff(label, value, key, diffKeys, mode){
-      // إظهار 0 و false أيضًا (لا نخفيها)
       if(value===undefined || value===null || value==='') return '';
       const cls = diffKeys && diffKeys.has(key)
         ? (mode==='before' ? 'diff-removed' : 'diff-added')
         : '';
       return `<dt>${label}</dt><dd class="${cls}">${escapeHtml(value)}</dd>`;
     }
-    function renderCardFromObjectWithDiff(model, obj, diffKeys, mode){
+
+    /* ===== بطاقة عرض كائن مع إبراز الفروق ===== */
+    function renderCardFromObjectWithDiff(model, obj, diffKeys, mode, otherSide){
       if(!obj) return '<div class="payload-card text-muted">—</div>';
       let html = '<div class="payload-card"><dl class="row mb-0">';
       const d = obj;
+
+      // تحديد الطرفين للـ Diff النصّي
+      const beforeObj = (mode==='before') ? obj : (otherSide || {});
+      const afterObj  = (mode==='after')  ? obj : (otherSide || {});
+      const has = (k)=> d[k]!==undefined && d[k]!==null && d[k]!==''; // مساعد
 
       if(model==='Evaluation'){
         html += kvDiff('اسم اللجنة', d.committee_name, 'committee_name', diffKeys, mode);
         html += kvDiff('الكلية', d.college, 'college', diffKeys, mode);
         html += kvDiff('المدقق', d.auditor_name, 'auditor_name', diffKeys, mode);
         html += kvDiff('تاريخ الإنشاء', d.createdAt ? new Date(d.createdAt).toLocaleString('ar-EG') : '', 'createdAt', diffKeys, mode);
-        html += kvDiff('ملاحظات', d.notes, 'notes', diffKeys, mode);
+
+        /* ملاحظات: Diff كلمة-بكلمة (بدون وسوم HTML) */
+        if(has('notes')) html += kvTextDiff('ملاحظات', 'notes', beforeObj, afterObj, mode, diffKeys);
+
+        /* أرقام/قيم بسيطة */
         html += kvDiff('النتيجة', d.score, 'score', diffKeys, mode);
 
-        // قرار التشكيل (أرقام 0/1 أو نص) — يدعم عدة مفاتيح محتملة
+        /* قرار التشكيل (يدعم عدة مفاتيح) */
         const decisionKeys = ['formation_decision','formationDecision','decision','decision_number','decisionNumber','formation_no','formationNo'];
-        const decisionKey  = findKey(d, decisionKeys) || 'formation_decision';
-        const decisionVal  = firstVal(d, decisionKeys);
-        if(decisionVal!==undefined){
-          html += kvDiff('قرار التشكيل', decisionVal, decisionKey, diffKeys, mode);
+        const decisionKey  = decisionKeys.find(k => k in d);
+        if(decisionKey){
+          html += kvDiff('قرار التشكيل', d[decisionKey], decisionKey, diffKeys, mode);
         }
 
-        // الحقول المخصصة للـ visibleColumns إن وجدت في التقييم نفسه
+        /* لو الحقول أدناه موجودة داخل سجل التقييم نفسه */
         ['work_plan','performance_indicators','meetings','consistency','coverage_books','report1','report2','report3','statistical_analysis']
-          .forEach(k=>{
-            if(d[k]!==undefined) html += kvDiff(toArabicLabel(k), d[k], k, diffKeys, mode);
-          });
+          .forEach(k=>{ if(has(k)) html += kvDiff(toArabicLabel(k), d[k], k, diffKeys, mode); });
 
       }else if(model==='College'){
         html += kvDiff('الكلية', d.name, 'name', diffKeys, mode);
@@ -453,18 +539,10 @@
       }else if(model==='Settings'){
         if(d.visibleColumns) html += kvDiff('الأعمدة المرئية', toArabicColumns(d.visibleColumns), 'visibleColumns', diffKeys, mode);
         if(d.selectedVisits) html += kvDiff('الزيارات المحددة', toArabicColumns(d.selectedVisits), 'selectedVisits', diffKeys, mode);
-        // عرض أي مفاتيح أخرى بشكل عام
         const otherKeys = Object.keys(d||{}).filter(k=>!['visibleColumns','selectedVisits','_id','updatedAt','createdAt','__v'].includes(k));
         if(otherKeys.length){
           html += kvDiff('تغييرات أخرى', otherKeys.map(toArabicLabel).join('، '), '__misc', diffKeys, mode);
         }
-
-      }else if(model==='User'){
-        html += kvDiff('الاسم', d.name, 'name', diffKeys, mode);
-        html += kvDiff('اسم المستخدم', d.username, 'username', diffKeys, mode);
-        html += kvDiff('الدور', d.role, 'role', diffKeys, mode);
-        html += kvDiff('البريد', d.email, 'email', diffKeys, mode);
-        if(d.isActive!==undefined) html += kvDiff('نشط؟', d.isActive ? 'نعم' : 'لا', 'isActive', diffKeys, mode);
 
       }else{
         html += '</dl><div class="payload-json"><code>'+escapeHtml(JSON.stringify(obj, null, 2))+'</code></div>';
@@ -473,7 +551,6 @@
       }
 
       html += '</dl>';
-      // لو لم تُطبع أي dd، أعرض JSON كامل
       if(!/<dd[^>]*>/.test(html)){
         html += '<div class="payload-json"><code>'+escapeHtml(JSON.stringify(obj, null, 2))+'</code></div>';
       }
@@ -481,61 +558,59 @@
       return html;
     }
 
-   function renderBeforeCell(log){
-    const p = log.payload || {};
+    /* ===== خلايا الجدول: قبل/بعد ===== */
+    function renderBeforeCell(log){
+      const p = log.payload || {};
 
-    // تخصيص Settings لعرض الفروق عنصرًا عنصرًا
-    if (log.model === 'Settings') {
+      // تخصيص Settings لعرض الفروق عنصرًا-بعنصر
+      if (log.model === 'Settings') {
+        if (log.action === 'create') return '<div class="payload-card text-muted">كانت فارغة</div>';
+        if (log.action === 'delete') return renderSettingsDiff(p, {}, 'before');
+        if (p && p.before && p.after) return renderSettingsDiff(p.before, p.after, 'before');
+        if (p && p.before) return renderSettingsDiff(p.before, {}, 'before');
+        return '<div class="payload-card text-muted">—</div>';
+      }
+
       if (log.action === 'create') return '<div class="payload-card text-muted">كانت فارغة</div>';
-      if (log.action === 'delete') return renderSettingsDiff(p, {}, 'before');
-      if (p && p.before && p.after) return renderSettingsDiff(p.before, p.after, 'before');
-      if (p && p.before) return renderSettingsDiff(p.before, {}, 'before');
+      if (log.action === 'delete'){
+        const allKeys = p ? new Set(Object.keys(p)) : new Set();
+        return renderCardFromObjectWithDiff(log.model, p, allKeys, 'before', {}); // كل شيء مُزال
+      }
+      if (p && p.before && p.after){
+        const diff = computeDiffKeys(p.before, p.after);
+        return renderCardFromObjectWithDiff(log.model, p.before, diff, 'before', p.after);
+      }
+      if (p && p.before){
+        return renderCardFromObjectWithDiff(log.model, p.before, null, 'before', {});
+      }
       return '<div class="payload-card text-muted">—</div>';
     }
+    function renderAfterCell(log){
+      const p = log.payload || {};
 
-    // باقي النماذج كما هي
-    if (log.action === 'create') return '<div class="payload-card text-muted">كانت فارغة</div>';
-    if (log.action === 'delete'){
-      const allKeys = p ? new Set(Object.keys(p)) : new Set();
-      return renderCardFromObjectWithDiff(log.model, p, allKeys, 'before'); // كل شيء مُزال
-    }
-    if (p && p.before && p.after){
-      const diff = computeDiffKeys(p.before, p.after);
-      return renderCardFromObjectWithDiff(log.model, p.before, diff, 'before');
-    }
-    if (p && p.before){
-      return renderCardFromObjectWithDiff(log.model, p.before, null, 'before');
-    }
-    return '<div class="payload-card text-muted">—</div>';
-  }
+      // تخصيص Settings لعرض الفروق عنصرًا-بعنصر
+      if (log.model === 'Settings') {
+        if (log.action === 'delete') return '<div class="payload-card text-muted">تم الحذف</div>';
+        if (log.action === 'create') return renderSettingsDiff({}, p, 'after');
+        if (p && p.before && p.after) return renderSettingsDiff(p.before, p.after, 'after');
+        if (p && p.after) return renderSettingsDiff({}, p.after, 'after');
+        return renderSettingsDiff({}, p, 'after');
+      }
 
-  function renderAfterCell(log){
-    const p = log.payload || {};
-
-    // تخصيص Settings لعرض الفروق عنصرًا عنصرًا
-    if (log.model === 'Settings') {
       if (log.action === 'delete') return '<div class="payload-card text-muted">تم الحذف</div>';
-      if (log.action === 'create') return renderSettingsDiff({}, p, 'after');
-      if (p && p.before && p.after) return renderSettingsDiff(p.before, p.after, 'after');
-      if (p && p.after) return renderSettingsDiff({}, p.after, 'after');
-      return renderSettingsDiff({}, p, 'after');
+      if (log.action === 'create'){
+        const allKeys = p ? new Set(Object.keys(p)) : new Set();
+        return renderCardFromObjectWithDiff(log.model, p, allKeys, 'after', {}); // كل شيء مُضاف
+      }
+      if (p && p.after && p.before){
+        const diff = computeDiffKeys(p.before, p.after);
+        return renderCardFromObjectWithDiff(log.model, p.after, diff, 'after', p.before);
+      }
+      if (p && p.after){
+        return renderCardFromObjectWithDiff(log.model, p.after, null, 'after', {});
+      }
+      return renderCardFromObjectWithDiff(log.model, p, null, 'after', {});
     }
-
-    // باقي النماذج كما هي
-    if (log.action === 'delete') return '<div class="payload-card text-muted">تم الحذف</div>';
-    if (log.action === 'create'){
-      const allKeys = p ? new Set(Object.keys(p)) : new Set();
-      return renderCardFromObjectWithDiff(log.model, p, allKeys, 'after'); // كل شيء مُضاف
-    }
-    if (p && p.after && p.before){
-      const diff = computeDiffKeys(p.before, p.after);
-      return renderCardFromObjectWithDiff(log.model, p.after, diff, 'after');
-    }
-    if (p && p.after){
-      return renderCardFromObjectWithDiff(log.model, p.after, null, 'after');
-    }
-    return renderCardFromObjectWithDiff(log.model, p, null, 'after');
-  }
 
     /* ===== listing & selection ===== */
     let page = 1, limit = 20, reachedEnd = false;
@@ -556,7 +631,7 @@
       const params = new URLSearchParams();
       if(m) params.set('model',m);
       if(a) params.set('action',a);
-      if(q) params.set('q',q);
+      if(q) params.set('q',q);              // بحث شامل (اسم/إيميل/اسم مستخدم)
       if(f) params.set('from',f);
       if(t) params.set('to',t);
       params.set('page',page);
