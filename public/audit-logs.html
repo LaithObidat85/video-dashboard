@@ -8,10 +8,27 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.rtl.min.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
   <style>
+    :root{
+      /* اضبط العروض كما تحب */
+      --w-chk: 46px;
+      --w-idx: 64px;
+      --w-time: 140px;
+      --w-page: 140px;
+      --w-action: 110px;
+      --w-user: 260px;
+      /* بقية العرض يذهب لقبل/بعد مناصفة */
+    }
+
     body{background:#f8f9fa;font-family:'Segoe UI',sans-serif}
     .container{max-width:1200px;margin-top:40px}
     .card{border-radius:16px;box-shadow:0 6px 18px rgba(0,0,0,.06)}
     .user-chip{font-size:.9rem}
+
+    /* جدول رئيسي ثابت التوزيع */
+    .table { table-layout: fixed; width:100%; }
+    .table thead th{vertical-align:middle;white-space:nowrap}
+    /* محاذاة جسم الجدول للأعلى لتناسق البطاقات */
+    #logsTbody > tr > td{ vertical-align: top; }
 
     /* بطاقات المحتوى في عمودي "قبل/بعد"  */
     .payload-card{
@@ -30,9 +47,6 @@
     .minw-60{min-width:60px}
     .minw-120{min-width:120px}
 
-    /* لا تكسّر عناوين الأعمدة */
-    .table thead th{vertical-align:middle;white-space:nowrap}
-
     .sticky-actions{position:sticky;bottom:0;background:#fff;border-top:1px solid #e9ecef;padding:12px;border-radius:0 0 16px 16px}
     .count-badge{font-size:.85rem}
 
@@ -40,13 +54,10 @@
     .diff-added{color:#198754;font-weight:600;background:rgba(25,135,84,.12);border-radius:6px;padding:2px 6px}
     .diff-removed{color:#dc3545;font-weight:600;background:rgba(220,53,69,.12);border-radius:6px;padding:2px 6px}
 
-    /* توزيع الأعمدة */
-    .col-user{width:16%}
-    .col-before{width:34%}
-    .col-after{width:34%}
-
-    /* اجبر الجدول الأساسي على توزيع ثابت حتى لا “ينفش” بسبب خلية واحدة */
-    .table { table-layout: fixed; }
+    /* توزيع الأعمدة الدلالية (تُستعمل لأسماء الأعمدة فقط لو احتجت) */
+    .col-user{width:var(--w-user)}
+    .col-before{width:auto}
+    .col-after{width:auto}
 
     /* الجداول داخل بطاقة “البيانات قبل/بعد” لا تتمدد خارج البطاقة */
     .payload-card .table{ table-layout: fixed; width:100%; }
@@ -79,6 +90,9 @@
       padding:4px 8px;
       font-size:.85rem;
     }
+
+    /* رؤوس داخل بطاقات التعديل الجماعي */
+    .payload-card .table thead th{white-space:nowrap}
   </style>
 </head>
 <body>
@@ -152,19 +166,31 @@
     <div class="card">
       <div class="card-body p-0">
         <div class="table-responsive">
-          <table class="table table-hover align-middle mb-0">
+          <table class="table table-hover mb-0">
+            <!-- تثبيت الأعمدة -->
+            <colgroup>
+              <col style="width:var(--w-chk)">
+              <col style="width:var(--w-idx)">
+              <col style="width:var(--w-time)">
+              <col style="width:var(--w-page)">
+              <col style="width:var(--w-action)">
+              <col style="width:var(--w-user)">
+              <col><!-- قبل: يتمدد -->
+              <col><!-- بعد: يتمدد -->
+            </colgroup>
+
             <thead class="table-light">
               <tr>
-                <th class="minw-40 text-center">
+                <th class="text-center">
                   <input class="form-check-input" type="checkbox" id="chkAll" title="تحديد/إلغاء تحديد الكل">
                 </th>
-                <th class="minw-60">#</th>
-                <th class="minw-120">الوقت</th>
+                <th>#</th>
+                <th>الوقت</th>
                 <th>الصفحة</th>
                 <th>العملية</th>
-                <th class="col-user">المستخدم</th>
-                <th class="col-before">البيانات قبل</th>
-                <th class="col-after">البيانات بعد</th>
+                <th>المستخدم</th>
+                <th>البيانات قبل</th>
+                <th>البيانات بعد</th>
               </tr>
             </thead>
             <tbody id="logsTbody">
@@ -241,22 +267,19 @@
   <!-- Scripts -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
-  
   <script>
-  // ========== إعداد المسارات ==========
+  /* ===== المسارات ===== */
   const API_BASE = location.hostname.endsWith('github.io') ? 'https://vdash-qkyv.onrender.com' : '';
   const api = (p)=> API_BASE + p;
-
-  // رابط لوحة التحكم
   document.getElementById('homeLink').href = api('/committees-home.html');
 
-  // ========== Toasts ==========
+  /* ===== Toasts ===== */
   const toastSuccess = new bootstrap.Toast(document.getElementById('toastSuccess'));
   const toastError   = new bootstrap.Toast(document.getElementById('toastError'));
   const toastInfo    = new bootstrap.Toast(document.getElementById('toastInfo'));
   const setToast = (t,msg)=> t._element.querySelector('.toast-body').innerText = msg;
 
-  // ========== Modal confirm ==========
+  /* ===== Modal confirm ===== */
   const confirmModalEl = document.getElementById('confirmModal');
   const confirmModal   = new bootstrap.Modal(confirmModalEl);
   const confirmTitle   = document.getElementById('confirmModalTitle');
@@ -275,7 +298,7 @@
     });
   };
 
-  // ========== أدوات شبكة قوية ==========
+  /* ===== أدوات شبكة ===== */
   async function fetchJSON(url, options={}){
     const r = await fetch(url, { credentials:'include', headers:{'Accept':'application/json', ...(options.headers||{})}, ...options });
     const ctype = (r.headers.get('content-type')||'').toLowerCase();
@@ -288,7 +311,7 @@
     return { ok: r.ok, status: r.status, data };
   }
 
-  // ========== مصادقة ==========
+  /* ===== مصادقة ===== */
   const normalizeUser = (u)=>{
     if(!u) return { name:'—', username:'—', email:'', role:'—' };
     if(typeof u==='string') return { name:u, username:u, email:'', role:'' };
@@ -332,12 +355,12 @@
   }
   document.getElementById('logoutBtn').addEventListener('click', logout);
 
-  // ========== مساعدات عرض ==========
+  /* ===== مساعدات عرض ===== */
   function modelToPage(m){ return ({Evaluation:'تقييم اللجان',College:'الكليات',Auditor:'المدققون',Committee:'أسماء اللجان',Settings:'الإعدادات',User:'المستخدمون'})[m] || (m||'—'); }
   function badgeAction(a){ const cls = a==='delete'?'text-bg-danger':(a==='update'?'text-bg-warning':'text-bg-success'); return `<span class="badge ${cls}">${a||'—'}</span>`; }
   function fmtUser(uRaw){ const u=normalizeUser(uRaw); const email=u.email?` <span class="badge text-bg-light">${u.email}</span>`:''; const role=u.role?` <span class="badge text-bg-secondary">${u.role}</span>`:''; return `${u.name} <span class="badge text-bg-info">${u.username}</span>${email}${role}`; }
 
-  // ==== diff helpers ====
+  /* ===== diff helpers ===== */
   const colNameArMap={ committee_name:'اسم اللجنة', college:'الكلية', auditor_name:'المدقق', createdAt:'تاريخ الإنشاء', updatedAt:'تاريخ التحديث', notes:'ملاحظات', score:'النتيجة', work_plan:'خطة العمل', performance_indicators:'مؤشرات الاداء', meetings:'عدد الاجتماعات', consistency:'التوافق بين الدعوات والاجتماعات', coverage_books:'كتب التغطية', report1:'تقرير إنجاز 1', report2:'تقرير إنجاز 2', report3:'تقرير إنجاز 3', statistical_analysis:'التحليل الإحصائي', name:'الاسم', username:'اسم المستخدم', role:'الدور', email:'البريد', isActive:'الحالة', formation_decision:'قرار التشكيل', formationDecision:'قرار التشكيل', decision:'قرار التشكيل', decision_number:'قرار التشكيل', decisionNumber:'قرار التشكيل', formation_no:'قرار التشكيل', formationNo:'قرار التشكيل' };
   const toArabicLabel=(k)=> colNameArMap[k]||k;
   const escapeHtml=(s)=> String(s).replace(/[&<>"']/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
@@ -381,7 +404,7 @@
     return h;
   }
 
-  // ========== كتلة عرض "التعديل الجماعي" ==========
+  /* ===== كتلة عرض "التعديل الجماعي" ===== */
   function synthesizeBulkAfter(p){
     if (!Array.isArray(p?.before)) return null;
     const action=p?.action;
@@ -457,7 +480,7 @@
     </div>`;
   }
 
-  // ========== before/after ==========
+  /* ===== before/after ===== */
   function isBulkUserPayload(log){
     const p = log.payload || {};
     return log.model==='User' && (p.bulk || Array.isArray(p.before) || Array.isArray(p.after) || Array.isArray(p.ids));
@@ -502,10 +525,11 @@
     return renderCardFromObjectWithDiff(log.model,p,null,'after',{});
   }
 
-  // ========== تحميل السجلات ==========
+  /* ===== تحميل السجلات ===== */
   let page=1, limit=20, reachedEnd=false, rowCounterStart=1;
   const selectedIds=new Set();
   const updateSelectedCount=()=>{ document.getElementById('selectedCount').textContent=selectedIds.size; document.getElementById('btnDeleteSelected').disabled=selectedIds.size===0; };
+
   function buildQuery(){
     const m=document.getElementById('fModel').value.trim();
     const a=document.getElementById('fAction').value.trim();
@@ -515,6 +539,7 @@
     const p=new URLSearchParams(); if(m)p.set('model',m); if(a)p.set('action',a); if(q)p.set('q',q); if(f)p.set('from',f); if(t)p.set('to',t);
     p.set('page',page); p.set('limit',limit); return p.toString();
   }
+
   async function loadLogs({append=false}={}){
     if(reachedEnd && append) return;
     const tbody=document.getElementById('logsTbody');
@@ -557,19 +582,67 @@
     rowCounterStart = n;
   }
 
-  // ========== تحكم الأزرار ==========
+  const fFrom = document.getElementById('fFrom');
+  const fTo   = document.getElementById('fTo');
+
+  /* ===== تحكم الأزرار ===== */
   document.getElementById('btnSearch').addEventListener('click', ()=>{ page=1; reachedEnd=false; loadLogs({append:false}); });
-  document.getElementById('btnClear').addEventListener('click', ()=>{ ['fModel','fAction','fQuery','fFrom','fTo'].forEach(id=>document.getElementById(id).value=''); page=1; reachedEnd=false; loadLogs({append:false}); });
+  document.getElementById('btnClear').addEventListener('click', ()=>{
+    ['fModel','fAction','fQuery','fFrom','fTo'].forEach(id=>document.getElementById(id).value='');
+    selectedIds.clear(); document.getElementById('selectedCount').textContent='0';
+    document.getElementById('chkAll').checked=false;
+    page=1; reachedEnd=false; loadLogs({append:false});
+  });
   document.getElementById('btnMore').addEventListener('click', ()=>{ if(!reachedEnd){ page++; loadLogs({append:true}); } else { setToast(toastInfo,'لا يوجد مزيد من السجلات'); toastInfo.show(); }});
-  document.getElementById('chkAll').addEventListener('change', (e)=>{ const chk=e.target.checked; document.querySelectorAll('#logsTbody .chkRow:not([disabled])').forEach(i=>{ i.checked=chk; const id=i.value; if(chk) selectedIds.add(id); else selectedIds.delete(id); }); updateSelectedCount(); });
-  document.getElementById('logsTbody').addEventListener('change', (e)=>{ if(e.target.classList.contains('chkRow')){ const id=e.target.value; if(e.target.checked) selectedIds.add(id); else selectedIds.delete(id); const all=document.querySelectorAll('#logsTbody .chkRow:not([disabled])'); document.getElementById('chkAll').checked = all.length>0 && Array.from(all).every(x=>x.checked); updateSelectedCount(); }});
-  document.getElementById('btnPurge').addEventListener('click', async ()=>{ const ok=await showConfirm({title:'تأكيد حذف الكل',message:'سيتم حذف جميع سجلات العمليات، ولا يمكن التراجع.',confirmText:'نعم، احذف الكل',confirmBtnClass:'btn-danger'}); if(!ok) return; const r=await fetch(api('/api/audit-logs'),{method:'DELETE',credentials:'include'}); if(r.ok){ setToast(toastSuccess,'🧹 تم حذف جميع السجلات'); toastSuccess.show(); page=1; reachedEnd=false; loadLogs({append:false}); } else { setToast(toastError,'❌ فشل حذف السجلات'); toastError.show(); }});
-  document.getElementById('btnPurgeRange').addEventListener('click', async ()=>{ const f=fFrom.value, t=fTo.value; if(!f && !t){ setToast(toastInfo,'حدّد تاريخ "من" أو "إلى"'); toastInfo.show(); return; } if(f && t && (new Date(f)>new Date(t))){ setToast(toastError,'❌ نطاق التاريخ غير صحيح'); toastError.show(); return; } const ok=await showConfirm({title:'تأكيد الحذف حسب التاريخ',message:`سيتم حذف ضمن النطاق: ${f||'—'} — ${t||'—'}.`,confirmText:'حذف ضمن النطاق',confirmBtnClass:'btn-warning'}); if(!ok) return; const qs=new URLSearchParams(); if(f) qs.set('from',f); if(t) qs.set('to',t); const r=await fetch(api('/api/audit-logs?')+qs.toString(),{method:'DELETE',credentials:'include'}); if(r.ok){ setToast(toastSuccess,'🗂️ تم حذف السجلات ضمن النطاق'); toastSuccess.show(); page=1; reachedEnd=false; loadLogs({append:false}); } else { setToast(toastError,'❌ فشل في حذف السجلات ضمن النطاق'); toastError.show(); }});
-  document.getElementById('btnDeleteSelected').addEventListener('click', async ()=>{ const count=selectedIds.size; if(count===0){ setToast(toastInfo,'لم يتم تحديد أي سجلات'); toastInfo.show(); return; } const ok=await showConfirm({title:'تأكيد حذف المحدد',message:`سيتم حذف ${count} من السجلات المحددة.`,confirmText:'حذف المحدد',confirmBtnClass:'btn-danger'}); if(!ok) return; const r=await fetch(api('/api/audit-logs/by-ids'),{method:'DELETE',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify({ids:Array.from(selectedIds)})}); if(r.ok){ setToast(toastSuccess,'🗑️ تم حذف السجلات المحددة'); toastSuccess.show(); page=1; reachedEnd=false; loadLogs({append:false}); } else { setToast(toastError,'❌ فشل حذف السجلات المحددة'); toastError.show(); }});
+  document.getElementById('chkAll').addEventListener('change', (e)=>{
+    const chk=e.target.checked;
+    document.querySelectorAll('#logsTbody .chkRow:not([disabled])').forEach(i=>{ i.checked=chk; const id=i.value; if(chk) selectedIds.add(id); else selectedIds.delete(id); });
+    updateSelectedCount();
+  });
+  document.getElementById('logsTbody').addEventListener('change', (e)=>{
+    if(e.target.classList.contains('chkRow')){
+      const id=e.target.value;
+      if(e.target.checked) selectedIds.add(id); else selectedIds.delete(id);
+      const all=document.querySelectorAll('#logsTbody .chkRow:not([disabled])');
+      document.getElementById('chkAll').checked = all.length>0 && Array.from(all).every(x=>x.checked);
+      updateSelectedCount();
+    }
+  });
+  document.getElementById('btnPurge').addEventListener('click', async ()=>{
+    const ok=await showConfirm({title:'تأكيد حذف الكل',message:'سيتم حذف جميع سجلات العمليات، ولا يمكن التراجع.',confirmText:'نعم، احذف الكل',confirmBtnClass:'btn-danger'});
+    if(!ok) return;
+    const r=await fetch(api('/api/audit-logs'),{method:'DELETE',credentials:'include'});
+    if(r.ok){ setToast(toastSuccess,'🧹 تم حذف جميع السجلات'); toastSuccess.show(); page=1; reachedEnd=false; loadLogs({append:false}); }
+    else { setToast(toastError,'❌ فشل حذف السجلات'); toastError.show(); }
+  });
+  document.getElementById('btnPurgeRange').addEventListener('click', async ()=>{
+    const f=fFrom.value, t=fTo.value;
+    if(!f && !t){ setToast(toastInfo,'حدّد تاريخ "من" أو "إلى"'); toastInfo.show(); return; }
+    if(f && t && (new Date(f)>new Date(t))){ setToast(toastError,'❌ نطاق التاريخ غير صحيح'); toastError.show(); return; }
+    const ok=await showConfirm({title:'تأكيد الحذف حسب التاريخ',message:`سيتم حذف ضمن النطاق: ${f||'—'} — ${t||'—'}.`,confirmText:'حذف ضمن النطاق',confirmBtnClass:'btn-warning'});
+    if(!ok) return;
+    const qs=new URLSearchParams(); if(f) qs.set('from',f); if(t) qs.set('to',t);
+    const r=await fetch(api('/api/audit-logs?')+qs.toString(),{method:'DELETE',credentials:'include'});
+    if(r.ok){ setToast(toastSuccess,'🗂️ تم حذف السجلات ضمن النطاق'); toastSuccess.show(); page=1; reachedEnd=false; loadLogs({append:false}); }
+    else { setToast(toastError,'❌ فشل في حذف السجلات ضمن النطاق'); toastError.show(); }
+  });
+  document.getElementById('btnDeleteSelected').addEventListener('click', async ()=>{
+    const count=selectedIds.size;
+    if(count===0){ setToast(toastInfo,'لم يتم تحديد أي سجلات'); toastInfo.show(); return; }
+    const ok=await showConfirm({title:'تأكيد حذف المحدد',message:`سيتم حذف ${count} من السجلات المحددة.`,confirmText:'حذف المحدد',confirmBtnClass:'btn-danger'});
+    if(!ok) return;
+    const r=await fetch(api('/api/audit-logs/by-ids'),{
+      method:'DELETE',
+      headers:{'Content-Type':'application/json'},
+      credentials:'include',
+      body:JSON.stringify({ids:Array.from(selectedIds)})
+    });
+    if(r.ok){ setToast(toastSuccess,'🗑️ تم حذف السجلات المحددة'); toastSuccess.show(); page=1; reachedEnd=false; loadLogs({append:false}); }
+    else { setToast(toastError,'❌ فشل حذف السجلات المحددة'); toastError.show(); }
+  });
 
-  // ========== تشغيل ==========
+  /* ===== تشغيل ===== */
   ensureAdmin().then(()=>loadLogs({append:false}));
-</script>
-
+  </script>
 </body>
 </html>
