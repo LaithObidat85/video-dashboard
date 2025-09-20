@@ -23,7 +23,7 @@
     body{background:#f8f9fa;font-family:'Segoe UI',sans-serif}
     .container{max-width:1200px;margin-top:40px}
     .card{border-radius:16px;box-shadow:0 6px 18px rgba(0,0,0,.06)}
-    .user-chip{font-size:.9rem}
+  /*  .user-chip{font-size:.9rem} */
     .muted{opacity:.75}
 
     /* سكلتون  */
@@ -58,6 +58,22 @@
 .cell-saving{ opacity:.6; }
 
     
+/* اجعل شارة معلومات المستخدم بارتفاع زر "خروج" */
+.user-chip.badge{
+  display: inline-flex;
+  align-items: center;
+  gap: .25rem;
+  padding: .375rem .75rem !important; /* نفس الأزرار */
+  font-size: 1rem !important;         /* نفس الأزرار */
+  line-height: 1.5 !important;        /* نفس الأزرار */
+  border-radius: .375rem;              /* نفس الأزرار */
+  font-weight: 400;                    /* أخف من الـ badge الافتراضي */
+}
+
+/* لتجنّب تصغيرها مرة أخرى إن وُجد تعريف سابق */
+.user-chip{ font-size: 1rem !important; }
+
+
   </style>
 </head>
 <body>
