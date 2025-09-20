@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <title>سجل العمليات - نظام اللجان</title>
+  <link rel="icon" type="image/png" href="https://www.dropbox.com/scl/fi/f283e4rvv5cf9x12a1cic/my-website-logo.png?rlkey=yia776im7klypy27af32m0scy&e=1&st=vhaprvzh&dl=1">
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.rtl.min.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
@@ -12,16 +13,14 @@
     .card{border-radius:16px;box-shadow:0 6px 18px rgba(0,0,0,.06)}
     .user-chip{font-size:.9rem}
 
-    /* بطاقات عرض الـ payload: نفس الارتفاع + سكرول */
     .payload-card{
       background:#fff;border:1px solid #e9ecef;border-radius:12px;padding:10px;
-      height:220px; /* ارتفاع موحَّد للبيانات قبل/بعد */
-      overflow:auto; /* scroll down */
+      height:220px;overflow:auto
     }
     .payload-card dt{color:#6c757d;font-weight:600}
     .payload-card dd{margin-bottom:.5rem}
     .payload-json{
-      direction:ltr;background:#f6f8fa;border-radius:8px;padding:8px;max-height:none;
+      direction:ltr;background:#f6f8fa;border-radius:8px;padding:8px;
       font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace
     }
 
@@ -33,17 +32,14 @@
     .sticky-actions{position:sticky;bottom:0;background:#fff;border-top:1px solid #e9ecef;padding:12px;border-radius:0 0 16px 16px}
     .count-badge{font-size:.85rem}
 
-    /* تمييز الاختلافات (تظليل واضح) */
-    .diff-added{
-      color:#198754;font-weight:600;
-      background:rgba(25,135,84,.12);
-      border-radius:6px; padding:2px 6px;
-    }
-    .diff-removed{
-      color:#dc3545;font-weight:600;
-      background:rgba(220,53,69,.12);
-      border-radius:6px; padding:2px 6px;
-    }
+    /* إبراز الاختلافات */
+    .diff-added{color:#198754;font-weight:600;background:rgba(25,135,84,.12);border-radius:6px;padding:2px 6px}
+    .diff-removed{color:#dc3545;font-weight:600;background:rgba(220,53,69,.12);border-radius:6px;padding:2px 6px}
+
+    /* توزيع الأعمدة */
+    .col-user{width:18%}
+    .col-before{width:40%}
+    .col-after{width:40%}
   </style>
 </head>
 <body>
@@ -127,14 +123,13 @@
                 <th class="minw-120">الوقت</th>
                 <th>الصفحة</th>
                 <th>العملية</th>
-                <th>المعرّف</th>
-                <th>المستخدم</th>
-                <th style="width:22%">البيانات قبل</th>
-                <th style="width:22%">البيانات بعد</th>
+                <th class="col-user">المستخدم</th>
+                <th class="col-before">البيانات قبل</th>
+                <th class="col-after">البيانات بعد</th>
               </tr>
             </thead>
             <tbody id="logsTbody">
-              <tr class="text-center text-muted"><td colspan="9">جاري التحميل…</td></tr>
+              <tr class="text-center text-muted"><td colspan="8">جاري التحميل…</td></tr>
             </tbody>
           </table>
         </div>
@@ -187,7 +182,7 @@
     </div>
   </div>
 
-  <!-- Modal تأكيد (بدون أي alert/confirm متصفح) -->
+  <!-- Modal تأكيد -->
   <div class="modal fade" id="confirmModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content">
@@ -219,21 +214,17 @@
     const confirmTitle   = document.getElementById('confirmModalTitle');
     const confirmBody    = document.getElementById('confirmModalBody');
     const confirmBtn     = document.getElementById('confirmModalConfirmBtn');
-
     function showConfirm({title='تأكيد', message='هل تريد المتابعة؟', confirmText='تأكيد', confirmBtnClass='btn-danger'}={}){
       return new Promise(resolve=>{
         confirmTitle.textContent = title;
         confirmBody.textContent  = message;
         confirmBtn.className = 'btn ' + confirmBtnClass;
         confirmBtn.textContent = confirmText;
-
         let resolved = false;
         const onConfirm = () => { resolved = true; confirmModal.hide(); resolve(true); };
         const onHidden  = () => { confirmModalEl.removeEventListener('hidden.bs.modal', onHidden); confirmBtn.removeEventListener('click', onConfirm); if(!resolved) resolve(false); };
-
         confirmBtn.addEventListener('click', onConfirm, { once:true });
         confirmModalEl.addEventListener('hidden.bs.modal', onHidden, { once:true });
-
         confirmModal.show();
       });
     }
@@ -276,7 +267,7 @@
     }
     document.getElementById('logoutBtn').addEventListener('click', logout);
 
-    /* ===== mapping helpers ===== */
+    /* ===== mapping ===== */
     function modelToPage(model){
       switch(model){
         case 'Evaluation': return 'تقييم اللجان';
@@ -301,7 +292,7 @@
       return `${full} <span class="badge text-bg-info">${uname}</span>${email}${role}`;
     }
 
-    /* ===== أسماء الأعمدة للعرض العربي (including visibleColumns) ===== */
+    /* ===== labels ===== */
     const colNameArMap = {
       committee_name:'اسم اللجنة',
       college:'الكلية',
@@ -310,8 +301,6 @@
       updatedAt:'تاريخ التحديث',
       notes:'ملاحظات',
       score:'النتيجة',
-
-      /* المطلوب (visibleColumns) */
       work_plan:'خطة العمل',
       performance_indicators:'مؤشرات الاداء',
       meetings:'عدد الاجتماعات',
@@ -321,58 +310,27 @@
       report2:'تقرير إنجاز 2',
       report3:'تقرير إنجاز 3',
       statistical_analysis:'التحليل الإحصائي',
-
-      /* حقول المستخدم */
       name:'الاسم',
       username:'اسم المستخدم',
       role:'الدور',
       email:'البريد',
-      isActive:'نشط؟',
-
-      /* قرار التشكيل (احتمالات متعددة) */
-      formation_decision:'قرار التشكيل',
-      formationDecision:'قرار التشكيل',
-      decision:'قرار التشكيل',
-      decision_number:'قرار التشكيل',
-      decisionNumber:'قرار التشكيل',
-      formation_no:'قرار التشكيل',
-      formationNo:'قرار التشكيل'
+      isActive:'الحالة',
+      formation_decision:'قرار التشكيل', formationDecision:'قرار التشكيل',
+      decision:'قرار التشكيل', decision_number:'قرار التشكيل', decisionNumber:'قرار التشكيل',
+      formation_no:'قرار التشكيل', formationNo:'قرار التشكيل'
     };
-    function toArabicLabel(k){ return colNameArMap[k] || k; }
-    function toArabicColumns(list){
-      if(!Array.isArray(list)) return list;
-      return list.map(k=>toArabicLabel(k)).join('، ');
-    }
+    const toArabicLabel = k => colNameArMap[k] || k;
 
-    /* ===== utils ===== */
-    function escapeHtml(s){
-      return String(s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
-    }
-    function normalizeValue(v){
-      if (v === null || v === undefined) return '';
-      if (v instanceof Date) return v.toISOString();
-      if (Array.isArray(v)) return JSON.stringify(v);
-      if (typeof v === 'object') return JSON.stringify(v);
-      return String(v);
-    }
+    /* ===== utils (diff) ===== */
+    const escapeHtml = s => String(s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+    const normalizeValue = v => v==null ? '' : (v instanceof Date ? v.toISOString() : (Array.isArray(v)||typeof v==='object') ? JSON.stringify(v) : String(v));
     function computeDiffKeys(before, after){
       const b = before || {}, a = after || {};
       const keys = new Set([...Object.keys(b), ...Object.keys(a)]);
       const changed = new Set();
-      keys.forEach(k=>{
-        if (normalizeValue(b[k]) !== normalizeValue(a[k])) changed.add(k);
-      });
+      keys.forEach(k=>{ if (normalizeValue(b[k]) !== normalizeValue(a[k])) changed.add(k); });
       return changed;
     }
-    function findKey(obj, candidates){
-      return candidates.find(k => Object.prototype.hasOwnProperty.call(obj||{}, k));
-    }
-    function firstVal(obj, candidates){
-      const k = findKey(obj, candidates);
-      return k ? obj[k] : undefined;
-    }
-
-    /* ===== تحويل HTML إلى نص مع الحفاظ على فواصل الأسطر (للملاحظات) ===== */
     function stripHtmlPreserveBreaks(html) {
       try {
         const doc = new DOMParser().parseFromString(String(html), 'text/html');
@@ -380,9 +338,8 @@
         function walk(node) {
           let out = '';
           node.childNodes.forEach(n => {
-            if (n.nodeType === 3) { // Text
-              out += n.textContent;
-            } else if (n.nodeType === 1) { // Element
+            if (n.nodeType === 3) out += n.textContent;
+            else if (n.nodeType === 1) {
               const tag = n.nodeName;
               if (tag === 'BR') out += '\n';
               out += walk(n);
@@ -396,153 +353,89 @@
         return String(html).replace(/<[^>]+>/g, '\n').replace(/\n{3,}/g, '\n\n').trim();
       }
     }
-
-    /* ===== Diff للكلمات داخل النصوص الطويلة (notes) ===== */
-    function splitTokens(str){
-      const plain = stripHtmlPreserveBreaks(str);
-      return plain.split(/(\s+|[.,;:!?،؛()\[\]{}"«»]+)/g).filter(t => t !== '');
-    }
-    // LCS diff على مستوى التوكن
+    function splitTokens(str){ return stripHtmlPreserveBreaks(str).split(/(\s+|[.,;:!?،؛()\[\]{}"«»]+)/g).filter(t=>t!==''); }
     function diffTokens(aTokens, bTokens){
-      const m = aTokens.length, n = bTokens.length;
-      const dp = Array(m+1).fill(null).map(()=>Array(n+1).fill(0));
-      for(let i=m-1;i>=0;i--){
-        for(let j=n-1;j>=0;j--){
-          dp[i][j] = (aTokens[i]===bTokens[j]) ? dp[i+1][j+1]+1 : Math.max(dp[i+1][j], dp[i][j+1]);
-        }
-      }
-      const ops = [];
-      let i=0, j=0;
-      while(i<m && j<n){
-        if(aTokens[i]===bTokens[j]){ ops.push({type:'eq', token:aTokens[i]}); i++; j++; }
-        else if(dp[i+1][j] >= dp[i][j+1]){ ops.push({type:'del', token:aTokens[i++]}); }
-        else{ ops.push({type:'add', token:bTokens[j++]}); }
-      }
-      while(i<m) ops.push({type:'del', token:aTokens[i++]});
-      while(j<n) ops.push({type:'add', token:bTokens[j++]});
-      return ops;
+      const m=aTokens.length,n=bTokens.length,dp=Array(m+1).fill(null).map(()=>Array(n+1).fill(0));
+      for(let i=m-1;i>=0;i--)for(let j=n-1;j>=0;j--)dp[i][j]=(aTokens[i]===bTokens[j])?dp[i+1][j+1]+1:Math.max(dp[i+1][j],dp[i][j+1]);
+      const ops=[]; let i=0,j=0;
+      while(i<m&&j<n){ if(aTokens[i]===bTokens[j]){ops.push({type:'eq',token:aTokens[i++]});j++;} else if(dp[i+1][j]>=dp[i][j+1]) ops.push({type:'del',token:aTokens[i++]}); else ops.push({type:'add',token:bTokens[j++]}); }
+      while(i<m) ops.push({type:'del',token:aTokens[i++]}); while(j<n) ops.push({type:'add',token:bTokens[j++]}); return ops;
     }
     function renderTextDiff(beforeText, afterText, mode){
-      const a = splitTokens(beforeText || '');
-      const b = splitTokens(afterText  || '');
-      const ops = diffTokens(a, b);
-      let html = '';
+      const ops = diffTokens(splitTokens(beforeText||''), splitTokens(afterText||'')); let html='';
       for (const op of ops){
-        if (op.type === 'eq') {
-          html += escapeHtml(op.token);
-        } else if (op.type === 'add') {
-          html += (mode === 'after')
-            ? `<span class="diff-added">${escapeHtml(op.token)}</span>`
-            : escapeHtml(op.token);
-        } else if (op.type === 'del') {
-          html += (mode === 'before')
-            ? `<span class="diff-removed">${escapeHtml(op.token)}</span>`
-            : '';
-        }
+        if (op.type==='eq') html += escapeHtml(op.token);
+        else if (op.type==='add') html += (mode==='after') ? `<span class="diff-added">${escapeHtml(op.token)}</span>` : escapeHtml(op.token);
+        else if (op.type==='del') html += (mode==='before') ? `<span class="diff-removed">${escapeHtml(op.token)}</span>` : '';
       }
-      html = html.replace(/\n/g, '<br>');
-      return html || '—';
+      return (html||'—').replace(/\n/g,'<br>');
     }
     function kvTextDiff(label, key, beforeObj, afterObj, mode, diffKeys){
       const changed = diffKeys && diffKeys.has(key);
       const currentVal = (mode==='before') ? (beforeObj?.[key]) : (afterObj?.[key]);
-      if(currentVal===undefined || currentVal===null || currentVal==='') return '';
-      if(changed && typeof (beforeObj?.[key] ?? '') === 'string' && typeof (afterObj?.[key] ?? '') === 'string'){
+      if(currentVal==null || currentVal==='') return '';
+      if(changed && typeof (beforeObj?.[key] ?? '')==='string' && typeof (afterObj?.[key] ?? '')==='string'){
         const html = renderTextDiff(beforeObj?.[key] ?? '', afterObj?.[key] ?? '', mode);
         return `<dt>${label}</dt><dd>${html}</dd>`;
       }
       const cls = changed ? (mode==='before' ? 'diff-removed' : 'diff-added') : '';
       return `<dt>${label}</dt><dd class="${cls}">${escapeHtml(currentVal)}</dd>`;
     }
-
-    /* ===== إبراز قوائم Settings عنصرًا-بعنصر (visibleColumns / selectedVisits) ===== */
-    function renderArrayDiff(beforeArr, afterArr, mode){
-      const b = Array.isArray(beforeArr) ? beforeArr : [];
-      const a = Array.isArray(afterArr)  ? afterArr  : [];
-      const beforeSet = new Set(b);
-      const afterSet  = new Set(a);
-      const list = mode === 'before' ? b : a;
-      const parts = list.map(k=>{
-        const isAdded   = !beforeSet.has(k) && afterSet.has(k);
-        const isRemoved =  beforeSet.has(k) && !afterSet.has(k);
-        const cls = (mode === 'after'  && isAdded)   ? 'diff-added'
-                  : (mode === 'before' && isRemoved) ? 'diff-removed'
-                  : '';
-        return `<span class="${cls}">${escapeHtml(toArabicLabel(k))}</span>`;
-      });
-      return parts.length ? parts.join('، ') : '—';
-    }
-    function renderSettingsDiff(before, after, mode){
-      const vBefore = before?.visibleColumns || [];
-      const vAfter  =  after?.visibleColumns || [];
-      const sBefore = before?.selectedVisits || [];
-      const sAfter  =  after?.selectedVisits || [];
-      let html = '<div class="payload-card"><dl class="row mb-0">';
-      html += `<dt>الأعمدة المرئية</dt><dd>${renderArrayDiff(vBefore, vAfter, mode)}</dd>`;
-      html += `<dt>الزيارات المحددة</dt><dd>${renderArrayDiff(sBefore, sAfter, mode)}</dd>`;
-      html += '</dl></div>';
-      return html;
-    }
-
-    /* ===== عناصر عامة مع تمييز حقل كامل ===== */
     function kvDiff(label, value, key, diffKeys, mode){
       if(value===undefined || value===null || value==='') return '';
-      const cls = diffKeys && diffKeys.has(key)
-        ? (mode==='before' ? 'diff-removed' : 'diff-added')
-        : '';
+      const cls = diffKeys && diffKeys.has(key) ? (mode==='before' ? 'diff-removed' : 'diff-added') : '';
       return `<dt>${label}</dt><dd class="${cls}">${escapeHtml(value)}</dd>`;
     }
 
-    /* ===== بطاقة عرض كائن مع إبراز الفروق ===== */
+    /* ===== شارة حالة المستخدم بالعربية ===== */
+    function userActiveBadge(val, key, diffKeys, mode){
+      const isActive = !!val;
+      const base = isActive ? '<span class="badge text-bg-success">نشط</span>' : '<span class="badge text-bg-danger">معطّل</span>';
+      const wrapClass = diffKeys && diffKeys.has(key) ? (mode==='before' ? 'diff-removed' : 'diff-added') : '';
+      return `<dt>الحالة</dt><dd class="${wrapClass}">${base}</dd>`;
+    }
+
+    /* ===== بطاقة حسب الموديل (تتضمن User الآن) ===== */
     function renderCardFromObjectWithDiff(model, obj, diffKeys, mode, otherSide){
       if(!obj) return '<div class="payload-card text-muted">—</div>';
       let html = '<div class="payload-card"><dl class="row mb-0">';
       const d = obj;
-
-      // تحديد الطرفين للـ Diff النصّي
       const beforeObj = (mode==='before') ? obj : (otherSide || {});
       const afterObj  = (mode==='after')  ? obj : (otherSide || {});
-      const has = (k)=> d[k]!==undefined && d[k]!==null && d[k]!==''; // مساعد
+      const has = (k)=> d[k]!==undefined && d[k]!==null && d[k]!==''; // helper
 
       if(model==='Evaluation'){
         html += kvDiff('اسم اللجنة', d.committee_name, 'committee_name', diffKeys, mode);
         html += kvDiff('الكلية', d.college, 'college', diffKeys, mode);
         html += kvDiff('المدقق', d.auditor_name, 'auditor_name', diffKeys, mode);
         html += kvDiff('تاريخ الإنشاء', d.createdAt ? new Date(d.createdAt).toLocaleString('ar-EG') : '', 'createdAt', diffKeys, mode);
-
-        /* ملاحظات: Diff كلمة-بكلمة (بدون وسوم HTML) */
         if(has('notes')) html += kvTextDiff('ملاحظات', 'notes', beforeObj, afterObj, mode, diffKeys);
-
-        /* أرقام/قيم بسيطة */
         html += kvDiff('النتيجة', d.score, 'score', diffKeys, mode);
-
-        /* قرار التشكيل (يدعم عدة مفاتيح) */
         const decisionKeys = ['formation_decision','formationDecision','decision','decision_number','decisionNumber','formation_no','formationNo'];
         const decisionKey  = decisionKeys.find(k => k in d);
-        if(decisionKey){
-          html += kvDiff('قرار التشكيل', d[decisionKey], decisionKey, diffKeys, mode);
-        }
-
-        /* لو الحقول أدناه موجودة داخل سجل التقييم نفسه */
+        if(decisionKey) html += kvDiff('قرار التشكيل', d[decisionKey], decisionKey, diffKeys, mode);
         ['work_plan','performance_indicators','meetings','consistency','coverage_books','report1','report2','report3','statistical_analysis']
           .forEach(k=>{ if(has(k)) html += kvDiff(toArabicLabel(k), d[k], k, diffKeys, mode); });
 
-      }else if(model==='College'){
-        html += kvDiff('الكلية', d.name, 'name', diffKeys, mode);
+      }else if(model==='College'){ html += kvDiff('الكلية', d.name, 'name', diffKeys, mode);
 
-      }else if(model==='Auditor'){
-        html += kvDiff('المدقق', d.name, 'name', diffKeys, mode);
+      }else if(model==='Auditor'){ html += kvDiff('المدقق', d.name, 'name', diffKeys, mode);
 
-      }else if(model==='Committee'){
-        html += kvDiff('اسم اللجنة', d.name, 'name', diffKeys, mode);
+      }else if(model==='Committee'){ html += kvDiff('اسم اللجنة', d.name, 'name', diffKeys, mode);
 
       }else if(model==='Settings'){
-        if(d.visibleColumns) html += kvDiff('الأعمدة المرئية', toArabicColumns(d.visibleColumns), 'visibleColumns', diffKeys, mode);
-        if(d.selectedVisits) html += kvDiff('الزيارات المحددة', toArabicColumns(d.selectedVisits), 'selectedVisits', diffKeys, mode);
+        if(d.visibleColumns) html += kvDiff('الأعمدة المرئية', (d.visibleColumns||[]).map(toArabicLabel).join('، '), 'visibleColumns', diffKeys, mode);
+        if(d.selectedVisits) html += kvDiff('الزيارات المحددة', (d.selectedVisits||[]).map(toArabicLabel).join('، '), 'selectedVisits', diffKeys, mode);
         const otherKeys = Object.keys(d||{}).filter(k=>!['visibleColumns','selectedVisits','_id','updatedAt','createdAt','__v'].includes(k));
-        if(otherKeys.length){
-          html += kvDiff('تغييرات أخرى', otherKeys.map(toArabicLabel).join('، '), '__misc', diffKeys, mode);
-        }
+        if(otherKeys.length) html += kvDiff('تغييرات أخرى', otherKeys.map(toArabicLabel).join('، '), '__misc', diffKeys, mode);
+
+      }else if(model==='User'){
+        // العربية / إبراز التغييرات: الاسم، اسم المستخدم، البريد، الدور، الحالة
+        if(has('name'))     html += kvDiff('الاسم', d.name, 'name', diffKeys, mode);
+        if(has('username')) html += kvDiff('اسم المستخدم', d.username, 'username', diffKeys, mode);
+        if(has('email'))    html += kvDiff('البريد', d.email, 'email', diffKeys, mode);
+        if(has('role'))     html += kvDiff('الدور', d.role==='admin'?'مدير (admin)':'مستخدم (user)', 'role', diffKeys, mode);
+        if('isActive' in d) html += userActiveBadge(d.isActive, 'isActive', diffKeys, mode);
 
       }else{
         html += '</dl><div class="payload-json"><code>'+escapeHtml(JSON.stringify(obj, null, 2))+'</code></div>';
@@ -558,11 +451,16 @@
       return html;
     }
 
-    /* ===== خلايا الجدول: قبل/بعد ===== */
+    /* ===== before/after cells (تخصيص User bulk) ===== */
+    function renderSettingsDiff(before, after, mode){
+      const list = (arr)=> (Array.isArray(arr)&&arr.length)?arr.map(toArabicLabel).join('، '):'—';
+      return `<div class="payload-card"><dl class="row mb-0">
+        <dt>الأعمدة المرئية</dt><dd>${list((mode==='before'?before:after)?.visibleColumns)}</dd>
+        <dt>الزيارات المحددة</dt><dd>${list((mode==='before'?before:after)?.selectedVisits)}</dd>
+      </dl></div>`;
+    }
     function renderBeforeCell(log){
       const p = log.payload || {};
-
-      // تخصيص Settings لعرض الفروق عنصرًا-بعنصر
       if (log.model === 'Settings') {
         if (log.action === 'create') return '<div class="payload-card text-muted">كانت فارغة</div>';
         if (log.action === 'delete') return renderSettingsDiff(p, {}, 'before');
@@ -570,25 +468,24 @@
         if (p && p.before) return renderSettingsDiff(p.before, {}, 'before');
         return '<div class="payload-card text-muted">—</div>';
       }
-
+      if (log.model === 'User' && p && p.bulk){
+        // وصف عربي للعملية الجماعية
+        const action = p.action==='set-role' ? `تغيير الدور إلى ${p.role}` :
+                       p.action==='activate' ? 'تفعيل المستخدمين' :
+                       p.action==='deactivate' ? 'تعطيل المستخدمين' : 'تعديل جماعي';
+        const count = Array.isArray(p.ids)? p.ids.length : '—';
+        return `<div class="payload-card"><dl class="row mb-0">
+          <dt>عملية جماعية</dt><dd>${escapeHtml(action)} (عدد: ${count})</dd>
+        </dl></div>`;
+      }
       if (log.action === 'create') return '<div class="payload-card text-muted">كانت فارغة</div>';
-      if (log.action === 'delete'){
-        const allKeys = p ? new Set(Object.keys(p)) : new Set();
-        return renderCardFromObjectWithDiff(log.model, p, allKeys, 'before', {}); // كل شيء مُزال
-      }
-      if (p && p.before && p.after){
-        const diff = computeDiffKeys(p.before, p.after);
-        return renderCardFromObjectWithDiff(log.model, p.before, diff, 'before', p.after);
-      }
-      if (p && p.before){
-        return renderCardFromObjectWithDiff(log.model, p.before, null, 'before', {});
-      }
+      if (log.action === 'delete'){ const allKeys = p ? new Set(Object.keys(p)) : new Set(); return renderCardFromObjectWithDiff(log.model, p, allKeys, 'before', {}); }
+      if (p && p.before && p.after){ const diff = computeDiffKeys(p.before, p.after); return renderCardFromObjectWithDiff(log.model, p.before, diff, 'before', p.after); }
+      if (p && p.before){ return renderCardFromObjectWithDiff(log.model, p.before, null, 'before', {}); }
       return '<div class="payload-card text-muted">—</div>';
     }
     function renderAfterCell(log){
       const p = log.payload || {};
-
-      // تخصيص Settings لعرض الفروق عنصرًا-بعنصر
       if (log.model === 'Settings') {
         if (log.action === 'delete') return '<div class="payload-card text-muted">تم الحذف</div>';
         if (log.action === 'create') return renderSettingsDiff({}, p, 'after');
@@ -596,19 +493,19 @@
         if (p && p.after) return renderSettingsDiff({}, p.after, 'after');
         return renderSettingsDiff({}, p, 'after');
       }
-
+      if (log.model === 'User' && p && p.bulk){
+        const action = p.action==='set-role' ? `تغيير الدور إلى ${p.role}` :
+                       p.action==='activate' ? 'تفعيل المستخدمين' :
+                       p.action==='deactivate' ? 'تعطيل المستخدمين' : 'تعديل جماعي';
+        const count = Array.isArray(p.ids)? p.ids.length : '—';
+        return `<div class="payload-card"><dl class="row mb-0">
+          <dt>عملية جماعية</dt><dd><span class="diff-added">${escapeHtml(action)}</span> (عدد: ${count})</dd>
+        </dl></div>`;
+      }
       if (log.action === 'delete') return '<div class="payload-card text-muted">تم الحذف</div>';
-      if (log.action === 'create'){
-        const allKeys = p ? new Set(Object.keys(p)) : new Set();
-        return renderCardFromObjectWithDiff(log.model, p, allKeys, 'after', {}); // كل شيء مُضاف
-      }
-      if (p && p.after && p.before){
-        const diff = computeDiffKeys(p.before, p.after);
-        return renderCardFromObjectWithDiff(log.model, p.after, diff, 'after', p.before);
-      }
-      if (p && p.after){
-        return renderCardFromObjectWithDiff(log.model, p.after, null, 'after', {});
-      }
+      if (log.action === 'create'){ const allKeys = p ? new Set(Object.keys(p)) : new Set(); return renderCardFromObjectWithDiff(log.model, p, allKeys, 'after', {}); }
+      if (p && p.after && p.before){ const diff = computeDiffKeys(p.before, p.after); return renderCardFromObjectWithDiff(log.model, p.after, diff, 'after', p.before); }
+      if (p && p.after){ return renderCardFromObjectWithDiff(log.model, p.after, null, 'after', {}); }
       return renderCardFromObjectWithDiff(log.model, p, null, 'after', {});
     }
 
@@ -616,12 +513,10 @@
     let page = 1, limit = 20, reachedEnd = false;
     let rowCounterStart = 1;
     const selectedIds = new Set();
-
     function updateSelectedCount(){
       document.getElementById('selectedCount').textContent = selectedIds.size;
       document.getElementById('btnDeleteSelected').disabled = selectedIds.size === 0;
     }
-
     function buildQuery(){
       const m = document.getElementById('fModel').value.trim();
       const a = document.getElementById('fAction').value.trim();
@@ -631,34 +526,30 @@
       const params = new URLSearchParams();
       if(m) params.set('model',m);
       if(a) params.set('action',a);
-      if(q) params.set('q',q);              // بحث شامل (اسم/إيميل/اسم مستخدم)
+      if(q) params.set('q',q);
       if(f) params.set('from',f);
       if(t) params.set('to',t);
       params.set('page',page);
       params.set('limit',limit);
       return params.toString();
     }
-
     async function loadLogs({append=false}={}){
       if(reachedEnd && append) return;
       const tbody = document.getElementById('logsTbody');
       if(!append){
-        tbody.innerHTML = `<tr class="text-center text-muted"><td colspan="9">جاري التحميل…</td></tr>`;
+        tbody.innerHTML = `<tr class="text-center text-muted"><td colspan="8">جاري التحميل…</td></tr>`;
         rowCounterStart = (page-1)*limit + 1;
-        selectedIds.clear();
-        updateSelectedCount();
-        document.getElementById('chkAll').checked = false;
+        selectedIds.clear(); updateSelectedCount(); document.getElementById('chkAll').checked = false;
       }
       try{
         const r = await fetch('/api/audit-logs?'+buildQuery(),{credentials:'include'});
         if(!r.ok) throw new Error('HTTP '+r.status);
-        const data = await r.json(); // {items, hasMore}
+        const data = await r.json();
         const items = Array.isArray(data)? data : (data.items||[]);
         reachedEnd = Array.isArray(data)? items.length<limit : (data.hasMore===false);
-
         if(!append) tbody.innerHTML = '';
         if(items.length===0 && !append){
-          tbody.innerHTML = `<tr class="text-center text-muted"><td colspan="9">لا توجد سجلات</td></tr>`;
+          tbody.innerHTML = `<tr class="text-center text-muted"><td colspan="8">لا توجد سجلات</td></tr>`;
           return;
         }
         let n = rowCounterStart;
@@ -677,35 +568,26 @@
             <td>${when}</td>
             <td>${modelToPage(log.model)}</td>
             <td>${badgeAction(log.action)}</td>
-            <td class="text-muted">${escapeHtml(log.docId||'—')}</td>
-            <td>${fmtUser(log.user)}</td>
-            <td>${renderBeforeCell(log)}</td>
-            <td>${renderAfterCell(log)}</td>
+            <td class="col-user">${fmtUser(log.user)}</td>
+            <td class="col-before">${renderBeforeCell(log)}</td>
+            <td class="col-after">${renderAfterCell(log)}</td>
           `;
           tbody.appendChild(row);
         });
         rowCounterStart = n;
       }catch(err){
-        tbody.innerHTML = `<tr class="text-center text-danger"><td colspan="9">حدث خطأ في جلب السجلات</td></tr>`;
+        tbody.innerHTML = `<tr class="text-center text-danger"><td colspan="8">حدث خطأ في جلب السجلات</td></tr>`;
       }
     }
 
     /* ===== تحكم الفلاتر ===== */
-    document.getElementById('btnSearch').addEventListener('click', ()=>{
-      page = 1; reachedEnd = false; loadLogs({append:false});
-    });
-    document.getElementById('btnClear').addEventListener('click', ()=>{
-      document.getElementById('fModel').value='';
-      document.getElementById('fAction').value='';
-      document.getElementById('fQuery').value='';
-      document.getElementById('fFrom').value='';
-      document.getElementById('fTo').value='';
+    document.getElementById('btnSearch').addEventListener('click', ()=>{ page = 1; reachedEnd = false; loadLogs({append:false}); });
+    document.getElementById('btnClear').addEventListener('click', ()=>{ 
+      document.getElementById('fModel').value=''; document.getElementById('fAction').value='';
+      document.getElementById('fQuery').value=''; document.getElementById('fFrom').value=''; document.getElementById('fTo').value='';
       page=1; reachedEnd=false; loadLogs({append:false});
     });
-    document.getElementById('btnMore').addEventListener('click', ()=>{
-      if(!reachedEnd){ page++; loadLogs({append:true}); }
-      else{ setToast(toastInfo,'لا يوجد مزيد من السجلات'); toastInfo.show(); }
-    });
+    document.getElementById('btnMore').addEventListener('click', ()=>{ if(!reachedEnd){ page++; loadLogs({append:true}); } else { setToast(toastInfo,'لا يوجد مزيد من السجلات'); toastInfo.show(); } });
 
     /* ===== تحديد الكل/الفردي ===== */
     document.getElementById('chkAll').addEventListener('change', (e)=>{
@@ -728,14 +610,9 @@
       }
     });
 
-    /* ===== حذف كل السجلات ===== */
+    /* ===== حذف الكل / بالنطاق / المحدد ===== */
     document.getElementById('btnPurge').addEventListener('click', async ()=>{
-      const ok = await showConfirm({
-        title:'تأكيد حذف الكل',
-        message:'سيتم حذف جميع سجلات العمليات، ولا يمكن التراجع. هل تريد المتابعة؟',
-        confirmText:'نعم، احذف الكل',
-        confirmBtnClass:'btn-danger'
-      });
+      const ok = await showConfirm({ title:'تأكيد حذف الكل', message:'سيتم حذف جميع سجلات العمليات، ولا يمكن التراجع.', confirmText:'نعم، احذف الكل', confirmBtnClass:'btn-danger' });
       if(!ok) return;
       try{
         const r = await fetch('/api/audit-logs', { method:'DELETE', credentials:'include' });
@@ -743,86 +620,43 @@
         const data = await r.json().catch(()=>({}));
         setToast(toastSuccess, data?.message || '🧹 تم حذف جميع السجلات'); toastSuccess.show();
         page=1; reachedEnd=false; loadLogs({append:false});
-      }catch(e){
-        setToast(toastError,'❌ فشل حذف السجلات'); toastError.show();
-      }
+      }catch(e){ setToast(toastError,'❌ فشل حذف السجلات'); toastError.show(); }
     });
-
-    /* ===== حذف حسب التاريخ (من/إلى) ===== */
     document.getElementById('btnPurgeRange').addEventListener('click', async ()=>{
-      const f = document.getElementById('fFrom').value;
-      const t = document.getElementById('fTo').value;
-
-      if(!f && !t){
-        setToast(toastInfo,'الرجاء تحديد تاريخ "من" أو "إلى" أولًا'); toastInfo.show();
-        return;
-      }
-      if(f && t && (new Date(f) > new Date(t))){
-        setToast(toastError,'❌ نطاق التاريخ غير صحيح: "من" أكبر من "إلى"'); toastError.show();
-        return;
-      }
-
-      const ok = await showConfirm({
-        title:'تأكيد الحذف حسب التاريخ',
-        message:`سيتم حذف السجلات ضمن النطاق: ${f||'—'} → ${t||'—'}. هل تريد المتابعة؟`,
-        confirmText:'حذف ضمن النطاق',
-        confirmBtnClass:'btn-warning'
-      });
+      const f = document.getElementById('fFrom').value, t = document.getElementById('fTo').value;
+      if(!f && !t){ setToast(toastInfo,'الرجاء تحديد تاريخ "من" أو "إلى" أولًا'); toastInfo.show(); return; }
+      if(f && t && (new Date(f) > new Date(t))){ setToast(toastError,'❌ نطاق التاريخ غير صحيح'); toastError.show(); return; }
+      const ok = await showConfirm({ title:'تأكيد الحذف حسب التاريخ', message:`سيتم حذف السجلات ضمن النطاق: ${f||'—'} → ${t||'—'}.`, confirmText:'حذف ضمن النطاق', confirmBtnClass:'btn-warning' });
       if(!ok) return;
-
-      const qs = new URLSearchParams();
-      if(f) qs.set('from',f);
-      if(t) qs.set('to',t);
-
+      const qs = new URLSearchParams(); if(f) qs.set('from',f); if(t) qs.set('to',t);
       try{
         const r = await fetch('/api/audit-logs?'+qs.toString(), { method:'DELETE', credentials:'include' });
         if(!r.ok) throw new Error('HTTP '+r.status);
         const data = await r.json().catch(()=>({}));
-        const msg = (typeof data?.deletedCount === 'number')
-          ? `🗂️ تم حذف ${data.deletedCount} سجل ضمن النطاق`
-          : (data?.message || '🗂️ تم حذف السجلات ضمن النطاق');
+        const msg = (typeof data?.deletedCount === 'number') ? `🗂️ تم حذف ${data.deletedCount} سجل ضمن النطاق` : (data?.message || '🗂️ تم حذف السجلات ضمن النطاق');
         setToast(toastSuccess, msg); toastSuccess.show();
         page=1; reachedEnd=false; loadLogs({append:false});
-      }catch(e){
-        setToast(toastError,'❌ فشل حذف السجلات ضمن النطاق'); toastError.show();
-      }
+      }catch(e){ setToast(toastError,'❌ فشل حذف السجلات ضمن النطاق'); toastError.show(); }
     });
-
-    /* ===== حذف السجلات المحددة ===== */
     document.getElementById('btnDeleteSelected').addEventListener('click', async ()=>{
       const count = selectedIds.size;
-      if(count===0){
-        setToast(toastInfo,'لم يتم تحديد أي سجلات'); toastInfo.show();
-        return;
-      }
-      const ok = await showConfirm({
-        title:'تأكيد حذف المحدد',
-        message:`سيتم حذف ${count} من السجلات المحددة. هل تريد المتابعة؟`,
-        confirmText:'حذف المحدد',
-        confirmBtnClass:'btn-danger'
-      });
+      if(count===0){ setToast(toastInfo,'لم يتم تحديد أي سجلات'); toastInfo.show(); return; }
+      const ok = await showConfirm({ title:'تأكيد حذف المحدد', message:`سيتم حذف ${count} من السجلات المحددة.`, confirmText:'حذف المحدد', confirmBtnClass:'btn-danger' });
       if(!ok) return;
-
       try{
         const r = await fetch('/api/audit-logs/by-ids', {
-          method:'DELETE',
-          headers:{'Content-Type':'application/json'},
-          credentials:'include',
+          method:'DELETE', headers:{'Content-Type':'application/json'}, credentials:'include',
           body: JSON.stringify({ ids: Array.from(selectedIds) })
         });
         if(!r.ok) throw new Error('HTTP '+r.status);
         const data = await r.json().catch(()=>({}));
-        const msg = (typeof data?.deletedCount === 'number')
-          ? `🗑️ تم حذف ${data.deletedCount} سجل محدد`
-          : (data?.message || '🗑️ تم حذف السجلات المحددة');
+        const msg = (typeof data?.deletedCount === 'number') ? `🗑️ تم حذف ${data.deletedCount} سجل محدد` : (data?.message || '🗑️ تم حذف السجلات المحددة');
         setToast(toastSuccess, msg); toastSuccess.show();
         page=1; reachedEnd=false; loadLogs({append:false});
-      }catch(e){
-        setToast(toastError,'❌ فشل حذف السجلات المحددة'); toastError.show();
-      }
+      }catch(e){ setToast(toastError,'❌ فشل حذف السجلات المحددة'); toastError.show(); }
     });
 
-    /* ===== إقلاع الصفحة ===== */
+    /* ===== إقلاع ===== */
     ensureAdmin().then(()=>loadLogs({append:false}));
   </script>
 </body>
