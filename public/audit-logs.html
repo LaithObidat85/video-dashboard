@@ -29,7 +29,10 @@
     .minw-40{min-width:40px}
     .minw-60{min-width:60px}
     .minw-120{min-width:120px}
-    .table thead th{vertical-align:middle}
+
+    /* لا تكسّر عناوين الأعمدة */
+    .table thead th{vertical-align:middle;white-space:nowrap}
+
     .sticky-actions{position:sticky;bottom:0;background:#fff;border-top:1px solid #e9ecef;padding:12px;border-radius:0 0 16px 16px}
     .count-badge{font-size:.85rem}
 
@@ -42,42 +45,50 @@
     .col-before{width:40%}
     .col-after{width:40%}
 
-/* اجبر الجدول الأساسي على توزيع ثابت حتى لا “ينفش” بسبب خلية واحدة */
-.table { table-layout: fixed; }
+    /* اجبر الجدول الأساسي على توزيع ثابت حتى لا “ينفش” بسبب خلية واحدة */
+    .table { table-layout: fixed; }
 
-/* خفف نسب الأعمدة الكبيرة أو اجعلها مرنة */
-.col-user{width:16%}
-.col-before{width:34%}
-.col-after{width:34%}
-/* أو بدلاً من width استخدم min-width واترك الباقي للمتصفح:
-.col-user{min-width:200px}
-.col-before{min-width:360px}
-.col-after{min-width:360px}
-*/
+    /* خفف نسب الأعمدة الكبيرة أو اجعلها مرنة */
+    .col-user{width:16%}
+    .col-before{width:34%}
+    .col-after{width:34%}
+    /* أو بدلاً من width استخدم min-width واترك الباقي للمتصفح:
+    .col-user{min-width:200px}
+    .col-before{min-width:360px}
+    .col-after{min-width:360px}
+    */
 
-/* الجداول داخل بطاقة “البيانات قبل/بعد” لا تتمدد خارج البطاقة */
-.payload-card .table{ table-layout: fixed; width:100%; }
-.payload-card .table th,
-.payload-card .table td{ 
-  white-space: normal; 
-  word-break: break-word;       /* Chrome/Edge */
-  overflow-wrap: anywhere;      /* Safari/Firefox */
-}
+    /* الجداول داخل بطاقة “البيانات قبل/بعد” لا تتمدد خارج البطاقة */
+    .payload-card .table{ table-layout: fixed; width:100%; }
+    .payload-card .table th,
+    .payload-card .table td{
+      white-space: normal;
+      word-break: break-word;       /* Chrome/Edge */
+      overflow-wrap: anywhere;      /* Safari/Firefox */
+    }
 
-/* كي لا تتجاوز البادجات حدود الخلية */
-.payload-card .badge { white-space: nowrap; }
+    /* كي لا تتجاوز البادجات حدود الخلية */
+    .payload-card .badge { white-space: nowrap; }
 
-/* ساعد النصوص اللاتينية/الإيميل على الانكسار بشكل صحي */
-.payload-card { direction: rtl; }
-.payload-card .email, 
-.payload-card code, 
-.payload-card .payload-json { 
-  direction: ltr; 
-  unicode-bidi: plaintext; 
-  word-break: break-all; 
-}
+    /* ساعد النصوص اللاتينية/الإيميل على الانكسار بشكل صحي */
+    .payload-card { direction: rtl; }
+    .payload-card .email,
+    .payload-card code,
+    .payload-card .payload-json {
+      direction: ltr;
+      unicode-bidi: plaintext;
+      word-break: break-all;
+    }
 
-    
+    /* شارة "لا تغيير فعلي" */
+    .nochange-note{
+      border:1px solid rgba(13,110,253,.25);
+      background:rgba(13,110,253,.06);
+      color:#0d6efd;
+      border-radius:10px;
+      padding:4px 8px;
+      font-size:.85rem;
+    }
   </style>
 </head>
 <body>
@@ -396,8 +407,11 @@
       const m=aTokens.length,n=bTokens.length,dp=Array(m+1).fill(null).map(()=>Array(n+1).fill(0));
       for(let i=m-1;i>=0;i--)for(let j=n-1;j>=0;j--)dp[i][j]=(aTokens[i]===bTokens[j])?dp[i+1][j+1]+1:Math.max(dp[i+1][j],dp[i][j+1]);
       const ops=[]; let i=0,j=0;
-      while(i<m&&j<n){ if(aTokens[i]===bTokens[j]){ops.push({type:'eq',token:aTokens[i]}); i++; j++;} else if(dp[i+1][j]>=dp[i][j+1]){ops.push({type:'del',token:aTokens[i++]});} else {ops.push({type:'add',token:bTokens[j++]});} }
-      while(i<m) ops.push({type:'del',token:aTokens[i++]}); while(j<n) ops.push({type:'add',token:bTokens[j++]}); return ops;
+      while(i<m&&j<n){ if(aTokens[i]===bTokens[j]){ops.push({type:'eq',token:aTokens[i]}); i++; j++;} else if(dp[i+1][j]>=dp[i][j+1]){ops.push({type:'del',token:aTokens[i++]});} else {ops.push({type:'add',token:bTokens[j++]});}
+      }
+      while(i<m) ops.push({type:'del',token:aTokens[i++]});
+      while(j<n) ops.push({type:'add',token:bTokens[j++]});
+      return ops;
     }
     function renderTextDiff(beforeText, afterText, mode){
       const ops = diffTokens(splitTokens(beforeText||''), splitTokens(afterText||'')); let html='';
@@ -500,7 +514,7 @@
       return null;
     }
 
-    /* ===== كتلة عرض مفصلة للعمليات الجماعية على المستخدمين ===== */
+    /* ===== كتلة عرض مفصلة للعمليات الجماعية على المستخدمين + ملاحظة "لا تغيير فعلي" ===== */
     function renderBulkUsersList(p, mode){
       const listBefore = Array.isArray(p?.before) ? p.before : [];
       const listAfter  = Array.isArray(p?.after)  ? p.after  : synthesizeBulkAfter(p);
@@ -516,6 +530,18 @@
           <dt>عملية جماعية</dt><dd>${escapeHtml(actionAr)} (عدد: ${idsCount||'—'})</dd>
           <dt>ملاحظة</dt><dd class="text-muted">يمكن إظهار أسماء المستخدمين إذا قام الخادم بتسجيل <code>payload.before</code> (وأفضل أيضًا <code>payload.after</code>).</dd>
         </dl></div>`;
+      }
+
+      // هل لا يوجد تغيير فعلي؟
+      let noChanges = false;
+      if (listAfter && listAfter.length === listBefore.length) {
+        if (action === 'activate' || action === 'deactivate') {
+          noChanges = listBefore.every((u,i)=> !!u.isActive === !!(listAfter[i]?.isActive));
+        } else if (action === 'set-role') {
+          noChanges = listBefore.every((u,i)=> (u.role||'user') === ((listAfter[i]?.role)||'user'));
+        } else {
+          noChanges = false; // الحذف دائمًا يعتبر تغيير
+        }
       }
 
       const rows = listBefore.map((u, i)=>{
@@ -556,7 +582,10 @@
             action==='activate'  ? 'تفعيل' :
             action==='deactivate'? 'تعطيل' : (action||'—')
           }</div>
-          <span class="badge text-bg-light">عدد: ${idsCount || listBefore.length}</span>
+          <div class="d-flex align-items-center gap-2">
+            ${noChanges ? '<span class="nochange-note">لا تغيير فعلي</span>' : ''}
+            <span class="badge text-bg-light">عدد: ${idsCount || listBefore.length}</span>
+          </div>
         </div>
         <div class="table-responsive">
           <table class="table table-sm mb-0">
@@ -687,7 +716,7 @@
 
     /* ===== تحكم الفلاتر ===== */
     document.getElementById('btnSearch').addEventListener('click', ()=>{ page = 1; reachedEnd = false; loadLogs({append:false}); });
-    document.getElementById('btnClear').addEventListener('click', ()=>{ 
+    document.getElementById('btnClear').addEventListener('click', ()=>{
       document.getElementById('fModel').value=''; document.getElementById('fAction').value='';
       document.getElementById('fQuery').value=''; document.getElementById('fFrom').value=''; document.getElementById('fTo').value='';
       page=1; reachedEnd=false; loadLogs({append:false});
@@ -741,7 +770,7 @@
         const msg = (typeof data?.deletedCount === 'number') ? `🗂️ تم حذف ${data.deletedCount} سجل ضمن النطاق` : (data?.message || '🗂️ تم حذف السجلات ضمن النطاق');
         setToast(toastSuccess, msg); toastSuccess.show();
         page=1; reachedEnd=false; loadLogs({append:false});
-      }catch(e){ setToast(toastError,'❌ فشل حذف السجلات ضمن النطاق'); toastError.show(); }
+      }catch(e){ setToast(toastError,'❌ فشل في حذف السجلات ضمن النطاق'); toastError.show(); }
     });
     document.getElementById('btnDeleteSelected').addEventListener('click', async ()=>{
       const count = selectedIds.size;
