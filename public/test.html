@@ -38,6 +38,15 @@
 
     /* أدوات أعلى الجدول */
     .toolbar{gap:.5rem}
+/* تحرير مباشر داخل الجدول */
+.inline-edit{
+  font-size:.9rem;
+  padding:.25rem .5rem;
+  height:2rem;
+}
+.cell-saving{ opacity:.6; }
+
+    
   </style>
 </head>
 <body>
@@ -50,20 +59,23 @@
       </div>
       <!-- يسار: معلومات المستخدم + خروج + لوحة التحكم -->
       <div class="d-flex align-items-center gap-2">
-        <span id="userInfo" class="user-chip badge bg-light text-dark border">
-          <i class="bi bi-person"></i>
-          <span id="userUsername">—</span>
-          <span class="mx-1">—</span>
-          <span id="userFullName">—</span>
-          <span class="ms-2 badge bg-secondary" id="userRole">—</span>
-        </span>
-        <button id="logoutBtn" class="btn btn-danger">
-          <i class="bi bi-box-arrow-right"></i> خروج
-        </button>
-        <a class="btn btn-outline-primary" id="homeBtn" href="/committees-home.html">
-          <i class="bi bi-arrow-right-circle"></i> لوحة التحكم
-        </a>
-      </div>
+  <span id="userInfo" class="user-chip badge bg-light text-dark border">
+    <i class="bi bi-person"></i>
+    <span id="userUsername">—</span>
+    <span class="mx-1">—</span>
+    <span id="userFullName">—</span>
+    <span class="ms-2 badge bg-secondary" id="userRole">—</span>
+  </span>
+
+  <a class="btn btn-outline-primary" id="homeBtn" href="/committees-home.html">
+    <i class="bi bi-grid"></i> لوحة التحكم
+  </a>
+
+  <button id="logoutBtn" class="btn btn-danger">
+    <i class="bi bi-box-arrow-right"></i> خروج
+  </button>
+</div>
+
     </div>
 
     <!-- إضافة مستخدم -->
@@ -187,7 +199,7 @@
                 <th>البريد</th>
                 <th>الدور</th>
                 <th>الحالة</th>
-                <th>آخر إنشاء</th>
+                <th>الإنشاء</th>
                 <th>إجراءات</th>
               </tr>
             </thead>
@@ -258,6 +270,20 @@
         <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
       </div>
     </div>
+    <!-- Toast: تأكيد -->
+<div id="toastConfirm" class="toast text-bg-warning border-0 mb-2" role="alert" aria-live="assertive" aria-atomic="true">
+  <div class="d-flex align-items-start">
+    <div class="toast-body">
+      <div id="toastConfirmMsg">هل تريد المتابعة؟</div>
+      <div class="mt-2 pt-2 border-top d-flex gap-2">
+        <button type="button" class="btn btn-danger btn-sm" id="toastConfirmYes">تأكيد</button>
+        <button type="button" class="btn btn-light btn-sm" id="toastConfirmNo" data-bs-dismiss="toast">إلغاء</button>
+      </div>
+    </div>
+    <button type="button" class="btn-close btn-close-white m-2" data-bs-dismiss="toast"></button>
+  </div>
+</div>
+
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
@@ -273,23 +299,58 @@
     // عندما تكون على Render نستخدم نفس الأصل (سلسلة فارغة).
     // محليًا نوجّه إلى بورت 3000.
     const API_BASE = isGithub ? RENDER_BASE : (isLocal ? 'http://localhost:3000' : '');
+     
+  // Helper لتحويل الروابط (login/home) لنفس أصل الـ API عند تشغيل الصفحة من GitHub Pages
+const go = (path) => isGithub ? (RENDER_BASE + path) : path;
 
-    // Helper لتحويل الروابط (login/home) لنفس أصل الـ API عند تشغيل الصفحة من GitHub Pages
-    const go = (path) => isGithub ? (RENDER_BASE + path) : path;
+const apiFetch = (path, opts = {}) =>
+  fetch(`${API_BASE}${path}`, { credentials: 'include', ...opts });
 
-    const apiFetch = (path, opts = {}) =>
-      fetch(`${API_BASE}${path}`, { credentials: 'include', ...opts });
+/* عدّل زر "لوحة التحكم" ليوجَّه حسب البيئة */
+document.addEventListener('DOMContentLoaded', () => {
+  const homeBtn = document.getElementById('homeBtn');
+  if (homeBtn) homeBtn.href = go('/committees-home.html');
+});
 
-    /* عدّل زر "لوحة التحكم" ليوجَّه حسب البيئة */
-    document.addEventListener('DOMContentLoaded', () => {
-      const homeBtn = document.getElementById('homeBtn');
-      if (homeBtn) homeBtn.href = go('/committees-home.html');
-    });
+
+    
 
     /* ====== Toasts ====== */
     const toastSuccess = new bootstrap.Toast(document.getElementById('toastSuccess'));
     const toastError   = new bootstrap.Toast(document.getElementById('toastError'));
     const toastInfo    = new bootstrap.Toast(document.getElementById('toastInfo'));
+    /* ====== Confirm Toast (تأكيد عبر توست) ====== */
+const toastConfirmEl  = document.getElementById('toastConfirm');
+const toastConfirm    = new bootstrap.Toast(toastConfirmEl, { autohide: false });
+const confirmMsgEl    = toastConfirmEl.querySelector('#toastConfirmMsg');
+const confirmYesBtn   = toastConfirmEl.querySelector('#toastConfirmYes');
+const confirmNoBtn    = toastConfirmEl.querySelector('#toastConfirmNo');
+
+/** يعرض توست تأكيد ويعيد Promise<boolean> */
+function confirmToast({ message='هل تريد المتابعة؟', confirmText='تأكيد', cancelText='إلغاء' } = {}){
+  return new Promise((resolve)=>{
+    confirmMsgEl.textContent = message;
+    confirmYesBtn.textContent = confirmText;
+    confirmNoBtn.textContent  = cancelText;
+
+    const onYes = () => { cleanup(); toastConfirm.hide(); resolve(true); };
+    const onNo  = () => { cleanup(); resolve(false); };
+    const onHidden = () => { cleanup(); resolve(false); };
+
+    function cleanup(){
+      confirmYesBtn.removeEventListener('click', onYes);
+      confirmNoBtn.removeEventListener('click', onNo);
+      toastConfirmEl.removeEventListener('hidden.bs.toast', onHidden);
+    }
+
+    confirmYesBtn.addEventListener('click', onYes, { once:true });
+    confirmNoBtn.addEventListener('click', onNo,  { once:true });
+    toastConfirmEl.addEventListener('hidden.bs.toast', onHidden, { once:true });
+
+    toastConfirm.show();
+  });
+}
+
     const setToast = (el,msg)=>{ el._element.querySelector('.toast-body').innerText = msg; };
 
     /* ====== Auth ====== */
@@ -374,31 +435,62 @@
       </div>`; }
 
     function renderRows(users, offset=0){
-      if(!Array.isArray(users) || users.length===0){
-        tbody.innerHTML = `<tr class="text-center text-muted"><td colspan="9">لا يوجد نتائج</td></tr>`;
-        return;
-      }
-      tbody.innerHTML = users.map((u,i)=>`
-        <tr data-id="${u._id||u.id}">
-          <td class="text-center">${rowCheckbox(u._id||u.id, state.selected.has(u._id||u.id))}</td>
-          <td>${offset + i + 1}</td>
-          <td>${u.name||'—'}</td>
-          <td><span class="badge text-bg-light">${u.username||'—'}</span></td>
-          <td>${u.email||'—'}</td>
-          <td style="width:140px">${roleSelect(u._id||u.id, u.role||'user')}</td>
-          <td style="width:110px">
-            ${u.isActive===false?'<span class="badge badge-inactive">معطّل</span>':'<span class="badge badge-active">نشط</span>'}
-            ${activeToggle(u._id||u.id, u.isActive!==false)}
-          </td>
-          <td>${u.createdAt? new Date(u.createdAt).toLocaleString('ar-EG') : '—'}</td>
-          <td>
-            <button class="btn btn-sm btn-outline-primary resetBtn" data-id="${u._id||u.id}" data-name="${u.name||u.username||'—'}"><i class="bi bi-key"></i></button>
-            <button class="btn btn-sm btn-outline-danger delBtn" data-id="${u._id||u.id}" data-name="${u.name||u.username||'—'}"><i class="bi bi-trash3"></i></button>
-          </td>
-        </tr>
-      `).join('');
-      updateBulkBar();
-    }
+  const esc = s => String(s ?? '').replace(/"/g,'&quot;');
+
+  if(!Array.isArray(users) || users.length===0){
+    tbody.innerHTML = `<tr class="text-center text-muted"><td colspan="9">لا يوجد نتائج</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = users.map((u,i)=>`
+    <tr data-id="${u._id||u.id}">
+      <td class="text-center">
+        <input class="form-check-input chkRow" type="checkbox" value="${u._id||u.id}" ${state.selected.has(u._id||u.id)?'checked':''}>
+      </td>
+      <td>${offset + i + 1}</td>
+
+      <!-- الاسم الكامل (قابل للتحرير) -->
+      <td>
+        <input class="form-control form-control-sm inline-edit"
+               data-id="${u._id||u.id}" data-field="name"
+               value="${esc(u.name)}" placeholder="—">
+      </td>
+
+      <!-- اسم المستخدم (قابل للتحرير) -->
+      <td>
+        <input class="form-control form-control-sm inline-edit"
+               data-id="${u._id||u.id}" data-field="username"
+               value="${esc(u.username)}" placeholder="—">
+      </td>
+
+      <!-- البريد (قابل للتحرير) -->
+      <td>
+        <input class="form-control form-control-sm inline-edit"
+               data-id="${u._id||u.id}" data-field="email"
+               value="${esc(u.email)}" placeholder="—">
+      </td>
+
+      <td style="width:140px">${roleSelect(u._id||u.id, u.role||'user')}</td>
+      <td style="width:110px">
+        ${u.isActive===false?'<span class="badge badge-inactive">معطّل</span>':'<span class="badge badge-active">نشط</span>'}
+        ${activeToggle(u._id||u.id, u.isActive!==false)}
+      </td>
+
+      <!-- سنحدّث هذه الخلية بعد الحفظ مباشرة -->
+      <td class="cell-created">
+        ${ (u.updatedAt||u.createdAt) ? new Date(u.updatedAt||u.createdAt).toLocaleString('ar-EG') : '—' }
+      </td>
+
+      <td>
+        <button class="btn btn-sm btn-outline-primary resetBtn" data-id="${u._id||u.id}" data-name="${u.name||u.username||'—'}"><i class="bi bi-key"></i></button>
+        <button class="btn btn-sm btn-outline-danger delBtn" data-id="${u._id||u.id}" data-name="${u.name||u.username||'—'}"><i class="bi bi-trash3"></i></button>
+      </td>
+    </tr>
+  `).join('');
+
+  updateBulkBar();
+}
+
 
     function updateBulkBar(){
       const any = state.selected.size>0;
@@ -476,20 +568,30 @@
       }
     }
 
-    /* ====== حذف واحد ====== */
-    async function deleteUser(id, name){
-      if(!confirm(`سيتم حذف المستخدم: ${name}\nلا يمكن التراجع.`)) return;
-      try{
-        const r = await apiFetch('/api/users/'+id,{ method:'DELETE' });
-        const data = await r.json().catch(()=> ({}));
-        if(!r.ok) throw new Error(data?.message || 'فشل الحذف');
-        setToast(toastSuccess,'🗑️ تم حذف المستخدم'); toastSuccess.show();
-        state.selected.delete(id);
-        fetchUsers();
-      }catch(err){
-        setToast(toastError,'❌ '+(err.message||'فشل الحذف')); toastError.show();
-      }
-    }
+   /* ====== حذف واحد (بتوست تأكيد) ====== */
+async function deleteUser(id, name){
+  const ok = await confirmToast({
+    message: `سيتم حذف المستخدم: ${name}\nلا يمكن التراجع.`,
+    confirmText: 'نعم، احذف',
+    cancelText: 'إلغاء'
+  });
+  if(!ok){
+    setToast(toastInfo,'تم الإلغاء'); toastInfo.show();
+    return;
+  }
+
+  try{
+    const r = await apiFetch('/api/users/'+id,{ method:'DELETE' });
+    const data = await r.json().catch(()=> ({}));
+    if(!r.ok) throw new Error(data?.message || 'فشل الحذف');
+    setToast(toastSuccess,'🗑️ تم حذف المستخدم'); toastSuccess.show();
+    state.selected.delete(id);
+    fetchUsers();
+  }catch(err){
+    setToast(toastError,'❌ '+(err.message||'فشل الحذف')); toastError.show();
+  }
+}
+
 
     /* ====== إعادة تعيين كلمة المرور ====== */
     const resetModal = new bootstrap.Modal(document.getElementById('resetPwModal'));
@@ -676,6 +778,51 @@
       }
     });
 
+    /* ====== تحرير مباشر (name/username/email) مع حفظ تلقائي ====== */
+async function saveInline(inputEl){
+  const id    = inputEl.dataset.id;
+  const field = inputEl.dataset.field;
+  const value = inputEl.value.trim();
+
+  if(!id || !field) return;
+
+  // منع حفظ لا يلزم: قارن بالقيمة الأصلية إن أردت (اختياري)
+  // هنا نحفظ دائمًا بمجرد الخروج أو Enter
+  const row = tbody.querySelector(`tr[data-id="${id}"]`);
+  row?.classList.add('cell-saving');
+
+  // إعادة استخدام دالتك الموجودة لتحديث جزئي
+  const ok = await updateUserPartial(id, { [field]: value });
+
+  if(ok){
+    // حدّث خانة التاريخ/الوقت مباشرةً إلى الآن (كما طلبت)
+    const createdCell = row?.querySelector('.cell-created');
+    if(createdCell){
+      createdCell.textContent = new Date().toLocaleString('ar-EG');
+    }
+  }
+
+  row?.classList.remove('cell-saving');
+}
+
+// حفظ عند الخروج من الحقل
+tbodyEl.addEventListener('blur', (e)=>{
+  const t = e.target;
+  if(t.classList.contains('inline-edit')){
+    saveInline(t);
+  }
+}, true);
+
+// حفظ عند Enter
+tbodyEl.addEventListener('keydown', (e)=>{
+  const t = e.target;
+  if(t.classList.contains('inline-edit') && e.key === 'Enter'){
+    e.preventDefault();
+    t.blur(); // سيشغّل الحفظ عبر حدث blur
+  }
+});
+
+
     // تغيير الدور جماعيًا من القائمة
     document.querySelectorAll('.dropdown-menu [data-role]').forEach(a=>{
       a.addEventListener('click', (e)=>{
@@ -687,11 +834,23 @@
     });
     document.getElementById('bulkActivate').addEventListener('click', ()=> bulkAction({ action:'activate' }, '✅ تم تفعيل المحددين'));
     document.getElementById('bulkDeactivate').addEventListener('click', ()=> bulkAction({ action:'deactivate' }, '✅ تم تعطيل المحددين'));
-    document.getElementById('bulkDelete').addEventListener('click', ()=>{
-      if(confirm(`سيتم حذف ${state.selected.size} مستخدم/ين. لا يمكن التراجع.`)){
-        bulkAction({ action:'delete' }, '🗑️ تم حذف المحددين');
-      }
-    });
+    document.getElementById('bulkDelete').addEventListener('click', async ()=>{
+  if(state.selected.size === 0){
+    setToast(toastInfo,'لم يتم تحديد مستخدمين'); toastInfo.show();
+    return;
+  }
+  const ok = await confirmToast({
+    message: `سيتم حذف ${state.selected.size} مستخدم/ين. لا يمكن التراجع.`,
+    confirmText: 'نعم، احذف',
+    cancelText: 'إلغاء'
+  });
+  if(!ok){
+    setToast(toastInfo,'تم الإلغاء'); toastInfo.show();
+    return;
+  }
+  bulkAction({ action:'delete' }, '🗑️ تم حذف المحددين');
+});
+
 
     /* ====== إقلاع (IIFE بدل top-level await) ====== */
     (async function init(){
