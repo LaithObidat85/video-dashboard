@@ -793,21 +793,35 @@ app.post('/api/users/bulk', authRequired, requireRole('admin'), async (req, res)
     if (ids.length === 0) return res.status(400).json({ message: 'قائمة المعرفات مطلوبة' });
 
     if (action === 'activate') {
-      await User.updateMany({ _id: { $in: ids } }, { $set: { isActive: true } });
-      await logAudit(req, { model: 'User', action: 'update', docId: '__bulk__', payload: { bulk: true, action: 'activate', ids } });
-      return res.json({ message: '✅ تم تفعيل المستخدمين' });
-    }
-    if (action === 'deactivate') {
-      await User.updateMany({ _id: { $in: ids } }, { $set: { isActive: false } });
-      await logAudit(req, { model: 'User', action: 'update', docId: '__bulk__', payload: { bulk: true, action: 'deactivate', ids } });
-      return res.json({ message: '✅ تم تعطيل المستخدمين' });
-    }
-    if (action === 'set-role') {
-      const role = req.body?.role === 'admin' ? 'admin' : 'user';
-      await User.updateMany({ _id: { $in: ids } }, { $set: { role } });
-      await logAudit(req, { model: 'User', action: 'update', docId: '__bulk__', payload: { bulk: true, action: 'set-role', role, ids } });
-      return res.json({ message: '✅ تم تغيير الأدوار' });
-    }
+  const before = await User.find({ _id: { $in: ids } }, 'name username email role isActive').lean();
+  await User.updateMany({ _id: { $in: ids } }, { $set: { isActive: true } });
+  await logAudit(req, {
+    model: 'User', action: 'update', docId: '__bulk__',
+    payload: { bulk: true, action: 'activate', ids, before }
+  });
+  return res.json({ message: '✅ تم تفعيل المستخدمين' });
+}
+
+if (action === 'deactivate') {
+  const before = await User.find({ _id: { $in: ids } }, 'name username email role isActive').lean();
+  await User.updateMany({ _id: { $in: ids } }, { $set: { isActive: false } });
+  await logAudit(req, {
+    model: 'User', action: 'update', docId: '__bulk__',
+    payload: { bulk: true, action: 'deactivate', ids, before }
+  });
+  return res.json({ message: '✅ تم تعطيل المستخدمين' });
+}
+
+if (action === 'set-role') {
+  const role = req.body?.role === 'admin' ? 'admin' : 'user';
+  const before = await User.find({ _id: { $in: ids } }, 'name username email role isActive').lean();
+  await User.updateMany({ _id: { $in: ids } }, { $set: { role } });
+  await logAudit(req, {
+    model: 'User', action: 'update', docId: '__bulk__',
+    payload: { bulk: true, action: 'set-role', role, ids, before }
+  });
+  return res.json({ message: '✅ تم تغيير الأدوار' });
+}
     if (action === 'delete') {
       const before = await User.find({ _id: { $in: ids } }, 'name username email role').lean();
       await User.deleteMany({ _id: { $in: ids } });
