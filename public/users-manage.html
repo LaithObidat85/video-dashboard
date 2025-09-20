@@ -43,12 +43,11 @@
   <div class="container">
     <!-- Header -->
     <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-2">
+      <!-- يمين: العنوان فقط -->
       <div class="d-flex align-items-center gap-2">
-        <a class="btn btn-outline-primary" href="/committees-home.html">
-          <i class="bi bi-arrow-right-circle"></i> لوحة التحكم
-        </a>
         <h3 class="mb-0">إدارة المستخدمين</h3>
       </div>
+      <!-- يسار: معلومات المستخدم + خروج + لوحة التحكم -->
       <div class="d-flex align-items-center gap-2">
         <span id="userInfo" class="user-chip badge bg-light text-dark border">
           <i class="bi bi-person"></i>
@@ -60,6 +59,9 @@
         <button id="logoutBtn" class="btn btn-danger">
           <i class="bi bi-box-arrow-right"></i> خروج
         </button>
+        <a class="btn btn-outline-primary" href="/committees-home.html">
+          <i class="bi bi-arrow-right-circle"></i> لوحة التحكم
+        </a>
       </div>
     </div>
 
@@ -86,10 +88,11 @@
             <label class="form-label">كلمة المرور</label>
             <div class="input-group">
               <input type="password" class="form-control" name="password" id="pwInput" minlength="8" required>
-              <button type="button" class="btn btn-outline-secondary" id="genPwBtn" title="توليد كلمة قوية"><i class="bi bi-magic"></i></button>
+              <button type="button" class="btn btn-outline-secondary" id="togglePwBtn" title="إظهار/إخفاء">
+                <i class="bi bi-eye"></i>
+              </button>
             </div>
             <div class="pw-meter mt-2"><div id="pwBar"></div></div>
-            <div class="form-text" id="pwHint">يفضّل 10+ أحرف مع حروف كبيرة وصغيرة وأرقام ورموز.</div>
           </div>
           <div class="col-md-3">
             <label class="form-label">الدور</label>
@@ -99,8 +102,9 @@
             </select>
           </div>
           <div class="col-12">
-            <button class="btn btn-primary" id="addBtn"><span class="btn-label"><i class="bi bi-check2-circle"></i> إضافة</span></button>
-            <span class="ms-2 text-muted muted">يُسجَّل الحدث في سجل العمليات.</span>
+            <button class="btn btn-primary" id="addBtn">
+              <span class="btn-label"><i class="bi bi-check2-circle"></i> إضافة</span>
+            </button>
           </div>
         </form>
       </div>
@@ -222,7 +226,6 @@
           <label class="form-label">كلمة المرور الجديدة</label>
           <div class="input-group">
             <input type="text" id="newPwInput" class="form-control" autocomplete="off">
-            <button class="btn btn-outline-secondary" id="regenBtn" type="button"><i class="bi bi-magic"></i></button>
           </div>
           <div class="form-text">انسخها وأبلغ المستخدم بها بأمان.</div>
         </div>
@@ -258,6 +261,13 @@
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
   <script>
+    /* ====== API BASE & fetch مغلّف ====== */
+    const API_BASE = location.hostname.endsWith('github.io')
+      ? 'https://<YOUR-RENDER-DOMAIN>.onrender.com'
+      : '';
+    const apiFetch = (path, opts = {}) =>
+      fetch(`${API_BASE}${path}`, { credentials: 'include', ...opts });
+
     /* ====== Toasts ====== */
     const toastSuccess = new bootstrap.Toast(document.getElementById('toastSuccess'));
     const toastError   = new bootstrap.Toast(document.getElementById('toastError'));
@@ -267,7 +277,7 @@
     /* ====== Auth ====== */
     async function fetchMe(){
       try{
-        const r = await fetch('/auth/committees/me',{credentials:'include'});
+        const r = await apiFetch('/auth/committees/me');
         if(!r.ok) throw 0;
         return await r.json();
       }catch{ return {authenticated:false}; }
@@ -295,7 +305,7 @@
     }
     document.getElementById('logoutBtn').addEventListener('click', async ()=>{
       try{
-        const r = await fetch('/auth/committees/logout',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'include'});
+        const r = await apiFetch('/auth/committees/logout',{method:'POST',headers:{'Content-Type':'application/json'}});
         if(r.ok){ setToast(toastSuccess,'✅ تم تسجيل الخروج'); toastSuccess.show(); setTimeout(()=>location.href='/committees-login.html',700); }
         else{ setToast(toastError,'❌ تعذر تسجيل الخروج'); toastError.show(); }
       }catch{ setToast(toastError,'❌ خطأ في الاتصال'); toastError.show(); }
@@ -406,7 +416,7 @@
         params.set('page', state.page);
         params.set('limit', state.limit);
 
-        const r = await fetch('/api/users?'+params.toString(), { credentials:'include' });
+        const r = await apiFetch('/api/users?'+params.toString());
         if(r.status===401 || r.status===403){
           setToast(toastError,'❌ انتهت الجلسة أو لا تملك صلاحية'); toastError.show();
           setTimeout(()=>location.href='/committees-login.html',900);
@@ -414,7 +424,7 @@
         }
         if(!r.ok) throw new Error('HTTP '+r.status);
         const data = await r.json();
-        state.items = data.data || data; // يدعم الاستجابة القديمة (مصفوفة) أو الجديدة ({data,meta})
+        state.items = data.data || data;
         state.total = data?.meta?.total ?? state.items.length;
         document.getElementById('pageNum').textContent = state.page;
         renderRows(state.items, (state.page-1)*state.limit);
@@ -428,10 +438,9 @@
       const row = tbody.querySelector(`tr[data-id="${id}"]`);
       row?.classList.add('saving');
       try{
-        const r = await fetch('/api/users/'+id,{
+        const r = await apiFetch('/api/users/'+id,{
           method:'PUT',
           headers:{'Content-Type':'application/json'},
-          credentials:'include',
           body: JSON.stringify(patch)
         });
         const data = await r.json().catch(()=> ({}));
@@ -452,7 +461,7 @@
     async function deleteUser(id, name){
       if(!confirm(`سيتم حذف المستخدم: ${name}\nلا يمكن التراجع.`)) return;
       try{
-        const r = await fetch('/api/users/'+id,{ method:'DELETE', credentials:'include' });
+        const r = await apiFetch('/api/users/'+id,{ method:'DELETE' });
         const data = await r.json().catch(()=> ({}));
         if(!r.ok) throw new Error(data?.message || 'فشل الحذف');
         setToast(toastSuccess,'🗑️ تم حذف المستخدم'); toastSuccess.show();
@@ -466,20 +475,12 @@
     /* ====== إعادة تعيين كلمة المرور ====== */
     const resetModal = new bootstrap.Modal(document.getElementById('resetPwModal'));
     let resetTargetId = null;
-    function genStrongPw(){
-      const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789!@#$%^&*()_+-=';
-      let s=''; for(let i=0;i<14;i++) s += chars[Math.floor(Math.random()*chars.length)];
-      return s;
-    }
-    document.getElementById('regenBtn').addEventListener('click', ()=>{
-      document.getElementById('newPwInput').value = genStrongPw();
-    });
     document.getElementById('applyResetBtn').addEventListener('click', async ()=>{
       const pw = document.getElementById('newPwInput').value.trim();
       if(!pw){ setToast(toastInfo,'أدخل كلمة مرور جديدة'); toastInfo.show(); return; }
       try{
-        const r = await fetch('/api/users/'+resetTargetId+'/password',{
-          method:'PUT', credentials:'include',
+        const r = await apiFetch('/api/users/'+resetTargetId+'/password',{
+          method:'PUT',
           headers:{'Content-Type':'application/json'},
           body: JSON.stringify({ newPassword: pw })
         });
@@ -496,8 +497,8 @@
     async function bulkAction(payload, okMsg){
       if(state.selected.size===0) return;
       try{
-        const r = await fetch('/api/users/bulk',{
-          method:'POST', credentials:'include',
+        const r = await apiFetch('/api/users/bulk',{
+          method:'POST',
           headers:{'Content-Type':'application/json'},
           body: JSON.stringify({ ids:[...state.selected], ...payload })
         });
@@ -511,9 +512,20 @@
       }
     }
 
-    /* ====== إضافة مستخدم (تحقق فوري + مقياس قوة) ====== */
+    /* ====== إضافة مستخدم (تحقق فوري + مقياس قوة + إظهار/إخفاء) ====== */
     const addForm = document.getElementById('addUserForm');
     const addBtn = document.getElementById('addBtn');
+
+    // إظهار/إخفاء كلمة المرور
+    const pwInput = document.getElementById('pwInput');
+    const togglePwBtn = document.getElementById('togglePwBtn');
+    togglePwBtn.addEventListener('click', ()=>{
+      const isPw = pwInput.type === 'password';
+      pwInput.type = isPw ? 'text' : 'password';
+      togglePwBtn.innerHTML = isPw ? '<i class="bi bi-eye-slash"></i>' : '<i class="bi bi-eye"></i>';
+      pwInput.focus();
+    });
+
     function pwStrength(pw){
       let s=0;
       if(pw.length>=8) s++;
@@ -524,21 +536,16 @@
       return Math.min(s,5);
     }
     function renderPwMeter(){
-      const pw = document.getElementById('pwInput').value;
+      const pw = pwInput.value;
       const score = pwStrength(pw);
       const bar = document.getElementById('pwBar');
       const colors = ['#dc3545','#fd7e14','#ffc107','#20c997','#198754'];
       bar.style.width = (score*20)+'%';
       bar.style.background = colors[Math.max(0,score-1)] || '#e9ecef';
     }
-    document.getElementById('pwInput').addEventListener('input', renderPwMeter);
-    document.getElementById('genPwBtn').addEventListener('click', ()=>{
-      const p = genStrongPw();
-      document.getElementById('pwInput').value = p;
-      renderPwMeter();
-    });
+    pwInput.addEventListener('input', renderPwMeter);
 
-    // تحقّق بسيط من التفرّد عبر البحث (يعتمد توسعة GET /api/users)
+    // تحقّق بسيط من التفرّد عبر البحث
     let _debTimer;
     function debounce(fn,ms){ return (...a)=>{ clearTimeout(_debTimer); _debTimer=setTimeout(()=>fn(...a),ms); }; }
     const checkUnique = debounce(async ()=>{
@@ -547,7 +554,7 @@
       if(!u && !e) return;
       try{
         const params = new URLSearchParams({ search: u||e, limit: 5 });
-        const r = await fetch('/api/users?'+params.toString(), { credentials:'include' });
+        const r = await apiFetch('/api/users?'+params.toString());
         if(!r.ok) return;
         const data = await r.json();
         const arr = data.data || data;
@@ -566,15 +573,14 @@
       try{
         const fd = new FormData(addForm);
         const payload = Object.fromEntries(fd.entries());
-        const r = await fetch('/auth/committees/register', {
-          method:'POST', headers:{'Content-Type':'application/json'}, credentials:'include',
+        const r = await apiFetch('/auth/committees/register', {
+          method:'POST', headers:{'Content-Type':'application/json'},
           body: JSON.stringify(payload)
         });
         const data = await r.json().catch(()=> ({}));
         if(!r.ok) throw new Error(data?.message || 'فشل الإضافة');
         setToast(toastSuccess,'✅ تم إنشاء المستخدم'); toastSuccess.show();
         addForm.reset(); renderPwMeter();
-        // العودة إلى الصفحة 1 لرؤية الجديد
         state.page = 1; fetchUsers();
       }catch(err){
         setToast(toastError,'❌ '+(err.message||'فشل الإضافة')); toastError.show();
@@ -625,7 +631,6 @@
       if(t.classList.contains('chkRow')){
         const id = t.value;
         if(t.checked) state.selected.add(id); else state.selected.delete(id);
-        // تحديث حالة "تحديد الكل"
         const all = Array.from(tbody.querySelectorAll('.chkRow'));
         document.getElementById('chkAll').checked = (all.length>0 && all.every(x=>x.checked));
         updateBulkBar();
@@ -646,7 +651,7 @@
       }else if(btn.classList.contains('resetBtn')){
         resetTargetId = btn.dataset.id;
         document.getElementById('resetTargetName').textContent = btn.dataset.name;
-        document.getElementById('newPwInput').value = genStrongPw();
+        document.getElementById('newPwInput').value = '';
         resetModal.show();
       }
     });
@@ -671,9 +676,9 @@
     /* ====== إقلاع ====== */
     await ensureAdmin();
     loadFilters();
-    // قراءة صفحة من الاستعلام إن وُجد
     const urlp = new URLSearchParams(location.search);
     state.page  = parseInt(urlp.get('page')||'1',10);
+    renderPwMeter(); // تحديث مبدئي لشريط القوة
     fetchUsers();
   </script>
 </body>
