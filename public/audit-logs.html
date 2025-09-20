@@ -13,6 +13,7 @@
     .card{border-radius:16px;box-shadow:0 6px 18px rgba(0,0,0,.06)}
     .user-chip{font-size:.9rem}
 
+    /* بطاقات المحتوى في عمودي "قبل/بعد" */
     .payload-card{
       background:#fff;border:1px solid #e9ecef;border-radius:12px;padding:10px;
       height:220px;overflow:auto
@@ -322,7 +323,7 @@
     const toArabicLabel = k => colNameArMap[k] || k;
 
     /* ===== utils (diff) ===== */
-    const escapeHtml = s => String(s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+    const escapeHtml = s => String(s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&gt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
     const normalizeValue = v => v==null ? '' : (v instanceof Date ? v.toISOString() : (Array.isArray(v)||typeof v==='object') ? JSON.stringify(v) : String(v));
     function computeDiffKeys(before, after){
       const b = before || {}, a = after || {};
@@ -358,7 +359,7 @@
       const m=aTokens.length,n=bTokens.length,dp=Array(m+1).fill(null).map(()=>Array(n+1).fill(0));
       for(let i=m-1;i>=0;i--)for(let j=n-1;j>=0;j--)dp[i][j]=(aTokens[i]===bTokens[j])?dp[i+1][j+1]+1:Math.max(dp[i+1][j],dp[i][j+1]);
       const ops=[]; let i=0,j=0;
-      while(i<m&&j<n){ if(aTokens[i]===bTokens[j]){ops.push({type:'eq',token:aTokens[i++]});j++;} else if(dp[i+1][j]>=dp[i][j+1]) ops.push({type:'del',token:aTokens[i++]}); else ops.push({type:'add',token:bTokens[j++]}); }
+      while(i<m&&j<n){ if(aTokens[i]===bTokens[j]){ops.push({type:'eq',token:aTokens[i]}); i++; j++;} else if(dp[i+1][j]>=dp[i][j+1]){ops.push({type:'del',token:aTokens[i++]});} else {ops.push({type:'add',token:bTokens[j++]});} }
       while(i<m) ops.push({type:'del',token:aTokens[i++]}); while(j<n) ops.push({type:'add',token:bTokens[j++]}); return ops;
     }
     function renderTextDiff(beforeText, afterText, mode){
@@ -394,8 +395,9 @@
       const wrapClass = diffKeys && diffKeys.has(key) ? (mode==='before' ? 'diff-removed' : 'diff-added') : '';
       return `<dt>الحالة</dt><dd class="${wrapClass}">${base}</dd>`;
     }
+    const roleAr = r => (r==='admin' ? 'مدير (admin)' : 'مستخدم (user)');
 
-    /* ===== بطاقة حسب الموديل (تتضمن User الآن) ===== */
+    /* ===== بطاقة حسب الموديل (تشمل User بالعربية) ===== */
     function renderCardFromObjectWithDiff(model, obj, diffKeys, mode, otherSide){
       if(!obj) return '<div class="payload-card text-muted">—</div>';
       let html = '<div class="payload-card"><dl class="row mb-0">';
@@ -430,11 +432,10 @@
         if(otherKeys.length) html += kvDiff('تغييرات أخرى', otherKeys.map(toArabicLabel).join('، '), '__misc', diffKeys, mode);
 
       }else if(model==='User'){
-        // العربية / إبراز التغييرات: الاسم، اسم المستخدم، البريد، الدور، الحالة
         if(has('name'))     html += kvDiff('الاسم', d.name, 'name', diffKeys, mode);
         if(has('username')) html += kvDiff('اسم المستخدم', d.username, 'username', diffKeys, mode);
         if(has('email'))    html += kvDiff('البريد', d.email, 'email', diffKeys, mode);
-        if(has('role'))     html += kvDiff('الدور', d.role==='admin'?'مدير (admin)':'مستخدم (user)', 'role', diffKeys, mode);
+        if(has('role'))     html += kvDiff('الدور', roleAr(d.role), 'role', diffKeys, mode);
         if('isActive' in d) html += userActiveBadge(d.isActive, 'isActive', diffKeys, mode);
 
       }else{
@@ -451,7 +452,72 @@
       return html;
     }
 
-    /* ===== before/after cells (تخصيص User bulk) ===== */
+    /* ===== كتلة عرض مفصلة للعمليات الجماعية على المستخدمين ===== */
+    function renderBulkUsersList(p, mode){
+      // نحاول استعمال قائمة "before" القادمة من السيرفر (مستحسن تعديل السيرفر لتسجيلها)
+      const list = Array.isArray(p?.before) ? p.before : [];
+      const action = p?.action;
+      const idsCount = Array.isArray(p?.ids) ? p.ids.length : 0;
+
+      // لو ما في قائمة أسماء، نعرض ملخصًا مفيدًا على الأقل
+      if(list.length === 0){
+        const actionAr = action==='set-role' ? `تغيير الدور إلى ${roleAr(p.role)}`
+                        : action==='activate' ? 'تفعيل المستخدمين'
+                        : action==='deactivate' ? 'تعطيل المستخدمين'
+                        : (action || 'تعديل جماعي');
+        return `<div class="payload-card"><dl class="row mb-0">
+          <dt>عملية جماعية</dt><dd>${escapeHtml(actionAr)} (عدد: ${idsCount||'—'})</dd>
+          <dt>ملاحظة</dt><dd class="text-muted">لإظهار أسماء المستخدمين بالتفصيل يُفضّل تسجيل <code>payload.before</code> في السيرفر.</dd>
+        </dl></div>`;
+      }
+
+      // بناء صف لكل مستخدم متأثر
+      const rows = list.map(u=>{
+        const name  = u.name || '—';
+        const uname = u.username || (u.email? u.email.split('@')[0] : '—');
+        const email = u.email ? `<span class="badge text-bg-light">${u.email}</span>` : '';
+        const base  = `${name} <span class="badge text-bg-info">${uname}</span> ${email}`;
+
+        let beforeCell = '', afterCell = '';
+
+        if(action === 'activate' || action === 'deactivate'){
+          const beforeBadge = u.isActive ? '<span class="badge text-bg-success">نشط</span>' : '<span class="badge text-bg-danger">معطّل</span>';
+          const afterBadge  = (action==='activate') ? '<span class="badge text-bg-success">نشط</span>' : '<span class="badge text-bg-danger">معطّل</span>';
+          beforeCell = beforeBadge;
+          afterCell  = (action==='activate') ? `<span class="diff-added">نشط</span>` : `<span class="diff-removed">معطّل</span>`;
+          // نضع الشارة الملونة أيضًا:
+          afterCell += ` <span class="ms-1">${afterBadge}</span>`;
+        }else if(action === 'set-role'){
+          const beforeRole = roleAr(u.role);
+          const afterRole  = roleAr(p.role);
+          beforeCell = `<span class="diff-removed">${beforeRole}</span>`;
+          afterCell  = `<span class="diff-added">${afterRole}</span>`;
+        }else{
+          beforeCell = '—';
+          afterCell  = '—';
+        }
+
+        return `<tr>
+          <td>${base}</td>
+          <td class="text-nowrap">${beforeCell}</td>
+          <td class="text-nowrap">${afterCell}</td>
+        </tr>`;
+      }).join('');
+
+      const secondColTitle = (action==='set-role') ? 'الدور' : 'الحالة';
+      return `<div class="payload-card">
+        <div class="table-responsive">
+          <table class="table table-sm mb-0">
+            <thead>
+              <tr><th>المستخدم</th><th>${secondColTitle} قبل</th><th>${secondColTitle} بعد</th></tr>
+            </thead>
+            <tbody>${rows}</tbody>
+          </table>
+        </div>
+      </div>`;
+    }
+
+    /* ===== before/after cells (تخصيص Settings + User bulk) ===== */
     function renderSettingsDiff(before, after, mode){
       const list = (arr)=> (Array.isArray(arr)&&arr.length)?arr.map(toArabicLabel).join('، '):'—';
       return `<div class="payload-card"><dl class="row mb-0">
@@ -469,14 +535,7 @@
         return '<div class="payload-card text-muted">—</div>';
       }
       if (log.model === 'User' && p && p.bulk){
-        // وصف عربي للعملية الجماعية
-        const action = p.action==='set-role' ? `تغيير الدور إلى ${p.role}` :
-                       p.action==='activate' ? 'تفعيل المستخدمين' :
-                       p.action==='deactivate' ? 'تعطيل المستخدمين' : 'تعديل جماعي';
-        const count = Array.isArray(p.ids)? p.ids.length : '—';
-        return `<div class="payload-card"><dl class="row mb-0">
-          <dt>عملية جماعية</dt><dd>${escapeHtml(action)} (عدد: ${count})</dd>
-        </dl></div>`;
+        return renderBulkUsersList(p, 'before');
       }
       if (log.action === 'create') return '<div class="payload-card text-muted">كانت فارغة</div>';
       if (log.action === 'delete'){ const allKeys = p ? new Set(Object.keys(p)) : new Set(); return renderCardFromObjectWithDiff(log.model, p, allKeys, 'before', {}); }
@@ -494,13 +553,7 @@
         return renderSettingsDiff({}, p, 'after');
       }
       if (log.model === 'User' && p && p.bulk){
-        const action = p.action==='set-role' ? `تغيير الدور إلى ${p.role}` :
-                       p.action==='activate' ? 'تفعيل المستخدمين' :
-                       p.action==='deactivate' ? 'تعطيل المستخدمين' : 'تعديل جماعي';
-        const count = Array.isArray(p.ids)? p.ids.length : '—';
-        return `<div class="payload-card"><dl class="row mb-0">
-          <dt>عملية جماعية</dt><dd><span class="diff-added">${escapeHtml(action)}</span> (عدد: ${count})</dd>
-        </dl></div>`;
+        return renderBulkUsersList(p, 'after');
       }
       if (log.action === 'delete') return '<div class="payload-card text-muted">تم الحذف</div>';
       if (log.action === 'create'){ const allKeys = p ? new Set(Object.keys(p)) : new Set(); return renderCardFromObjectWithDiff(log.model, p, allKeys, 'after', {}); }
