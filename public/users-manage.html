@@ -59,7 +59,7 @@
         <button id="logoutBtn" class="btn btn-danger">
           <i class="bi bi-box-arrow-right"></i> خروج
         </button>
-        <a class="btn btn-outline-primary" href="/committees-home.html">
+        <a class="btn btn-outline-primary" id="homeBtn" href="/committees-home.html">
           <i class="bi bi-arrow-right-circle"></i> لوحة التحكم
         </a>
       </div>
@@ -251,7 +251,7 @@
         <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
       </div>
     </div>
-    <div id="toastInfo" class="toast align-items-center text-bg-primary border-0 mb-2" role="status" aria-live="polite" aria-atomic="true">
+    <div id="toastInfo" class="toast align-items-center text-bg-primary border-0 mb-2" role="status" aria-live="polite">
       <div class="d-flex">
         <div class="toast-body">ℹ️ معلومات</div>
         <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
@@ -262,11 +262,28 @@
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
   <script>
     /* ====== API BASE & fetch مغلّف ====== */
-    const API_BASE = location.hostname.endsWith('github.io')
-      ? 'https://<YOUR-RENDER-DOMAIN>.onrender.com'
-      : '';
+    const RENDER_BASE = 'https://vdash-qkyv.onrender.com'; // دومين خدمتك على Render
+    const host = location.hostname;
+    const isGithub = host.endsWith('github.io');
+    const isRender = host.endsWith('onrender.com');
+    const isLocal  = host === 'localhost' || host === '127.0.0.1';
+
+    // عندما تكون الصفحة على GitHub Pages نوجّه الطلبات إلى Render.
+    // عندما تكون على Render نستخدم نفس الأصل (سلسلة فارغة).
+    // محليًا نوجّه إلى بورت 3000.
+    const API_BASE = isGithub ? RENDER_BASE : (isLocal ? 'http://localhost:3000' : '');
+
+    // Helper لتحويل الروابط (login/home) لنفس أصل الـ API عند تشغيل الصفحة من GitHub Pages
+    const go = (path) => isGithub ? (RENDER_BASE + path) : path;
+
     const apiFetch = (path, opts = {}) =>
       fetch(`${API_BASE}${path}`, { credentials: 'include', ...opts });
+
+    /* عدّل زر "لوحة التحكم" ليوجَّه حسب البيئة */
+    document.addEventListener('DOMContentLoaded', () => {
+      const homeBtn = document.getElementById('homeBtn');
+      if (homeBtn) homeBtn.href = go('/committees-home.html');
+    });
 
     /* ====== Toasts ====== */
     const toastSuccess = new bootstrap.Toast(document.getElementById('toastSuccess'));
@@ -292,12 +309,12 @@
       const me = await fetchMe();
       if(!me.authenticated){
         const next = encodeURIComponent('/users-manage.html');
-        location.href = `/committees-login.html?next=${next}`;
+        location.href = go(`/committees-login.html?next=${next}`);
         return Promise.reject();
       }
       if((me.user?.role||'').toLowerCase()!=='admin'){
         setToast(toastError,'❌ هذه الصفحة للمشرفين فقط'); toastError.show();
-        setTimeout(()=>location.href='/committees-home.html',1000);
+        setTimeout(()=>location.href=go('/committees-home.html'),1000);
         return Promise.reject();
       }
       renderUser(me.user);
@@ -306,7 +323,7 @@
     document.getElementById('logoutBtn').addEventListener('click', async ()=>{
       try{
         const r = await apiFetch('/auth/committees/logout',{method:'POST',headers:{'Content-Type':'application/json'}});
-        if(r.ok){ setToast(toastSuccess,'✅ تم تسجيل الخروج'); toastSuccess.show(); setTimeout(()=>location.href='/committees-login.html',700); }
+        if(r.ok){ setToast(toastSuccess,'✅ تم تسجيل الخروج'); toastSuccess.show(); setTimeout(()=>location.href=go('/committees-login.html'),700); }
         else{ setToast(toastError,'❌ تعذر تسجيل الخروج'); toastError.show(); }
       }catch{ setToast(toastError,'❌ خطأ في الاتصال'); toastError.show(); }
     });
@@ -419,7 +436,7 @@
         const r = await apiFetch('/api/users?'+params.toString());
         if(r.status===401 || r.status===403){
           setToast(toastError,'❌ انتهت الجلسة أو لا تملك صلاحية'); toastError.show();
-          setTimeout(()=>location.href='/committees-login.html',900);
+          setTimeout(()=>location.href=go('/committees-login.html'),900);
           return;
         }
         if(!r.ok) throw new Error('HTTP '+r.status);
@@ -430,6 +447,7 @@
         renderRows(state.items, (state.page-1)*state.limit);
       }catch(e){
         tbody.innerHTML = `<tr class="text-center text-danger"><td colspan="9">حدث خطأ في جلب المستخدمين</td></tr>`;
+        console.error('fetchUsers error:', e);
       }
     }
 
