@@ -266,6 +266,20 @@
         <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
       </div>
     </div>
+    <!-- Toast: تأكيد -->
+<div id="toastConfirm" class="toast text-bg-warning border-0 mb-2" role="alert" aria-live="assertive" aria-atomic="true">
+  <div class="d-flex align-items-start">
+    <div class="toast-body">
+      <div id="toastConfirmMsg">هل تريد المتابعة؟</div>
+      <div class="mt-2 pt-2 border-top d-flex gap-2">
+        <button type="button" class="btn btn-danger btn-sm" id="toastConfirmYes">تأكيد</button>
+        <button type="button" class="btn btn-light btn-sm" id="toastConfirmNo" data-bs-dismiss="toast">إلغاء</button>
+      </div>
+    </div>
+    <button type="button" class="btn-close btn-close-white m-2" data-bs-dismiss="toast"></button>
+  </div>
+</div>
+
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
@@ -298,6 +312,38 @@
     const toastSuccess = new bootstrap.Toast(document.getElementById('toastSuccess'));
     const toastError   = new bootstrap.Toast(document.getElementById('toastError'));
     const toastInfo    = new bootstrap.Toast(document.getElementById('toastInfo'));
+    /* ====== Confirm Toast (تأكيد عبر توست) ====== */
+const toastConfirmEl  = document.getElementById('toastConfirm');
+const toastConfirm    = new bootstrap.Toast(toastConfirmEl, { autohide: false });
+const confirmMsgEl    = toastConfirmEl.querySelector('#toastConfirmMsg');
+const confirmYesBtn   = toastConfirmEl.querySelector('#toastConfirmYes');
+const confirmNoBtn    = toastConfirmEl.querySelector('#toastConfirmNo');
+
+/** يعرض توست تأكيد ويعيد Promise<boolean> */
+function confirmToast({ message='هل تريد المتابعة؟', confirmText='تأكيد', cancelText='إلغاء' } = {}){
+  return new Promise((resolve)=>{
+    confirmMsgEl.textContent = message;
+    confirmYesBtn.textContent = confirmText;
+    confirmNoBtn.textContent  = cancelText;
+
+    const onYes = () => { cleanup(); toastConfirm.hide(); resolve(true); };
+    const onNo  = () => { cleanup(); resolve(false); };
+    const onHidden = () => { cleanup(); resolve(false); };
+
+    function cleanup(){
+      confirmYesBtn.removeEventListener('click', onYes);
+      confirmNoBtn.removeEventListener('click', onNo);
+      toastConfirmEl.removeEventListener('hidden.bs.toast', onHidden);
+    }
+
+    confirmYesBtn.addEventListener('click', onYes, { once:true });
+    confirmNoBtn.addEventListener('click', onNo,  { once:true });
+    toastConfirmEl.addEventListener('hidden.bs.toast', onHidden, { once:true });
+
+    toastConfirm.show();
+  });
+}
+
     const setToast = (el,msg)=>{ el._element.querySelector('.toast-body').innerText = msg; };
 
     /* ====== Auth ====== */
@@ -515,20 +561,30 @@
       }
     }
 
-    /* ====== حذف واحد ====== */
-    async function deleteUser(id, name){
-      if(!confirm(`سيتم حذف المستخدم: ${name}\nلا يمكن التراجع.`)) return;
-      try{
-        const r = await apiFetch('/api/users/'+id,{ method:'DELETE' });
-        const data = await r.json().catch(()=> ({}));
-        if(!r.ok) throw new Error(data?.message || 'فشل الحذف');
-        setToast(toastSuccess,'🗑️ تم حذف المستخدم'); toastSuccess.show();
-        state.selected.delete(id);
-        fetchUsers();
-      }catch(err){
-        setToast(toastError,'❌ '+(err.message||'فشل الحذف')); toastError.show();
-      }
-    }
+   /* ====== حذف واحد (بتوست تأكيد) ====== */
+async function deleteUser(id, name){
+  const ok = await confirmToast({
+    message: `سيتم حذف المستخدم: ${name}\nلا يمكن التراجع.`,
+    confirmText: 'نعم، احذف',
+    cancelText: 'إلغاء'
+  });
+  if(!ok){
+    setToast(toastInfo,'تم الإلغاء'); toastInfo.show();
+    return;
+  }
+
+  try{
+    const r = await apiFetch('/api/users/'+id,{ method:'DELETE' });
+    const data = await r.json().catch(()=> ({}));
+    if(!r.ok) throw new Error(data?.message || 'فشل الحذف');
+    setToast(toastSuccess,'🗑️ تم حذف المستخدم'); toastSuccess.show();
+    state.selected.delete(id);
+    fetchUsers();
+  }catch(err){
+    setToast(toastError,'❌ '+(err.message||'فشل الحذف')); toastError.show();
+  }
+}
+
 
     /* ====== إعادة تعيين كلمة المرور ====== */
     const resetModal = new bootstrap.Modal(document.getElementById('resetPwModal'));
@@ -771,11 +827,23 @@ tbodyEl.addEventListener('keydown', (e)=>{
     });
     document.getElementById('bulkActivate').addEventListener('click', ()=> bulkAction({ action:'activate' }, '✅ تم تفعيل المحددين'));
     document.getElementById('bulkDeactivate').addEventListener('click', ()=> bulkAction({ action:'deactivate' }, '✅ تم تعطيل المحددين'));
-    document.getElementById('bulkDelete').addEventListener('click', ()=>{
-      if(confirm(`سيتم حذف ${state.selected.size} مستخدم/ين. لا يمكن التراجع.`)){
-        bulkAction({ action:'delete' }, '🗑️ تم حذف المحددين');
-      }
-    });
+    document.getElementById('bulkDelete').addEventListener('click', async ()=>{
+  if(state.selected.size === 0){
+    setToast(toastInfo,'لم يتم تحديد مستخدمين'); toastInfo.show();
+    return;
+  }
+  const ok = await confirmToast({
+    message: `سيتم حذف ${state.selected.size} مستخدم/ين. لا يمكن التراجع.`,
+    confirmText: 'نعم، احذف',
+    cancelText: 'إلغاء'
+  });
+  if(!ok){
+    setToast(toastInfo,'تم الإلغاء'); toastInfo.show();
+    return;
+  }
+  bulkAction({ action:'delete' }, '🗑️ تم حذف المحددين');
+});
+
 
     /* ====== إقلاع (IIFE بدل top-level await) ====== */
     (async function init(){
