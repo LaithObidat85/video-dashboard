@@ -13,6 +13,7 @@
     .card{border-radius:16px;box-shadow:0 6px 18px rgba(0,0,0,.06)}
     .user-chip{font-size:.9rem}
 
+    /* بطاقات المحتوى في عمودي "قبل/بعد"  */
     .payload-card{
       background:#fff;border:1px solid #e9ecef;border-radius:12px;padding:10px;
       height:220px;overflow:auto
@@ -28,7 +29,10 @@
     .minw-40{min-width:40px}
     .minw-60{min-width:60px}
     .minw-120{min-width:120px}
-    .table thead th{vertical-align:middle}
+
+    /* لا تكسّر عناوين الأعمدة */
+    .table thead th{vertical-align:middle;white-space:nowrap}
+
     .sticky-actions{position:sticky;bottom:0;background:#fff;border-top:1px solid #e9ecef;padding:12px;border-radius:0 0 16px 16px}
     .count-badge{font-size:.85rem}
 
@@ -37,9 +41,44 @@
     .diff-removed{color:#dc3545;font-weight:600;background:rgba(220,53,69,.12);border-radius:6px;padding:2px 6px}
 
     /* توزيع الأعمدة */
-    .col-user{width:18%}
-    .col-before{width:40%}
-    .col-after{width:40%}
+    .col-user{width:16%}
+    .col-before{width:34%}
+    .col-after{width:34%}
+
+    /* اجبر الجدول الأساسي على توزيع ثابت حتى لا “ينفش” بسبب خلية واحدة */
+    .table { table-layout: fixed; }
+
+    /* الجداول داخل بطاقة “البيانات قبل/بعد” لا تتمدد خارج البطاقة */
+    .payload-card .table{ table-layout: fixed; width:100%; }
+    .payload-card .table th,
+    .payload-card .table td{
+      white-space: normal;
+      word-break: break-word;       /* Chrome/Edge */
+      overflow-wrap: anywhere;      /* Safari/Firefox */
+    }
+
+    /* كي لا تتجاوز البادجات حدود الخلية */
+    .payload-card .badge { white-space: nowrap; }
+
+    /* ساعد النصوص اللاتينية/الإيميل على الانكسار بشكل صحي */
+    .payload-card { direction: rtl; }
+    .payload-card .email,
+    .payload-card code,
+    .payload-card .payload-json {
+      direction: ltr;
+      unicode-bidi: plaintext;
+      word-break: break-all;
+    }
+
+    /* شارة "لا تغيير فعلي" */
+    .nochange-note{
+      border:1px solid rgba(13,110,253,.25);
+      background:rgba(13,110,253,.06);
+      color:#0d6efd;
+      border-radius:10px;
+      padding:4px 8px;
+      font-size:.85rem;
+    }
   </style>
 </head>
 <body>
@@ -358,8 +397,11 @@
       const m=aTokens.length,n=bTokens.length,dp=Array(m+1).fill(null).map(()=>Array(n+1).fill(0));
       for(let i=m-1;i>=0;i--)for(let j=n-1;j>=0;j--)dp[i][j]=(aTokens[i]===bTokens[j])?dp[i+1][j+1]+1:Math.max(dp[i+1][j],dp[i][j+1]);
       const ops=[]; let i=0,j=0;
-      while(i<m&&j<n){ if(aTokens[i]===bTokens[j]){ops.push({type:'eq',token:aTokens[i++]});j++;} else if(dp[i+1][j]>=dp[i][j+1]) ops.push({type:'del',token:aTokens[i++]}); else ops.push({type:'add',token:bTokens[j++]}); }
-      while(i<m) ops.push({type:'del',token:aTokens[i++]}); while(j<n) ops.push({type:'add',token:bTokens[j++]}); return ops;
+      while(i<m&&j<n){ if(aTokens[i]===bTokens[j]){ops.push({type:'eq',token:aTokens[i]}); i++; j++;} else if(dp[i+1][j]>=dp[i][j+1]){ops.push({type:'del',token:aTokens[i++]});} else {ops.push({type:'add',token:bTokens[j++]});}
+      }
+      while(i<m) ops.push({type:'del',token=aTokens[i++]});
+      while(j<n) ops.push({type:'add',token=bTokens[j++]});
+      return ops;
     }
     function renderTextDiff(beforeText, afterText, mode){
       const ops = diffTokens(splitTokens(beforeText||''), splitTokens(afterText||'')); let html='';
@@ -394,8 +436,9 @@
       const wrapClass = diffKeys && diffKeys.has(key) ? (mode==='before' ? 'diff-removed' : 'diff-added') : '';
       return `<dt>الحالة</dt><dd class="${wrapClass}">${base}</dd>`;
     }
+    const roleAr = r => (r==='admin' ? 'مدير (admin)' : 'مستخدم (user)');
 
-    /* ===== بطاقة حسب الموديل (تتضمن User الآن) ===== */
+    /* ===== بطاقة حسب الموديل (تشمل User بالعربية) ===== */
     function renderCardFromObjectWithDiff(model, obj, diffKeys, mode, otherSide){
       if(!obj) return '<div class="payload-card text-muted">—</div>';
       let html = '<div class="payload-card"><dl class="row mb-0">';
@@ -430,11 +473,10 @@
         if(otherKeys.length) html += kvDiff('تغييرات أخرى', otherKeys.map(toArabicLabel).join('، '), '__misc', diffKeys, mode);
 
       }else if(model==='User'){
-        // العربية / إبراز التغييرات: الاسم، اسم المستخدم، البريد، الدور، الحالة
         if(has('name'))     html += kvDiff('الاسم', d.name, 'name', diffKeys, mode);
         if(has('username')) html += kvDiff('اسم المستخدم', d.username, 'username', diffKeys, mode);
         if(has('email'))    html += kvDiff('البريد', d.email, 'email', diffKeys, mode);
-        if(has('role'))     html += kvDiff('الدور', d.role==='admin'?'مدير (admin)':'مستخدم (user)', 'role', diffKeys, mode);
+        if(has('role'))     html += kvDiff('الدور', roleAr(d.role), 'role', diffKeys, mode);
         if('isActive' in d) html += userActiveBadge(d.isActive, 'isActive', diffKeys, mode);
 
       }else{
@@ -451,7 +493,102 @@
       return html;
     }
 
-    /* ===== before/after cells (تخصيص User bulk) ===== */
+    /* ===== تجميع after تلقائياً إن لم يرسله السيرفر (للعمليات الجماعية) ===== */
+    function synthesizeBulkAfter(p){
+      if (!Array.isArray(p?.before)) return null;
+      const action = p?.action;
+      if (action === 'activate')   return p.before.map(u => ({ ...u, isActive: true }));
+      if (action === 'deactivate') return p.before.map(u => ({ ...u, isActive: false }));
+      if (action === 'set-role')   return p.before.map(u => ({ ...u, role: p.role === 'admin' ? 'admin' : 'user' }));
+      if (action === 'delete')     return p.before.map(u => ({ ...u, _deleted: true }));
+      return null;
+    }
+
+    /* ===== كتلة عرض مفصلة للعمليات الجماعية بفصل “قبل/بعد” ===== */
+    function renderBulkUsersList(p, mode){
+      const listBefore = Array.isArray(p?.before) ? p.before : [];
+      const listAfter  = Array.isArray(p?.after)  ? p.after  : synthesizeBulkAfter(p);
+      const action = p?.action;
+      const idsCount = Array.isArray(p?.ids) ? p.ids.length : 0;
+
+      if(listBefore.length === 0){
+        const actionAr = action==='set-role' ? `تغيير الدور إلى ${roleAr(p.role)}`
+                        : action==='activate' ? 'تفعيل المستخدمين'
+                        : action==='deactivate' ? 'تعطيل المستخدمين'
+                        : (action || 'تعديل جماعي');
+        return `<div class="payload-card"><dl class="row mb-0">
+          <dt>عملية جماعية</dt><dd>${escapeHtml(actionAr)} (عدد: ${idsCount||'—'})</dd>
+          <dt>ملاحظة</dt><dd class="text-muted">لتفاصيل الأسماء سجّل الخادم <code>payload.before</code> (ويُفضّل أيضًا <code>payload.after</code>).</dd>
+        </dl></div>`;
+      }
+
+      // هل لا يوجد تغيير فعلي؟
+      let noChanges = false;
+      if (listAfter && listAfter.length === listBefore.length) {
+        if (action === 'activate' || action === 'deactivate') {
+          noChanges = listBefore.every((u,i)=> !!u.isActive === !!(listAfter[i]?.isActive));
+        } else if (action === 'set-role') {
+          noChanges = listBefore.every((u,i)=> (u.role||'user') === ((listAfter[i]?.role)||'user'));
+        }
+      }
+
+      // بناء الصفوف بحسب العمود (قبل أو بعد)
+      const rows = listBefore.map((u, i)=>{
+        const a = (listAfter && listAfter[i]) || {};
+        const name  = u.name || '—';
+        const uname = u.username || (u.email? u.email.split('@')[0] : '—');
+        const email = u.email ? `<span class="badge text-bg-light">${u.email}</span>` : '';
+
+        let cell = '—';
+        if(action === 'activate' || action === 'deactivate'){
+          const is = (mode==='before') ? !!u.isActive : !!a.isActive;
+          cell = is ? '<span class="badge text-bg-success">نشط</span>' : '<span class="badge text-bg-danger">معطّل</span>';
+          if(mode==='after'){
+            cell = (is ? '<span class="diff-added">نشط</span>' : '<span class="diff-removed">معطّل</span>') + ` <span class="ms-1">${cell}</span>`;
+          }
+        }else if(action === 'set-role'){
+          const roleTxt = roleAr(mode==='before' ? u.role : a.role);
+          cell = mode==='after' ? `<span class="diff-added">${roleTxt}</span>` : `<span class="diff-removed">${roleTxt}</span>`;
+        }else if(action === 'delete'){
+          cell = mode==='after' ? '<span class="badge text-bg-danger">تم الحذف</span>' : roleAr(u.role);
+        }
+
+        return `<tr>
+          <td>${name} <span class="badge text-bg-info">${uname}</span> ${email}</td>
+          <td class="text-nowrap">${cell}</td>
+        </tr>`;
+      }).join('');
+
+      const secondColTitle = (action==='set-role') ? 'الدور' : 'الحالة';
+      const title = (mode==='before') ? `${secondColTitle} قبل` : `${secondColTitle} بعد`;
+
+      // في عمود "بعد" نعرض ملخص العملية + شارة لا تغيير
+      const headerRight = (mode==='after') ? `
+        <div class="d-flex align-items-center gap-2">
+          ${noChanges ? '<span class="nochange-note">لا تغيير فعلي</span>' : ''}
+          <span class="badge text-bg-light">عدد: ${idsCount || listBefore.length}</span>
+        </div>` : '';
+
+      const actionTitle = (action==='set-role') ? ('تغيير الدور → ' + roleAr(p.role))
+                        : (action==='activate' ? 'تفعيل' : (action==='deactivate' ? 'تعطيل' : (action||'—')));
+
+      return `<div class="payload-card">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <div>${mode==='after' ? ('<strong>عملية جماعية:</strong> ' + actionTitle) : ''}</div>
+          ${headerRight}
+        </div>
+        <div class="table-responsive">
+          <table class="table table-sm mb-0">
+            <thead class="table-light">
+              <tr><th>المستخدم</th><th>${title}</th></tr>
+            </thead>
+            <tbody>${rows}</tbody>
+          </table>
+        </div>
+      </div>`;
+    }
+
+    /* ===== before/after cells (تخصيص Settings + User bulk) ===== */
     function renderSettingsDiff(before, after, mode){
       const list = (arr)=> (Array.isArray(arr)&&arr.length)?arr.map(toArabicLabel).join('، '):'—';
       return `<div class="payload-card"><dl class="row mb-0">
@@ -469,14 +606,7 @@
         return '<div class="payload-card text-muted">—</div>';
       }
       if (log.model === 'User' && p && p.bulk){
-        // وصف عربي للعملية الجماعية
-        const action = p.action==='set-role' ? `تغيير الدور إلى ${p.role}` :
-                       p.action==='activate' ? 'تفعيل المستخدمين' :
-                       p.action==='deactivate' ? 'تعطيل المستخدمين' : 'تعديل جماعي';
-        const count = Array.isArray(p.ids)? p.ids.length : '—';
-        return `<div class="payload-card"><dl class="row mb-0">
-          <dt>عملية جماعية</dt><dd>${escapeHtml(action)} (عدد: ${count})</dd>
-        </dl></div>`;
+        return renderBulkUsersList(p, 'before');
       }
       if (log.action === 'create') return '<div class="payload-card text-muted">كانت فارغة</div>';
       if (log.action === 'delete'){ const allKeys = p ? new Set(Object.keys(p)) : new Set(); return renderCardFromObjectWithDiff(log.model, p, allKeys, 'before', {}); }
@@ -494,13 +624,7 @@
         return renderSettingsDiff({}, p, 'after');
       }
       if (log.model === 'User' && p && p.bulk){
-        const action = p.action==='set-role' ? `تغيير الدور إلى ${p.role}` :
-                       p.action==='activate' ? 'تفعيل المستخدمين' :
-                       p.action==='deactivate' ? 'تعطيل المستخدمين' : 'تعديل جماعي';
-        const count = Array.isArray(p.ids)? p.ids.length : '—';
-        return `<div class="payload-card"><dl class="row mb-0">
-          <dt>عملية جماعية</dt><dd><span class="diff-added">${escapeHtml(action)}</span> (عدد: ${count})</dd>
-        </dl></div>`;
+        return renderBulkUsersList(p, 'after');
       }
       if (log.action === 'delete') return '<div class="payload-card text-muted">تم الحذف</div>';
       if (log.action === 'create'){ const allKeys = p ? new Set(Object.keys(p)) : new Set(); return renderCardFromObjectWithDiff(log.model, p, allKeys, 'after', {}); }
@@ -582,7 +706,7 @@
 
     /* ===== تحكم الفلاتر ===== */
     document.getElementById('btnSearch').addEventListener('click', ()=>{ page = 1; reachedEnd = false; loadLogs({append:false}); });
-    document.getElementById('btnClear').addEventListener('click', ()=>{ 
+    document.getElementById('btnClear').addEventListener('click', ()=>{
       document.getElementById('fModel').value=''; document.getElementById('fAction').value='';
       document.getElementById('fQuery').value=''; document.getElementById('fFrom').value=''; document.getElementById('fTo').value='';
       page=1; reachedEnd=false; loadLogs({append:false});
@@ -624,9 +748,9 @@
     });
     document.getElementById('btnPurgeRange').addEventListener('click', async ()=>{
       const f = document.getElementById('fFrom').value, t = document.getElementById('fTo').value;
-      if(!f && !t){ setToast(toastInfo,'الرجاء تحديد تاريخ "من" أو "إلى" أولًا'); toastInfo.show(); return; }
+      if(!ف && !t){ setToast(toastInfo,'الرجاء تحديد تاريخ "من" أو "إلى" أولًا'); toastInfo.show(); return; }
       if(f && t && (new Date(f) > new Date(t))){ setToast(toastError,'❌ نطاق التاريخ غير صحيح'); toastError.show(); return; }
-      const ok = await showConfirm({ title:'تأكيد الحذف حسب التاريخ', message:`سيتم حذف السجلات ضمن النطاق: ${f||'—'} → ${t||'—'}.`, confirmText:'حذف ضمن النطاق', confirmBtnClass:'btn-warning' });
+      const ok = await showConfirm({ title:'تأكيد الحذف حسب التاريخ', message:`سيتم حذف السجلات ضمن النطاق: ${f||'—'} — ${t||'—'}.`, confirmText:'حذف ضمن النطاق', confirmBtnClass:'btn-warning' });
       if(!ok) return;
       const qs = new URLSearchParams(); if(f) qs.set('from',f); if(t) qs.set('to',t);
       try{
@@ -636,7 +760,7 @@
         const msg = (typeof data?.deletedCount === 'number') ? `🗂️ تم حذف ${data.deletedCount} سجل ضمن النطاق` : (data?.message || '🗂️ تم حذف السجلات ضمن النطاق');
         setToast(toastSuccess, msg); toastSuccess.show();
         page=1; reachedEnd=false; loadLogs({append:false});
-      }catch(e){ setToast(toastError,'❌ فشل حذف السجلات ضمن النطاق'); toastError.show(); }
+      }catch(e){ setToast(toastError,'❌ فشل في حذف السجلات ضمن النطاق'); toastError.show(); }
     });
     document.getElementById('btnDeleteSelected').addEventListener('click', async ()=>{
       const count = selectedIds.size;
