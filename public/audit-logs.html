@@ -94,7 +94,7 @@
           <span id="userFullName">—</span>
           <span class="ms-2 badge bg-secondary" id="userRole">—</span>
         </span>
-        <a class="btn btn-outline-primary" href="/committees-home.html">
+        <a id="homeLink" class="btn btn-outline-primary" href="#">
           <i class="bi bi-grid"></i> لوحة التحكم
         </a>
         <button id="logoutBtn" class="btn btn-danger">
@@ -241,6 +241,16 @@
   <!-- Scripts -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
   <script>
+    /* ====== ربط الصفحة بالسيرفر سواء من Render أو GitHub Pages ====== */
+    const API_BASE = location.hostname.endsWith('github.io')
+      ? 'https://vdash-qkyv.onrender.com'
+      : '';
+    const api = (path) => API_BASE + path;
+
+    // ضبط رابط لوحة التحكم ليتوجّه للسيرفر عندما نكون على github.io
+    const homeLink = document.getElementById('homeLink');
+    homeLink.href = api('/committees-home.html');
+
     /* ===== Toast helpers ===== */
     const toastSuccess = new bootstrap.Toast(document.getElementById('toastSuccess'));
     const toastError   = new bootstrap.Toast(document.getElementById('toastError'));
@@ -271,7 +281,7 @@
     /* ===== auth helpers ===== */
     async function fetchMe(){
       try{
-        const r = await fetch('/auth/committees/me',{credentials:'include'});
+        const r = await fetch(api('/auth/committees/me'),{credentials:'include'});
         if(!r.ok) throw new Error();
         return await r.json();
       }catch{ return {authenticated:false}; }
@@ -285,13 +295,14 @@
     async function ensureAdmin(){
       const me = await fetchMe();
       if(!me.authenticated){
-        const next = encodeURIComponent('/audit-logs.html');
-        location.href = `/committees-login.html?next=${next}`;
+        // عند عدم تسجيل الدخول، نحيل المستخدم لواجهة تسجيل الدخول على السيرفر
+        const nextUrl = encodeURIComponent(location.href);
+        location.href = api(`/committees-login.html?next=${nextUrl}`);
         return Promise.reject();
       }
       if((me.user?.role||'').toLowerCase()!=='admin'){
         setToast(toastError,'❌ هذه الصفحة للمشرفين فقط'); toastError.show();
-        setTimeout(()=>location.href='/committees-home.html',900);
+        setTimeout(()=>location.href=api('/committees-home.html'),900);
         return Promise.reject();
       }
       renderUser(me.user);
@@ -299,8 +310,8 @@
     }
     async function logout(){
       try{
-        const r = await fetch('/auth/committees/logout',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'include'});
-        if(r.ok){ setToast(toastSuccess,'✅ تم تسجيل الخروج'); toastSuccess.show(); setTimeout(()=>location.href='/committees-login.html',700); }
+        const r = await fetch(api('/auth/committees/logout'),{method:'POST',headers:{'Content-Type':'application/json'},credentials:'include'});
+        if(r.ok){ setToast(toastSuccess,'✅ تم تسجيل الخروج'); toastSuccess.show(); setTimeout(()=>location.href=api('/committees-login.html'),700); }
         else{ setToast(toastError,'❌ تعذر تسجيل الخروج'); toastError.show(); }
       }catch{ setToast(toastError,'❌ خطأ في الاتصال'); toastError.show(); }
     }
@@ -397,11 +408,8 @@
       const m=aTokens.length,n=bTokens.length,dp=Array(m+1).fill(null).map(()=>Array(n+1).fill(0));
       for(let i=m-1;i>=0;i--)for(let j=n-1;j>=0;j--)dp[i][j]=(aTokens[i]===bTokens[j])?dp[i+1][j+1]+1:Math.max(dp[i+1][j],dp[i][j+1]);
       const ops=[]; let i=0,j=0;
-      while(i<m&&j<n){ if(aTokens[i]===bTokens[j]){ops.push({type:'eq',token:aTokens[i]}); i++; j++;} else if(dp[i+1][j]>=dp[i][j+1]){ops.push({type:'del',token:aTokens[i++]});} else {ops.push({type:'add',token:bTokens[j++]});}
-      }
-      while(i<m) ops.push({type:'del',token=aTokens[i++]});
-      while(j<n) ops.push({type:'add',token=bTokens[j++]});
-      return ops;
+      while(i<m&&j<n){ if(aTokens[i]===bTokens[j]){ops.push({type:'eq',token:aTokens[i]}); i++; j++;} else if(dp[i+1][j]>=dp[i][j+1]){ops.push({type:'del',token:aTokens[i++]});} else {ops.push({type:'add',token:bTokens[j++]});} }
+      while(i<m) ops.push({type:'del',token=aTokens[i++]}); while(j<n) ops.push({type:'add',token=bTokens[j++]}); return ops;
     }
     function renderTextDiff(beforeText, afterText, mode){
       const ops = diffTokens(splitTokens(beforeText||''), splitTokens(afterText||'')); let html='';
@@ -666,7 +674,7 @@
         selectedIds.clear(); updateSelectedCount(); document.getElementById('chkAll').checked = false;
       }
       try{
-        const r = await fetch('/api/audit-logs?'+buildQuery(),{credentials:'include'});
+        const r = await fetch(api('/api/audit-logs?')+buildQuery(),{credentials:'include'});
         if(!r.ok) throw new Error('HTTP '+r.status);
         const data = await r.json();
         const items = Array.isArray(data)? data : (data.items||[]);
@@ -701,6 +709,7 @@
         rowCounterStart = n;
       }catch(err){
         tbody.innerHTML = `<tr class="text-center text-danger"><td colspan="8">حدث خطأ في جلب السجلات</td></tr>`;
+        setToast(toastError, 'تعذّر الاتصال بالسيرفر.'); toastError.show();
       }
     }
 
@@ -739,7 +748,7 @@
       const ok = await showConfirm({ title:'تأكيد حذف الكل', message:'سيتم حذف جميع سجلات العمليات، ولا يمكن التراجع.', confirmText:'نعم، احذف الكل', confirmBtnClass:'btn-danger' });
       if(!ok) return;
       try{
-        const r = await fetch('/api/audit-logs', { method:'DELETE', credentials:'include' });
+        const r = await fetch(api('/api/audit-logs'), { method:'DELETE', credentials:'include' });
         if(!r.ok) throw new Error('HTTP '+r.status);
         const data = await r.json().catch(()=>({}));
         setToast(toastSuccess, data?.message || '🧹 تم حذف جميع السجلات'); toastSuccess.show();
@@ -754,7 +763,7 @@
       if(!ok) return;
       const qs = new URLSearchParams(); if(f) qs.set('from',f); if(t) qs.set('to',t);
       try{
-        const r = await fetch('/api/audit-logs?'+qs.toString(), { method:'DELETE', credentials:'include' });
+        const r = await fetch(api('/api/audit-logs?')+qs.toString(), { method:'DELETE', credentials:'include' });
         if(!r.ok) throw new Error('HTTP '+r.status);
         const data = await r.json().catch(()=>({}));
         const msg = (typeof data?.deletedCount === 'number') ? `🗂️ تم حذف ${data.deletedCount} سجل ضمن النطاق` : (data?.message || '🗂️ تم حذف السجلات ضمن النطاق');
@@ -768,7 +777,7 @@
       const ok = await showConfirm({ title:'تأكيد حذف المحدد', message:`سيتم حذف ${count} من السجلات المحددة.`, confirmText:'حذف المحدد', confirmBtnClass:'btn-danger' });
       if(!ok) return;
       try{
-        const r = await fetch('/api/audit-logs/by-ids', {
+        const r = await fetch(api('/api/audit-logs/by-ids'), {
           method:'DELETE', headers:{'Content-Type':'application/json'}, credentials:'include',
           body: JSON.stringify({ ids: Array.from(selectedIds) })
         });
