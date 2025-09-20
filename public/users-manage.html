@@ -74,6 +74,15 @@
 .user-chip{ font-size: 1rem !important; }
 
 
+    /* اجعل نص الشارة عريضًا، مع استثناء شارة الدور الداخلية */
+.user-chip.badge{
+  font-weight: 700 !important;
+}
+.user-chip.badge #userRole{
+  font-weight: 500 !important; /* أو 400 لتبقى عادية */
+}
+
+
   </style>
 </head>
 <body>
