@@ -240,557 +240,366 @@
 
   <!-- Scripts -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-  <script>
-    /* ====== ربط الصفحة بالسيرفر سواء من Render أو GitHub Pages ====== */
-    const API_BASE = location.hostname.endsWith('github.io')
-      ? 'https://vdash-qkyv.onrender.com'
-      : '';
-    const api = (path) => API_BASE + path;
+<script>
+  /* ====== GitHub Pages vs Render ====== */
+  const API_BASE = location.hostname.endsWith('github.io') ? 'https://vdash-qkyv.onrender.com' : '';
+  const api = (path) => API_BASE + path;
 
-    // ضبط رابط لوحة التحكم ليتوجّه للسيرفر عندما نكون على github.io
-    const homeLink = document.getElementById('homeLink');
-    homeLink.href = api('/committees-home.html');
+  // رابط لوحة التحكم
+  const homeLink = document.getElementById('homeLink');
+  homeLink.href = api('/committees-home.html');
 
-    /* ===== Toast helpers ===== */
-    const toastSuccess = new bootstrap.Toast(document.getElementById('toastSuccess'));
-    const toastError   = new bootstrap.Toast(document.getElementById('toastError'));
-    const toastInfo    = new bootstrap.Toast(document.getElementById('toastInfo'));
-    function setToast(el, msg){ el._element.querySelector('.toast-body').innerText = msg; }
+  /* ===== Toasts ===== */
+  const toastSuccess = new bootstrap.Toast(document.getElementById('toastSuccess'));
+  const toastError   = new bootstrap.Toast(document.getElementById('toastError'));
+  const toastInfo    = new bootstrap.Toast(document.getElementById('toastInfo'));
+  function setToast(el, msg){ el._element.querySelector('.toast-body').innerText = msg; }
 
-    /* ===== Modal confirm helper ===== */
-    const confirmModalEl = document.getElementById('confirmModal');
-    const confirmModal   = new bootstrap.Modal(confirmModalEl);
-    const confirmTitle   = document.getElementById('confirmModalTitle');
-    const confirmBody    = document.getElementById('confirmModalBody');
-    const confirmBtn     = document.getElementById('confirmModalConfirmBtn');
-    function showConfirm({title='تأكيد', message='هل تريد المتابعة؟', confirmText='تأكيد', confirmBtnClass='btn-danger'}={}){
-      return new Promise(resolve=>{
-        confirmTitle.textContent = title;
-        confirmBody.textContent  = message;
-        confirmBtn.className = 'btn ' + confirmBtnClass;
-        confirmBtn.textContent = confirmText;
-        let resolved = false;
-        const onConfirm = () => { resolved = true; confirmModal.hide(); resolve(true); };
-        const onHidden  = () => { confirmModalEl.removeEventListener('hidden.bs.modal', onHidden); confirmBtn.removeEventListener('click', onConfirm); if(!resolved) resolve(false); };
-        confirmBtn.addEventListener('click', onConfirm, { once:true });
-        confirmModalEl.addEventListener('hidden.bs.modal', onHidden, { once:true });
-        confirmModal.show();
+  /* ===== Modal confirm helper ===== */
+  const confirmModalEl = document.getElementById('confirmModal');
+  const confirmModal   = new bootstrap.Modal(confirmModalEl);
+  const confirmTitle   = document.getElementById('confirmModalTitle');
+  const confirmBody    = document.getElementById('confirmModalBody');
+  const confirmBtn     = document.getElementById('confirmModalConfirmBtn');
+  function showConfirm({title='تأكيد', message='هل تريد المتابعة؟', confirmText='تأكيد', confirmBtnClass='btn-danger'}={}){
+    return new Promise(resolve=>{
+      confirmTitle.textContent = title;
+      confirmBody.textContent  = message;
+      confirmBtn.className = 'btn ' + confirmBtnClass;
+      confirmBtn.textContent = confirmText;
+      let resolved = false;
+      const onConfirm = () => { resolved = true; confirmModal.hide(); resolve(true); };
+      const onHidden  = () => { confirmModalEl.removeEventListener('hidden.bs.modal', onHidden); confirmBtn.removeEventListener('click', onConfirm); if(!resolved) resolve(false); };
+      confirmBtn.addEventListener('click', onConfirm, { once:true });
+      confirmModalEl.addEventListener('hidden.bs.modal', onHidden, { once:true });
+      confirmModal.show();
+    });
+  }
+
+  /* ===== auth helpers (مصغّر ومتين) ===== */
+  async function fetchMe(){
+    try{
+      const r = await fetch(api('/auth/committees/me'),{
+        credentials:'include',
+        headers:{'Accept':'application/json'}
       });
+      if(!r.ok) throw new Error('HTTP '+r.status);
+      return await r.json();
+    }catch(e){
+      return { authenticated:false, _err:String(e) };
     }
+  }
 
-    /* ===== auth helpers ===== */
-    async function fetchMe(){
-      try{
-        const r = await fetch(api('/auth/committees/me'),{credentials:'include'});
-        if(!r.ok) throw new Error();
-        return await r.json();
-      }catch{ return {authenticated:false}; }
-    }
-    function renderUser(user){
-      const username = user?.username || (user?.email? user.email.split('@')[0] : '—');
-      document.getElementById('userUsername').textContent = username;
-      document.getElementById('userFullName').textContent = user?.name || '—';
-      document.getElementById('userRole').textContent = user?.role || '—';
-    }
-    async function ensureAdmin(){
-      const me = await fetchMe();
-      if(!me.authenticated){
-        // عند عدم تسجيل الدخول، نحيل المستخدم لواجهة تسجيل الدخول على السيرفر
-        const nextUrl = encodeURIComponent(location.href);
-        location.href = api(`/committees-login.html?next=${nextUrl}`);
-        return Promise.reject();
-      }
-      if((me.user?.role||'').toLowerCase()!=='admin'){
-        setToast(toastError,'❌ هذه الصفحة للمشرفين فقط'); toastError.show();
-        setTimeout(()=>location.href=api('/committees-home.html'),900);
-        return Promise.reject();
-      }
-      renderUser(me.user);
-      return me.user;
-    }
-    async function logout(){
-      try{
-        const r = await fetch(api('/auth/committees/logout'),{method:'POST',headers:{'Content-Type':'application/json'},credentials:'include'});
-        if(r.ok){ setToast(toastSuccess,'✅ تم تسجيل الخروج'); toastSuccess.show(); setTimeout(()=>location.href=api('/committees-login.html'),700); }
-        else{ setToast(toastError,'❌ تعذر تسجيل الخروج'); toastError.show(); }
-      }catch{ setToast(toastError,'❌ خطأ في الاتصال'); toastError.show(); }
-    }
-    document.getElementById('logoutBtn').addEventListener('click', logout);
-
-    /* ===== mapping ===== */
-    function modelToPage(model){
-      switch(model){
-        case 'Evaluation': return 'تقييم اللجان';
-        case 'College':    return 'الكليات';
-        case 'Auditor':    return 'المدققون';
-        case 'Committee':  return 'أسماء اللجان';
-        case 'Settings':   return 'الإعدادات';
-        case 'User':       return 'المستخدمون';
-        default:           return model||'—';
-      }
-    }
-    function badgeAction(action){
-      const cls = action==='delete'?'text-bg-danger':(action==='update'?'text-bg-warning':'text-bg-success');
-      return `<span class="badge ${cls}">${action||'—'}</span>`;
-    }
-    function fmtUser(u){
-      if(!u) return '—';
-      const full = u.name || '—';
-      const uname = u.username || (u.email? u.email.split('@')[0] : '—');
-      const email = u.email ? ` <span class="badge text-bg-light">${u.email}</span>` : '';
-      const role  = u.role  ? ` <span class="badge text-bg-secondary">${u.role}</span>` : '';
-      return `${full} <span class="badge text-bg-info">${uname}</span>${email}${role}`;
-    }
-
-    /* ===== labels ===== */
-    const colNameArMap = {
-      committee_name:'اسم اللجنة',
-      college:'الكلية',
-      auditor_name:'المدقق',
-      createdAt:'تاريخ الإنشاء',
-      updatedAt:'تاريخ التحديث',
-      notes:'ملاحظات',
-      score:'النتيجة',
-      work_plan:'خطة العمل',
-      performance_indicators:'مؤشرات الاداء',
-      meetings:'عدد الاجتماعات',
-      consistency:'التوافق بين الدعوات والاجتماعات',
-      coverage_books:'كتب التغطية',
-      report1:'تقرير إنجاز 1',
-      report2:'تقرير إنجاز 2',
-      report3:'تقرير إنجاز 3',
-      statistical_analysis:'التحليل الإحصائي',
-      name:'الاسم',
-      username:'اسم المستخدم',
-      role:'الدور',
-      email:'البريد',
-      isActive:'الحالة',
-      formation_decision:'قرار التشكيل', formationDecision:'قرار التشكيل',
-      decision:'قرار التشكيل', decision_number:'قرار التشكيل', decisionNumber:'قرار التشكيل',
-      formation_no:'قرار التشكيل', formationNo:'قرار التشكيل'
+  // يتعامل مع كل الأشكال: object / string / null
+  function normalizeUser(u){
+    if (!u) return { name:'—', username:'—', email:'', role:'—' };
+    if (typeof u === 'string') return { name:u, username:u, email:'', role:'' };
+    const username = u.username || (u.email? u.email.split('@')[0] : (u.name || '—'));
+    return {
+      name: u.name || '—',
+      username,
+      email: u.email || '',
+      role: u.role || '—'
     };
-    const toArabicLabel = k => colNameArMap[k] || k;
+  }
 
-    /* ===== utils (diff) ===== */
-    const escapeHtml = s => String(s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
-    const normalizeValue = v => v==null ? '' : (v instanceof Date ? v.toISOString() : (Array.isArray(v)||typeof v==='object') ? JSON.stringify(v) : String(v));
-    function computeDiffKeys(before, after){
-      const b = before || {}, a = after || {};
-      const keys = new Set([...Object.keys(b), ...Object.keys(a)]);
-      const changed = new Set();
-      keys.forEach(k=>{ if (normalizeValue(b[k]) !== normalizeValue(a[k])) changed.add(k); });
-      return changed;
-    }
-    function stripHtmlPreserveBreaks(html) {
-      try {
-        const doc = new DOMParser().parseFromString(String(html), 'text/html');
-        const blockBreak = new Set(['P','DIV','LI','BR','H1','H2','H3','H4','H5','H6']);
-        function walk(node) {
-          let out = '';
-          node.childNodes.forEach(n => {
-            if (n.nodeType === 3) out += n.textContent;
-            else if (n.nodeType === 1) {
-              const tag = n.nodeName;
-              if (tag === 'BR') out += '\n';
-              out += walk(n);
-              if (blockBreak.has(tag) && out.slice(-1) !== '\n') out += '\n';
-            }
-          });
-          return out;
-        }
-        return walk(doc.body).replace(/\n{3,}/g, '\n\n').trim();
-      } catch {
-        return String(html).replace(/<[^>]+>/g, '\n').replace(/\n{3,}/g, '\n\n').trim();
-      }
-    }
-    function splitTokens(str){ return stripHtmlPreserveBreaks(str).split(/(\s+|[.,;:!?،؛()\[\]{}"«»]+)/g).filter(t=>t!==''); }
-    function diffTokens(aTokens, bTokens){
-      const m=aTokens.length,n=bTokens.length,dp=Array(m+1).fill(null).map(()=>Array(n+1).fill(0));
-      for(let i=m-1;i>=0;i--)for(let j=n-1;j>=0;j--)dp[i][j]=(aTokens[i]===bTokens[j])?dp[i+1][j+1]+1:Math.max(dp[i+1][j],dp[i][j+1]);
-      const ops=[]; let i=0,j=0;
-      while(i<m&&j<n){ if(aTokens[i]===bTokens[j]){ops.push({type:'eq',token:aTokens[i]}); i++; j++;} else if(dp[i+1][j]>=dp[i][j+1]){ops.push({type:'del',token:aTokens[i++]});} else {ops.push({type:'add',token:bTokens[j++]});} }
-      while(i<m) ops.push({type:'del',token=aTokens[i++]}); while(j<n) ops.push({type:'add',token=bTokens[j++]}); return ops;
-    }
-    function renderTextDiff(beforeText, afterText, mode){
-      const ops = diffTokens(splitTokens(beforeText||''), splitTokens(afterText||'')); let html='';
-      for (const op of ops){
-        if (op.type==='eq') html += escapeHtml(op.token);
-        else if (op.type==='add') html += (mode==='after') ? `<span class="diff-added">${escapeHtml(op.token)}</span>` : escapeHtml(op.token);
-        else if (op.type==='del') html += (mode==='before') ? `<span class="diff-removed">${escapeHtml(op.token)}</span>` : '';
-      }
-      return (html||'—').replace(/\n/g,'<br>');
-    }
-    function kvTextDiff(label, key, beforeObj, afterObj, mode, diffKeys){
-      const changed = diffKeys && diffKeys.has(key);
-      const currentVal = (mode==='before') ? (beforeObj?.[key]) : (afterObj?.[key]);
-      if(currentVal==null || currentVal==='') return '';
-      if(changed && typeof (beforeObj?.[key] ?? '')==='string' && typeof (afterObj?.[key] ?? '')==='string'){
-        const html = renderTextDiff(beforeObj?.[key] ?? '', afterObj?.[key] ?? '', mode);
-        return `<dt>${label}</dt><dd>${html}</dd>`;
-      }
-      const cls = changed ? (mode==='before' ? 'diff-removed' : 'diff-added') : '';
-      return `<dt>${label}</dt><dd class="${cls}">${escapeHtml(currentVal)}</dd>`;
-    }
-    function kvDiff(label, value, key, diffKeys, mode){
-      if(value===undefined || value===null || value==='') return '';
-      const cls = diffKeys && diffKeys.has(key) ? (mode==='before' ? 'diff-removed' : 'diff-added') : '';
-      return `<dt>${label}</dt><dd class="${cls}">${escapeHtml(value)}</dd>`;
+  function renderUser(uRaw){
+    const u = normalizeUser(uRaw);
+    document.getElementById('userUsername').textContent = u.username;
+    document.getElementById('userFullName').textContent = u.name;
+    document.getElementById('userRole').textContent = u.role;
+  }
+
+  async function ensureAdmin(){
+    const me = await fetchMe();
+
+    if(!me.authenticated){
+      // استخدم مسارًا نسبيًا فقط (بدون دومين) حتى لا يرفضه الخادم
+      const rel = location.pathname + location.search + location.hash;
+      location.href = api(`/committees-login.html?next=${encodeURIComponent(rel)}`);
+      return Promise.reject();
     }
 
-    /* ===== شارة حالة المستخدم بالعربية ===== */
-    function userActiveBadge(val, key, diffKeys, mode){
-      const isActive = !!val;
-      const base = isActive ? '<span class="badge text-bg-success">نشط</span>' : '<span class="badge text-bg-danger">معطّل</span>';
-      const wrapClass = diffKeys && diffKeys.has(key) ? (mode==='before' ? 'diff-removed' : 'diff-added') : '';
-      return `<dt>الحالة</dt><dd class="${wrapClass}">${base}</dd>`;
-    }
-    const roleAr = r => (r==='admin' ? 'مدير (admin)' : 'مستخدم (user)');
-
-    /* ===== بطاقة حسب الموديل (تشمل User بالعربية) ===== */
-    function renderCardFromObjectWithDiff(model, obj, diffKeys, mode, otherSide){
-      if(!obj) return '<div class="payload-card text-muted">—</div>';
-      let html = '<div class="payload-card"><dl class="row mb-0">';
-      const d = obj;
-      const beforeObj = (mode==='before') ? obj : (otherSide || {});
-      const afterObj  = (mode==='after')  ? obj : (otherSide || {});
-      const has = (k)=> d[k]!==undefined && d[k]!==null && d[k]!==''; // helper
-
-      if(model==='Evaluation'){
-        html += kvDiff('اسم اللجنة', d.committee_name, 'committee_name', diffKeys, mode);
-        html += kvDiff('الكلية', d.college, 'college', diffKeys, mode);
-        html += kvDiff('المدقق', d.auditor_name, 'auditor_name', diffKeys, mode);
-        html += kvDiff('تاريخ الإنشاء', d.createdAt ? new Date(d.createdAt).toLocaleString('ar-EG') : '', 'createdAt', diffKeys, mode);
-        if(has('notes')) html += kvTextDiff('ملاحظات', 'notes', beforeObj, afterObj, mode, diffKeys);
-        html += kvDiff('النتيجة', d.score, 'score', diffKeys, mode);
-        const decisionKeys = ['formation_decision','formationDecision','decision','decision_number','decisionNumber','formation_no','formationNo'];
-        const decisionKey  = decisionKeys.find(k => k in d);
-        if(decisionKey) html += kvDiff('قرار التشكيل', d[decisionKey], decisionKey, diffKeys, mode);
-        ['work_plan','performance_indicators','meetings','consistency','coverage_books','report1','report2','report3','statistical_analysis']
-          .forEach(k=>{ if(has(k)) html += kvDiff(toArabicLabel(k), d[k], k, diffKeys, mode); });
-
-      }else if(model==='College'){ html += kvDiff('الكلية', d.name, 'name', diffKeys, mode);
-
-      }else if(model==='Auditor'){ html += kvDiff('المدقق', d.name, 'name', diffKeys, mode);
-
-      }else if(model==='Committee'){ html += kvDiff('اسم اللجنة', d.name, 'name', diffKeys, mode);
-
-      }else if(model==='Settings'){
-        if(d.visibleColumns) html += kvDiff('الأعمدة المرئية', (d.visibleColumns||[]).map(toArabicLabel).join('، '), 'visibleColumns', diffKeys, mode);
-        if(d.selectedVisits) html += kvDiff('الزيارات المحددة', (d.selectedVisits||[]).map(toArabicLabel).join('، '), 'selectedVisits', diffKeys, mode);
-        const otherKeys = Object.keys(d||{}).filter(k=>!['visibleColumns','selectedVisits','_id','updatedAt','createdAt','__v'].includes(k));
-        if(otherKeys.length) html += kvDiff('تغييرات أخرى', otherKeys.map(toArabicLabel).join('، '), '__misc', diffKeys, mode);
-
-      }else if(model==='User'){
-        if(has('name'))     html += kvDiff('الاسم', d.name, 'name', diffKeys, mode);
-        if(has('username')) html += kvDiff('اسم المستخدم', d.username, 'username', diffKeys, mode);
-        if(has('email'))    html += kvDiff('البريد', d.email, 'email', diffKeys, mode);
-        if(has('role'))     html += kvDiff('الدور', roleAr(d.role), 'role', diffKeys, mode);
-        if('isActive' in d) html += userActiveBadge(d.isActive, 'isActive', diffKeys, mode);
-
-      }else{
-        html += '</dl><div class="payload-json"><code>'+escapeHtml(JSON.stringify(obj, null, 2))+'</code></div>';
-        html += '</div>';
-        return html;
-      }
-
-      html += '</dl>';
-      if(!/<dd[^>]*>/.test(html)){
-        html += '<div class="payload-json"><code>'+escapeHtml(JSON.stringify(obj, null, 2))+'</code></div>';
-      }
-      html += '</div>';
-      return html;
+    const role = (me.user?.role || '').toLowerCase();
+    if(role!=='admin'){
+      setToast(toastError,'❌ هذه الصفحة للمشرفين فقط'); toastError.show();
+      setTimeout(()=>location.href=api('/committees-home.html'),900);
+      return Promise.reject();
     }
 
-    /* ===== تجميع after تلقائياً إن لم يرسله السيرفر (للعمليات الجماعية) ===== */
-    function synthesizeBulkAfter(p){
-      if (!Array.isArray(p?.before)) return null;
-      const action = p?.action;
-      if (action === 'activate')   return p.before.map(u => ({ ...u, isActive: true }));
-      if (action === 'deactivate') return p.before.map(u => ({ ...u, isActive: false }));
-      if (action === 'set-role')   return p.before.map(u => ({ ...u, role: p.role === 'admin' ? 'admin' : 'user' }));
-      if (action === 'delete')     return p.before.map(u => ({ ...u, _deleted: true }));
-      return null;
+    renderUser(me.user);
+    return me.user;
+  }
+
+  async function logout(){
+    try{
+      const r = await fetch(api('/auth/committees/logout'),{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        credentials:'include'
+      });
+      if(r.ok){ setToast(toastSuccess,'✅ تم تسجيل الخروج'); toastSuccess.show(); setTimeout(()=>location.href=api('/committees-login.html'),700); }
+      else{ setToast(toastError,'❌ تعذر تسجيل الخروج'); toastError.show(); }
+    }catch{ setToast(toastError,'❌ خطأ في الاتصال'); toastError.show(); }
+  }
+  document.getElementById('logoutBtn').addEventListener('click', logout);
+
+  /* ===== mapping ===== */
+  function modelToPage(model){
+    switch(model){
+      case 'Evaluation': return 'تقييم اللجان';
+      case 'College':    return 'الكليات';
+      case 'Auditor':    return 'المدققون';
+      case 'Committee':  return 'أسماء اللجان';
+      case 'Settings':   return 'الإعدادات';
+      case 'User':       return 'المستخدمون';
+      default:           return model||'—';
     }
+  }
+  function badgeAction(action){
+    const cls = action==='delete'?'text-bg-danger':(action==='update'?'text-bg-warning':'text-bg-success');
+    return `<span class="badge ${cls}">${action||'—'}</span>`;
+  }
+  function fmtUser(uRaw){
+    const u = normalizeUser(uRaw);
+    const email = u.email ? ` <span class="badge text-bg-light">${u.email}</span>` : '';
+    const role  = u.role  ? ` <span class="badge text-bg-secondary">${u.role}</span>` : '';
+    return `${u.name} <span class="badge text-bg-info">${u.username}</span>${email}${role}`;
+  }
 
-    /* ===== كتلة عرض مفصلة للعمليات الجماعية بفصل “قبل/بعد” ===== */
-    function renderBulkUsersList(p, mode){
-      const listBefore = Array.isArray(p?.before) ? p.before : [];
-      const listAfter  = Array.isArray(p?.after)  ? p.after  : synthesizeBulkAfter(p);
-      const action = p?.action;
-      const idsCount = Array.isArray(p?.ids) ? p.ids.length : 0;
+  /* ===== labels & diff helpers (كما هي) ===== */
+  const colNameArMap = { committee_name:'اسم اللجنة', college:'الكلية', auditor_name:'المدقق', createdAt:'تاريخ الإنشاء', updatedAt:'تاريخ التحديث', notes:'ملاحظات', score:'النتيجة', work_plan:'خطة العمل', performance_indicators:'مؤشرات الاداء', meetings:'عدد الاجتماعات', consistency:'التوافق بين الدعوات والاجتماعات', coverage_books:'كتب التغطية', report1:'تقرير إنجاز 1', report2:'تقرير إنجاز 2', report3:'تقرير إنجاز 3', statistical_analysis:'التحليل الإحصائي', name:'الاسم', username:'اسم المستخدم', role:'الدور', email:'البريد', isActive:'الحالة', formation_decision:'قرار التشكيل', formationDecision:'قرار التشكيل', decision:'قرار التشكيل', decision_number:'قرار التشكيل', decisionNumber:'قرار التشكيل', formation_no:'قرار التشكيل', formationNo:'قرار التشكيل' };
+  const toArabicLabel = k => colNameArMap[k] || k;
+  const escapeHtml = s => String(s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+  const normalizeValue = v => v==null ? '' : (v instanceof Date ? v.toISOString() : (Array.isArray(v)||typeof v==='object') ? JSON.stringify(v) : String(v));
+  function computeDiffKeys(before, after){ const b=before||{}, a=after||{}; const keys=new Set([...Object.keys(b),...Object.keys(a)]); const changed=new Set(); keys.forEach(k=>{ if (normalizeValue(b[k]) !== normalizeValue(a[k])) changed.add(k); }); return changed; }
+  function stripHtmlPreserveBreaks(html){ try{ const doc=new DOMParser().parseFromString(String(html),'text/html'); const blockBreak=new Set(['P','DIV','LI','BR','H1','H2','H3','H4','H5','H6']); function walk(node){ let out=''; node.childNodes.forEach(n=>{ if(n.nodeType===3) out+=n.textContent; else if(n.nodeType===1){ const tag=n.nodeName; if(tag==='BR') out+='\n'; out+=walk(n); if(blockBreak.has(tag) && out.slice(-1)!=='\n') out+='\n'; } }); return out; } return walk(doc.body).replace(/\n{3,}/g,'\n\n').trim(); }catch{ return String(html).replace(/<[^>]+>/g,'\n').replace(/\n{3,}/g,'\n\n').trim(); } }
+  function splitTokens(str){ return stripHtmlPreserveBreaks(str).split(/(\s+|[.,;:!?،؛()\[\]{}"«»]+)/g).filter(t=>t!==''); }
+  function diffTokens(aTokens,bTokens){ const m=aTokens.length,n=bTokens.length,dp=Array(m+1).fill(null).map(()=>Array(n+1).fill(0)); for(let i=m-1;i>=0;i--)for(let j=n-1;j>=0;j--)dp[i][j]=(aTokens[i]===bTokens[j])?dp[i+1][j+1]+1:Math.max(dp[i+1][j],dp[i][j+1]); const ops=[]; let i=0,j=0; while(i<m&&j<n){ if(aTokens[i]===bTokens[j]){ops.push({type:'eq',token:aTokens[i]}); i++; j++;} else if(dp[i+1][j]>=dp[i][j+1]){ops.push({type:'del',token:aTokens[i++]});} else {ops.push({type:'add',token:bTokens[j++]});} } while(i<m) ops.push({type:'del',token=aTokens[i++]}); while(j<n) ops.push({type:'add',token=bTokens[j++]}); return ops; }
+  function renderTextDiff(beforeText,afterText,mode){ const ops=diffTokens(splitTokens(beforeText||''), splitTokens(afterText||'')); let html=''; for (const op of ops){ if(op.type==='eq') html+=escapeHtml(op.token); else if(op.type==='add') html += (mode==='after')?`<span class="diff-added">${escapeHtml(op.token)}</span>`:escapeHtml(op.token); else if(op.type==='del') html += (mode==='before')?`<span class="diff-removed">${escapeHtml(op.token)}</span>`:''; } return (html||'—').replace(/\n/g,'<br>'); }
+  function kvTextDiff(label,key,beforeObj,afterObj,mode,diffKeys){ const changed=diffKeys&&diffKeys.has(key); const currentVal=(mode==='before')?(beforeObj?.[key]):(afterObj?.[key]); if(currentVal==null||currentVal==='') return ''; if(changed && typeof (beforeObj?.[key]??'')==='string' && typeof (afterObj?.[key]??'')==='string'){ const html=renderTextDiff(beforeObj?.[key]??'', afterObj?.[key]??'', mode); return `<dt>${label}</dt><dd>${html}</dd>`; } const cls=changed?(mode==='before'?'diff-removed':'diff-added'):''; return `<dt>${label}</dt><dd class="${cls}">${escapeHtml(currentVal)}</dd>`; }
+  function kvDiff(label,value,key,diffKeys,mode){ if(value===undefined||value===null||value==='') return ''; const cls=diffKeys&&diffKeys.has(key)?(mode==='before'?'diff-removed':'diff-added'):''; return `<dt>${label}</dt><dd class="${cls}">${escapeHtml(value)}</dd>`; }
+  function userActiveBadge(val,key,diffKeys,mode){ const isActive=!!val; const base=isActive?'<span class="badge text-bg-success">نشط</span>':'<span class="badge text-bg-danger">معطّل</span>'; const wrapClass=diffKeys&&diffKeys.has(key)?(mode==='before'?'diff-removed':'diff-added'):''; return `<dt>الحالة</dt><dd class="${wrapClass}">${base}</dd>`; }
+  const roleAr = r => (r==='admin' ? 'مدير (admin)' : 'مستخدم (user)');
 
-      if(listBefore.length === 0){
-        const actionAr = action==='set-role' ? `تغيير الدور إلى ${roleAr(p.role)}`
-                        : action==='activate' ? 'تفعيل المستخدمين'
-                        : action==='deactivate' ? 'تعطيل المستخدمين'
-                        : (action || 'تعديل جماعي');
-        return `<div class="payload-card"><dl class="row mb-0">
-          <dt>عملية جماعية</dt><dd>${escapeHtml(actionAr)} (عدد: ${idsCount||'—'})</dd>
-          <dt>ملاحظة</dt><dd class="text-muted">لتفاصيل الأسماء سجّل الخادم <code>payload.before</code> (ويُفضّل أيضًا <code>payload.after</code>).</dd>
-        </dl></div>`;
-      }
-
-      // هل لا يوجد تغيير فعلي؟
-      let noChanges = false;
-      if (listAfter && listAfter.length === listBefore.length) {
-        if (action === 'activate' || action === 'deactivate') {
-          noChanges = listBefore.every((u,i)=> !!u.isActive === !!(listAfter[i]?.isActive));
-        } else if (action === 'set-role') {
-          noChanges = listBefore.every((u,i)=> (u.role||'user') === ((listAfter[i]?.role)||'user'));
-        }
-      }
-
-      // بناء الصفوف بحسب العمود (قبل أو بعد)
-      const rows = listBefore.map((u, i)=>{
-        const a = (listAfter && listAfter[i]) || {};
-        const name  = u.name || '—';
-        const uname = u.username || (u.email? u.email.split('@')[0] : '—');
-        const email = u.email ? `<span class="badge text-bg-light">${u.email}</span>` : '';
-
-        let cell = '—';
-        if(action === 'activate' || action === 'deactivate'){
-          const is = (mode==='before') ? !!u.isActive : !!a.isActive;
-          cell = is ? '<span class="badge text-bg-success">نشط</span>' : '<span class="badge text-bg-danger">معطّل</span>';
-          if(mode==='after'){
-            cell = (is ? '<span class="diff-added">نشط</span>' : '<span class="diff-removed">معطّل</span>') + ` <span class="ms-1">${cell}</span>`;
-          }
-        }else if(action === 'set-role'){
-          const roleTxt = roleAr(mode==='before' ? u.role : a.role);
-          cell = mode==='after' ? `<span class="diff-added">${roleTxt}</span>` : `<span class="diff-removed">${roleTxt}</span>`;
-        }else if(action === 'delete'){
-          cell = mode==='after' ? '<span class="badge text-bg-danger">تم الحذف</span>' : roleAr(u.role);
-        }
-
-        return `<tr>
-          <td>${name} <span class="badge text-bg-info">${uname}</span> ${email}</td>
-          <td class="text-nowrap">${cell}</td>
-        </tr>`;
-      }).join('');
-
-      const secondColTitle = (action==='set-role') ? 'الدور' : 'الحالة';
-      const title = (mode==='before') ? `${secondColTitle} قبل` : `${secondColTitle} بعد`;
-
-      // في عمود "بعد" نعرض ملخص العملية + شارة لا تغيير
-      const headerRight = (mode==='after') ? `
-        <div class="d-flex align-items-center gap-2">
-          ${noChanges ? '<span class="nochange-note">لا تغيير فعلي</span>' : ''}
-          <span class="badge text-bg-light">عدد: ${idsCount || listBefore.length}</span>
-        </div>` : '';
-
-      const actionTitle = (action==='set-role') ? ('تغيير الدور → ' + roleAr(p.role))
-                        : (action==='activate' ? 'تفعيل' : (action==='deactivate' ? 'تعطيل' : (action||'—')));
-
-      return `<div class="payload-card">
-        <div class="d-flex justify-content-between align-items-center mb-2">
-          <div>${mode==='after' ? ('<strong>عملية جماعية:</strong> ' + actionTitle) : ''}</div>
-          ${headerRight}
-        </div>
-        <div class="table-responsive">
-          <table class="table table-sm mb-0">
-            <thead class="table-light">
-              <tr><th>المستخدم</th><th>${title}</th></tr>
-            </thead>
-            <tbody>${rows}</tbody>
-          </table>
-        </div>
-      </div>`;
+  function renderCardFromObjectWithDiff(model,obj,diffKeys,mode,otherSide){
+    if(!obj) return '<div class="payload-card text-muted">—</div>';
+    let html='<div class="payload-card"><dl class="row mb-0">'; const d=obj;
+    const beforeObj=(mode==='before')?obj:(otherSide||{}); const afterObj=(mode==='after')?obj:(otherSide||{});
+    const has = (k)=> d[k]!==undefined && d[k]!==null && d[k]!==''; 
+    if(model==='Evaluation'){
+      html+=kvDiff('اسم اللجنة', d.committee_name, 'committee_name', diffKeys, mode);
+      html+=kvDiff('الكلية', d.college, 'college', diffKeys, mode);
+      html+=kvDiff('المدقق', d.auditor_name, 'auditor_name', diffKeys, mode);
+      html+=kvDiff('تاريخ الإنشاء', d.createdAt?new Date(d.createdAt).toLocaleString('ar-EG'):'', 'createdAt', diffKeys, mode);
+      if(has('notes')) html+=kvTextDiff('ملاحظات','notes',beforeObj,afterObj,mode,diffKeys);
+      html+=kvDiff('النتيجة', d.score, 'score', diffKeys, mode);
+      const decisionKeys=['formation_decision','formationDecision','decision','decision_number','decisionNumber','formation_no','formationNo'];
+      const decisionKey=decisionKeys.find(k=>k in d); if(decisionKey) html+=kvDiff('قرار التشكيل', d[decisionKey], decisionKey, diffKeys, mode);
+      ['work_plan','performance_indicators','meetings','consistency','coverage_books','report1','report2','report3','statistical_analysis'].forEach(k=>{ if(has(k)) html+=kvDiff(toArabicLabel(k), d[k], k, diffKeys, mode); });
+    }else if(model==='College'){ html+=kvDiff('الكلية', d.name, 'name', diffKeys, mode);
+    }else if(model==='Auditor'){ html+=kvDiff('المدقق', d.name, 'name', diffKeys, mode);
+    }else if(model==='Committee'){ html+=kvDiff('اسم اللجنة', d.name, 'name', diffKeys, mode);
+    }else if(model==='Settings'){
+      if(d.visibleColumns) html+=kvDiff('الأعمدة المرئية', (d.visibleColumns||[]).map(toArabicLabel).join('، '), 'visibleColumns', diffKeys, mode);
+      if(d.selectedVisits) html+=kvDiff('الزيارات المحددة', (d.selectedVisits||[]).map(toArabicLabel).join('، '), 'selectedVisits', diffKeys, mode);
+      const otherKeys=Object.keys(d||{}).filter(k=>!['visibleColumns','selectedVisits','_id','updatedAt','createdAt','__v'].includes(k));
+      if(otherKeys.length) html+=kvDiff('تغييرات أخرى', otherKeys.map(toArabicLabel).join('، '), '__misc', diffKeys, mode);
+    }else if(model==='User'){
+      if(has('name'))     html+=kvDiff('الاسم', d.name, 'name', diffKeys, mode);
+      if(has('username')) html+=kvDiff('اسم المستخدم', d.username, 'username', diffKeys, mode);
+      if(has('email'))    html+=kvDiff('البريد', d.email, 'email', diffKeys, mode);
+      if(has('role'))     html+=kvDiff('الدور', roleAr(d.role), 'role', diffKeys, mode);
+      if('isActive' in d) html+=userActiveBadge(d.isActive, 'isActive', diffKeys, mode);
+    }else{
+      html += '</dl><div class="payload-json"><code>'+escapeHtml(JSON.stringify(obj, null, 2))+'</code></div>';
+      html += '</div>'; return html;
     }
+    html+='</dl>'; if(!/<dd[^>]*>/.test(html)){ html+='<div class="payload-json"><code>'+escapeHtml(JSON.stringify(obj, null, 2))+'</code></div>'; }
+    html+='</div>'; return html;
+  }
 
-    /* ===== before/after cells (تخصيص Settings + User bulk) ===== */
-    function renderSettingsDiff(before, after, mode){
-      const list = (arr)=> (Array.isArray(arr)&&arr.length)?arr.map(toArabicLabel).join('، '):'—';
+  function synthesizeBulkAfter(p){
+    if (!Array.isArray(p?.before)) return null;
+    const action=p?.action;
+    if (action==='activate')   return p.before.map(u=>({...u,isActive:true}));
+    if (action==='deactivate') return p.before.map(u=>({...u,isActive:false}));
+    if (action==='set-role')   return p.before.map(u=>({...u,role: p.role==='admin'?'admin':'user'}));
+    if (action==='delete')     return p.before.map(u=>({...u,_deleted:true}));
+    return null;
+  }
+
+  function renderBulkUsersList(p,mode){
+    const listBefore=Array.isArray(p?.before)?p.before:[]; const listAfter=Array.isArray(p?.after)?p.after:synthesizeBulkAfter(p);
+    const action=p?.action; const idsCount=Array.isArray(p?.ids)?p.ids.length:0;
+    if(listBefore.length===0){
+      const actionAr = action==='set-role' ? `تغيير الدور إلى ${roleAr(p.role)}` : action==='activate' ? 'تفعيل المستخدمين' : action==='deactivate' ? 'تعطيل المستخدمين' : (action||'تعديل جماعي');
       return `<div class="payload-card"><dl class="row mb-0">
-        <dt>الأعمدة المرئية</dt><dd>${list((mode==='before'?before:after)?.visibleColumns)}</dd>
-        <dt>الزيارات المحددة</dt><dd>${list((mode==='before'?before:after)?.selectedVisits)}</dd>
+        <dt>عملية جماعية</dt><dd>${escapeHtml(actionAr)} (عدد: ${idsCount||'—'})</dd>
+        <dt>ملاحظة</dt><dd class="text-muted">لتفاصيل الأسماء سجّل الخادم <code>payload.before</code> (ويُفضّل أيضًا <code>payload.after</code>).</dd>
       </dl></div>`;
     }
-    function renderBeforeCell(log){
-      const p = log.payload || {};
-      if (log.model === 'Settings') {
-        if (log.action === 'create') return '<div class="payload-card text-muted">كانت فارغة</div>';
-        if (log.action === 'delete') return renderSettingsDiff(p, {}, 'before');
-        if (p && p.before && p.after) return renderSettingsDiff(p.before, p.after, 'before');
-        if (p && p.before) return renderSettingsDiff(p.before, {}, 'before');
-        return '<div class="payload-card text-muted">—</div>';
+    let noChanges=false;
+    if(listAfter && listAfter.length===listBefore.length){
+      if(action==='activate' || action==='deactivate'){ noChanges=listBefore.every((u,i)=> !!u.isActive === !!(listAfter[i]?.isActive)); }
+      else if(action==='set-role'){ noChanges=listBefore.every((u,i)=> (u.role||'user') === ((listAfter[i]?.role)||'user')); }
+    }
+    const rows=listBefore.map((u,i)=>{
+      const a=(listAfter && listAfter[i])||{};
+      const U=normalizeUser(u); const A=normalizeUser(a);
+      let cell='—';
+      if(action==='activate' || action==='deactivate'){
+        const is=(mode==='before')?!!u.isActive:!!a.isActive;
+        cell = is ? '<span class="badge text-bg-success">نشط</span>' : '<span class="badge text-bg-danger">معطّل</span>';
+        if(mode==='after'){ cell=(is?'<span class="diff-added">نشط</span>':'<span class="diff-removed">معطّل</span>')+` <span class="ms-1">${cell}</span>`; }
+      }else if(action==='set-role'){
+        const roleTxt = roleAr((mode==='before'?u.role:a.role));
+        cell = mode==='after' ? `<span class="diff-added">${roleTxt}</span>` : `<span class="diff-removed">${roleTxt}</span>`;
+      }else if(action==='delete'){
+        cell = mode==='after' ? '<span class="badge text-bg-danger">تم الحذف</span>' : roleAr(u.role);
       }
-      if (log.model === 'User' && p && p.bulk){
-        return renderBulkUsersList(p, 'before');
-      }
-      if (log.action === 'create') return '<div class="payload-card text-muted">كانت فارغة</div>';
-      if (log.action === 'delete'){ const allKeys = p ? new Set(Object.keys(p)) : new Set(); return renderCardFromObjectWithDiff(log.model, p, allKeys, 'before', {}); }
-      if (p && p.before && p.after){ const diff = computeDiffKeys(p.before, p.after); return renderCardFromObjectWithDiff(log.model, p.before, diff, 'before', p.after); }
-      if (p && p.before){ return renderCardFromObjectWithDiff(log.model, p.before, null, 'before', {}); }
+      return `<tr>
+        <td>${U.name} <span class="badge text-bg-info">${U.username}</span> ${U.email?`<span class="badge text-bg-light">${U.email}</span>`:''}</td>
+        <td class="text-nowrap">${cell}</td>
+      </tr>`;
+    }).join('');
+    const secondColTitle = (action==='set-role') ? 'الدور' : 'الحالة';
+    const title=(mode==='before')?`${secondColTitle} قبل`:`${secondColTitle} بعد`;
+    const headerRight=(mode==='after')?`<div class="d-flex align-items-center gap-2">${noChanges?'<span class="nochange-note">لا تغيير فعلي</span>':''}<span class="badge text-bg-light">عدد: ${idsCount || listBefore.length}</span></div>`:'';
+    const actionTitle=(action==='set-role')?('تغيير الدور → '+roleAr(p.role)):(action==='activate'?'تفعيل':(action==='deactivate'?'تعطيل':(action||'—')));
+    return `<div class="payload-card">
+      <div class="d-flex justify-content-between align-items-center mb-2">
+        <div>${mode==='after'?('<strong>عملية جماعية:</strong> '+actionTitle):''}</div>
+        ${headerRight}
+      </div>
+      <div class="table-responsive">
+        <table class="table table-sm mb-0">
+          <thead class="table-light"><tr><th>المستخدم</th><th>${title}</th></tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>
+    </div>`;
+  }
+
+  function renderSettingsDiff(before,after,mode){
+    const list = (arr)=> (Array.isArray(arr)&&arr.length)?arr.map(toArabicLabel).join('، '):'—';
+    return `<div class="payload-card"><dl class="row mb-0">
+      <dt>الأعمدة المرئية</dt><dd>${list((mode==='before'?before:after)?.visibleColumns)}</dd>
+      <dt>الزيارات المحددة</dt><dd>${list((mode==='before'?before:after)?.selectedVisits)}</dd>
+    </dl></div>`;
+  }
+
+  function renderBeforeCell(log){
+    const p=log.payload||{};
+    if(log.model==='Settings'){
+      if(log.action==='create') return '<div class="payload-card text-muted">كانت فارغة</div>';
+      if(log.action==='delete') return renderSettingsDiff(p, {}, 'before');
+      if(p && p.before && p.after) return renderSettingsDiff(p.before, p.after, 'before');
+      if(p && p.before) return renderSettingsDiff(p.before, {}, 'before');
       return '<div class="payload-card text-muted">—</div>';
     }
-    function renderAfterCell(log){
-      const p = log.payload || {};
-      if (log.model === 'Settings') {
-        if (log.action === 'delete') return '<div class="payload-card text-muted">تم الحذف</div>';
-        if (log.action === 'create') return renderSettingsDiff({}, p, 'after');
-        if (p && p.before && p.after) return renderSettingsDiff(p.before, p.after, 'after');
-        if (p && p.after) return renderSettingsDiff({}, p.after, 'after');
-        return renderSettingsDiff({}, p, 'after');
-      }
-      if (log.model === 'User' && p && p.bulk){
-        return renderBulkUsersList(p, 'after');
-      }
-      if (log.action === 'delete') return '<div class="payload-card text-muted">تم الحذف</div>';
-      if (log.action === 'create'){ const allKeys = p ? new Set(Object.keys(p)) : new Set(); return renderCardFromObjectWithDiff(log.model, p, allKeys, 'after', {}); }
-      if (p && p.after && p.before){ const diff = computeDiffKeys(p.before, p.after); return renderCardFromObjectWithDiff(log.model, p.after, diff, 'after', p.before); }
-      if (p && p.after){ return renderCardFromObjectWithDiff(log.model, p.after, null, 'after', {}); }
-      return renderCardFromObjectWithDiff(log.model, p, null, 'after', {});
+    if(log.model==='User' && p && p.bulk){ return renderBulkUsersList(p,'before'); }
+    if(log.action==='create') return '<div class="payload-card text-muted">كانت فارغة</div>';
+    if(log.action==='delete'){ const allKeys=p?new Set(Object.keys(p)):new Set(); return renderCardFromObjectWithDiff(log.model, p, allKeys, 'before', {}); }
+    if(p && p.before && p.after){ const diff=computeDiffKeys(p.before,p.after); return renderCardFromObjectWithDiff(log.model, p.before, diff, 'before', p.after); }
+    if(p && p.before){ return renderCardFromObjectWithDiff(log.model, p.before, null, 'before', {}); }
+    return '<div class="payload-card text-muted">—</div>';
+  }
+  function renderAfterCell(log){
+    const p=log.payload||{};
+    if(log.model==='Settings'){
+      if(log.action==='delete') return '<div class="payload-card text-muted">تم الحذف</div>';
+      if(log.action==='create') return renderSettingsDiff({}, p, 'after');
+      if(p && p.before && p.after) return renderSettingsDiff(p.before, p.after, 'after');
+      if(p && p.after) return renderSettingsDiff({}, p.after, 'after');
+      return renderSettingsDiff({}, p, 'after');
     }
+    if(log.model==='User' && p && p.bulk){ return renderBulkUsersList(p,'after'); }
+    if(log.action==='delete') return '<div class="payload-card text-muted">تم الحذف</div>';
+    if(log.action==='create'){ const allKeys=p?new Set(Object.keys(p)):new Set(); return renderCardFromObjectWithDiff(log.model, p, allKeys, 'after', {}); }
+    if(p && p.after && p.before){ const diff=computeDiffKeys(p.before,p.after); return renderCardFromObjectWithDiff(log.model, p.after, diff, 'after', p.before); }
+    if(p && p.after){ return renderCardFromObjectWithDiff(log.model, p.after, null, 'after', {}); }
+    return renderCardFromObjectWithDiff(log.model, p, null, 'after', {});
+  }
 
-    /* ===== listing & selection ===== */
-    let page = 1, limit = 20, reachedEnd = false;
-    let rowCounterStart = 1;
-    const selectedIds = new Set();
-    function updateSelectedCount(){
-      document.getElementById('selectedCount').textContent = selectedIds.size;
-      document.getElementById('btnDeleteSelected').disabled = selectedIds.size === 0;
-    }
-    function buildQuery(){
-      const m = document.getElementById('fModel').value.trim();
-      const a = document.getElementById('fAction').value.trim();
-      const q = document.getElementById('fQuery').value.trim();
-      const f = document.getElementById('fFrom').value;
-      const t = document.getElementById('fTo').value;
-      const params = new URLSearchParams();
-      if(m) params.set('model',m);
-      if(a) params.set('action',a);
-      if(q) params.set('q',q);
-      if(f) params.set('from',f);
-      if(t) params.set('to',t);
-      params.set('page',page);
-      params.set('limit',limit);
-      return params.toString();
-    }
-    async function loadLogs({append=false}={}){
-      if(reachedEnd && append) return;
-      const tbody = document.getElementById('logsTbody');
-      if(!append){
-        tbody.innerHTML = `<tr class="text-center text-muted"><td colspan="8">جاري التحميل…</td></tr>`;
-        rowCounterStart = (page-1)*limit + 1;
-        selectedIds.clear(); updateSelectedCount(); document.getElementById('chkAll').checked = false;
-      }
-      try{
-        const r = await fetch(api('/api/audit-logs?')+buildQuery(),{credentials:'include'});
-        if(!r.ok) throw new Error('HTTP '+r.status);
-        const data = await r.json();
-        const items = Array.isArray(data)? data : (data.items||[]);
-        reachedEnd = Array.isArray(data)? items.length<limit : (data.hasMore===false);
-        if(!append) tbody.innerHTML = '';
-        if(items.length===0 && !append){
-          tbody.innerHTML = `<tr class="text-center text-muted"><td colspan="8">لا توجد سجلات</td></tr>`;
-          return;
-        }
-        let n = rowCounterStart;
-        items.forEach(log=>{
-          const when = log.createdAt ? new Date(log.createdAt).toLocaleString('ar-EG') : '—';
-          const id = log._id || log.id || '';
-          const disabled = id ? '' : 'disabled';
-          const checked = (id && selectedIds.has(id)) ? 'checked' : '';
-          const row = document.createElement('tr');
-          row.setAttribute('data-id', id);
-          row.innerHTML = `
-            <td class="text-center">
-              <input class="form-check-input chkRow" type="checkbox" value="${id}" ${checked} ${disabled}>
-            </td>
-            <td class="text-muted">${n++}</td>
-            <td>${when}</td>
-            <td>${modelToPage(log.model)}</td>
-            <td>${badgeAction(log.action)}</td>
-            <td class="col-user">${fmtUser(log.user)}</td>
-            <td class="col-before">${renderBeforeCell(log)}</td>
-            <td class="col-after">${renderAfterCell(log)}</td>
-          `;
-          tbody.appendChild(row);
-        });
-        rowCounterStart = n;
-      }catch(err){
-        tbody.innerHTML = `<tr class="text-center text-danger"><td colspan="8">حدث خطأ في جلب السجلات</td></tr>`;
-        setToast(toastError, 'تعذّر الاتصال بالسيرفر.'); toastError.show();
-      }
-    }
+  /* ===== listing & selection ===== */
+  let page=1, limit=20, reachedEnd=false;
+  let rowCounterStart=1;
+  const selectedIds=new Set();
+  function updateSelectedCount(){ document.getElementById('selectedCount').textContent=selectedIds.size; document.getElementById('btnDeleteSelected').disabled=selectedIds.size===0; }
+  function buildQuery(){
+    const m=document.getElementById('fModel').value.trim();
+    const a=document.getElementById('fAction').value.trim();
+    const q=document.getElementById('fQuery').value.trim();
+    const f=document.getElementById('fFrom').value;
+    const t=document.getElementById('fTo').value;
+    const params=new URLSearchParams();
+    if(m) params.set('model',m);
+    if(a) params.set('action',a);
+    if(q) params.set('q',q);
+    if(f) params.set('from',f);
+    if(t) params.set('to',t);
+    params.set('page',page);
+    params.set('limit',limit);
+    return params.toString();
+  }
 
-    /* ===== تحكم الفلاتر ===== */
-    document.getElementById('btnSearch').addEventListener('click', ()=>{ page = 1; reachedEnd = false; loadLogs({append:false}); });
-    document.getElementById('btnClear').addEventListener('click', ()=>{
-      document.getElementById('fModel').value=''; document.getElementById('fAction').value='';
-      document.getElementById('fQuery').value=''; document.getElementById('fFrom').value=''; document.getElementById('fTo').value='';
-      page=1; reachedEnd=false; loadLogs({append:false});
-    });
-    document.getElementById('btnMore').addEventListener('click', ()=>{ if(!reachedEnd){ page++; loadLogs({append:true}); } else { setToast(toastInfo,'لا يوجد مزيد من السجلات'); toastInfo.show(); } });
-
-    /* ===== تحديد الكل/الفردي ===== */
-    document.getElementById('chkAll').addEventListener('change', (e)=>{
-      const chk = e.target.checked;
-      document.querySelectorAll('#logsTbody .chkRow:not([disabled])').forEach(input=>{
-        input.checked = chk;
-        const id = input.value;
-        if(chk) selectedIds.add(id); else selectedIds.delete(id);
+  async function loadLogs({append=false}={}){
+    if(reachedEnd && append) return;
+    const tbody=document.getElementById('logsTbody');
+    if(!append){
+      tbody.innerHTML = `<tr class="text-center text-muted"><td colspan="8">جاري التحميل…</td></tr>`;
+      rowCounterStart=(page-1)*limit + 1;
+      selectedIds.clear(); updateSelectedCount(); document.getElementById('chkAll').checked=false;
+    }
+    try{
+      const r = await fetch(api('/api/audit-logs?')+buildQuery(),{credentials:'include', headers:{'Accept':'application/json'}});
+      if(!r.ok) throw new Error('HTTP '+r.status);
+      const data=await r.json();
+      const items=Array.isArray(data)?data:(data.items||[]);
+      reachedEnd = Array.isArray(data)? items.length<limit : (data.hasMore===false);
+      if(!append) tbody.innerHTML='';
+      if(items.length===0 && !append){ tbody.innerHTML=`<tr class="text-center text-muted"><td colspan="8">لا توجد سجلات</td></tr>`; return; }
+      let n=rowCounterStart;
+      items.forEach(log=>{
+        const when = log.createdAt ? new Date(log.createdAt).toLocaleString('ar-EG') : '—';
+        const id = log._id || log.id || '';
+        const disabled = id ? '' : 'disabled';
+        const checked  = (id && selectedIds.has(id)) ? 'checked' : '';
+        const row = document.createElement('tr');
+        row.setAttribute('data-id', id);
+        row.innerHTML = `
+          <td class="text-center"><input class="form-check-input chkRow" type="checkbox" value="${id}" ${checked} ${disabled}></td>
+          <td class="text-muted">${n++}</td>
+          <td>${when}</td>
+          <td>${modelToPage(log.model)}</td>
+          <td>${badgeAction(log.action)}</td>
+          <td class="col-user">${fmtUser(log.user)}</td>
+          <td class="col-before">${renderBeforeCell(log)}</td>
+          <td class="col-after">${renderAfterCell(log)}</td>`;
+        tbody.appendChild(row);
       });
-      updateSelectedCount();
-    });
-    document.getElementById('logsTbody').addEventListener('change', (e)=>{
-      if(e.target.classList.contains('chkRow')){
-        const id = e.target.value;
-        if(e.target.checked) selectedIds.add(id); else selectedIds.delete(id);
-        const all = document.querySelectorAll('#logsTbody .chkRow:not([disabled])');
-        const allChecked = all.length>0 && Array.from(all).every(x=>x.checked);
-        document.getElementById('chkAll').checked = allChecked;
-        updateSelectedCount();
-      }
-    });
+      rowCounterStart = n;
+    }catch(err){
+      tbody.innerHTML = `<tr class="text-center text-danger"><td colspan="8">حدث خطأ في جلب السجلات</td></tr>`;
+      setToast(toastError, 'تعذّر الاتصال بالسيرفر أو انتهت الجلسة. سجّل الدخول ثم جرّب مجددًا.'); toastError.show();
+    }
+  }
 
-    /* ===== حذف الكل / بالنطاق / المحدد ===== */
-    document.getElementById('btnPurge').addEventListener('click', async ()=>{
-      const ok = await showConfirm({ title:'تأكيد حذف الكل', message:'سيتم حذف جميع سجلات العمليات، ولا يمكن التراجع.', confirmText:'نعم، احذف الكل', confirmBtnClass:'btn-danger' });
-      if(!ok) return;
-      try{
-        const r = await fetch(api('/api/audit-logs'), { method:'DELETE', credentials:'include' });
-        if(!r.ok) throw new Error('HTTP '+r.status);
-        const data = await r.json().catch(()=>({}));
-        setToast(toastSuccess, data?.message || '🧹 تم حذف جميع السجلات'); toastSuccess.show();
-        page=1; reachedEnd=false; loadLogs({append:false});
-      }catch(e){ setToast(toastError,'❌ فشل حذف السجلات'); toastError.show(); }
-    });
-    document.getElementById('btnPurgeRange').addEventListener('click', async ()=>{
-      const f = document.getElementById('fFrom').value, t = document.getElementById('fTo').value;
-      if(!f && !t){ setToast(toastInfo,'الرجاء تحديد تاريخ "من" أو "إلى" أولًا'); toastInfo.show(); return; }
-      if(f && t && (new Date(f) > new Date(t))){ setToast(toastError,'❌ نطاق التاريخ غير صحيح'); toastError.show(); return; }
-      const ok = await showConfirm({ title:'تأكيد الحذف حسب التاريخ', message:`سيتم حذف السجلات ضمن النطاق: ${f||'—'} — ${t||'—'}.`, confirmText:'حذف ضمن النطاق', confirmBtnClass:'btn-warning' });
-      if(!ok) return;
-      const qs = new URLSearchParams(); if(f) qs.set('from',f); if(t) qs.set('to',t);
-      try{
-        const r = await fetch(api('/api/audit-logs?')+qs.toString(), { method:'DELETE', credentials:'include' });
-        if(!r.ok) throw new Error('HTTP '+r.status);
-        const data = await r.json().catch(()=>({}));
-        const msg = (typeof data?.deletedCount === 'number') ? `🗂️ تم حذف ${data.deletedCount} سجل ضمن النطاق` : (data?.message || '🗂️ تم حذف السجلات ضمن النطاق');
-        setToast(toastSuccess, msg); toastSuccess.show();
-        page=1; reachedEnd=false; loadLogs({append:false});
-      }catch(e){ setToast(toastError,'❌ فشل في حذف السجلات ضمن النطاق'); toastError.show(); }
-    });
-    document.getElementById('btnDeleteSelected').addEventListener('click', async ()=>{
-      const count = selectedIds.size;
-      if(count===0){ setToast(toastInfo,'لم يتم تحديد أي سجلات'); toastInfo.show(); return; }
-      const ok = await showConfirm({ title:'تأكيد حذف المحدد', message:`سيتم حذف ${count} من السجلات المحددة.`, confirmText:'حذف المحدد', confirmBtnClass:'btn-danger' });
-      if(!ok) return;
-      try{
-        const r = await fetch(api('/api/audit-logs/by-ids'), {
-          method:'DELETE', headers:{'Content-Type':'application/json'}, credentials:'include',
-          body: JSON.stringify({ ids: Array.from(selectedIds) })
-        });
-        if(!r.ok) throw new Error('HTTP '+r.status);
-        const data = await r.json().catch(()=>({}));
-        const msg = (typeof data?.deletedCount === 'number') ? `🗑️ تم حذف ${data.deletedCount} سجل محدد` : (data?.message || '🗑️ تم حذف السجلات المحددة');
-        setToast(toastSuccess, msg); toastSuccess.show();
-        page=1; reachedEnd=false; loadLogs({append:false});
-      }catch(e){ setToast(toastError,'❌ فشل حذف السجلات المحددة'); toastError.show(); }
-    });
+  /* ===== filters & selection & delete (كما هي) ===== */
+  document.getElementById('btnSearch').addEventListener('click', ()=>{ page=1; reachedEnd=false; loadLogs({append:false}); });
+  document.getElementById('btnClear').addEventListener('click', ()=>{ document.getElementById('fModel').value=''; document.getElementById('fAction').value=''; document.getElementById('fQuery').value=''; document.getElementById('fFrom').value=''; document.getElementById('fTo').value=''; page=1; reachedEnd=false; loadLogs({append:false}); });
+  document.getElementById('btnMore').addEventListener('click', ()=>{ if(!reachedEnd){ page++; loadLogs({append:true}); } else { setToast(toastInfo,'لا يوجد مزيد من السجلات'); toastInfo.show(); } });
+  document.getElementById('chkAll').addEventListener('change', (e)=>{ const chk=e.target.checked; document.querySelectorAll('#logsTbody .chkRow:not([disabled])').forEach(input=>{ input.checked=chk; const id=input.value; if(chk) selectedIds.add(id); else selectedIds.delete(id); }); updateSelectedCount(); });
+  document.getElementById('logsTbody').addEventListener('change', (e)=>{ if(e.target.classList.contains('chkRow')){ const id=e.target.value; if(e.target.checked) selectedIds.add(id); else selectedIds.delete(id); const all=document.querySelectorAll('#logsTbody .chkRow:not([disabled])'); const allChecked=all.length>0 && Array.from(all).every(x=>x.checked); document.getElementById('chkAll').checked=allChecked; updateSelectedCount(); } });
+  document.getElementById('btnPurge').addEventListener('click', async ()=>{ const ok=await showConfirm({ title:'تأكيد حذف الكل', message:'سيتم حذف جميع سجلات العمليات، ولا يمكن التراجع.', confirmText:'نعم، احذف الكل', confirmBtnClass:'btn-danger' }); if(!ok) return; try{ const r=await fetch(api('/api/audit-logs'), { method:'DELETE', credentials:'include' }); if(!r.ok) throw new Error('HTTP '+r.status); const data=await r.json().catch(()=>({})); setToast(toastSuccess, data?.message || '🧹 تم حذف جميع السجلات'); toastSuccess.show(); page=1; reachedEnd=false; loadLogs({append:false}); }catch(e){ setToast(toastError,'❌ فشل حذف السجلات'); toastError.show(); } });
+  document.getElementById('btnPurgeRange').addEventListener('click', async ()=>{ const f=document.getElementById('fFrom').value, t=document.getElementById('fTo').value; if(!f && !t){ setToast(toastInfo,'الرجاء تحديد تاريخ "من" أو "إلى" أولًا'); toastInfo.show(); return; } if(f && t && (new Date(f) > new Date(t))){ setToast(toastError,'❌ نطاق التاريخ غير صحيح'); toastError.show(); return; } const ok=await showConfirm({ title:'تأكيد الحذف حسب التاريخ', message:`سيتم حذف السجلات ضمن النطاق: ${f||'—'} — ${t||'—'}.`, confirmText:'حذف ضمن النطاق', confirmBtnClass:'btn-warning' }); if(!ok) return; const qs=new URLSearchParams(); if(f) qs.set('from',f); if(t) qs.set('to',t); try{ const r=await fetch(api('/api/audit-logs?')+qs.toString(), { method:'DELETE', credentials:'include' }); if(!r.ok) throw new Error('HTTP '+r.status); const data=await r.json().catch(()=>({})); const msg=(typeof data?.deletedCount==='number') ? `🗂️ تم حذف ${data.deletedCount} سجل ضمن النطاق` : (data?.message || '🗂️ تم حذف السجلات ضمن النطاق'); setToast(toastSuccess, msg); toastSuccess.show(); page=1; reachedEnd=false; loadLogs({append:false}); }catch(e){ setToast(toastError,'❌ فشل في حذف السجلات ضمن النطاق'); toastError.show(); } });
+  document.getElementById('btnDeleteSelected').addEventListener('click', async ()=>{ const count=selectedIds.size; if(count===0){ setToast(toastInfo,'لم يتم تحديد أي سجلات'); toastInfo.show(); return; } const ok=await showConfirm({ title:'تأكيد حذف المحدد', message:`سيتم حذف ${count} من السجلات المحددة.`, confirmText:'حذف المحدد', confirmBtnClass:'btn-danger' }); if(!ok) return; try{ const r=await fetch(api('/api/audit-logs/by-ids'), { method:'DELETE', headers:{'Content-Type':'application/json'}, credentials:'include', body: JSON.stringify({ ids: Array.from(selectedIds) }) }); if(!r.ok) throw new Error('HTTP '+r.status); const data=await r.json().catch(()=>({})); const msg=(typeof data?.deletedCount==='number') ? `🗑️ تم حذف ${data.deletedCount} سجل محدد` : (data?.message || '🗑️ تم حذف السجلات المحددة'); setToast(toastSuccess, msg); toastSuccess.show(); page=1; reachedEnd=false; loadLogs({append:false}); }catch(e){ setToast(toastError,'❌ فشل حذف السجلات المحددة'); toastError.show(); } });
 
-    /* ===== إقلاع ===== */
-    ensureAdmin().then(()=>loadLogs({append:false}));
-  </script>
+  /* ===== إقلاع ===== */
+  ensureAdmin().then(()=>loadLogs({append:false}));
+</script>
+
+
 </body>
 </html>
