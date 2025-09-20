@@ -32,11 +32,12 @@ app.use(helmet({ crossOriginResourcePolicy: false }));
 app.set('trust proxy', 1);
 
 const ALLOWED_ORIGINS = [
-  'https://laithobidat85.github.io', // الواجهة على GitHub Pages
+  'https://laithobidat85.github.io',   // الواجهة على GitHub Pages
+  'https://vdash-qkyv.onrender.com',   // نفس الدومين على Render (مهم جدًا)
+  'http://localhost:3000',             // الخادم محليًا
   'http://localhost:5500',
   'http://127.0.0.1:5500'
 ];
-
 app.use(
   cors({
     origin: (origin, cb) => {
