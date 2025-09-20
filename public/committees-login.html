@@ -79,31 +79,38 @@
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
   <script>
-    // (جديد 2025-09-19) أدوات التوست
+    /* === إعداد أساس الواجهة الخلفية حسب البيئة === */
+    const RENDER_BASE = 'https://vdash-qkyv.onrender.com';
+    const host = location.hostname;
+    const isGithub = host.endsWith('github.io');
+    const isLocal  = host === 'localhost' || host === '127.0.0.1';
+    const API_BASE = isGithub ? RENDER_BASE : (isLocal ? 'http://localhost:3000' : '');
+    const go = (path) => isGithub ? (RENDER_BASE + path) : path;
+
+    // (جديد) أدوات التوست
     const TSuccess = new bootstrap.Toast(document.getElementById('toastSuccess'));
     const TError   = new bootstrap.Toast(document.getElementById('toastError'));
     const TInfo    = new bootstrap.Toast(document.getElementById('toastInfo'));
-
     function setToast(el, msg) { el._element.querySelector('.toast-body').textContent = msg; }
-
     function showSuccess(msg){ setToast(TSuccess, msg); TSuccess.show(); }
     function showError(msg){ setToast(TError, msg); TError.show(); }
     function showInfo(msg){ setToast(TInfo, msg); TInfo.show(); }
 
-    // (جديد 2025-09-19) إظهار/إخفاء كلمة المرور
+    // إظهار/إخفاء كلمة المرور
     function togglePassword() {
       const p = document.getElementById('password');
       p.type = (p.type === 'password') ? 'text' : 'password';
     }
 
-    // (جديد 2025-09-19) قراءة next من كويري سترنج (لإعادة التوجيه بعد النجاح)
+    // قراءة next لعملية إعادة التوجيه بعد النجاح
     function getNextUrl() {
       const params = new URLSearchParams(window.location.search);
       const next = params.get('next');
-      return next && next.startsWith('/') ? next : '/committees-home.html';
+      const safe = next && next.startsWith('/') ? next : '/committees-home.html';
+      return go(safe);
     }
 
-    // (جديد 2025-09-19) تبديل حالة زر الإرسال
+    // تبديل حالة زر الإرسال
     function setSubmitting(isLoading) {
       const btn = document.getElementById('submitBtn');
       btn.disabled = isLoading;
@@ -111,7 +118,7 @@
       btn.querySelector('.btn-wait').classList.toggle('d-none', !isLoading);
     }
 
-    // (جديد 2025-09-19) إرسال النموذج
+    // إرسال النموذج
     document.getElementById('loginForm').addEventListener('submit', async (e) => {
       e.preventDefault();
       const u = document.getElementById('username');
@@ -125,25 +132,24 @@
 
       try {
         setSubmitting(true);
-        const res = await fetch('/auth/committees/login', {
+        const res = await fetch(`${API_BASE}/auth/committees/login`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          credentials: 'same-origin',
+          credentials: 'include',              // مهم للجلسة عبر النطاقات
           body: JSON.stringify({ username: u.value.trim(), password: p.value })
         });
 
+        const data = await res.json().catch(() => ({}));
         if (!res.ok) {
-          const data = await res.json().catch(() => ({}));
           const msg = data?.message || '❌ فشل تسجيل الدخول';
           showError(msg);
           setSubmitting(false);
           return;
         }
 
-        showSuccess('✅ تم تسجيل الدخول بنجاح');
-        // انتظار بسيط لإظهار التوست
+        showSuccess(data?.message || '✅ تم تسجيل الدخول بنجاح');
         setTimeout(() => {
-          window.location.href = getNextUrl();
+          window.location.href = getNextUrl(); // توجيه لنفس أصل الـAPI عند الحاجة
         }, 700);
       } catch (err) {
         showError('❌ تعذر الاتصال بالخادم');
