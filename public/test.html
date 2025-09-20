@@ -2,8 +2,7 @@
 <html lang="ar" dir="rtl">
 <head>
   <meta charset="UTF-8" />
-  <title>إدارة المستخدمين - نظام اللجان</title>
-  <link rel="icon" type="image/png" href="https://www.dropbox.com/scl/fi/f283e4rvv5cf9x12a1cic/my-website-logo.png?rlkey=yia776im7klypy27af32m0scy&e=1&st=vhaprvzh&dl=1">
+  <title>سجل العمليات - نظام اللجان</title>
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.rtl.min.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
@@ -12,43 +11,46 @@
     .container{max-width:1200px;margin-top:40px}
     .card{border-radius:16px;box-shadow:0 6px 18px rgba(0,0,0,.06)}
     .user-chip{font-size:.9rem}
-    .muted{opacity:.75}
 
-    /* سكلتون  */
-    .skeleton{position:relative;overflow:hidden;background:linear-gradient(90deg,#eee 25%,#f5f5f5 37%,#eee 63%);background-size:400% 100%;animation:shimmer 1.2s infinite}
-    @keyframes shimmer{0%{background-position:100% 0}100%{background-position:-100% 0}}
+    /* بطاقات عرض الـ payload: نفس الارتفاع + سكرول */
+    .payload-card{
+      background:#fff;border:1px solid #e9ecef;border-radius:12px;padding:10px;
+      height:220px; /* ارتفاع موحَّد للبيانات قبل/بعد */
+      overflow:auto; /* scroll down */
+    }
+    .payload-card dt{color:#6c757d;font-weight:600}
+    .payload-card dd{margin-bottom:.5rem}
+    .payload-json{
+      direction:ltr;background:#f6f8fa;border-radius:8px;padding:8px;max-height:none;
+      font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace
+    }
 
-    /* شارة الحالة */
-    .badge-active{background:#1987541a;color:#198754}
-    .badge-inactive{background:#dc35451a;color:#dc3545}
+    .filters .form-control, .filters .form-select{min-width:160px}
+    .minw-40{min-width:40px}
+    .minw-60{min-width:60px}
+    .minw-120{min-width:120px}
+    .table thead th{vertical-align:middle}
+    .sticky-actions{position:sticky;bottom:0;background:#fff;border-top:1px solid #e9ecef;padding:12px;border-radius:0 0 16px 16px}
+    .count-badge{font-size:.85rem}
 
-    /* توضيح التحديث الفوري */
-    .saving{opacity:.5;pointer-events:none}
-    .row-highlight{animation:flash .8s ease}
-    @keyframes flash{0%{background:#fff3cd}100%{background:transparent}}
-
-    /* جدول ثابت الرأس */
-    .table-responsive{max-height:540px;overflow:auto}
-    thead th{position:sticky;top:0;z-index:1;background:#fff}
-
-    /* قوة كلمة المرور */
-    .pw-meter{height:6px;border-radius:6px;overflow:hidden;background:#e9ecef}
-    .pw-meter > div{height:100%}
-
-    /* أدوات أعلى الجدول */
-    .toolbar{gap:.5rem}
+    /* تمييز الاختلافات (تظليل واضح) */
+    .diff-added{
+      color:#198754;font-weight:600;
+      background:rgba(25,135,84,.12);
+      border-radius:6px; padding:2px 6px;
+    }
+    .diff-removed{
+      color:#dc3545;font-weight:600;
+      background:rgba(220,53,69,.12);
+      border-radius:6px; padding:2px 6px;
+    }
   </style>
 </head>
 <body>
   <div class="container">
     <!-- Header -->
     <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-2">
-      <div class="d-flex align-items-center gap-2">
-        <a class="btn btn-outline-primary" href="/committees-home.html">
-          <i class="bi bi-arrow-right-circle"></i> لوحة التحكم
-        </a>
-        <h3 class="mb-0">إدارة المستخدمين</h3>
-      </div>
+      <h3 class="mb-0">سجل العمليات</h3>
       <div class="d-flex align-items-center gap-2">
         <span id="userInfo" class="user-chip badge bg-light text-dark border">
           <i class="bi bi-person"></i>
@@ -57,178 +59,107 @@
           <span id="userFullName">—</span>
           <span class="ms-2 badge bg-secondary" id="userRole">—</span>
         </span>
+        <a class="btn btn-outline-primary" href="/committees-home.html">
+          <i class="bi bi-grid"></i> لوحة التحكم
+        </a>
         <button id="logoutBtn" class="btn btn-danger">
           <i class="bi bi-box-arrow-right"></i> خروج
         </button>
       </div>
     </div>
 
-    <!-- إضافة مستخدم -->
-    <div class="card mb-4">
+    <!-- فلاتر -->
+    <div class="card mb-3">
       <div class="card-body">
-        <h5 class="card-title mb-3"><i class="bi bi-person-plus"></i> إضافة مستخدم جديد</h5>
-        <form id="addUserForm" class="row g-3">
-          <div class="col-md-3">
-            <label class="form-label">اسم المستخدم</label>
-            <input type="text" class="form-control" name="username" autocomplete="username" required>
-            <div class="form-text" id="userCheckHint"></div>
-          </div>
-          <div class="col-md-3">
-            <label class="form-label">الاسم الكامل</label>
-            <input type="text" class="form-control" name="name" required>
-          </div>
-          <div class="col-md-3">
-            <label class="form-label">البريد الإلكتروني</label>
-            <input type="email" class="form-control" name="email" autocomplete="email" required>
-            <div class="form-text" id="emailCheckHint"></div>
-          </div>
-          <div class="col-md-3">
-            <label class="form-label">كلمة المرور</label>
-            <div class="input-group">
-              <input type="password" class="form-control" name="password" id="pwInput" minlength="8" required>
-              <button type="button" class="btn btn-outline-secondary" id="genPwBtn" title="توليد كلمة قوية"><i class="bi bi-magic"></i></button>
-            </div>
-            <div class="pw-meter mt-2"><div id="pwBar"></div></div>
-            <div class="form-text" id="pwHint">يفضّل 10+ أحرف مع حروف كبيرة وصغيرة وأرقام ورموز.</div>
-          </div>
-          <div class="col-md-3">
-            <label class="form-label">الدور</label>
-            <select class="form-select" name="role" required>
-              <option value="user">user</option>
-              <option value="admin">admin</option>
+        <div class="filters d-flex flex-wrap align-items-end gap-2">
+          <div>
+            <label class="form-label">الصفحة</label>
+            <select id="fModel" class="form-select">
+              <option value="">الكل</option>
+              <option value="Evaluation">تقييم اللجان</option>
+              <option value="College">الكليات</option>
+              <option value="Auditor">المدققون</option>
+              <option value="Committee">أسماء اللجان</option>
+              <option value="Settings">الإعدادات</option>
+              <option value="User">المستخدمون</option>
             </select>
           </div>
-          <div class="col-12">
-            <button class="btn btn-primary" id="addBtn"><span class="btn-label"><i class="bi bi-check2-circle"></i> إضافة</span></button>
-            <span class="ms-2 text-muted muted">يُسجَّل الحدث في سجل العمليات.</span>
+          <div>
+            <label class="form-label">العملية</label>
+            <select id="fAction" class="form-select">
+              <option value="">الكل</option>
+              <option>create</option>
+              <option>update</option>
+              <option>delete</option>
+            </select>
           </div>
-        </form>
-      </div>
-    </div>
-
-    <!-- أدوات الجدول -->
-    <div class="card mb-3">
-      <div class="card-body d-flex flex-wrap align-items-end toolbar">
-        <div>
-          <label class="form-label">بحث</label>
-          <input type="text" id="q" class="form-control" placeholder="اسم/اسم مستخدم/بريد">
-        </div>
-        <div>
-          <label class="form-label">الدور</label>
-          <select id="fRole" class="form-select">
-            <option value="">الكل</option>
-            <option value="admin">admin</option>
-            <option value="user">user</option>
-          </select>
-        </div>
-        <div>
-          <label class="form-label">الحالة</label>
-          <select id="fActive" class="form-select">
-            <option value="">الكل</option>
-            <option value="true">نشط</option>
-            <option value="false">معطّل</option>
-          </select>
-        </div>
-        <div>
-          <label class="form-label">الترتيب</label>
-          <select id="sort" class="form-select">
-            <option value="-createdAt">الأحدث أولًا</option>
-            <option value="createdAt">الأقدم أولًا</option>
-            <option value="name">الاسم (أ-ي)</option>
-            <option value="-name">الاسم (ي-أ)</option>
-          </select>
-        </div>
-        <div>
-          <label class="form-label">لكل صفحة</label>
-          <select id="limit" class="form-select">
-            <option>10</option><option selected>20</option><option>50</option>
-          </select>
-        </div>
-        <div class="ms-auto d-flex gap-2">
-          <button class="btn btn-outline-secondary" id="btnExport"><i class="bi bi-filetype-csv"></i> تصدير CSV</button>
-          <button class="btn btn-outline-secondary" id="btnReload"><i class="bi bi-arrow-repeat"></i> تحديث</button>
+          <div>
+            <label class="form-label">بحث (اسم/إيميل/اسم مستخدم)</label>
+            <input id="fQuery" type="text" class="form-control" placeholder="مثل: laith أو b01578">
+          </div>
+          <div>
+            <label class="form-label">من تاريخ</label>
+            <input id="fFrom" type="date" class="form-control">
+          </div>
+          <div>
+            <label class="form-label">إلى تاريخ</label>
+            <input id="fTo" type="date" class="form-control">
+          </div>
+          <div class="ms-auto d-flex gap-2">
+            <button id="btnSearch" class="btn btn-primary"><i class="bi bi-search"></i> بحث</button>
+            <button id="btnClear" class="btn btn-outline-secondary"><i class="bi bi-x-circle"></i> تفريغ</button>
+          </div>
         </div>
       </div>
     </div>
 
     <!-- الجدول -->
     <div class="card">
-      <div class="card-body">
-        <!-- شريط إجراءات جماعية -->
-        <div class="d-flex justify-content-between align-items-center mb-2">
-          <div class="d-flex flex-wrap gap-2">
-            <button class="btn btn-sm btn-outline-success" id="bulkActivate" disabled><i class="bi bi-toggle-on"></i> تفعيل</button>
-            <button class="btn btn-sm btn-outline-warning" id="bulkDeactivate" disabled><i class="bi bi-toggle-off"></i> تعطيل</button>
-            <div class="btn-group">
-              <button class="btn btn-sm btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown"><i class="bi bi-person-gear"></i> تغيير الدور</button>
-              <ul class="dropdown-menu">
-                <li><a class="dropdown-item" href="#" data-role="admin">اجعلهم admin</a></li>
-                <li><a class="dropdown-item" href="#" data-role="user">اجعلهم user</a></li>
-              </ul>
-            </div>
-            <button class="btn btn-sm btn-outline-danger" id="bulkDelete" disabled><i class="bi bi-trash3"></i> حذف المحدد</button>
-          </div>
-          <div class="text-muted"><span id="countSpan">—</span></div>
-        </div>
-
+      <div class="card-body p-0">
         <div class="table-responsive">
-          <table class="table table-hover align-middle">
+          <table class="table table-hover align-middle mb-0">
             <thead class="table-light">
               <tr>
-                <th style="width:40px" class="text-center"><input class="form-check-input" type="checkbox" id="chkAll"></th>
-                <th>#</th>
-                <th>الاسم الكامل</th>
-                <th>اسم المستخدم</th>
-                <th>البريد</th>
-                <th>الدور</th>
-                <th>الحالة</th>
-                <th>آخر إنشاء</th>
-                <th>إجراءات</th>
+                <th class="minw-40 text-center">
+                  <input class="form-check-input" type="checkbox" id="chkAll" title="تحديد/إلغاء تحديد الكل">
+                </th>
+                <th class="minw-60">#</th>
+                <th class="minw-120">الوقت</th>
+                <th>الصفحة</th>
+                <th>العملية</th>
+                <th>المعرّف</th>
+                <th>المستخدم</th>
+                <th style="width:22%">البيانات قبل</th>
+                <th style="width:22%">البيانات بعد</th>
               </tr>
             </thead>
-            <tbody id="usersTbody">
-              <!-- سكلتون أولي -->
-              <tr><td colspan="9">
-                <div class="skeleton" style="height:18px;margin:8px 0;"></div>
-                <div class="skeleton" style="height:18px;margin:8px 0;"></div>
-                <div class="skeleton" style="height:18px;margin:8px 0;"></div>
-              </td></tr>
+            <tbody id="logsTbody">
+              <tr class="text-center text-muted"><td colspan="9">جاري التحميل…</td></tr>
             </tbody>
           </table>
         </div>
 
-        <!-- صفحات -->
-        <div class="d-flex justify-content-between align-items-center mt-3">
-          <div class="text-muted">الصفحة <span id="pageNum">1</span></div>
-          <div class="btn-group">
-            <button class="btn btn-outline-secondary btn-sm" id="prevPage"><i class="bi bi-chevron-right"></i> السابق</button>
-            <button class="btn btn-outline-secondary btn-sm" id="nextPage">التالي <i class="bi bi-chevron-left"></i></button>
+        <!-- شريط الإجراءات -->
+        <div class="sticky-actions d-flex flex-wrap justify-content-between align-items-center gap-2">
+          <div class="d-flex flex-wrap gap-2">
+            <button id="btnMore" class="btn btn-outline-secondary">
+              <i class="bi bi-plus-circle"></i> تحميل المزيد
+            </button>
+            <button id="btnPurge" class="btn btn-outline-danger">
+              <i class="bi bi-trash3"></i> حذف كل السجلات
+            </button>
+            <button id="btnPurgeRange" class="btn btn-outline-warning">
+              <i class="bi bi-calendar-x"></i> حذف حسب التاريخ
+            </button>
+            <button id="btnDeleteSelected" class="btn btn-danger" disabled>
+              <i class="bi bi-check2-square"></i> حذف السجلات المحددة
+            </button>
           </div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Modal: إعادة كلمة مرور -->
-  <div class="modal fade" id="resetPwModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title">إعادة تعيين كلمة المرور</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-        </div>
-        <div class="modal-body">
-          <div class="mb-2">سيتم تعيين كلمة مرور جديدة للمستخدم: <strong id="resetTargetName">—</strong></div>
-          <label class="form-label">كلمة المرور الجديدة</label>
-          <div class="input-group">
-            <input type="text" id="newPwInput" class="form-control" autocomplete="off">
-            <button class="btn btn-outline-secondary" id="regenBtn" type="button"><i class="bi bi-magic"></i></button>
+          <div>
+            <span class="badge text-bg-light count-badge">
+              المحدد: <span id="selectedCount">0</span>
+            </span>
           </div>
-          <div class="form-text">انسخها وأبلغ المستخدم بها بأمان.</div>
-        </div>
-        <div class="modal-footer">
-          <button class="btn btn-secondary" data-bs-dismiss="modal">إغلاق</button>
-          <button class="btn btn-primary" id="applyResetBtn"><i class="bi bi-check2-circle"></i> تطبيق</button>
         </div>
       </div>
     </div>
@@ -256,19 +187,62 @@
     </div>
   </div>
 
+  <!-- Modal تأكيد (بدون أي alert/confirm متصفح) -->
+  <div class="modal fade" id="confirmModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 id="confirmModalTitle" class="modal-title">تأكيد</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="إغلاق"></button>
+        </div>
+        <div class="modal-body" id="confirmModalBody">هل تريد المتابعة؟</div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+          <button type="button" class="btn btn-danger" id="confirmModalConfirmBtn">تأكيد</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scripts -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
   <script>
-    /* ====== Toasts ====== */
+    /* ===== Toast helpers ===== */
     const toastSuccess = new bootstrap.Toast(document.getElementById('toastSuccess'));
     const toastError   = new bootstrap.Toast(document.getElementById('toastError'));
     const toastInfo    = new bootstrap.Toast(document.getElementById('toastInfo'));
-    const setToast = (el,msg)=>{ el._element.querySelector('.toast-body').innerText = msg; };
+    function setToast(el, msg){ el._element.querySelector('.toast-body').innerText = msg; }
 
-    /* ====== Auth ====== */
+    /* ===== Modal confirm helper ===== */
+    const confirmModalEl = document.getElementById('confirmModal');
+    const confirmModal   = new bootstrap.Modal(confirmModalEl);
+    const confirmTitle   = document.getElementById('confirmModalTitle');
+    const confirmBody    = document.getElementById('confirmModalBody');
+    const confirmBtn     = document.getElementById('confirmModalConfirmBtn');
+
+    function showConfirm({title='تأكيد', message='هل تريد المتابعة؟', confirmText='تأكيد', confirmBtnClass='btn-danger'}={}){
+      return new Promise(resolve=>{
+        confirmTitle.textContent = title;
+        confirmBody.textContent  = message;
+        confirmBtn.className = 'btn ' + confirmBtnClass;
+        confirmBtn.textContent = confirmText;
+
+        let resolved = false;
+        const onConfirm = () => { resolved = true; confirmModal.hide(); resolve(true); };
+        const onHidden  = () => { confirmModalEl.removeEventListener('hidden.bs.modal', onHidden); confirmBtn.removeEventListener('click', onConfirm); if(!resolved) resolve(false); };
+
+        confirmBtn.addEventListener('click', onConfirm, { once:true });
+        confirmModalEl.addEventListener('hidden.bs.modal', onHidden, { once:true });
+
+        confirmModal.show();
+      });
+    }
+
+    /* ===== auth helpers ===== */
     async function fetchMe(){
       try{
         const r = await fetch('/auth/committees/me',{credentials:'include'});
-        if(!r.ok) throw 0;
+        if(!r.ok) throw new Error();
         return await r.json();
       }catch{ return {authenticated:false}; }
     }
@@ -281,400 +255,575 @@
     async function ensureAdmin(){
       const me = await fetchMe();
       if(!me.authenticated){
-        const next = encodeURIComponent('/users-manage.html');
+        const next = encodeURIComponent('/audit-logs.html');
         location.href = `/committees-login.html?next=${next}`;
         return Promise.reject();
       }
       if((me.user?.role||'').toLowerCase()!=='admin'){
         setToast(toastError,'❌ هذه الصفحة للمشرفين فقط'); toastError.show();
-        setTimeout(()=>location.href='/committees-home.html',1000);
+        setTimeout(()=>location.href='/committees-home.html',900);
         return Promise.reject();
       }
       renderUser(me.user);
       return me.user;
     }
-    document.getElementById('logoutBtn').addEventListener('click', async ()=>{
+    async function logout(){
       try{
         const r = await fetch('/auth/committees/logout',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'include'});
         if(r.ok){ setToast(toastSuccess,'✅ تم تسجيل الخروج'); toastSuccess.show(); setTimeout(()=>location.href='/committees-login.html',700); }
         else{ setToast(toastError,'❌ تعذر تسجيل الخروج'); toastError.show(); }
       }catch{ setToast(toastError,'❌ خطأ في الاتصال'); toastError.show(); }
-    });
+    }
+    document.getElementById('logoutBtn').addEventListener('click', logout);
 
-    /* ====== Helpers ====== */
-    const qs = {
-      get(){ return new URLSearchParams(location.search); },
-      set(obj){
-        const p = new URLSearchParams();
-        Object.entries(obj).forEach(([k,v])=>{ if(v!=='' && v!=null) p.set(k,v); });
-        history.replaceState(null,'','?'+p.toString());
+    /* ===== mapping helpers ===== */
+    function modelToPage(model){
+      switch(model){
+        case 'Evaluation': return 'تقييم اللجان';
+        case 'College':    return 'الكليات';
+        case 'Auditor':    return 'المدققون';
+        case 'Committee':  return 'أسماء اللجان';
+        case 'Settings':   return 'الإعدادات';
+        case 'User':       return 'المستخدمون';
+        default:           return model||'—';
       }
-    };
-    const state = {
-      page: 1, limit: 20, sort: '-createdAt',
-      search: '', role: '', active: '',
-      total: 0, items: [],
-      selected: new Set(),
-    };
-
-    function saveFilters(){
-      localStorage.setItem('users.filters', JSON.stringify({
-        search: state.search, role: state.role, active: state.active, sort: state.sort, limit: state.limit
-      }));
     }
-    function loadFilters(){
-      try{
-        const o = JSON.parse(localStorage.getItem('users.filters')||'{}');
-        if(o.search!=null) document.getElementById('q').value = o.search;
-        if(o.role!=null)   document.getElementById('fRole').value = o.role;
-        if(o.active!=null) document.getElementById('fActive').value = o.active;
-        if(o.sort!=null)   document.getElementById('sort').value = o.sort;
-        if(o.limit!=null)  document.getElementById('limit').value = o.limit;
-      }catch{}
+    function badgeAction(action){
+      const cls = action==='delete'?'text-bg-danger':(action==='update'?'text-bg-warning':'text-bg-success');
+      return `<span class="badge ${cls}">${action||'—'}</span>`;
+    }
+    function fmtUser(u){
+      if(!u) return '—';
+      const full = u.name || '—';
+      const uname = u.username || (u.email? u.email.split('@')[0] : '—');
+      const email = u.email ? ` <span class="badge text-bg-light">${u.email}</span>` : '';
+      const role  = u.role  ? ` <span class="badge text-bg-secondary">${u.role}</span>` : '';
+      return `${full} <span class="badge text-bg-info">${uname}</span>${email}${role}`;
     }
 
-    const tbody = document.getElementById('usersTbody');
-    function rowCheckbox(id, checked){ return `<input class="form-check-input chkRow" type="checkbox" value="${id}" ${checked?'checked':''}>`; }
-    function roleSelect(id, role){ return `
-      <select class="form-select form-select-sm inline-role" data-id="${id}" title="تغيير فوري">
-        <option value="user" ${role==='user'?'selected':''}>user</option>
-        <option value="admin" ${role==='admin'?'selected':''}>admin</option>
-      </select>`; }
-    function activeToggle(id, isActive){ return `
-      <div class="form-check form-switch">
-        <input class="form-check-input inline-active" type="checkbox" role="switch" data-id="${id}" ${isActive?'checked':''} title="تفعيل/تعطيل فوري">
-      </div>`; }
+    /* ===== أسماء الأعمدة للعرض العربي (including visibleColumns) ===== */
+    const colNameArMap = {
+      committee_name:'اسم اللجنة',
+      college:'الكلية',
+      auditor_name:'المدقق',
+      createdAt:'تاريخ الإنشاء',
+      updatedAt:'تاريخ التحديث',
+      notes:'ملاحظات',
+      score:'النتيجة',
 
-    function renderRows(users, offset=0){
-      if(!Array.isArray(users) || users.length===0){
-        tbody.innerHTML = `<tr class="text-center text-muted"><td colspan="9">لا يوجد نتائج</td></tr>`;
-        return;
+      /* المطلوب (visibleColumns) */
+      work_plan:'خطة العمل',
+      performance_indicators:'مؤشرات الاداء',
+      meetings:'عدد الاجتماعات',
+      consistency:'التوافق بين الدعوات والاجتماعات',
+      coverage_books:'كتب التغطية',
+      report1:'تقرير إنجاز 1',
+      report2:'تقرير إنجاز 2',
+      report3:'تقرير إنجاز 3',
+      statistical_analysis:'التحليل الإحصائي',
+
+      /* حقول المستخدم */
+      name:'الاسم',
+      username:'اسم المستخدم',
+      role:'الدور',
+      email:'البريد',
+      isActive:'نشط؟',
+
+      /* قرار التشكيل (احتمالات متعددة) */
+      formation_decision:'قرار التشكيل',
+      formationDecision:'قرار التشكيل',
+      decision:'قرار التشكيل',
+      decision_number:'قرار التشكيل',
+      decisionNumber:'قرار التشكيل',
+      formation_no:'قرار التشكيل',
+      formationNo:'قرار التشكيل'
+    };
+    function toArabicLabel(k){ return colNameArMap[k] || k; }
+    function toArabicColumns(list){
+      if(!Array.isArray(list)) return list;
+      return list.map(k=>toArabicLabel(k)).join('، ');
+    }
+
+    /* ===== utils ===== */
+    function escapeHtml(s){
+      return String(s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+    }
+    function normalizeValue(v){
+      if (v === null || v === undefined) return '';
+      if (v instanceof Date) return v.toISOString();
+      if (Array.isArray(v)) return JSON.stringify(v);
+      if (typeof v === 'object') return JSON.stringify(v);
+      return String(v);
+    }
+    function computeDiffKeys(before, after){
+      const b = before || {}, a = after || {};
+      const keys = new Set([...Object.keys(b), ...Object.keys(a)]);
+      const changed = new Set();
+      keys.forEach(k=>{
+        if (normalizeValue(b[k]) !== normalizeValue(a[k])) changed.add(k);
+      });
+      return changed;
+    }
+    function findKey(obj, candidates){
+      return candidates.find(k => Object.prototype.hasOwnProperty.call(obj||{}, k));
+    }
+    function firstVal(obj, candidates){
+      const k = findKey(obj, candidates);
+      return k ? obj[k] : undefined;
+    }
+
+    /* ===== تحويل HTML إلى نص مع الحفاظ على فواصل الأسطر (للملاحظات) ===== */
+    function stripHtmlPreserveBreaks(html) {
+      try {
+        const doc = new DOMParser().parseFromString(String(html), 'text/html');
+        const blockBreak = new Set(['P','DIV','LI','BR','H1','H2','H3','H4','H5','H6']);
+        function walk(node) {
+          let out = '';
+          node.childNodes.forEach(n => {
+            if (n.nodeType === 3) { // Text
+              out += n.textContent;
+            } else if (n.nodeType === 1) { // Element
+              const tag = n.nodeName;
+              if (tag === 'BR') out += '\n';
+              out += walk(n);
+              if (blockBreak.has(tag) && out.slice(-1) !== '\n') out += '\n';
+            }
+          });
+          return out;
+        }
+        return walk(doc.body).replace(/\n{3,}/g, '\n\n').trim();
+      } catch {
+        return String(html).replace(/<[^>]+>/g, '\n').replace(/\n{3,}/g, '\n\n').trim();
       }
-      tbody.innerHTML = users.map((u,i)=>`
-        <tr data-id="${u._id||u.id}">
-          <td class="text-center">${rowCheckbox(u._id||u.id, state.selected.has(u._id||u.id))}</td>
-          <td>${offset + i + 1}</td>
-          <td>${u.name||'—'}</td>
-          <td><span class="badge text-bg-light">${u.username||'—'}</span></td>
-          <td>${u.email||'—'}</td>
-          <td style="width:140px">${roleSelect(u._id||u.id, u.role||'user')}</td>
-          <td style="width:110px">
-            ${u.isActive===false?'<span class="badge badge-inactive">معطّل</span>':'<span class="badge badge-active">نشط</span>'}
-            ${activeToggle(u._id||u.id, u.isActive!==false)}
-          </td>
-          <td>${u.createdAt? new Date(u.createdAt).toLocaleString('ar-EG') : '—'}</td>
-          <td>
-            <button class="btn btn-sm btn-outline-primary resetBtn" data-id="${u._id||u.id}" data-name="${u.name||u.username||'—'}"><i class="bi bi-key"></i></button>
-            <button class="btn btn-sm btn-outline-danger delBtn" data-id="${u._id||u.id}" data-name="${u.name||u.username||'—'}"><i class="bi bi-trash3"></i></button>
-          </td>
-        </tr>
-      `).join('');
-      updateBulkBar();
     }
 
-    function updateBulkBar(){
-      const any = state.selected.size>0;
-      document.getElementById('bulkActivate').disabled = !any;
-      document.getElementById('bulkDeactivate').disabled = !any;
-      document.getElementById('bulkDelete').disabled = !any;
-      document.getElementById('countSpan').textContent = `المحدّد: ${state.selected.size} | الإجمالي: ${state.total}`;
+    /* ===== Diff للكلمات داخل النصوص الطويلة (notes) ===== */
+    function splitTokens(str){
+      const plain = stripHtmlPreserveBreaks(str);
+      return plain.split(/(\s+|[.,;:!?،؛()\[\]{}"«»]+)/g).filter(t => t !== '');
+    }
+    // LCS diff على مستوى التوكن
+    function diffTokens(aTokens, bTokens){
+      const m = aTokens.length, n = bTokens.length;
+      const dp = Array(m+1).fill(null).map(()=>Array(n+1).fill(0));
+      for(let i=m-1;i>=0;i--){
+        for(let j=n-1;j>=0;j--){
+          dp[i][j] = (aTokens[i]===bTokens[j]) ? dp[i+1][j+1]+1 : Math.max(dp[i+1][j], dp[i][j+1]);
+        }
+      }
+      const ops = [];
+      let i=0, j=0;
+      while(i<m && j<n){
+        if(aTokens[i]===bTokens[j]){ ops.push({type:'eq', token:aTokens[i]}); i++; j++; }
+        else if(dp[i+1][j] >= dp[i][j+1]){ ops.push({type:'del', token:aTokens[i++]}); }
+        else{ ops.push({type:'add', token:bTokens[j++]}); }
+      }
+      while(i<m) ops.push({type:'del', token:aTokens[i++]});
+      while(j<n) ops.push({type:'add', token:bTokens[j++]});
+      return ops;
+    }
+    function renderTextDiff(beforeText, afterText, mode){
+      const a = splitTokens(beforeText || '');
+      const b = splitTokens(afterText  || '');
+      const ops = diffTokens(a, b);
+      let html = '';
+      for (const op of ops){
+        if (op.type === 'eq') {
+          html += escapeHtml(op.token);
+        } else if (op.type === 'add') {
+          html += (mode === 'after')
+            ? `<span class="diff-added">${escapeHtml(op.token)}</span>`
+            : escapeHtml(op.token);
+        } else if (op.type === 'del') {
+          html += (mode === 'before')
+            ? `<span class="diff-removed">${escapeHtml(op.token)}</span>`
+            : '';
+        }
+      }
+      html = html.replace(/\n/g, '<br>');
+      return html || '—';
+    }
+    function kvTextDiff(label, key, beforeObj, afterObj, mode, diffKeys){
+      const changed = diffKeys && diffKeys.has(key);
+      const currentVal = (mode==='before') ? (beforeObj?.[key]) : (afterObj?.[key]);
+      if(currentVal===undefined || currentVal===null || currentVal==='') return '';
+      if(changed && typeof (beforeObj?.[key] ?? '') === 'string' && typeof (afterObj?.[key] ?? '') === 'string'){
+        const html = renderTextDiff(beforeObj?.[key] ?? '', afterObj?.[key] ?? '', mode);
+        return `<dt>${label}</dt><dd>${html}</dd>`;
+      }
+      const cls = changed ? (mode==='before' ? 'diff-removed' : 'diff-added') : '';
+      return `<dt>${label}</dt><dd class="${cls}">${escapeHtml(currentVal)}</dd>`;
     }
 
-    /* ====== تحميل المستخدمين ====== */
-    async function fetchUsers(){
-      // قراءة الفلاتر من UI
-      state.search = document.getElementById('q').value.trim();
-      state.role   = document.getElementById('fRole').value;
-      state.active = document.getElementById('fActive').value;
-      state.sort   = document.getElementById('sort').value;
-      state.limit  = parseInt(document.getElementById('limit').value,10) || 20;
+    /* ===== إبراز قوائم Settings عنصرًا-بعنصر (visibleColumns / selectedVisits) ===== */
+    function renderArrayDiff(beforeArr, afterArr, mode){
+      const b = Array.isArray(beforeArr) ? beforeArr : [];
+      const a = Array.isArray(afterArr)  ? afterArr  : [];
+      const beforeSet = new Set(b);
+      const afterSet  = new Set(a);
+      const list = mode === 'before' ? b : a;
+      const parts = list.map(k=>{
+        const isAdded   = !beforeSet.has(k) && afterSet.has(k);
+        const isRemoved =  beforeSet.has(k) && !afterSet.has(k);
+        const cls = (mode === 'after'  && isAdded)   ? 'diff-added'
+                  : (mode === 'before' && isRemoved) ? 'diff-removed'
+                  : '';
+        return `<span class="${cls}">${escapeHtml(toArabicLabel(k))}</span>`;
+      });
+      return parts.length ? parts.join('، ') : '—';
+    }
+    function renderSettingsDiff(before, after, mode){
+      const vBefore = before?.visibleColumns || [];
+      const vAfter  =  after?.visibleColumns || [];
+      const sBefore = before?.selectedVisits || [];
+      const sAfter  =  after?.selectedVisits || [];
+      let html = '<div class="payload-card"><dl class="row mb-0">';
+      html += `<dt>الأعمدة المرئية</dt><dd>${renderArrayDiff(vBefore, vAfter, mode)}</dd>`;
+      html += `<dt>الزيارات المحددة</dt><dd>${renderArrayDiff(sBefore, sAfter, mode)}</dd>`;
+      html += '</dl></div>';
+      return html;
+    }
 
-      saveFilters();
-      qs.set({ q: state.search, role: state.role, active: state.active, sort: state.sort, limit: state.limit, page: state.page });
+    /* ===== عناصر عامة مع تمييز حقل كامل ===== */
+    function kvDiff(label, value, key, diffKeys, mode){
+      if(value===undefined || value===null || value==='') return '';
+      const cls = diffKeys && diffKeys.has(key)
+        ? (mode==='before' ? 'diff-removed' : 'diff-added')
+        : '';
+      return `<dt>${label}</dt><dd class="${cls}">${escapeHtml(value)}</dd>`;
+    }
 
-      tbody.innerHTML = `<tr><td colspan="9">
-        <div class="skeleton" style="height:18px;margin:8px 0;"></div>
-        <div class="skeleton" style="height:18px;margin:8px 0;"></div>
-        <div class="skeleton" style="height:18px;margin:8px 0;"></div>
-      </td></tr>`;
+    /* ===== بطاقة عرض كائن مع إبراز الفروق ===== */
+    function renderCardFromObjectWithDiff(model, obj, diffKeys, mode, otherSide){
+      if(!obj) return '<div class="payload-card text-muted">—</div>';
+      let html = '<div class="payload-card"><dl class="row mb-0">';
+      const d = obj;
+
+      // تحديد الطرفين للـ Diff النصّي
+      const beforeObj = (mode==='before') ? obj : (otherSide || {});
+      const afterObj  = (mode==='after')  ? obj : (otherSide || {});
+      const has = (k)=> d[k]!==undefined && d[k]!==null && d[k]!==''; // مساعد
+
+      if(model==='Evaluation'){
+        html += kvDiff('اسم اللجنة', d.committee_name, 'committee_name', diffKeys, mode);
+        html += kvDiff('الكلية', d.college, 'college', diffKeys, mode);
+        html += kvDiff('المدقق', d.auditor_name, 'auditor_name', diffKeys, mode);
+        html += kvDiff('تاريخ الإنشاء', d.createdAt ? new Date(d.createdAt).toLocaleString('ar-EG') : '', 'createdAt', diffKeys, mode);
+
+        /* ملاحظات: Diff كلمة-بكلمة (بدون وسوم HTML) */
+        if(has('notes')) html += kvTextDiff('ملاحظات', 'notes', beforeObj, afterObj, mode, diffKeys);
+
+        /* أرقام/قيم بسيطة */
+        html += kvDiff('النتيجة', d.score, 'score', diffKeys, mode);
+
+        /* قرار التشكيل (يدعم عدة مفاتيح) */
+        const decisionKeys = ['formation_decision','formationDecision','decision','decision_number','decisionNumber','formation_no','formationNo'];
+        const decisionKey  = decisionKeys.find(k => k in d);
+        if(decisionKey){
+          html += kvDiff('قرار التشكيل', d[decisionKey], decisionKey, diffKeys, mode);
+        }
+
+        /* لو الحقول أدناه موجودة داخل سجل التقييم نفسه */
+        ['work_plan','performance_indicators','meetings','consistency','coverage_books','report1','report2','report3','statistical_analysis']
+          .forEach(k=>{ if(has(k)) html += kvDiff(toArabicLabel(k), d[k], k, diffKeys, mode); });
+
+      }else if(model==='College'){
+        html += kvDiff('الكلية', d.name, 'name', diffKeys, mode);
+
+      }else if(model==='Auditor'){
+        html += kvDiff('المدقق', d.name, 'name', diffKeys, mode);
+
+      }else if(model==='Committee'){
+        html += kvDiff('اسم اللجنة', d.name, 'name', diffKeys, mode);
+
+      }else if(model==='Settings'){
+        if(d.visibleColumns) html += kvDiff('الأعمدة المرئية', toArabicColumns(d.visibleColumns), 'visibleColumns', diffKeys, mode);
+        if(d.selectedVisits) html += kvDiff('الزيارات المحددة', toArabicColumns(d.selectedVisits), 'selectedVisits', diffKeys, mode);
+        const otherKeys = Object.keys(d||{}).filter(k=>!['visibleColumns','selectedVisits','_id','updatedAt','createdAt','__v'].includes(k));
+        if(otherKeys.length){
+          html += kvDiff('تغييرات أخرى', otherKeys.map(toArabicLabel).join('، '), '__misc', diffKeys, mode);
+        }
+
+      }else{
+        html += '</dl><div class="payload-json"><code>'+escapeHtml(JSON.stringify(obj, null, 2))+'</code></div>';
+        html += '</div>';
+        return html;
+      }
+
+      html += '</dl>';
+      if(!/<dd[^>]*>/.test(html)){
+        html += '<div class="payload-json"><code>'+escapeHtml(JSON.stringify(obj, null, 2))+'</code></div>';
+      }
+      html += '</div>';
+      return html;
+    }
+
+    /* ===== خلايا الجدول: قبل/بعد ===== */
+    function renderBeforeCell(log){
+      const p = log.payload || {};
+
+      // تخصيص Settings لعرض الفروق عنصرًا-بعنصر
+      if (log.model === 'Settings') {
+        if (log.action === 'create') return '<div class="payload-card text-muted">كانت فارغة</div>';
+        if (log.action === 'delete') return renderSettingsDiff(p, {}, 'before');
+        if (p && p.before && p.after) return renderSettingsDiff(p.before, p.after, 'before');
+        if (p && p.before) return renderSettingsDiff(p.before, {}, 'before');
+        return '<div class="payload-card text-muted">—</div>';
+      }
+
+      if (log.action === 'create') return '<div class="payload-card text-muted">كانت فارغة</div>';
+      if (log.action === 'delete'){
+        const allKeys = p ? new Set(Object.keys(p)) : new Set();
+        return renderCardFromObjectWithDiff(log.model, p, allKeys, 'before', {}); // كل شيء مُزال
+      }
+      if (p && p.before && p.after){
+        const diff = computeDiffKeys(p.before, p.after);
+        return renderCardFromObjectWithDiff(log.model, p.before, diff, 'before', p.after);
+      }
+      if (p && p.before){
+        return renderCardFromObjectWithDiff(log.model, p.before, null, 'before', {});
+      }
+      return '<div class="payload-card text-muted">—</div>';
+    }
+    function renderAfterCell(log){
+      const p = log.payload || {};
+
+      // تخصيص Settings لعرض الفروق عنصرًا-بعنصر
+      if (log.model === 'Settings') {
+        if (log.action === 'delete') return '<div class="payload-card text-muted">تم الحذف</div>';
+        if (log.action === 'create') return renderSettingsDiff({}, p, 'after');
+        if (p && p.before && p.after) return renderSettingsDiff(p.before, p.after, 'after');
+        if (p && p.after) return renderSettingsDiff({}, p.after, 'after');
+        return renderSettingsDiff({}, p, 'after');
+      }
+
+      if (log.action === 'delete') return '<div class="payload-card text-muted">تم الحذف</div>';
+      if (log.action === 'create'){
+        const allKeys = p ? new Set(Object.keys(p)) : new Set();
+        return renderCardFromObjectWithDiff(log.model, p, allKeys, 'after', {}); // كل شيء مُضاف
+      }
+      if (p && p.after && p.before){
+        const diff = computeDiffKeys(p.before, p.after);
+        return renderCardFromObjectWithDiff(log.model, p.after, diff, 'after', p.before);
+      }
+      if (p && p.after){
+        return renderCardFromObjectWithDiff(log.model, p.after, null, 'after', {});
+      }
+      return renderCardFromObjectWithDiff(log.model, p, null, 'after', {});
+    }
+
+    /* ===== listing & selection ===== */
+    let page = 1, limit = 20, reachedEnd = false;
+    let rowCounterStart = 1;
+    const selectedIds = new Set();
+
+    function updateSelectedCount(){
+      document.getElementById('selectedCount').textContent = selectedIds.size;
+      document.getElementById('btnDeleteSelected').disabled = selectedIds.size === 0;
+    }
+
+    function buildQuery(){
+      const m = document.getElementById('fModel').value.trim();
+      const a = document.getElementById('fAction').value.trim();
+      const q = document.getElementById('fQuery').value.trim();
+      const f = document.getElementById('fFrom').value;
+      const t = document.getElementById('fTo').value;
+      const params = new URLSearchParams();
+      if(m) params.set('model',m);
+      if(a) params.set('action',a);
+      if(q) params.set('q',q);              // بحث شامل (اسم/إيميل/اسم مستخدم)
+      if(f) params.set('from',f);
+      if(t) params.set('to',t);
+      params.set('page',page);
+      params.set('limit',limit);
+      return params.toString();
+    }
+
+    async function loadLogs({append=false}={}){
+      if(reachedEnd && append) return;
+      const tbody = document.getElementById('logsTbody');
+      if(!append){
+        tbody.innerHTML = `<tr class="text-center text-muted"><td colspan="9">جاري التحميل…</td></tr>`;
+        rowCounterStart = (page-1)*limit + 1;
+        selectedIds.clear();
+        updateSelectedCount();
+        document.getElementById('chkAll').checked = false;
+      }
       try{
-        const params = new URLSearchParams();
-        if(state.search) params.set('search',state.search);
-        if(state.role)   params.set('role',state.role);
-        if(state.active) params.set('active',state.active);
-        if(state.sort)   params.set('sort',state.sort);
-        params.set('page', state.page);
-        params.set('limit', state.limit);
+        const r = await fetch('/api/audit-logs?'+buildQuery(),{credentials:'include'});
+        if(!r.ok) throw new Error('HTTP '+r.status);
+        const data = await r.json(); // {items, hasMore}
+        const items = Array.isArray(data)? data : (data.items||[]);
+        reachedEnd = Array.isArray(data)? items.length<limit : (data.hasMore===false);
 
-        const r = await fetch('/api/users?'+params.toString(), { credentials:'include' });
-        if(r.status===401 || r.status===403){
-          setToast(toastError,'❌ انتهت الجلسة أو لا تملك صلاحية'); toastError.show();
-          setTimeout(()=>location.href='/committees-login.html',900);
+        if(!append) tbody.innerHTML = '';
+        if(items.length===0 && !append){
+          tbody.innerHTML = `<tr class="text-center text-muted"><td colspan="9">لا توجد سجلات</td></tr>`;
           return;
         }
-        if(!r.ok) throw new Error('HTTP '+r.status);
-        const data = await r.json();
-        state.items = data.data || data; // يدعم الاستجابة القديمة (مصفوفة) أو الجديدة ({data,meta})
-        state.total = data?.meta?.total ?? state.items.length;
-        document.getElementById('pageNum').textContent = state.page;
-        renderRows(state.items, (state.page-1)*state.limit);
-      }catch(e){
-        tbody.innerHTML = `<tr class="text-center text-danger"><td colspan="9">حدث خطأ في جلب المستخدمين</td></tr>`;
+        let n = rowCounterStart;
+        items.forEach(log=>{
+          const when = log.createdAt ? new Date(log.createdAt).toLocaleString('ar-EG') : '—';
+          const id = log._id || log.id || '';
+          const disabled = id ? '' : 'disabled';
+          const checked = (id && selectedIds.has(id)) ? 'checked' : '';
+          const row = document.createElement('tr');
+          row.setAttribute('data-id', id);
+          row.innerHTML = `
+            <td class="text-center">
+              <input class="form-check-input chkRow" type="checkbox" value="${id}" ${checked} ${disabled}>
+            </td>
+            <td class="text-muted">${n++}</td>
+            <td>${when}</td>
+            <td>${modelToPage(log.model)}</td>
+            <td>${badgeAction(log.action)}</td>
+            <td class="text-muted">${escapeHtml(log.docId||'—')}</td>
+            <td>${fmtUser(log.user)}</td>
+            <td>${renderBeforeCell(log)}</td>
+            <td>${renderAfterCell(log)}</td>
+          `;
+          tbody.appendChild(row);
+        });
+        rowCounterStart = n;
+      }catch(err){
+        tbody.innerHTML = `<tr class="text-center text-danger"><td colspan="9">حدث خطأ في جلب السجلات</td></tr>`;
       }
     }
 
-    /* ====== تعديل فوري: الدور/الحالة ====== */
-    async function updateUserPartial(id, patch){
-      const row = tbody.querySelector(`tr[data-id="${id}"]`);
-      row?.classList.add('saving');
+    /* ===== تحكم الفلاتر ===== */
+    document.getElementById('btnSearch').addEventListener('click', ()=>{
+      page = 1; reachedEnd = false; loadLogs({append:false});
+    });
+    document.getElementById('btnClear').addEventListener('click', ()=>{
+      document.getElementById('fModel').value='';
+      document.getElementById('fAction').value='';
+      document.getElementById('fQuery').value='';
+      document.getElementById('fFrom').value='';
+      document.getElementById('fTo').value='';
+      page=1; reachedEnd=false; loadLogs({append:false});
+    });
+    document.getElementById('btnMore').addEventListener('click', ()=>{
+      if(!reachedEnd){ page++; loadLogs({append:true}); }
+      else{ setToast(toastInfo,'لا يوجد مزيد من السجلات'); toastInfo.show(); }
+    });
+
+    /* ===== تحديد الكل/الفردي ===== */
+    document.getElementById('chkAll').addEventListener('change', (e)=>{
+      const chk = e.target.checked;
+      document.querySelectorAll('#logsTbody .chkRow:not([disabled])').forEach(input=>{
+        input.checked = chk;
+        const id = input.value;
+        if(chk) selectedIds.add(id); else selectedIds.delete(id);
+      });
+      updateSelectedCount();
+    });
+    document.getElementById('logsTbody').addEventListener('change', (e)=>{
+      if(e.target.classList.contains('chkRow')){
+        const id = e.target.value;
+        if(e.target.checked) selectedIds.add(id); else selectedIds.delete(id);
+        const all = document.querySelectorAll('#logsTbody .chkRow:not([disabled])');
+        const allChecked = all.length>0 && Array.from(all).every(x=>x.checked);
+        document.getElementById('chkAll').checked = allChecked;
+        updateSelectedCount();
+      }
+    });
+
+    /* ===== حذف كل السجلات ===== */
+    document.getElementById('btnPurge').addEventListener('click', async ()=>{
+      const ok = await showConfirm({
+        title:'تأكيد حذف الكل',
+        message:'سيتم حذف جميع سجلات العمليات، ولا يمكن التراجع. هل تريد المتابعة؟',
+        confirmText:'نعم، احذف الكل',
+        confirmBtnClass:'btn-danger'
+      });
+      if(!ok) return;
       try{
-        const r = await fetch('/api/users/'+id,{
-          method:'PUT',
+        const r = await fetch('/api/audit-logs', { method:'DELETE', credentials:'include' });
+        if(!r.ok) throw new Error('HTTP '+r.status);
+        const data = await r.json().catch(()=>({}));
+        setToast(toastSuccess, data?.message || '🧹 تم حذف جميع السجلات'); toastSuccess.show();
+        page=1; reachedEnd=false; loadLogs({append:false});
+      }catch(e){
+        setToast(toastError,'❌ فشل حذف السجلات'); toastError.show();
+      }
+    });
+
+    /* ===== حذف حسب التاريخ (من/إلى) ===== */
+    document.getElementById('btnPurgeRange').addEventListener('click', async ()=>{
+      const f = document.getElementById('fFrom').value;
+      const t = document.getElementById('fTo').value;
+
+      if(!f && !t){
+        setToast(toastInfo,'الرجاء تحديد تاريخ "من" أو "إلى" أولًا'); toastInfo.show();
+        return;
+      }
+      if(f && t && (new Date(f) > new Date(t))){
+        setToast(toastError,'❌ نطاق التاريخ غير صحيح: "من" أكبر من "إلى"'); toastError.show();
+        return;
+      }
+
+      const ok = await showConfirm({
+        title:'تأكيد الحذف حسب التاريخ',
+        message:`سيتم حذف السجلات ضمن النطاق: ${f||'—'} → ${t||'—'}. هل تريد المتابعة؟`,
+        confirmText:'حذف ضمن النطاق',
+        confirmBtnClass:'btn-warning'
+      });
+      if(!ok) return;
+
+      const qs = new URLSearchParams();
+      if(f) qs.set('from',f);
+      if(t) qs.set('to',t);
+
+      try{
+        const r = await fetch('/api/audit-logs?'+qs.toString(), { method:'DELETE', credentials:'include' });
+        if(!r.ok) throw new Error('HTTP '+r.status);
+        const data = await r.json().catch(()=>({}));
+        const msg = (typeof data?.deletedCount === 'number')
+          ? `🗂️ تم حذف ${data.deletedCount} سجل ضمن النطاق`
+          : (data?.message || '🗂️ تم حذف السجلات ضمن النطاق');
+        setToast(toastSuccess, msg); toastSuccess.show();
+        page=1; reachedEnd=false; loadLogs({append:false});
+      }catch(e){
+        setToast(toastError,'❌ فشل حذف السجلات ضمن النطاق'); toastError.show();
+      }
+    });
+
+    /* ===== حذف السجلات المحددة ===== */
+    document.getElementById('btnDeleteSelected').addEventListener('click', async ()=>{
+      const count = selectedIds.size;
+      if(count===0){
+        setToast(toastInfo,'لم يتم تحديد أي سجلات'); toastInfo.show();
+        return;
+      }
+      const ok = await showConfirm({
+        title:'تأكيد حذف المحدد',
+        message:`سيتم حذف ${count} من السجلات المحددة. هل تريد المتابعة؟`,
+        confirmText:'حذف المحدد',
+        confirmBtnClass:'btn-danger'
+      });
+      if(!ok) return;
+
+      try{
+        const r = await fetch('/api/audit-logs/by-ids', {
+          method:'DELETE',
           headers:{'Content-Type':'application/json'},
           credentials:'include',
-          body: JSON.stringify(patch)
+          body: JSON.stringify({ ids: Array.from(selectedIds) })
         });
-        const data = await r.json().catch(()=> ({}));
-        if(!r.ok) throw new Error(data?.message || 'فشل التعديل');
-        row?.classList.add('row-highlight');
-        setTimeout(()=>row?.classList.remove('row-highlight'),600);
-        return true;
-      }catch(err){
-        setToast(toastError,'❌ '+(err.message||'فشل التعديل')); toastError.show();
-        return false;
-      }finally{
-        row?.classList.remove('saving');
-        fetchUsers(); // لتحديث الشارات
-      }
-    }
-
-    /* ====== حذف واحد ====== */
-    async function deleteUser(id, name){
-      if(!confirm(`سيتم حذف المستخدم: ${name}\nلا يمكن التراجع.`)) return;
-      try{
-        const r = await fetch('/api/users/'+id,{ method:'DELETE', credentials:'include' });
-        const data = await r.json().catch(()=> ({}));
-        if(!r.ok) throw new Error(data?.message || 'فشل الحذف');
-        setToast(toastSuccess,'🗑️ تم حذف المستخدم'); toastSuccess.show();
-        state.selected.delete(id);
-        fetchUsers();
-      }catch(err){
-        setToast(toastError,'❌ '+(err.message||'فشل الحذف')); toastError.show();
-      }
-    }
-
-    /* ====== إعادة تعيين كلمة المرور ====== */
-    const resetModal = new bootstrap.Modal(document.getElementById('resetPwModal'));
-    let resetTargetId = null;
-    function genStrongPw(){
-      const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789!@#$%^&*()_+-=';
-      let s=''; for(let i=0;i<14;i++) s += chars[Math.floor(Math.random()*chars.length)];
-      return s;
-    }
-    document.getElementById('regenBtn').addEventListener('click', ()=>{
-      document.getElementById('newPwInput').value = genStrongPw();
-    });
-    document.getElementById('applyResetBtn').addEventListener('click', async ()=>{
-      const pw = document.getElementById('newPwInput').value.trim();
-      if(!pw){ setToast(toastInfo,'أدخل كلمة مرور جديدة'); toastInfo.show(); return; }
-      try{
-        const r = await fetch('/api/users/'+resetTargetId+'/password',{
-          method:'PUT', credentials:'include',
-          headers:{'Content-Type':'application/json'},
-          body: JSON.stringify({ newPassword: pw })
-        });
-        const data = await r.json().catch(()=> ({}));
-        if(!r.ok) throw new Error(data?.message || 'فشل التغيير');
-        setToast(toastSuccess,'✅ تم تغيير كلمة المرور'); toastSuccess.show();
-        resetModal.hide();
-      }catch(err){
-        setToast(toastError,'❌ '+(err.message||'فشل تغيير كلمة المرور')); toastError.show();
+        if(!r.ok) throw new Error('HTTP '+r.status);
+        const data = await r.json().catch(()=>({}));
+        const msg = (typeof data?.deletedCount === 'number')
+          ? `🗑️ تم حذف ${data.deletedCount} سجل محدد`
+          : (data?.message || '🗑️ تم حذف السجلات المحددة');
+        setToast(toastSuccess, msg); toastSuccess.show();
+        page=1; reachedEnd=false; loadLogs({append:false});
+      }catch(e){
+        setToast(toastError,'❌ فشل حذف السجلات المحددة'); toastError.show();
       }
     });
 
-    /* ====== إجراءات جماعية ====== */
-    async function bulkAction(payload, okMsg){
-      if(state.selected.size===0) return;
-      try{
-        const r = await fetch('/api/users/bulk',{
-          method:'POST', credentials:'include',
-          headers:{'Content-Type':'application/json'},
-          body: JSON.stringify({ ids:[...state.selected], ...payload })
-        });
-        const data = await r.json().catch(()=> ({}));
-        if(!r.ok) throw new Error(data?.message || 'فشل التنفيذ');
-        setToast(toastSuccess, okMsg); toastSuccess.show();
-        state.selected.clear();
-        fetchUsers();
-      }catch(err){
-        setToast(toastError,'❌ '+(err.message||'فشل التنفيذ')); toastError.show();
-      }
-    }
-
-    /* ====== إضافة مستخدم (تحقق فوري + مقياس قوة) ====== */
-    const addForm = document.getElementById('addUserForm');
-    const addBtn = document.getElementById('addBtn');
-    function pwStrength(pw){
-      let s=0;
-      if(pw.length>=8) s++;
-      if(/[A-Z]/.test(pw) && /[a-z]/.test(pw)) s++;
-      if(/\d/.test(pw)) s++;
-      if(/[^A-Za-z0-9]/.test(pw)) s++;
-      if(pw.length>=12) s++;
-      return Math.min(s,5);
-    }
-    function renderPwMeter(){
-      const pw = document.getElementById('pwInput').value;
-      const score = pwStrength(pw);
-      const bar = document.getElementById('pwBar');
-      const colors = ['#dc3545','#fd7e14','#ffc107','#20c997','#198754'];
-      bar.style.width = (score*20)+'%';
-      bar.style.background = colors[Math.max(0,score-1)] || '#e9ecef';
-    }
-    document.getElementById('pwInput').addEventListener('input', renderPwMeter);
-    document.getElementById('genPwBtn').addEventListener('click', ()=>{
-      const p = genStrongPw();
-      document.getElementById('pwInput').value = p;
-      renderPwMeter();
-    });
-
-    // تحقّق بسيط من التفرّد عبر البحث (يعتمد توسعة GET /api/users)
-    let _debTimer;
-    function debounce(fn,ms){ return (...a)=>{ clearTimeout(_debTimer); _debTimer=setTimeout(()=>fn(...a),ms); }; }
-    const checkUnique = debounce(async ()=>{
-      const u = addForm.username.value.trim();
-      const e = addForm.email.value.trim();
-      if(!u && !e) return;
-      try{
-        const params = new URLSearchParams({ search: u||e, limit: 5 });
-        const r = await fetch('/api/users?'+params.toString(), { credentials:'include' });
-        if(!r.ok) return;
-        const data = await r.json();
-        const arr = data.data || data;
-        const uTaken = u && arr.some(x => (x.username||'').toLowerCase()===u.toLowerCase());
-        const eTaken = e && arr.some(x => (x.email||'').toLowerCase()===e.toLowerCase());
-        document.getElementById('userCheckHint').textContent = uTaken ? '⚠️ اسم المستخدم مستخدم' : '';
-        document.getElementById('emailCheckHint').textContent = eTaken ? '⚠️ البريد مستخدم' : '';
-      }catch{}
-    }, 450);
-    addForm.username.addEventListener('blur', checkUnique);
-    addForm.email.addEventListener('blur', checkUnique);
-
-    addForm.addEventListener('submit', async (e)=>{
-      e.preventDefault();
-      addBtn.disabled = true; addBtn.classList.add('saving');
-      try{
-        const fd = new FormData(addForm);
-        const payload = Object.fromEntries(fd.entries());
-        const r = await fetch('/auth/committees/register', {
-          method:'POST', headers:{'Content-Type':'application/json'}, credentials:'include',
-          body: JSON.stringify(payload)
-        });
-        const data = await r.json().catch(()=> ({}));
-        if(!r.ok) throw new Error(data?.message || 'فشل الإضافة');
-        setToast(toastSuccess,'✅ تم إنشاء المستخدم'); toastSuccess.show();
-        addForm.reset(); renderPwMeter();
-        // العودة إلى الصفحة 1 لرؤية الجديد
-        state.page = 1; fetchUsers();
-      }catch(err){
-        setToast(toastError,'❌ '+(err.message||'فشل الإضافة')); toastError.show();
-      }finally{
-        addBtn.disabled = false; addBtn.classList.remove('saving');
-      }
-    });
-
-    /* ====== تصدير CSV لما هو معروض ====== */
-    function exportCSV(rows){
-      const header = ['name','username','email','role','isActive','createdAt'];
-      const toCSV = s => `"${String(s??'').replace(/"/g,'""')}"`;
-      const lines = [header.join(',')].concat(rows.map(r =>
-        [r.name, r.username, r.email, r.role, r.isActive!==false, r.createdAt?new Date(r.createdAt).toISOString():'']
-          .map(toCSV).join(',')
-      ));
-      const blob = new Blob([lines.join('\n')], {type:'text/csv;charset=utf-8;'});
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a'); a.href = url; a.download = 'users.csv'; a.click();
-      URL.revokeObjectURL(url);
-    }
-
-    /* ====== أحداث الجدول ====== */
-    document.getElementById('btnReload').addEventListener('click', ()=>{ state.page=1; fetchUsers(); });
-    document.getElementById('btnExport').addEventListener('click', ()=> exportCSV(state.items));
-
-    document.getElementById('q').addEventListener('input', debounce(()=>{ state.page=1; fetchUsers(); }, 400));
-    document.getElementById('fRole').addEventListener('change', ()=>{ state.page=1; fetchUsers(); });
-    document.getElementById('fActive').addEventListener('change', ()=>{ state.page=1; fetchUsers(); });
-    document.getElementById('sort').addEventListener('change', ()=>{ state.page=1; fetchUsers(); });
-    document.getElementById('limit').addEventListener('change', ()=>{ state.page=1; fetchUsers(); });
-
-    document.getElementById('prevPage').addEventListener('click', ()=>{ if(state.page>1){ state.page--; fetchUsers(); } });
-    document.getElementById('nextPage').addEventListener('click', ()=>{ if(state.items.length===state.limit){ state.page++; fetchUsers(); } });
-
-    document.getElementById('chkAll').addEventListener('change', (e)=>{
-      const ch = e.target.checked;
-      document.querySelectorAll('.chkRow').forEach(x=>{
-        x.checked = ch;
-        const id = x.value;
-        if(ch) state.selected.add(id); else state.selected.delete(id);
-      });
-      updateBulkBar();
-    });
-
-    tbody.addEventListener('change', (e)=>{
-      const t = e.target;
-      if(t.classList.contains('chkRow')){
-        const id = t.value;
-        if(t.checked) state.selected.add(id); else state.selected.delete(id);
-        // تحديث حالة "تحديد الكل"
-        const all = Array.from(tbody.querySelectorAll('.chkRow'));
-        document.getElementById('chkAll').checked = (all.length>0 && all.every(x=>x.checked));
-        updateBulkBar();
-      } else if(t.classList.contains('inline-role')){
-        const id = t.dataset.id;
-        updateUserPartial(id, { role: t.value });
-      } else if(t.classList.contains('inline-active')){
-        const id = t.dataset.id;
-        updateUserPartial(id, { isActive: t.checked });
-      }
-    });
-
-    tbody.addEventListener('click', (e)=>{
-      const btn = e.target.closest('button');
-      if(!btn) return;
-      if(btn.classList.contains('delBtn')){
-        deleteUser(btn.dataset.id, btn.dataset.name);
-      }else if(btn.classList.contains('resetBtn')){
-        resetTargetId = btn.dataset.id;
-        document.getElementById('resetTargetName').textContent = btn.dataset.name;
-        document.getElementById('newPwInput').value = genStrongPw();
-        resetModal.show();
-      }
-    });
-
-    // تغيير الدور جماعيًا من القائمة
-    document.querySelectorAll('.dropdown-menu [data-role]').forEach(a=>{
-      a.addEventListener('click', (e)=>{
-        e.preventDefault();
-        const role = a.dataset.role;
-        if(state.selected.size===0) return;
-        bulkAction({ action:'set-role', role }, '✅ تم تغيير الأدوار');
-      });
-    });
-    document.getElementById('bulkActivate').addEventListener('click', ()=> bulkAction({ action:'activate' }, '✅ تم تفعيل المحددين'));
-    document.getElementById('bulkDeactivate').addEventListener('click', ()=> bulkAction({ action:'deactivate' }, '✅ تم تعطيل المحددين'));
-    document.getElementById('bulkDelete').addEventListener('click', ()=>{
-      if(confirm(`سيتم حذف ${state.selected.size} مستخدم/ين. لا يمكن التراجع.`)){
-        bulkAction({ action:'delete' }, '🗑️ تم حذف المحددين');
-      }
-    });
-
-    /* ====== إقلاع ====== */
-    await ensureAdmin();
-    loadFilters();
-    // قراءة صفحة من الاستعلام إن وُجد
-    const urlp = new URLSearchParams(location.search);
-    state.page  = parseInt(urlp.get('page')||'1',10);
-    fetchUsers();
+    /* ===== إقلاع الصفحة ===== */
+    ensureAdmin().then(()=>loadLogs({append:false}));
   </script>
 </body>
 </html>
