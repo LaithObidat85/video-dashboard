@@ -32,23 +32,23 @@ app.use(helmet({
       "default-src": ["'self'"],
       // لو واجهتك مكالمات من واجهة GitHub Pages ضف الدومين التالي أيضًا:
       // "connect-src": ["'self'", "https://vdash-qkyv.onrender.com", "https://laithobidat85.github.io"],
-      "connect-src": ["'self'", "https://vdash-qkyv.onrender.com"],
+     "connect-src": ["'self'", "https://vdash-qkyv.onrender.com", "https://laithobidat85.github.io"],
 
-      // السماح بتحميل Bootstrap من jsDelivr + السماح بالـ inline scripts في صفحاتك
       "script-src": ["'self'", "'unsafe-inline'", "https://cdn.jsdelivr.net"],
-
-      // السماح بتحميل CSS من jsDelivr و Google Fonts + السماح بالـ inline styles (لـBootstrap وغيره)
       "style-src": ["'self'", "'unsafe-inline'", "https://cdn.jsdelivr.net", "https://fonts.googleapis.com"],
-
-      // السماح بالخطوط من Google Fonts و jsDelivr + data: للخطوط المضمنة
       "font-src": ["'self'", "https://cdn.jsdelivr.net", "https://fonts.gstatic.com", "data:"],
 
-      // الصور من نفس الأصل + data: / blob:
-      "img-src": ["'self'", "data:", "blob:"],
-      // إن كانت لديك صور من Google Drive/Photos فعّل السطر التالي:
-      // "img-src": ["'self'", "data:", "blob:", "https://*.googleusercontent.com"],
+      // ✅ السماح بالصور من نفس الأصل + البيانات + blob + Dropbox
+      "img-src": [
+        "'self'",
+        "data:",
+        "blob:",
+        "https://www.dropbox.com",
+        "https://dl.dropboxusercontent.com",
+        "https://*.dropboxusercontent.com",
+        "https://*.dropbox.com"
+      ],
 
-      // تحسينات أمان إضافية
       "object-src": ["'none'"],
       "base-uri": ["'self'"],
       "form-action": ["'self'"],
@@ -56,6 +56,8 @@ app.use(helmet({
     }
   }
 }));
+
+
 
 /****************************************************
  * CORS + الجلسة عبر النطاقات (GitHub Pages ↔ Render)
@@ -1125,7 +1127,7 @@ app.post('/auth/login', (req, res) => {
     req.session.videoUser = { email };
     return res.redirect(`/protected?id=${id}`);
   } else {
-    return res.send('❌ يجب إدخال بريد ينتهي بـ @iu.edu.jو');
+    return res.send('❌ يجب إدخال بريد ينتهي بـ @iu.edu.jo');
   }
 });
 app.get('/auth/logout', (req, res) => {
