@@ -41,12 +41,22 @@
     .diff-removed{color:#dc3545;font-weight:600;background:rgba(220,53,69,.12);border-radius:6px;padding:2px 6px}
 
     /* توزيع الأعمدة */
-    .col-user{width:16%}
-    .col-before{width:34%}
-    .col-after{width:34%}
+    .col-user{width:18%}
+    .col-before{width:40%}
+    .col-after{width:40%}
 
     /* اجبر الجدول الأساسي على توزيع ثابت حتى لا “ينفش” بسبب خلية واحدة */
     .table { table-layout: fixed; }
+
+    /* خفف نسب الأعمدة الكبيرة أو اجعلها مرنة */
+    .col-user{width:16%}
+    .col-before{width:34%}
+    .col-after{width:34%}
+    /* أو بدلاً من width استخدم min-width واترك الباقي للمتصفح:
+    .col-user{min-width:200px}
+    .col-before{min-width:360px}
+    .col-after{min-width:360px}
+    */
 
     /* الجداول داخل بطاقة “البيانات قبل/بعد” لا تتمدد خارج البطاقة */
     .payload-card .table{ table-layout: fixed; width:100%; }
@@ -399,8 +409,8 @@
       const ops=[]; let i=0,j=0;
       while(i<m&&j<n){ if(aTokens[i]===bTokens[j]){ops.push({type:'eq',token:aTokens[i]}); i++; j++;} else if(dp[i+1][j]>=dp[i][j+1]){ops.push({type:'del',token:aTokens[i++]});} else {ops.push({type:'add',token:bTokens[j++]});}
       }
-      while(i<m) ops.push({type:'del',token=aTokens[i++]});
-      while(j<n) ops.push({type:'add',token=bTokens[j++]});
+      while(i<m) ops.push({type:'del',token:aTokens[i++]});
+      while(j<n) ops.push({type:'add',token:bTokens[j++]});
       return ops;
     }
     function renderTextDiff(beforeText, afterText, mode){
@@ -504,7 +514,7 @@
       return null;
     }
 
-    /* ===== كتلة عرض مفصلة للعمليات الجماعية بفصل “قبل/بعد” ===== */
+    /* ===== كتلة عرض مفصلة للعمليات الجماعية على المستخدمين + ملاحظة "لا تغيير فعلي" ===== */
     function renderBulkUsersList(p, mode){
       const listBefore = Array.isArray(p?.before) ? p.before : [];
       const listAfter  = Array.isArray(p?.after)  ? p.after  : synthesizeBulkAfter(p);
@@ -518,7 +528,7 @@
                         : (action || 'تعديل جماعي');
         return `<div class="payload-card"><dl class="row mb-0">
           <dt>عملية جماعية</dt><dd>${escapeHtml(actionAr)} (عدد: ${idsCount||'—'})</dd>
-          <dt>ملاحظة</dt><dd class="text-muted">لتفاصيل الأسماء سجّل الخادم <code>payload.before</code> (ويُفضّل أيضًا <code>payload.after</code>).</dd>
+          <dt>ملاحظة</dt><dd class="text-muted">يمكن إظهار أسماء المستخدمين إذا قام الخادم بتسجيل <code>payload.before</code> (وأفضل أيضًا <code>payload.after</code>).</dd>
         </dl></div>`;
       }
 
@@ -529,58 +539,58 @@
           noChanges = listBefore.every((u,i)=> !!u.isActive === !!(listAfter[i]?.isActive));
         } else if (action === 'set-role') {
           noChanges = listBefore.every((u,i)=> (u.role||'user') === ((listAfter[i]?.role)||'user'));
+        } else {
+          noChanges = false; // الحذف دائمًا يعتبر تغيير
         }
       }
 
-      // بناء الصفوف بحسب العمود (قبل أو بعد)
       const rows = listBefore.map((u, i)=>{
         const a = (listAfter && listAfter[i]) || {};
         const name  = u.name || '—';
         const uname = u.username || (u.email? u.email.split('@')[0] : '—');
         const email = u.email ? `<span class="badge text-bg-light">${u.email}</span>` : '';
+        let beforeCell = '—', afterCell = '—';
 
-        let cell = '—';
         if(action === 'activate' || action === 'deactivate'){
-          const is = (mode==='before') ? !!u.isActive : !!a.isActive;
-          cell = is ? '<span class="badge text-bg-success">نشط</span>' : '<span class="badge text-bg-danger">معطّل</span>';
-          if(mode==='after'){
-            cell = (is ? '<span class="diff-added">نشط</span>' : '<span class="diff-removed">معطّل</span>') + ` <span class="ms-1">${cell}</span>`;
-          }
+          const beforeBadge = u.isActive ? '<span class="badge text-bg-success">نشط</span>' : '<span class="badge text-bg-danger">معطّل</span>';
+          const afterBadge  = a.isActive ? '<span class="badge text-bg-success">نشط</span>' : '<span class="badge text-bg-danger">معطّل</span>';
+          beforeCell = beforeBadge;
+          afterCell  = (a.isActive ? '<span class="diff-added">نشط</span>' : '<span class="diff-removed">معطّل</span>') + ` <span class="ms-1">${afterBadge}</span>`;
         }else if(action === 'set-role'){
-          const roleTxt = roleAr(mode==='before' ? u.role : a.role);
-          cell = mode==='after' ? `<span class="diff-added">${roleTxt}</span>` : `<span class="diff-removed">${roleTxt}</span>`;
+          beforeCell = `<span class="diff-removed">${roleAr(u.role)}</span>`;
+          afterCell  = `<span class="diff-added">${roleAr(a.role)}</span>`;
         }else if(action === 'delete'){
-          cell = mode==='after' ? '<span class="badge text-bg-danger">تم الحذف</span>' : roleAr(u.role);
+          beforeCell = `${roleAr(u.role)}`;
+          afterCell  = '<span class="badge text-bg-danger">تم الحذف</span>';
         }
 
         return `<tr>
           <td>${name} <span class="badge text-bg-info">${uname}</span> ${email}</td>
-          <td class="text-nowrap">${cell}</td>
+          <td class="text-nowrap">${beforeCell}</td>
+          <td class="text-nowrap">${afterCell}</td>
         </tr>`;
       }).join('');
 
       const secondColTitle = (action==='set-role') ? 'الدور' : 'الحالة';
-      const title = (mode==='before') ? `${secondColTitle} قبل` : `${secondColTitle} بعد`;
-
-      // في عمود "بعد" نعرض ملخص العملية + شارة لا تغيير
-      const headerRight = (mode==='after') ? `
-        <div class="d-flex align-items-center gap-2">
-          ${noChanges ? '<span class="nochange-note">لا تغيير فعلي</span>' : ''}
-          <span class="badge text-bg-light">عدد: ${idsCount || listBefore.length}</span>
-        </div>` : '';
-
-      const actionTitle = (action==='set-role') ? ('تغيير الدور → ' + roleAr(p.role))
-                        : (action==='activate' ? 'تفعيل' : (action==='deactivate' ? 'تعطيل' : (action||'—')));
+      const titleBefore = `${secondColTitle} قبل`;
+      const titleAfter  = `${secondColTitle} بعد`;
 
       return `<div class="payload-card">
         <div class="d-flex justify-content-between align-items-center mb-2">
-          <div>${mode==='after' ? ('<strong>عملية جماعية:</strong> ' + actionTitle) : ''}</div>
-          ${headerRight}
+          <div><strong>عملية جماعية:</strong> ${
+            action==='set-role' ? ('تغيير الدور → ' + roleAr(p.role)) :
+            action==='activate'  ? 'تفعيل' :
+            action==='deactivate'? 'تعطيل' : (action||'—')
+          }</div>
+          <div class="d-flex align-items-center gap-2">
+            ${noChanges ? '<span class="nochange-note">لا تغيير فعلي</span>' : ''}
+            <span class="badge text-bg-light">عدد: ${idsCount || listBefore.length}</span>
+          </div>
         </div>
         <div class="table-responsive">
           <table class="table table-sm mb-0">
             <thead class="table-light">
-              <tr><th>المستخدم</th><th>${title}</th></tr>
+              <tr><th>المستخدم</th><th>${titleBefore}</th><th>${titleAfter}</th></tr>
             </thead>
             <tbody>${rows}</tbody>
           </table>
@@ -748,7 +758,7 @@
     });
     document.getElementById('btnPurgeRange').addEventListener('click', async ()=>{
       const f = document.getElementById('fFrom').value, t = document.getElementById('fTo').value;
-      if(!ف && !t){ setToast(toastInfo,'الرجاء تحديد تاريخ "من" أو "إلى" أولًا'); toastInfo.show(); return; }
+      if(!f && !t){ setToast(toastInfo,'الرجاء تحديد تاريخ "من" أو "إلى" أولًا'); toastInfo.show(); return; }
       if(f && t && (new Date(f) > new Date(t))){ setToast(toastError,'❌ نطاق التاريخ غير صحيح'); toastError.show(); return; }
       const ok = await showConfirm({ title:'تأكيد الحذف حسب التاريخ', message:`سيتم حذف السجلات ضمن النطاق: ${f||'—'} — ${t||'—'}.`, confirmText:'حذف ضمن النطاق', confirmBtnClass:'btn-warning' });
       if(!ok) return;
