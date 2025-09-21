@@ -44,10 +44,13 @@
     .bulk-bar{display:flex;gap:.5rem;flex-wrap:wrap;align-items:center;justify-content:flex-start}
     .bulk-title{font-weight:700;margin-inline-end:.25rem}
     .form-switch .form-check-input{cursor:pointer}
+
+    /* تمييز الصف الجديد مؤقتًا */
+    tr.is-new{background:#e9f7ff}
   </style>
 </head>
 <body>
-  <div class="container">
+  <div class="container-fluid">
     <!-- Header -->
     <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
       <h4 class="mb-0">إدارة تقييم اللجان</h4>
@@ -143,10 +146,11 @@
       <div id="selectedVisitsContainer"></div>
       <div id="completionRateContainer"></div>
 
-      <!-- شريط الإجراءات: نقل حفظ الكل + تحديث هنا، وإزالة كل ما يخص التحديد -->
+      <!-- شريط الإجراءات: إضافة السجل + حفظ الكل + تحديث -->
       <div class="card p-2 mb-2">
         <div class="bulk-bar">
           <span class="bulk-title">إجراءات سريعة</span>
+          <button class="btn btn-sm btn-primary" id="addRowBtn" title="إضافة سجل جديد">➕ إضافة سجل</button>
           <button class="btn btn-sm btn-success" id="saveAllBtn" title="حفظ جميع الصفوف المعدلة">💾 حفظ الكل</button>
           <button class="btn btn-sm btn-outline-secondary" id="reloadBtn">تحديث</button>
         </div>
@@ -473,14 +477,15 @@
     /* ====== إنشاء صف ====== */
     function buildRow(c,idx){
       const tr=document.createElement('tr');
-      tr.dataset.id=c._id;
+      tr.dataset.id=c._id||'';
+      if(c.__isNew) { tr.dataset.new="1"; tr.classList.add('is-new','table-info'); }
 
       const selCollege=buildSelect(LIST_COLLEGES,c.college,'college');
       const selCommittee=buildSelect(LIST_COMMITTEES,c.committee_name,'committee_name');
       const selAuditor=buildSelect(LIST_AUDITORS,c.auditor_name,'auditor_name');
 
       tr.innerHTML=`
-        <td>${idx+1}</td>
+        <td class="row-idx">${idx+1}</td>
 
         <td class="w-wide" data-field="college"></td>
         <td class="w-wide" data-field="committee_name"></td>
@@ -506,7 +511,7 @@
         <td class="w-wide" data-field="notes">
           ${
             (c.notes && stripHtml(c.notes))
-            ? `<button class="btn btn-sm btn-secondary btn-edit-open">تعديل</button>`
+            ? `<button class="btn btn-sm btn-secondary btn-edit-open">عرض الملاحظات</button>`
             : `<span class="text-muted">لا توجد ملاحظات</span>`
           }
         </td>
@@ -528,6 +533,10 @@
       attachInputListeners(tr);
       updateAvailability(tr);
       return tr;
+    }
+
+    function renumberRows(){
+      document.querySelectorAll('#committeesTable tr .row-idx').forEach((td,i)=>{td.textContent=i+1;});
     }
 
     function attachInputListeners(tr){
@@ -555,7 +564,27 @@
       });
     }
     function markRowChanged(tr){tr.dataset.dirty="1";tr.classList.add('table-warning')}
-    function clearRowChanged(tr){delete tr.dataset.dirty;tr.classList.remove('table-warning')}
+    function clearRowChanged(tr){delete tr.dataset.dirty;tr.classList.remove('table-warning','is-new','table-info')}
+
+    /* ====== إضافة سجل جديد ====== */
+    document.getElementById('addRowBtn').addEventListener('click',()=>{
+      const tbody=document.getElementById('committeesTable');
+      const c={
+        __isNew:true,
+        college:'',
+        committee_name:'',
+        auditor_name:'',
+        audit_date:'',
+        formation_decision:0,work_plan:0,performance_indicators:0,meetings:0,consistency:0,
+        coverage_books:0,report1:0,report2:0,report3:0,statistical_analysis:0,
+        availability_score:0,notes:''
+      };
+      const tr=buildRow(c,0);
+      tbody.prepend(tr);
+      renumberRows();
+      applyColumnVisibilityInstant();
+      updateCompletionRate();
+    });
 
     /* ====== تحميل السجلات ====== */
     async function loadCommittees(){
@@ -583,11 +612,12 @@
 
         arr.sort((a,b)=>(a.college||'').localeCompare(b.college||'','ar') || (a.committee_name||'').localeCompare(b.committee_name||'','ar'));
 
-        arr.forEach((c,idx)=>{ const tr=buildRow(c,idx); tbody.appendChild(tr); });
+        arr.forEach((c,idx)=>{ const tr=buildRow(c,idx); document.getElementById('committeesTable').appendChild(tr); });
 
         applyColumnVisibilityInstant();   // يحدّث العنوان ويعيد الحسابات
         applyCommitteeSearch();
         updateCompletionRate();
+        renumberRows();
       }catch(err){
         console.error(err);
         showError('❌ فشل تحميل البيانات');
@@ -599,17 +629,21 @@
     /* ====== حفظ كل المعدل ====== */
     document.getElementById('saveAllBtn').addEventListener('click',async()=>{
       try{
-        const dirtyRows=Array.from(document.querySelectorAll('#committeesTable tr.table-warning'));
-        if(!dirtyRows.length){showError('لا توجد تعديلات');return;}
-        for(const tr of dirtyRows){
-          const id=tr.dataset.id;
+        const rows=Array.from(document.querySelectorAll('#committeesTable tr.table-warning, #committeesTable tr.is-new'));
+      if(!rows.length){showError('لا توجد تعديلات');return;}
+        for(const tr of rows){
           const payload=collectRowData(tr);
           const date=payload.audit_date?.trim();
           if(date && !/^\d{4}-\d{2}-\d{2}$/.test(date)){showError('⚠️ صيغة التاريخ يجب أن تكون YYYY-MM-DD');return;}
-          await axios.put(`${API_BASE}/api/committees/${id}`,payload,{withCredentials:true});
-          clearRowChanged(tr);
+          if(tr.dataset.new==="1"){
+            await axios.post(`${API_BASE}/api/committees`,payload,{withCredentials:true});
+          }else{
+            const id=tr.dataset.id;
+            await axios.put(`${API_BASE}/api/committees/${id}`,payload,{withCredentials:true});
+          }
         }
         showSuccess('✅ تم حفظ جميع التعديلات');
+        await loadCommittees(); // لإعادة الفرز ووضع السجلات الجديدة في أماكنها
       }catch(e){console.error(e);showError('❌ خطأ أثناء حفظ الكل');}
     });
 
@@ -653,17 +687,27 @@
       const btnDelete=e.target.closest('.delete-row');
 
       if(btnSave){
-        const id=tr.dataset.id;
         const payload=collectRowData(tr);
         const date=payload.audit_date?.trim();
         if(date && !/^\d{4}-\d{2}-\d{2}$/.test(date)){showError('⚠️ صيغة التاريخ يجب أن تكون YYYY-MM-DD');return;}
         try{
-          await axios.put(`${API_BASE}/api/committees/${id}`,payload,{withCredentials:true});
-          showSuccess("✅ تم حفظ التعديلات");clearRowChanged(tr);
+          if(tr.dataset.new==="1"){
+            await axios.post(`${API_BASE}/api/committees`,payload,{withCredentials:true});
+          }else{
+            const id=tr.dataset.id;
+            await axios.put(`${API_BASE}/api/committees/${id}`,payload,{withCredentials:true});
+          }
+          showSuccess("✅ تم حفظ التعديلات");
+          await loadCommittees(); // لإعادة الفرز فورًا
         }catch(err){console.error(err);showError("❌ خطأ أثناء الحفظ");}
         return;
       }
       if(btnDelete){
+        // إذا كان صف جديد وغير محفوظ بعد، نحذفه محليًا فقط
+        if(tr.dataset.new==="1" && !tr.dataset.id){
+          tr.remove(); renumberRows(); updateCompletionRate();
+          return;
+        }
         showConfirm("⚠️ هل أنت متأكد من الحذف؟",async()=>{
           try{
             await axios.delete(`${API_BASE}/api/committees/${tr.dataset.id}`,{withCredentials:true});
@@ -684,7 +728,7 @@
       const newHtml=document.getElementById('er_editor').innerHTML;
       EDITING_ROW.__notesHTML=newHtml||'';
       const notesCell=EDITING_ROW.querySelector('[data-field="notes"]');
-      if(stripHtml(EDITING_ROW.__notesHTML)) notesCell.innerHTML='<button class="btn btn-sm btn-secondary btn-edit-open">تعديل</button>';
+      if(stripHtml(EDITING_ROW.__notesHTML)) notesCell.innerHTML='<button class="btn btn-sm btn-secondary btn-edit-open">عرض الملاحظات</button>';
       else notesCell.innerHTML='<span class="text-muted">لا توجد ملاحظات</span>';
 
       markRowChanged(EDITING_ROW);
