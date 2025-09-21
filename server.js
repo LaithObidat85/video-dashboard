@@ -183,9 +183,12 @@ const Auditor = require('./models/auditorSchema');
 const settingsSchema = new mongoose.Schema({
   visibleColumns: [String],
   selectedVisits: [String],
+  term: { type: String, default: '' },          // NEW
+  academicYear: { type: String, default: '' },  // NEW
   updatedAt: { type: Date, default: Date.now }
 });
 const Settings = mongoose.model('Settings', settingsSchema);
+
 
 /****************************************************
  * سجلات التدقيق (Audit Log)
@@ -1058,10 +1061,18 @@ app.put('/api/settings', authRequired, requireRole('admin'), async (req, res) =>
       return res.json(settings);
     }
     const before = settings.toObject();
-    settings.visibleColumns = req.body.visibleColumns || [];
-    settings.selectedVisits = req.body.selectedVisits || [];
+
+    // الحقول القديمة
+    settings.visibleColumns = Array.isArray(req.body.visibleColumns) ? req.body.visibleColumns : (settings.visibleColumns || []);
+    settings.selectedVisits = Array.isArray(req.body.selectedVisits) ? req.body.selectedVisits : (settings.selectedVisits || []);
+
+    // الحقول الجديدة
+    if (typeof req.body.term === 'string') settings.term = req.body.term.trim();
+    if (typeof req.body.academicYear === 'string') settings.academicYear = req.body.academicYear.trim();
+
     settings.updatedAt = new Date();
     await settings.save();
+
     await logAudit(req, { model: 'Settings', action: 'update', docId: settings._id, payload: { before, after: settings.toObject() } });
     res.json(settings);
   } catch (err) {
