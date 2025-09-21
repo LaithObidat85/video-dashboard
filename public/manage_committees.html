@@ -271,7 +271,7 @@
         const r = await apiFetch('/auth/committees/me');
         const j = await r.json();
         if(!j?.authenticated){
-          location.href = go('/committees-login.html?next='+encodeURIComponent('/committees-evals-manage.html'));
+          location.href = go('/committees-login.html?next='+encodeURIComponent('/manage_committees.html'));
           throw 0;
         }
         if(j.user?.isActive === false){
