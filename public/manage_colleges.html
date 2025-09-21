@@ -1,114 +1,542 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-  <meta charset="UTF-8">
-  <title>إدارة الكليات</title>
+  <meta charset="UTF-8" />
+  <title>إدارة الكليات - نظام اللجان</title>
+  <link rel="icon" type="image/png" href="https://www.dropbox.com/scl/fi/f283e4rvv5cf9x12a1cic/my-website-logo.png?rlkey=yia776im7klypy27af32m0scy&e=1&st=vhaprvzh&dl=1">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.rtl.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
   <style>
-    body { background-color: #f8f9fa; font-family: 'Segoe UI', sans-serif; }
-    .container { margin-top: 40px; }
-    .card { border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
-    .toast-container { position: fixed; top: 20px; left: 20px; z-index: 2000; }
+    body{background:#f8f9fa;font-family:'Segoe UI',sans-serif}
+    .container{max-width:1000px;margin-top:40px}
+    .card{border-radius:16px;box-shadow:0 6px 18px rgba(0,0,0,.06)}
+
+    /* شارة معلومات المستخدم */
+    .user-chip{
+      display:inline-flex;align-items:center;gap:.25rem;
+      font-size:1rem!important;padding:.375rem .75rem!important;
+      line-height:1.5!important;border-radius:.375rem;font-weight:700!important;
+    }
+    .user-chip.badge #userRole{font-weight:500!important;}
+
+    /* سكلتون */
+    .skeleton{position:relative;overflow:hidden;background:linear-gradient(90deg,#eee 25%,#f5f5f5 37%,#eee 63%);background-size:400% 100%;animation:shimmer 1.2s infinite}
+    @keyframes shimmer{0%{background-position:100% 0}100%{background-position:-100% 0}}
+
+    /* توست تأكيد */
+    .toast-container{z-index:2000}
+    .row-highlight{animation:flash .8s ease}
+    @keyframes flash{0%{background:#fff3cd}100%{background:transparent}}
+
+    /* جدول ثابت الرأس */
+    .table-responsive{max-height:520px;overflow:auto}
+    thead th{position:sticky;top:0;background:#fff;z-index:1}
+
+    /* بطاقات الإحصاءات */
+    .stat-card{border-radius:14px;border:1px solid #e9ecef;background:#fff;padding:14px 16px}
+    .stat-label{color:#6c757d;font-size:.9rem}
+    .stat-value{font-weight:700;font-size:1.25rem}
+    .stat-sub{color:#6c757d;font-size:.85rem}
   </style>
 </head>
 <body>
   <div class="container">
-    <h3 class="text-center mb-4">🏫 إدارة أسماء الكليات</h3>
-
-    <div class="card p-4 mb-4">
-      <div class="mb-3">
-        <label class="form-label">اسم الكلية</label>
-        <input type="text" id="collegeName" class="form-control" placeholder="أدخل اسم الكلية">
+    <!-- Header -->
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-2">
+      <div class="d-flex align-items-center gap-2">
+        <h3 class="mb-0">إدارة أسماء الكليات</h3>
       </div>
-      <button class="btn btn-primary w-100" onclick="addCollege()">➕ إضافة كلية</button>
+      <div class="d-flex align-items-center gap-2">
+        <span id="userInfo" class="user-chip badge bg-light text-dark border">
+          <i class="bi bi-person"></i>
+          <span id="userUsername">—</span>
+          <span class="mx-1">—</span>
+          <span id="userFullName">—</span>
+          <span class="ms-2 badge bg-secondary" id="userRole">—</span>
+        </span>
+        <a class="btn btn-outline-primary" id="homeBtn" href="/committees-home.html">
+          <i class="bi bi-grid"></i> لوحة التحكم
+        </a>
+        <button id="logoutBtn" class="btn btn-danger">
+          <i class="bi bi-box-arrow-right"></i> خروج
+        </button>
+      </div>
     </div>
 
-    <table class="table table-bordered table-striped">
-      <thead>
-        <tr>
-          <th>الكلية</th>
-          <th width="150">الإجراءات</th>
-        </tr>
-      </thead>
-      <tbody id="collegesTable">
-        <tr><td colspan="2" class="text-center">جاري التحميل...</td></tr>
-      </tbody>
-    </table>
+    <!-- إحصاءات صغيرة -->
+    <div class="mb-3">
+      <div class="row g-3">
+        <div class="col-md-4">
+          <div class="stat-card">
+            <div class="stat-label">إجمالي الكليات</div>
+            <div class="stat-value" id="statTotal">
+              <span class="skeleton" style="display:inline-block;width:60px;height:20px;border-radius:6px;"></span>
+            </div>
+            <div class="stat-sub">المعروضة ضمن النظام</div>
+          </div>
+        </div>
+        <div class="col-md-8">
+          <div class="stat-card">
+            <div class="stat-label">آخر تغيير على أسماء الكليات</div>
+            <div class="stat-value" id="statLastChange">
+              <span class="skeleton" style="display:inline-block;width:200px;height:20px;border-radius:6px;"></span>
+            </div>
+            <div class="stat-sub" id="statLastChangeSub">—</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- إضافة كلية (قابلة للطي) -->
+    <div class="card mb-4">
+      <div class="card-header p-0">
+        <button
+          type="button"
+          class="btn btn-link w-100 text-start p-3 d-flex justify-content-between align-items-center"
+          data-bs-toggle="collapse" data-bs-target="#addCollapse"
+          aria-expanded="false" aria-controls="addCollapse"
+        >
+          <span class="fw-semibold">إضافة كلية جديدة</span>
+          <i class="bi bi-plus-lg" id="addToggleIcon"></i>
+        </button>
+      </div>
+      <div id="addCollapse" class="collapse">
+        <div class="card-body">
+          <form id="addForm" class="row g-3">
+            <div class="col-md-9">
+              <label class="form-label">اسم الكلية</label>
+              <input type="text" class="form-control" name="name" id="collegeName" placeholder="أدخل اسم الكلية" required>
+              <div id="dupHint" class="form-text text-danger"></div>
+            </div>
+            <div class="col-md-3 d-flex align-items-end">
+              <button class="btn btn-primary w-100" id="addBtn">
+                <i class="bi bi-check2-circle"></i> إضافة
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- أدوات أعلى الجدول -->
+    <div class="card mb-3">
+      <div class="card-body d-flex flex-wrap align-items-end" style="gap:.5rem;">
+        <div>
+          <label class="form-label">بحث</label>
+          <input type="text" id="q" class="form-control" placeholder="ابحث بالاسم">
+        </div>
+        <div>
+          <label class="form-label">الترتيب</label>
+          <select id="sort" class="form-select">
+            <option value="name">الاسم (أ-ي)</option>
+            <option value="-name">الاسم (ي-أ)</option>
+          </select>
+        </div>
+        <div>
+          <label class="form-label">لكل صفحة</label>
+          <select id="limit" class="form-select">
+            <option>10</option><option selected>20</option><option>50</option>
+          </select>
+        </div>
+        <div class="ms-auto d-flex gap-2">
+          <button class="btn btn-outline-secondary" id="btnExport"><i class="bi bi-filetype-csv"></i> تصدير CSV</button>
+          <button class="btn btn-outline-secondary" id="btnReload"><i class="bi bi-arrow-repeat"></i> تحديث</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- الجدول -->
+    <div class="card">
+      <div class="card-body">
+        <div class="table-responsive">
+          <table class="table table-hover align-middle">
+            <thead class="table-light">
+              <tr>
+                <th style="width:64px">#</th>
+                <th>اسم الكلية</th>
+                <th style="width:160px">الإجراءات</th>
+              </tr>
+            </thead>
+            <tbody id="collegesTbody">
+              <tr><td colspan="3">
+                <div class="skeleton" style="height:18px;margin:8px 0;"></div>
+                <div class="skeleton" style="height:18px;margin:8px 0;"></div>
+                <div class="skeleton" style="height:18px;margin:8px 0;"></div>
+              </td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="d-flex justify-content-between align-items-center mt-3">
+          <div class="text-muted">الصفحة <span id="pageNum">1</span></div>
+          <div class="btn-group">
+            <button class="btn btn-outline-secondary btn-sm" id="prevPage"><i class="bi bi-chevron-right"></i> السابق</button>
+            <button class="btn btn-outline-secondary btn-sm" id="nextPage">التالي <i class="bi bi-chevron-left"></i></button>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 
   <!-- Toasts -->
-  <div class="toast-container">
-    <div id="successToast" class="toast text-bg-success"></div>
-    <div id="errorToast" class="toast text-bg-danger"></div>
+  <div class="toast-container position-fixed top-0 start-50 translate-middle-x p-3">
+    <div id="toastSuccess" class="toast align-items-center text-bg-success border-0 mb-2" role="alert" aria-live="assertive" aria-atomic="true">
+      <div class="d-flex">
+        <div class="toast-body">✅ تم التنفيذ بنجاح</div>
+        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+      </div>
+    </div>
+    <div id="toastError" class="toast align-items-center text-bg-danger border-0 mb-2" role="alert" aria-live="assertive" aria-atomic="true">
+      <div class="d-flex">
+        <div class="toast-body">❌ حدث خطأ</div>
+        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+      </div>
+    </div>
+    <div id="toastInfo" class="toast align-items-center text-bg-primary border-0 mb-2" role="status" aria-live="polite">
+      <div class="d-flex">
+        <div class="toast-body">ℹ️ معلومات</div>
+        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+      </div>
+    </div>
+
+    <!-- Toast: تأكيد -->
+    <div id="toastConfirm" class="toast text-bg-warning border-0 mb-2" role="alert" aria-live="assertive" aria-atomic="true">
+      <div class="d-flex align-items-start">
+        <div class="toast-body">
+          <div id="toastConfirmMsg">هل تريد المتابعة؟</div>
+          <div class="mt-2 pt-2 border-top d-flex gap-2">
+            <button type="button" class="btn btn-danger btn-sm" id="toastConfirmYes">تأكيد</button>
+            <button type="button" class="btn btn-light btn-sm" id="toastConfirmNo" data-bs-dismiss="toast">إلغاء</button>
+          </div>
+        </div>
+        <button type="button" class="btn-close btn-close-white m-2" data-bs-dismiss="toast"></button>
+      </div>
+    </div>
   </div>
 
-  <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
   <script>
-    const successToast = new bootstrap.Toast(document.getElementById("successToast"));
-    const errorToast = new bootstrap.Toast(document.getElementById("errorToast"));
+    /* ===== أساس البيئة ===== */
+    const RENDER_BASE = 'https://vdash-qkyv.onrender.com';
+    const host = location.hostname;
+    const isGithub = host.endsWith('github.io');
+    const isLocal  = host === 'localhost' || host === '127.0.0.1';
+    const API_BASE = isGithub ? RENDER_BASE : (isLocal ? 'http://localhost:3000' : '');
+    const go = (path) => isGithub ? (RENDER_BASE + path) : path;
 
-    function showToast(toast, msg) {
-      toast._element.querySelector(".toast-body")?.remove();
-      const body = document.createElement("div");
-      body.className = "toast-body";
-      body.textContent = msg;
-      toast._element.appendChild(body);
-      toast.show();
+    /* ===== Toasts ===== */
+    const TSuccess = new bootstrap.Toast(document.getElementById('toastSuccess'));
+    const TError   = new bootstrap.Toast(document.getElementById('toastError'));
+    const TInfo    = new bootstrap.Toast(document.getElementById('toastInfo'));
+    const TConfirmEl = document.getElementById('toastConfirm');
+    const TConfirm  = new bootstrap.Toast(TConfirmEl, { autohide:false });
+    const setToast = (el,msg)=>{ el._element.querySelector('.toast-body').innerText = msg; };
+    const showSuccess = (m)=>{ setToast(TSuccess,m); TSuccess.show(); };
+    const showError   = (m)=>{ setToast(TError,m);   TError.show();   };
+    const showInfo    = (m)=>{ setToast(TInfo,m);    TInfo.show();    };
+
+    function confirmToast({message='هل تريد المتابعة؟',confirmText='تأكيد',cancelText='إلغاء'}={}){
+      return new Promise((resolve)=>{
+        TConfirmEl.querySelector('#toastConfirmMsg').textContent = message;
+        const yes = TConfirmEl.querySelector('#toastConfirmYes');
+        const no  = TConfirmEl.querySelector('#toastConfirmNo');
+        const onYes = ()=>{ cleanup(); TConfirm.hide(); resolve(true); };
+        const onNo  = ()=>{ cleanup(); resolve(false); };
+        const onHidden = ()=>{ cleanup(); resolve(false); };
+        function cleanup(){
+          yes.removeEventListener('click',onYes);
+          no.removeEventListener('click',onNo);
+          TConfirmEl.removeEventListener('hidden.bs.toast',onHidden);
+        }
+        yes.textContent = confirmText; no.textContent = cancelText;
+        yes.addEventListener('click',onYes,{once:true});
+        no.addEventListener('click',onNo,{once:true});
+        TConfirmEl.addEventListener('hidden.bs.toast',onHidden,{once:true});
+        TConfirm.show();
+      });
     }
 
-    async function loadColleges() {
-      try {
-        const res = await axios.get("/api/colleges");
-        const tbody = document.getElementById("collegesTable");
-        tbody.innerHTML = "";
-        res.data.forEach(c => {
-          const tr = document.createElement("tr");
-          tr.innerHTML = `
-            <td><input type="text" class="form-control form-control-sm" value="${c.name}" onchange="updateCollege('${c._id}', this.value)"></td>
-            <td><button class="btn btn-danger btn-sm" onclick="deleteCollege('${c._id}')">🗑️ حذف</button></td>
-          `;
-          tbody.appendChild(tr);
+    /* ===== auth + شارة المستخدم ===== */
+    const apiFetch = (path, opts={}) => fetch(`${API_BASE}${path}`, { credentials:'include', ...opts });
+
+    function renderUser(user){
+      const username = user?.username || (user?.email? user.email.split('@')[0] : '—');
+      document.getElementById('userUsername').textContent = username;
+      document.getElementById('userFullName').textContent = user?.name || '—';
+      document.getElementById('userRole').textContent     = user?.role || '—';
+    }
+    async function ensureAdmin(){
+      try{
+        const r = await apiFetch('/auth/committees/me');
+        const j = await r.json();
+        if(!j?.authenticated){
+          const next = encodeURIComponent('/colleges-manage.html');
+          location.href = go(`/committees-login.html?next=${next}`);
+          throw 0;
+        }
+        if((j.user?.role||'').toLowerCase()!=='admin'){
+          showError('❌ هذه الصفحة للمشرفين فقط');
+          setTimeout(()=>location.href=go('/committees-home.html'),900);
+          throw 0;
+        }
+        renderUser(j.user);
+        return j.user;
+      }catch{ throw 0; }
+    }
+    document.getElementById('homeBtn').href = go('/committees-home.html');
+    document.getElementById('logoutBtn').addEventListener('click', async ()=>{
+      try{
+        const r = await apiFetch('/auth/committees/logout',{method:'POST',headers:{'Content-Type':'application/json'}});
+        if(r.ok){ showSuccess('✅ تم تسجيل الخروج'); setTimeout(()=>location.href=go('/committees-login.html'),700); }
+        else    { showError('❌ تعذر تسجيل الخروج'); }
+      }catch{ showError('❌ خطأ في الاتصال'); }
+    });
+
+    /* ===== تبديل زر +/– في نموذج الإضافة ===== */
+    const addCollapseEl = document.getElementById('addCollapse');
+    const addToggleIcon = document.getElementById('addToggleIcon');
+    addCollapseEl.addEventListener('show.bs.collapse', ()=> addToggleIcon.className='bi bi-dash-lg');
+    addCollapseEl.addEventListener('hide.bs.collapse', ()=> addToggleIcon.className='bi bi-plus-lg');
+
+    /* ===== حالة الصفحة ===== */
+    const state = { items: [], page:1, limit:20, sort:'name', q:'' };
+    const tbody = document.getElementById('collegesTbody');
+
+    /* ===== أدوات عامة ===== */
+    function debounce(fn, ms){ let t; return (...a)=>{ clearTimeout(t); t=setTimeout(()=>fn(...a), ms); }; }
+    function esc(s){ return String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+    /* ===== الإحصاءات ===== */
+    function updateTotalStat(n){
+      document.getElementById('statTotal').textContent = n;
+    }
+    function updateLastChangeStat({whenText='—', action='—', who='—'}={}){
+      document.getElementById('statLastChange').textContent = whenText;
+      document.getElementById('statLastChangeSub').textContent = `الإجراء: ${action} — بواسطة: ${who}`;
+    }
+    async function fetchLastCollegeChange(){
+      try{
+        const params = new URLSearchParams({ model:'College', page:1, limit:1 });
+        const r = await apiFetch('/api/audit-logs?'+params.toString());
+        if(!r.ok) throw 0;
+        const data = await r.json();
+        const last = data?.items?.[0];
+        if(!last){ updateLastChangeStat({ whenText:'—', action:'—', who:'—' }); return; }
+        const when = last.createdAt ? new Date(last.createdAt) : null;
+        const whenText = when ? when.toLocaleString('ar-EG') : '—';
+        const who = last.user?.name || last.user?.username || 'غير معروف';
+        updateLastChangeStat({ whenText, action:last.action || '—', who });
+      }catch{
+        updateLastChangeStat({ whenText:'—', action:'—', who:'—' });
+      }
+    }
+
+    /* ===== رسم الصفوف ===== */
+    function renderRows(rows, offset=0){
+      if(!Array.isArray(rows) || rows.length===0){
+        tbody.innerHTML = `<tr class="text-center text-muted"><td colspan="3">لا توجد بيانات</td></tr>`;
+        return;
+      }
+      tbody.innerHTML = rows.map((c,i)=>`
+        <tr data-id="${c._id||c.id}">
+          <td>${offset + i + 1}</td>
+          <td>
+            <input class="form-control form-control-sm inline-name" data-id="${c._id||c.id}" value="${esc(c.name)}" placeholder="—">
+          </td>
+          <td>
+            <button class="btn btn-sm btn-outline-danger delBtn" data-id="${c._id||c.id}" data-name="${esc(c.name)}">
+              <i class="bi bi-trash3"></i>
+            </button>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    /* ===== تحميل (مع بحث/ترتيب/ترقيم) ===== */
+    async function fetchColleges(){
+      // سكلتون
+      tbody.innerHTML = `<tr><td colspan="3">
+        <div class="skeleton" style="height:18px;margin:8px 0;"></div>
+        <div class="skeleton" style="height:18px;margin:8px 0;"></div>
+        <div class="skeleton" style="height:18px;margin:8px 0;"></div>
+      </td></tr>`;
+
+      try{
+        const r = await apiFetch('/api/colleges');
+        if(r.status===401 || r.status===403){
+          showError('❌ انتهت الجلسة أو لا تملك صلاحية');
+          setTimeout(()=>location.href=go('/committees-login.html'),900);
+          return;
+        }
+        if(!r.ok) throw new Error('HTTP '+r.status);
+        const arr = await r.json();
+
+        // إحصاء العدد الإجمالي
+        updateTotalStat(Array.isArray(arr) ? arr.length : 0);
+
+        // فلترة/ترتيب/تقسيم صفحات
+        let items = arr;
+        if(state.q){
+          const rx = new RegExp(state.q.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'), 'i');
+          items = items.filter(x => rx.test(x.name||''));
+        }
+        items.sort((a,b)=>{
+          const A=(a.name||'').toLocaleLowerCase('ar');
+          const B=(b.name||'').toLocaleLowerCase('ar');
+          if(state.sort==='name')   return A.localeCompare(B,'ar');
+          if(state.sort==='-name')  return B.localeCompare(A,'ar');
+          return 0;
         });
-      } catch (err) {
-        showToast(errorToast, "❌ فشل في جلب الكليات");
+
+        state.items = items;
+        const start = (state.page-1)*state.limit;
+        const pageItems = items.slice(start, start+state.limit);
+        renderRows(pageItems, start);
+        document.getElementById('pageNum').textContent = state.page;
+
+        // آخر تغيير
+        fetchLastCollegeChange();
+      }catch(e){
+        tbody.innerHTML = `<tr class="text-center text-danger"><td colspan="3">فشل جلب الكليات</td></tr>`;
+        console.error('fetchColleges error:', e);
+        updateTotalStat('—');
+        updateLastChangeStat({ whenText:'—', action:'—', who:'—' });
       }
     }
 
-    async function addCollege() {
-      const name = document.getElementById("collegeName").value.trim();
-      if (!name) return showToast(errorToast, "⚠️ أدخل اسم الكلية");
-      try {
-        await axios.post("/api/colleges", { name });
-        showToast(successToast, "✅ تمت إضافة الكلية");
-        document.getElementById("collegeName").value = "";
-        loadColleges();
-      } catch {
-        showToast(errorToast, "❌ لم يتم الإضافة");
+    /* ===== إضافة كلية ===== */
+    const addForm = document.getElementById('addForm');
+    const addBtn  = document.getElementById('addBtn');
+    const nameInput = document.getElementById('collegeName');
+    const dupHint = document.getElementById('dupHint');
+
+    const checkDup = debounce(()=>{
+      const v = nameInput.value.trim().toLocaleLowerCase();
+      if(!v){ dupHint.textContent=''; return; }
+      const hit = state.items.some(x => (x.name||'').toLocaleLowerCase()===v);
+      dupHint.textContent = hit ? '⚠️ الاسم موجود مسبقًا' : '';
+    }, 300);
+    nameInput.addEventListener('input', checkDup);
+
+    addForm.addEventListener('submit', async (e)=>{
+      e.preventDefault();
+      const v = nameInput.value.trim();
+      if(!v){ showError('⚠️ أدخل اسم الكلية'); return; }
+      addBtn.disabled = true;
+      try{
+        const r = await apiFetch('/api/colleges', {
+          method:'POST', headers:{'Content-Type':'application/json'},
+          body: JSON.stringify({ name: v })
+        });
+        const data = await r.json().catch(()=> ({}));
+        if(!r.ok) throw new Error(data?.message || 'فشل الإضافة (قد يكون الاسم مكررًا)');
+        showSuccess('✅ تمت إضافة الكلية');
+        addForm.reset(); dupHint.textContent='';
+        state.page = 1;
+        await fetchColleges();
+      }catch(err){
+        showError('❌ '+(err.message||'لم يتم الإضافة'));
+      }finally{
+        addBtn.disabled = false;
+      }
+    });
+
+    /* ===== تعديل اسم (تحرير فوري) ===== */
+    async function updateCollege(id, name){
+      try{
+        const r = await apiFetch(`/api/colleges/${id}`, {
+          method:'PUT', headers:{'Content-Type':'application/json'},
+          body: JSON.stringify({ name })
+        });
+        const data = await r.json().catch(()=> ({}));
+        if(!r.ok) throw new Error(data?.message || 'فشل التعديل (قد يكون الاسم مكررًا)');
+        showSuccess('✅ تم التعديل');
+        const row = tbody.querySelector(`tr[data-id="${id}"]`);
+        row?.classList.add('row-highlight'); setTimeout(()=>row?.classList.remove('row-highlight'),600);
+        // حدّث الإحصاءات (آخر تغيير)
+        fetchLastCollegeChange();
+      }catch(err){
+        showError('❌ '+(err.message||'فشل التعديل'));
+        fetchColleges();
       }
     }
 
-    async function updateCollege(id, name) {
-      try {
-        await axios.put(`/api/colleges/${id}`, { name });
-        showToast(successToast, "✅ تم التعديل");
-      } catch {
-        showToast(errorToast, "❌ فشل التعديل");
+    /* ===== حذف كلية ===== */
+    async function deleteCollege(id, name){
+      const ok = await confirmToast({ message:`سيتم حذف الكلية: ${name}\nلا يمكن التراجع.`, confirmText:'نعم، احذف', cancelText:'إلغاء' });
+      if(!ok){ showInfo('تم الإلغاء'); return; }
+      try{
+        const r = await apiFetch(`/api/colleges/${id}`, { method:'DELETE' });
+        const data = await r.json().catch(()=> ({}));
+        if(!r.ok) throw new Error(data?.message || 'فشل الحذف');
+        showSuccess('🗑️ تم الحذف');
+        await fetchColleges();     // سيحدّث العدد + آخر تغيير
+      }catch(err){
+        showError('❌ '+(err.message||'فشل الحذف'));
       }
     }
 
-    async function deleteCollege(id) {
-      if (!confirm("هل أنت متأكد من الحذف؟")) return;
-      try {
-        await axios.delete(`/api/colleges/${id}`);
-        showToast(successToast, "🗑️ تم الحذف");
-        loadColleges();
-      } catch {
-        showToast(errorToast, "❌ فشل الحذف");
-      }
+    /* ===== تصدير CSV لما هو معروض في الصفحة الحالية ===== */
+    function exportCSV(){
+      const start = (state.page-1)*state.limit;
+      const pageItems = state.items.slice(start, start+state.limit);
+      const header = ['name'];
+      const toCSV = s => `"${String(s??'').replace(/"/g,'""')}"`;
+      const lines = [header.join(',')].concat(pageItems.map(r => [r.name].map(toCSV).join(',')));
+      const blob = new Blob([lines.join('\n')], {type:'text/csv;charset=utf-8;'});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a'); a.href = url; a.download = 'colleges.csv'; a.click();
+      URL.revokeObjectURL(url);
     }
 
-    loadColleges();
+    /* ===== أحداث الواجهة ===== */
+    document.getElementById('btnReload').addEventListener('click', ()=>{ state.page=1; fetchColleges(); });
+    document.getElementById('btnExport').addEventListener('click', exportCSV);
+
+    document.getElementById('q').addEventListener('input', debounce(()=>{ state.page=1; state.q=document.getElementById('q').value.trim(); fetchColleges(); }, 300));
+    document.getElementById('sort').addEventListener('change', ()=>{ state.page=1; state.sort=document.getElementById('sort').value; fetchColleges(); });
+    document.getElementById('limit').addEventListener('change', ()=>{ state.page=1; state.limit=parseInt(document.getElementById('limit').value,10)||20; fetchColleges(); });
+
+    document.getElementById('prevPage').addEventListener('click', ()=>{ if(state.page>1){ state.page--; fetchColleges(); } });
+    document.getElementById('nextPage').addEventListener('click', ()=>{ 
+      const maxPage = Math.max(1, Math.ceil(state.items.length / state.limit));
+      if(state.page < maxPage){ state.page++; fetchColleges(); }
+    });
+
+    const tbodyEl = document.getElementById('collegesTbody');
+    tbodyEl.addEventListener('click', (e)=>{
+      const btn = e.target.closest('button');
+      if(!btn) return;
+      if(btn.classList.contains('delBtn')){
+        deleteCollege(btn.dataset.id, btn.dataset.name);
+      }
+    });
+    tbodyEl.addEventListener('keydown', (e)=>{
+      const t = e.target;
+      if(t.classList.contains('inline-name') && e.key==='Enter'){
+        e.preventDefault();
+        t.blur();
+      }
+    });
+    tbodyEl.addEventListener('blur', (e)=>{
+      const t = e.target;
+      if(t.classList.contains('inline-name')){
+        const id = t.dataset.id;
+        const val = t.value.trim();
+        if(!val){ showError('⚠️ أدخل اسمًا صالحًا'); fetchColleges(); return; }
+        updateCollege(id, val);
+      }
+    }, true);
+
+    /* ===== تشغيل ===== */
+    (async function init(){
+      try{
+        await ensureAdmin();
+        document.getElementById('homeBtn').href = go('/committees-home.html');
+        await fetchColleges();
+      }catch(e){ /* التحويل تم مسبقًا عند الحاجة */ }
+    })();
   </script>
 </body>
 </html>
