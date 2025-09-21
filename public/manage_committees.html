@@ -7,7 +7,6 @@
   <link rel="icon" type="image/png" href="https://www.dropbox.com/scl/fi/f283e4rvv5cf9x12a1cic/my-website-logo.png?rlkey=yia776im7klypy27af32m0scy&e=1&st=vhaprvzh&dl=1">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.rtl.min.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
-  <link rel="stylesheet" href="https://cdn.quilljs.com/1.3.6/quill.snow.css">
   <style>
     body { background: #f8f9fa; font-family: 'Segoe UI', sans-serif; }
     .container { margin-top: 30px; }
@@ -38,21 +37,22 @@
     .toast-container { position:fixed; top:20px; left:50%; transform:translateX(-50%); z-index:2000; }
     #completionRateContainer, #selectedVisitsContainer { text-align:center; font-weight:bold; margin:5px 0; font-size:16px; color:#0d6efd; min-height:24px; }
 
-    /* Tools row */
+    /* Filters / actions */
     .filters { margin-bottom: 12px; width:99%; margin-left:auto; margin-right:auto; }
     .action-buttons { display:flex; justify-content:center; align-items:center; gap:5px; height:100%; }
     .notes-btn { display:block; width:100%; }
-
-    /* Top action buttons */
     .top-actions { display:flex; gap:.5rem; flex-wrap:wrap; justify-content:flex-end; }
 
-    /* Small helper */
+    /* Mini editor (fallback instead of Quill) */
+    .mini-toolbar{display:flex;gap:.25rem;margin-bottom:.5rem;flex-wrap:wrap}
+    .mini-toolbar button{border:1px solid #ced4da;background:#f8f9fa;padding:.25rem .5rem;border-radius:.375rem}
+    .mini-editor{border:1px solid #ced4da;border-radius:.5rem;padding:.5rem;min-height:180px;background:#fff}
     .muted { color:#6c757d; }
   </style>
 </head>
 <body>
   <div class="container">
-    <!-- Header (موحّد) -->
+    <!-- Header -->
     <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
       <h4 class="mb-0">إدارة تقييم اللجان</h4>
       <div class="d-flex align-items-center gap-2">
@@ -101,7 +101,7 @@
       </div>
 
       <!-- مجموعة الزيارات (Admin فقط) -->
-      <div class="card mb-3" id="visitsCard">
+      <div class="card mb-3 d-none" id="visitsCard">
         <div class="card-body d-flex flex-wrap justify-content-center gap-3">
           <div class="form-check"><input class="form-check-input visit-toggle" type="checkbox" id="visit1" value="الزيارة الأولى"><label class="form-check-label" for="visit1">الزيارة الأولى</label></div>
           <div class="form-check"><input class="form-check-input visit-toggle" type="checkbox" id="visit2" value="الزيارة الثانية"><label class="form-check-label" for="visit2">الزيارة الثانية</label></div>
@@ -112,8 +112,30 @@
         </div>
       </div>
 
-      <!-- مجموعة إظهار/إخفاء الأعمدة (Admin فقط) -->
-      <div class="card mb-2" id="columnsCard">
+      <!-- مجموعة إعدادات إضافية (Admin فقط): الفصل + العام الجامعي -->
+      <div class="card mb-3 d-none" id="termCard">
+        <div class="card-body row g-3 align-items-end">
+          <div class="col-md-4">
+            <label class="form-label">الفصل</label>
+            <select id="termSelect" class="form-select">
+              <option value="">— اختر الفصل —</option>
+              <option value="الفصل الأول">الفصل الأول</option>
+              <option value="الفصل الثاني">الفصل الثاني</option>
+              <option value="الفصل الصيفي">الفصل الصيفي</option>
+            </select>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">العام الجامعي</label>
+            <input type="text" id="academicYearInput" class="form-control" placeholder="مثال: 2024-2025 أو 2024/2025">
+          </div>
+          <div class="col-md-4">
+            <button class="btn btn-primary w-100" id="saveTermBtn">حفظ الفصل/العام</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- مجموعة إظهار/إخفاء الأعمدة (Admin فقط) - تُبقي الأعمدة كلها قابلة للتحرير للمستخدم -->
+      <div class="card mb-2 d-none" id="columnsCard">
         <div class="card-body d-flex flex-wrap justify-content-center gap-3 align-items-center" id="columnToggles">
           <div class="form-check"><input class="form-check-input col-toggle" type="checkbox" id="toggle_formation_decision" data-field="formation_decision" checked><label class="form-check-label" for="toggle_formation_decision">قرار التشكيل</label></div>
           <div class="form-check"><input class="form-check-input col-toggle" type="checkbox" id="toggle_work_plan" data-field="work_plan" checked><label class="form-check-label" for="toggle_work_plan">خطة العمل</label></div>
@@ -132,7 +154,7 @@
       <div id="completionRateContainer"></div>
     </div>
 
-    <!-- جداول -->
+    <!-- جدول -->
     <table class="table table-bordered table-striped table-responsive" id="evaluationsTableWrapper">
       <thead>
         <tr>
@@ -169,7 +191,7 @@
   <datalist id="dl_committees"></datalist>
   <datalist id="dl_auditors"></datalist>
 
-  <!-- Modals -->
+  <!-- Modal: الملاحظات بمحرر بديل (بدون Quill) -->
   <div class="modal fade" id="notesModal" tabindex="-1">
     <div class="modal-dialog modal-lg"><div class="modal-content">
       <div class="modal-header"><h5 class="modal-title">📝 الملاحظات</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
@@ -177,8 +199,13 @@
         <div id="viewNotes" class="mb-3"></div>
         <hr class="my-2">
         <h6 class="mb-2">تحرير الملاحظات</h6>
-        <div id="editEditor"></div>
-        <input type="hidden" id="editNotesInput">
+        <div class="mini-toolbar">
+          <button type="button" data-cmd="bold"><b>B</b></button>
+          <button type="button" data-cmd="italic"><i>I</i></button>
+          <button type="button" data-cmd="underline"><u>U</u></button>
+          <button type="button" data-cmd="insertUnorderedList">• قائمة</button>
+        </div>
+        <div id="miniEditor" class="mini-editor" contenteditable="true"></div>
       </div>
       <div class="modal-footer">
         <button class="btn btn-primary" id="saveNotesBtn">💾 حفظ</button>
@@ -209,7 +236,6 @@
   <!-- Scripts -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
-  <script src="https://cdn.quilljs.com/1.3.6/quill.min.js"></script>
   <script>
     /* ====== بيئة موحّدة ====== */
     const RENDER_BASE = 'https://vdash-qkyv.onrender.com';
@@ -256,10 +282,11 @@
         CURRENT_USER = j.user;
         renderUser(j.user);
 
-        // إخفاء المجموعات للمستخدم العادي
+        // إظهار بطاقات الإعدادات فقط للمشرف
         const isAdmin = (j.user?.role||'').toLowerCase() === 'admin';
         document.getElementById('visitsCard').classList.toggle('d-none', !isAdmin);
         document.getElementById('columnsCard').classList.toggle('d-none', !isAdmin);
+        document.getElementById('termCard').classList.toggle('d-none', !isAdmin);
       }catch{ throw 0; }
     }
     document.getElementById('homeBtn').href = go('/committees-home.html');
@@ -271,9 +298,17 @@
       }catch{ showError('❌ خطأ في الاتصال'); }
     });
 
-    /* ====== Quill للملاحظات داخل المودال ====== */
-    const quillEdit = new Quill('#editEditor', { theme: 'snow' });
-    let NOTES_EDITING_ROW = null; // سيحمل مرجع الصف الجاري تحرير ملاحظاته
+    /* ====== Mini Editor (بديل Quill) ====== */
+    let NOTES_EDITING_ROW = null;
+    const miniEditor = ()=> document.getElementById('miniEditor');
+    // Toolbar events
+    document.addEventListener('click', (e)=>{
+      const btn = e.target.closest('[data-cmd]');
+      if(!btn) return;
+      const cmd = btn.getAttribute('data-cmd');
+      document.execCommand(cmd, false, null);
+      miniEditor().focus();
+    });
 
     /* ====== تحميل قوائم التلميح (datalist) ====== */
     async function loadDatalists(){
@@ -328,7 +363,6 @@
         const availabilityCell = row.querySelector('.availability-cell');
         if(availabilityCell){ totalAvailability += parseFloat(availabilityCell.innerText)||0; numCommittees++; }
       });
-      // المقام = عدد الحقول الرقمية (ثابت 9 هنا)
       const denominator = numCommittees * 9;
       const pct = denominator>0 ? ((totalAvailability/denominator)*100).toFixed(2) : '0.00';
       const lastCollege = document.getElementById('collegeFilter').value || 'جميع الكليات';
@@ -336,17 +370,15 @@
         `📌 نسبة الاكتمال لـ <b>${lastCollege}</b> = ${pct}% — <span class="muted">عدد اللجان: ${numCommittees}</span>`;
     }
     function updateAvailabilityHeader(){
-      // بما أن جميع الأعمدة الرقمية نشطة، العنوان دائمًا من 9
       document.getElementById("availabilityHeader").innerText = `درجة التوفر من (9)`;
     }
 
     /* ====== ربط الخلايا القابلة للتحرير ====== */
     function clamp01(val){
       let v = Number(String(val).replace(',', '.'));
-      if(isNaN(v)) return null;   // null يعني غير صالح
+      if(isNaN(v)) return null;   // null = غير صالح
       if(v<0) v = 0;
       if(v>1) v = 1;
-      // تقريب 2 منازل
       return Math.round(v*100)/100;
     }
     function attachCellListeners(tr){
@@ -360,32 +392,27 @@
           cell.classList.add("highlight");
           setTimeout(()=>cell.classList.remove("highlight"), 600);
 
-          // تحقق لقيم الدرجات فقط
           if(['formation_decision','work_plan','performance_indicators','meetings','consistency','coverage_books','report1','report2','report3','statistical_analysis'].includes(field)){
             const clamped = clamp01(cell.innerText);
             const invalid = (clamped===null);
             cell.classList.toggle('invalid', invalid);
-            if(!invalid) cell.innerText = clamped; // يضبط 0..1
+            if(!invalid) cell.innerText = clamped;
             updateAvailability(tr);
             updateCompletionRate();
           }
-
           markRowChanged(tr);
         });
       });
     }
 
-    /* ====== علامة أن الصف تم تعديله ====== */
+    /* ====== علامة تعديل الصف ====== */
     function markRowChanged(tr){ tr.dataset.dirty="1"; tr.classList.add('table-warning'); }
     function clearRowChanged(tr){ delete tr.dataset.dirty; tr.classList.remove('table-warning'); }
 
-    /* ====== إنشاء صف من بيانات لجنة ====== */
+    /* ====== إنشاء صف ====== */
     function buildRow(c, idx){
       const tr = document.createElement('tr');
-
-      // helper: safe text
       const st = (v)=> (v==null?'':String(v));
-
       tr.innerHTML = `
         <td>${idx+1}</td>
 
@@ -412,7 +439,7 @@
 
         <td>
           <div class="action-buttons">
-            <button class="btn btn-sm btn-info" title="عرض/تحرير الملاحظات كمحرر" onclick='openNotesModal(this, ${JSON.stringify({ _id:c._id, notes:c.notes||'' }).replace(/'/g,"&#39;")})'>📝</button>
+            <button class="btn btn-sm btn-info" title="عرض/تحرير الملاحظات" onclick='openNotesModal(this, ${JSON.stringify({ _id:c._id, notes:c.notes||'' }).replace(/'/g,"&#39;")})'>📝</button>
             <button class="btn btn-sm btn-success" onclick="saveRow(this, '${c._id}')">💾</button>
             <button class="btn btn-sm btn-danger" onclick="confirmDelete('${c._id}')">🗑️</button>
           </div>
@@ -451,7 +478,6 @@
           return;
         }
 
-        // ترتيب بسيط: بالكلية ثم اللجنة
         arr.sort((a,b)=> (a.college||'').localeCompare(b.college||'','ar') || (a.committee_name||'').localeCompare(b.committee_name||'','ar'));
 
         arr.forEach((c, idx)=>{
@@ -471,7 +497,7 @@
       }
     }
 
-    /* ====== بحث باسم اللجنة (فوري) ====== */
+    /* ====== بحث باسم اللجنة ====== */
     function applyCommitteeSearch(){
       const searchTerm = document.getElementById("committeeSearch").value.trim().toLowerCase();
       document.querySelectorAll("#committeesTable tr").forEach(row=>{
@@ -479,7 +505,6 @@
         row.style.display = committeeName.includes(searchTerm) ? '' : 'none';
       });
     }
-
     document.getElementById('committeeSearch').addEventListener('input', ()=>{
       applyCommitteeSearch();
       updateCompletionRate();
@@ -488,33 +513,29 @@
     document.getElementById('auditorFilter').addEventListener('change', loadCommittees);
     document.getElementById('reloadBtn').addEventListener('click', loadCommittees);
 
-    /* ====== فتح/حفظ الملاحظات من المودال ====== */
+    /* ====== ملاحظات: فتح/حفظ ====== */
     function openNotesModal(btn, payload){
       const tr = btn.closest('tr');
       NOTES_EDITING_ROW = tr;
       const html = payload?.notes || '';
       document.getElementById('viewNotes').innerHTML = html || '<i class="muted">لا توجد ملاحظات</i>';
-      quillEdit.root.innerHTML = html || '';
+      miniEditor().innerHTML = html || '';
       new bootstrap.Modal(document.getElementById('notesModal')).show();
     }
     document.getElementById('saveNotesBtn').addEventListener('click', async ()=>{
       if(!NOTES_EDITING_ROW) return;
-      const idCell = NOTES_EDITING_ROW; // الصف نفسه
-      const newHtml = quillEdit.root.innerHTML;
-      // عيّن النص المبسّط في الخلية القابلة للتحرير
+      const newHtml = miniEditor().innerHTML;
       const notesCell = NOTES_EDITING_ROW.querySelector('[data-field="notes_plain"]');
       if(notesCell){ notesCell.innerText = stripHtml(newHtml); markRowChanged(NOTES_EDITING_ROW); }
-      // أغلق المودال (لا نرسل الآن حتى يضغط المستخدم 💾 الصف أو حفظ الكل)
       bootstrap.Modal.getInstance(document.getElementById('notesModal')).hide();
       showSuccess('تم تحديث الملاحظات (تحتاج حفظ الصف)');
     });
 
-    /* ====== حفظ صف واحد ====== */
+    /* ====== حفظ صف ====== */
     async function saveRow(btn, id){
       const row = btn.closest('tr');
       const updated = collectRowData(row);
 
-      // تحقق بسيط للتواريخ: YYYY-MM-DD
       const date = updated.audit_date?.trim();
       if(date && !/^\d{4}-\d{2}-\d{2}$/.test(date)){
         showError('⚠️ صيغة التاريخ يجب أن تكون YYYY-MM-DD');
@@ -533,7 +554,6 @@
 
     function collectRowData(row){
       const data = {};
-      // حقول نصية/أساسية
       ['college','committee_name','auditor_name','audit_date','notes_plain',
        'formation_decision','work_plan','performance_indicators','meetings','consistency',
        'coverage_books','report1','report2','report3','statistical_analysis'].forEach(f=>{
@@ -547,12 +567,9 @@
         }
       });
 
-      // الملاحظات الغنية: ليست موجودة في الخلية، ولكن إن فُتحت وعدّلها المستخدم، جعلنا notes_plain يتحدّث.
-      // نرسل للمخدّم notes (HTML) و notes_plain (نص)
-      // هنا نأخذ notes من modal إن كانت آخر قيمة متاحة فيه؛ وإلا نرسل النص البسيط فقط.
-      // للحفاظ على بساطة التدفق: لو المودال مفتوحًا على نفس الصف نأخذ من quill، وإلا نرسل النصّ البسيط.
-      const takeHtml = (NOTES_EDITING_ROW === row) ? quillEdit.root.innerHTML : null;
-      data.notes = (takeHtml!=null) ? takeHtml : (data.notes_plain ? `<p>${data.notes_plain}</p>` : '');
+      // الملاحظات الغنية: نُنشئ HTML من notes_plain إذا لم تُفتح النافذة لهذا الصف
+      const notesHtml = (NOTES_EDITING_ROW === row) ? miniEditor().innerHTML : (data.notes_plain ? `<p>${data.notes_plain}</p>` : '');
+      data.notes = notesHtml;
 
       // درجة التوفر
       const availabilityCell = row.querySelector('.availability-cell');
@@ -578,11 +595,10 @@
     /* ====== حفظ كل الصفوف المعدّلة ====== */
     document.getElementById('saveAllBtn').addEventListener('click', async ()=>{
       const dirtyRows = Array.from(document.querySelectorAll('#committeesTable tr')).filter(tr => tr.dataset.dirty==='1');
-      if(!dirtyRows.length){ showInfo("لا توجد تغييرات"); return; }
+      if(!dirtyRows.length){ showSuccess("ℹ️ لا توجد تغييرات"); return; }
       let okCount = 0, failCount = 0;
       for(const tr of dirtyRows){
         try{
-          const id = tr.querySelector('[data-field="college"]') ? tr.querySelector('[data-field="college"]').closest('tr').querySelector('[data-field]') : null;
           const idAttr = tr.querySelector('button.btn-success')?.getAttribute('onclick') || '';
           const m = idAttr.match(/saveRow\(this,\s*'([^']+)'\)/);
           const _id = m ? m[1] : null;
@@ -595,22 +611,18 @@
       showSuccess(`تم حفظ ${okCount} — فشل ${failCount}`);
     });
 
-    function showInfo(msg){
-      // نستخدم Success Toast بنفس التصميم بلون افتراضي
-      showSuccess('ℹ️ ' + msg);
-    }
-
-    /* ====== إعدادات admin (الزيارات/الأعمدة) ====== */
+    /* ====== إعدادات admin (زيارات/أعمدة/فصل/عام) ====== */
     function updateSelectedVisits(){
       const selected = Array.from(document.querySelectorAll('.visit-toggle:checked')).map(cb=>cb.value);
       const el = document.getElementById('selectedVisitsContainer');
       el.innerHTML = selected.length ? ("الزيارات: " + selected.join(' | ')) : '';
     }
     async function loadSettings(){
-      // للمشرف فقط—لكن الاستدعاء لن يضر إن لم يكن Admin
       try{
         const res = await apiFetch('/api/settings');
         const settings = await res.json();
+
+        // زيارات + أعمدة (للمشرف فقط — لكنها لا تضر لو استدعيت)
         if(settings?.visibleColumns){
           document.querySelectorAll('.col-toggle').forEach(cb=>{
             cb.checked = settings.visibleColumns.includes(cb.getAttribute('data-field'));
@@ -623,9 +635,13 @@
         }
         updateSelectedVisits();
         updateAvailabilityHeader();
+
+        // الفصل/العام
+        document.getElementById('termSelect').value = settings?.term || '';
+        document.getElementById('academicYearInput').value = settings?.academicYear || '';
       }catch(e){ /* تجاهل */ }
     }
-    async function saveSettings(){
+    async function saveSettings(){ // زر 💾 في كرت الزيارات
       try{
         const visibleColumns = Array.from(document.querySelectorAll('.col-toggle:checked')).map(cb=>cb.getAttribute('data-field'));
         const selectedVisits = Array.from(document.querySelectorAll('.visit-toggle:checked')).map(cb=>cb.value);
@@ -639,9 +655,23 @@
     }
     document.getElementById('saveSettingsBtn').addEventListener('click', saveSettings);
 
-    // مبدئيًا نجعل كل الأعمدة الرقمية ظاهرة (المستخدم العادي لا يرى أدوات تغييرها)
-    document.querySelectorAll('.col-toggle').forEach(cb=>{
-      cb.addEventListener('change', ()=>{ /* للمشرف فقط—عنوان التوفر ثابت 9 هنا */ });
+    // زر حفظ الفصل/العام
+    document.getElementById('saveTermBtn').addEventListener('click', async ()=>{
+      try{
+        // نجلب الإعدادات الحالية أولًا للحفاظ على (visibleColumns/selectedVisits)
+        const cur = await (await apiFetch('/api/settings')).json();
+        const body = {
+          visibleColumns: cur?.visibleColumns || [],
+          selectedVisits: cur?.selectedVisits || [],
+          term: document.getElementById('termSelect').value || '',
+          academicYear: document.getElementById('academicYearInput').value.trim()
+        };
+        await axios.put(`${API_BASE}/api/settings`, body, { withCredentials:true });
+        showSuccess('✅ تم حفظ الفصل/العام');
+      }catch(err){
+        console.error(err);
+        showError('❌ تعذر حفظ الفصل/العام');
+      }
     });
 
     /* ====== بدء التشغيل ====== */
