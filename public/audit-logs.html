@@ -17,15 +17,15 @@
     }
 
     /* مساواة ارتفاع شارة معلومات المستخدم بزر "خروج" */
-.user-chip{
-  display: inline-flex;
-  align-items: center;
-  gap: .25rem;
-  font-size: 1rem;         /* نفس حجم خط الأزرار */
-  padding: .375rem .75rem; /* نفس حشوة الأزرار */
-  line-height: 1.5;        /* نفس خط الأساس للأزرار */
-  border-radius: .375rem;  /* نفس نصف القطر للأزرار */
-}
+    .user-chip{
+      display: inline-flex;
+      align-items: center;
+      gap: .25rem;
+      font-size: 1rem;         /* نفس حجم خط الأزرار */
+      padding: .375rem .75rem; /* نفس حشوة الأزرار */
+      line-height: 1.5;        /* نفس خط الأساس للأزرار */
+      border-radius: .375rem;  /* نفس نصف القطر للأزرار */
+    }
 
     body{background:#f8f9fa;font-family:'Segoe UI',sans-serif}
     .container{max-width:1200px;margin-top:40px}
@@ -41,7 +41,7 @@
     .payload-card{
       background:#fff;border:1px solid #e9ecef;border-radius:12px;padding:10px;
       height:220px;overflow:auto;
-      font-size: .9rem;        /* تصغير الخط هنا */
+      font-size: .9rem;
       line-height: 1.35;
     }
     .payload-card dt{color:#6c757d;font-weight:600}
@@ -83,18 +83,14 @@
     }
     .payload-card .table thead th{white-space:nowrap}
 
-    /* نفس حجم خط payload-card على كل خلايا الجدول */
-.table thead th,
-.table tbody td { font-size: .9rem; }
+    /* توحيد حجم الخط */
+    .table thead th,
+    .table tbody td { font-size: .9rem; }
 
-/* اجعل وقت/تاريخ يعتمدان نفس المقاس */
-.date-cell .d,
-.date-cell .t { font-size: .9rem; }
-
-/* إبقاء التاريخ أوضح قليلاً */
-.date-cell .d { font-weight: 600; }
-.date-cell .t { color:#6c757d; margin-top:2px; }
-
+    .date-cell .d,
+    .date-cell .t { font-size: .9rem; }
+    .date-cell .d { font-weight: 600; }
+    .date-cell .t { color:#6c757d; margin-top:2px; }
   </style>
 </head>
 <body>
@@ -172,10 +168,10 @@
             <colgroup>
               <col style="width:var(--w-chk)"><!-- اختيار -->
               <col style="width:var(--w-idx)"><!-- # -->
-              <col><!-- الوقت: تلقائي -->
-              <col><!-- الصفحة: تلقائي -->
-              <col><!-- العملية: تلقائي -->
-              <col><!-- المستخدم: تلقائي -->
+              <col><!-- الوقت -->
+              <col><!-- الصفحة -->
+              <col><!-- العملية -->
+              <col><!-- المستخدم -->
               <col style="width:var(--before-w)"><!-- قبل -->
               <col style="width:var(--after-w)"><!-- بعد -->
             </colgroup>
@@ -202,6 +198,8 @@
         <div class="sticky-actions d-flex flex-wrap justify-content-between align-items-center gap-2">
           <div class="d-flex flex-wrap gap-2">
             <button id="btnMore" class="btn btn-outline-secondary"><i class="bi bi-plus-circle"></i> تحميل المزيد</button>
+            <!-- زر جديد: تحميل جميع السجلات -->
+            <button id="btnLoadAll" class="btn btn-outline-primary"><i class="bi bi-cloud-download"></i> تحميل جميع السجلات</button>
             <button id="btnPurge" class="btn btn-outline-danger"><i class="bi bi-trash3"></i> حذف كل السجلات</button>
             <button id="btnPurgeRange" class="btn btn-outline-warning"><i class="bi bi-calendar-x"></i> حذف حسب التاريخ</button>
             <button id="btnDeleteSelected" class="btn btn-danger" disabled><i class="bi bi-check2-square"></i> حذف السجلات المحددة</button>
@@ -320,7 +318,7 @@
     }
     const me = meRes.data || {};
     if(!me.authenticated){
-      const rel = location.pathname + location.search + location.hash;
+      const rel = location.pathname + location.search + location hash;
       location.href = api(`/committees-login.html?next=${encodeURIComponent(rel)}`);
       throw new Error('unauthenticated');
     }
@@ -349,7 +347,6 @@
     return `<span class="badge ${cls}">${a||'—'}</span>`;
   }
 
-  /* اسم المستخدم فقط (بدون إيميل/يوزرنيم) */
   function fmtUser(uRaw){
     const u = normalizeUser(uRaw);
     return `${u.name||'—'}`;
@@ -365,6 +362,37 @@
   function kv(label,val,key,diff,mode){ if(val==null||val==='') return ''; const cls=diff&&diff.has(key)?(mode==='before'?'diff-removed':'diff-added'):''; return `<dt>${label}</dt><dd class="${cls}">${escapeHtml(val)}</dd>`; }
   function userActiveBadge(val,key,diff,mode){ const is=!!val; const base=is?'<span class="badge text-bg-success">نشط</span>':'<span class="badge text-bg-danger">معطّل</span>'; const cls=diff&&diff.has(key)?(mode==='before'?'diff-removed':'diff-added'):''; return `<dt>الحالة</dt><dd class="${cls}">${base}</dd>`; }
 
+  /* ====== ملاحظات: تنظيف HTML وعرض الفارغ ====== */
+  function stripHtmlText(html){
+    const tmp=document.createElement('div'); tmp.innerHTML=html||'';
+    return (tmp.textContent||tmp.innerText||'').trim();
+  }
+  function sanitizeNotesHTML(html=''){
+    try{
+      const ALLOWED=new Set(['P','UL','OL','LI','B','STRONG','I','EM','U','BR','A']);
+      const tmp=document.createElement('div'); tmp.innerHTML=html||'';
+      const all=tmp.getElementsByTagName('*');
+      for(let i=all.length-1;i>=0;i--){
+        const el=all[i];
+        if(!ALLOWED.has(el.tagName)){
+          el.replaceWith(document.createTextNode(el.textContent||'')); continue;
+        }
+        for(const attr of Array.from(el.attributes)){
+          const name=attr.name.toLowerCase();
+          if(name.startsWith('on') || name==='style') el.removeAttribute(attr.name);
+          else if(el.tagName==='A' && name!=='href') el.removeAttribute(attr.name);
+        }
+        if(el.tagName==='A'){
+          const href=el.getAttribute('href')||'';
+          const safe=/^(https?:|mailto:)/i.test(href);
+          if(!safe){ el.replaceWith(document.createTextNode(el.textContent||'')); }
+          else { el.setAttribute('target','_blank'); el.setAttribute('rel','noopener noreferrer'); }
+        }
+      }
+      return tmp.innerHTML.trim() || '—';
+    }catch{ return '—'; }
+  }
+
   function renderCardFromObjectWithDiff(model,obj,diffKeys,mode,otherSide){
     if(!obj) return '<div class="payload-card text-muted">—</div>';
     let h='<div class="payload-card"><dl class="row mb-0">', d=obj, has=(k)=> d[k]!=null && d[k]!=='';    
@@ -376,9 +404,22 @@
         +kv('النتيجة',d.score,'score',diffKeys,mode);
       const decisionKey=['formation_decision','formationDecision','decision','decision_number','decisionNumber','formation_no','formationNo'].find(k=>k in d);
       if(decisionKey) h+=kv('قرار التشكيل', d[decisionKey], decisionKey, diffKeys, mode);
-      ['work_plan','performance_indicators','meetings','consistency','coverage_books','report1','report2','report3','statistical_analysis'].forEach(k=>{ if(has(k)) h+=kv(toArabicLabel(k),d[k],k,diffKeys,mode); });
-      if(has('notes')) h+=kv('الملاحظات', d.notes, 'notes', diffKeys, mode);
+      ['work_plan','performance_indicators','meetings','consistency','coverage_books','report1','report2','report3','statistical_analysis']
+        .forEach(k=>{ if(has(k)) h+=kv(toArabicLabel(k),d[k],k,diffKeys,mode); });
 
+      /* ===== عرض الملاحظات مع تنسيقها وتظليل الاختلاف ===== */
+      {
+        const thisHas = !!stripHtmlText(d.notes);
+        const otherHas = !!stripHtmlText(otherSide && otherSide.notes);
+        const changed = diffKeys && diffKeys.has('notes');
+        let cls='';
+        if(changed){
+          if(mode==='before'){ cls='diff-removed'; }
+          else { cls = thisHas ? 'diff-added' : 'diff-removed'; }
+        }
+        const content = thisHas ? sanitizeNotesHTML(d.notes) : 'لا توجد ملاحظات';
+        h += `<dt>الملاحظات</dt><dd class="${cls}">${content}</dd>`;
+      }
     }else if(model==='College' || model==='Auditor' || model==='Committee'){
       const label = (model==='College') ? 'الكلية' : (model==='Auditor' ? 'المدقق' : 'اسم اللجنة');
       h+=kv(label, d.name, 'name', diffKeys, mode);
@@ -476,47 +517,37 @@
     </div>`;
   }
 
-     function isBulkUserPayload(log){
+  function isBulkUserPayload(log){
     const p = log.payload || {};
     return log.model==='User' &&
            (p.bulk || Array.isArray(p.before) || Array.isArray(p.after) || Array.isArray(p.ids));
   }
 
   function renderSettingsDiff(before, after, mode){
-  const bCols = Array.isArray(before?.visibleColumns) ? before.visibleColumns : [];
-  const aCols = Array.isArray(after?.visibleColumns)  ? after.visibleColumns  : [];
-  const bVisits = Array.isArray(before?.selectedVisits) ? before.selectedVisits : [];
-  const aVisits = Array.isArray(after?.selectedVisits)  ? after.selectedVisits  : [];
+    const bCols = Array.isArray(before?.visibleColumns) ? before.visibleColumns : [];
+    const aCols = Array.isArray(after?.visibleColumns)  ? after.visibleColumns  : [];
+    const bVisits = Array.isArray(before?.selectedVisits) ? before.selectedVisits : [];
+    const aVisits = Array.isArray(after?.selectedVisits)  ? after.selectedVisits  : [];
 
-  // في "قبل": نعرض قائمة قبل، وما سيُزال يظهَر أحمر.
-  // في "بعد": نعرض قائمة بعد، وما أضيف يظهَر أخضر.
-  const listWithDiff = (arrShown, arrOther, paintAdded) => {
-    if(!arrShown.length) return '—';
-    return arrShown.map(k=>{
-      const inOther = arrOther.includes(k);
-      // العنصر جديد (غير موجود في الآخر) => أخضر إذا كنا في "بعد"
-      // العنصر سيُحذف (غير موجود في الآخر) => أحمر إذا كنا في "قبل"
-      const cls = (!inOther && paintAdded) ? 'diff-added' : (!inOther && !paintAdded ? 'diff-removed' : '');
-      return `<span class="${cls}">${toArabicLabel(k)}</span>`;
-    }).join('، ');
-  };
+    const listWithDiff = (arrShown, arrOther, paintAdded) => {
+      if(!arrShown.length) return '—';
+      return arrShown.map(k=>{
+        const inOther = arrOther.includes(k);
+        const cls = (!inOther && paintAdded) ? 'diff-added' : (!inOther && !paintAdded ? 'diff-removed' : '');
+        return `<span class="${cls}">${toArabicLabel(k)}</span>`;
+      }).join('، ');
+    };
 
-  const colsHTML   = mode==='after'
-      ? listWithDiff(aCols, bCols, /*paintAdded*/true)
-      : listWithDiff(bCols, aCols, /*paintAdded*/false);
+    const colsHTML   = mode==='after' ? listWithDiff(aCols, bCols, true) : listWithDiff(bCols, aCols, false);
+    const visitsHTML = mode==='after' ? listWithDiff(aVisits, bVisits, true) : listWithDiff(bVisits, aVisits, false);
 
-  const visitsHTML = mode==='after'
-      ? listWithDiff(aVisits, bVisits, true)
-      : listWithDiff(bVisits, aVisits, false);
-
-  return `<div class="payload-card">
-    <dl class="row mb-0">
-      <dt>الأعمدة المرئية</dt><dd>${colsHTML || '—'}</dd>
-      <dt>الزيارات المحددة</dt><dd>${visitsHTML || '—'}</dd>
-    </dl>
-  </div>`;
-}
-
+    return `<div class="payload-card">
+      <dl class="row mb-0">
+        <dt>الأعمدة المرئية</dt><dd>${colsHTML || '—'}</dd>
+        <dt>الزيارات المحددة</dt><dd>${visitsHTML || '—'}</dd>
+      </dl>
+    </div>`;
+  }
 
   function renderBeforeCell(log){
     const p=log.payload||{};
@@ -571,27 +602,15 @@
   }
 
   function formatDateParts(iso){
-  try{
-    if(!iso) return {date:'—',time:''};
-    const d = new Date(iso);
-    if (isNaN(+d)) return {date:'—',time:''};
-
-    // تاريخ كامل بسطر واحد (اليوم، اليوم من الشهر، الشهر كتابة، السنة)
-    const date = d.toLocaleDateString('ar-EG', {
-      weekday: 'short', year: 'numeric', month: 'long', day: 'numeric'
-    });
-
-    // الوقت بسطر تحته مع ص/م
-    const time = d.toLocaleTimeString('ar-EG', {
-      hour: '2-digit', minute: '2-digit', hour12: true
-    });
-
-    return {date, time};
-  }catch{
-    return {date:'—',time:''};
+    try{
+      if(!iso) return {date:'—',time:''};
+      const d = new Date(iso);
+      if (isNaN(+d)) return {date:'—',time:''};
+      const date = d.toLocaleDateString('ar-EG', { weekday:'short', year:'numeric', month:'long', day:'numeric' });
+      const time = d.toLocaleTimeString('ar-EG', { hour:'2-digit', minute:'2-digit', hour12:true });
+      return {date, time};
+    }catch{ return {date:'—',time:''}; }
   }
-}
-
 
   async function loadLogs({append=false}={}){
     if(reachedEnd && append) return;
@@ -663,7 +682,8 @@
 
     rowCounterStart = n;
   }
-  /* ===== تحكم الأزرار ===== */
+
+  /* ===== أزرار التحكم ===== */
   document.getElementById('btnSearch').addEventListener('click', ()=>{ page=1; reachedEnd=false; loadLogs({append:false}); });
   document.getElementById('btnClear').addEventListener('click', ()=>{
     ['fModel','fAction','fQuery','fFrom','fTo'].forEach(id=>document.getElementById(id).value='');
@@ -672,6 +692,28 @@
     page=1; reachedEnd=false; loadLogs({append:false});
   });
   document.getElementById('btnMore').addEventListener('click', ()=>{ if(!reachedEnd){ page++; loadLogs({append:true}); } else { setToast(toastInfo,'لا يوجد مزيد من السجلات'); toastInfo.show(); }});
+
+  /* ===== زر: تحميل جميع السجلات ===== */
+  async function loadAllLogs(){
+    const btn=document.getElementById('btnLoadAll');
+    const oldHTML=btn.innerHTML;
+    try{
+      btn.disabled=true;
+      btn.innerHTML='<span class="spinner-border spinner-border-sm"></span> جارِ التحميل...';
+      page=1; reachedEnd=false;
+      await loadLogs({append:false});           // الصفحة 1
+      while(!reachedEnd){ page++; await loadLogs({append:true}); } // بقية الصفحات
+      setToast(toastSuccess,'✅ تم تحميل جميع السجلات'); toastSuccess.show();
+    }catch(e){
+      console.error(e);
+      setToast(toastError,'❌ فشل تحميل جميع السجلات'); toastError.show();
+    }finally{
+      btn.disabled=false;
+      btn.innerHTML=oldHTML;
+    }
+  }
+  document.getElementById('btnLoadAll').addEventListener('click', loadAllLogs);
+
   document.getElementById('chkAll').addEventListener('change', (e)=>{
     const chk=e.target.checked;
     document.querySelectorAll('#logsTbody .chkRow:not([disabled])').forEach(i=>{ i.checked=chk; const id=i.value; if(chk) selectedIds.add(id); else selectedIds.delete(id); });
