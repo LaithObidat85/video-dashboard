@@ -2,104 +2,118 @@
 <html lang="ar" dir="rtl">
 <head>
   <meta charset="UTF-8">
-  <title>إدارة تقييم اللجان</title>
+  <title>إدارة تقييم اللجان - نظام اللجان</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <link rel="icon" type="image/png" href="https://www.dropbox.com/scl/fi/f283e4rvv5cf9x12a1cic/my-website-logo.png?rlkey=yia776im7klypy27af32m0scy&e=1&st=vhaprvzh&dl=1">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.rtl.min.css">
-  <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
+  <link rel="stylesheet" href="https://cdn.quilljs.com/1.3.6/quill.snow.css">
   <style>
     body { background: #f8f9fa; font-family: 'Segoe UI', sans-serif; }
     .container { margin-top: 30px; }
-    table { background: #fff; border-radius: 10px; overflow: hidden; font-size: 14px; width: 99%; margin: auto; }
-    th { text-align: center; vertical-align: middle; background-color: #f8f9fa; color: #000; }
-    td { text-align: center; vertical-align: middle; }
-    td[contenteditable="true"] { background: #fefae0; cursor: text; }
-    .highlight { background-color: #d4edda !important; transition: background-color 1s ease; }
-    .toast-container { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); z-index: 2000; }
-    .filters { margin-bottom: 20px; width: 99%; margin-left: auto; margin-right: auto; }
-    .action-buttons { display: flex; justify-content: center; align-items: center; gap: 5px; height: 100%; }
-    .notes-btn { display: block; width: 100%; }
 
-    #evaluationsTableWrapper th.date-col,
-    #evaluationsTableWrapper td.date-col {
-      direction: ltr;
-      text-align: center;
-      width: 100px;
-      max-width: 100px;
+    /* Header */
+    .user-chip{
+      display:inline-flex;align-items:center;gap:.25rem;
+      font-size:1rem!important;padding:.375rem .75rem!important;
+      line-height:1.5!important;border-radius:.375rem;font-weight:700!important;
     }
+    .user-chip.badge #userRole{font-weight:500!important;}
 
-    #completionRateContainer {
-      text-align: center;
-      font-weight: bold;
-      margin: 5px 0;
-      font-size: 18px;
-      color: #0d6efd;
-    }
+    /* Table */
+    table { background:#fff; border-radius:12px; overflow:hidden; font-size:14px; width:99%; margin:auto; }
+    th { text-align:center; vertical-align:middle; background-color:#f8f9fa; color:#000; }
+    td { text-align:center; vertical-align:middle; }
+    td[contenteditable="true"] { background:#fefae0; cursor:text; }
+    td.invalid { background:#fde2e1 !important; }
+    .highlight { background-color:#d4edda !important; transition: background-color 1s ease; }
+    .hidden-col { display:none !important; }
 
-    #selectedVisitsContainer {
-      text-align: center;
-      font-weight: bold;
-      margin: 5px 0;
-      font-size: 18px;
-      color: #0d6efd;
-      min-height: 24px;
-    }
+    /* Sticky header area */
+    .sticky-header { background:#f8f9fa; padding-top:10px; }
+    #evaluationsTableWrapper thead th { position:sticky; top:0; z-index:9; background:#f8f9fa; color:#000; }
+    #evaluationsTableWrapper th.date-col, #evaluationsTableWrapper td.date-col { direction:ltr; text-align:center; width:110px; max-width:110px; }
 
-    #infoContainer {
-      text-align: center;
-      font-weight: bold;
-      margin: 15px 0;
-      font-size: 18px;
-      color: #0d6efd;
-    }
+    /* Info blocks */
+    .toast-container { position:fixed; top:20px; left:50%; transform:translateX(-50%); z-index:2000; }
+    #completionRateContainer, #selectedVisitsContainer { text-align:center; font-weight:bold; margin:5px 0; font-size:16px; color:#0d6efd; min-height:24px; }
 
-    .hidden-col { display: none !important; }
+    /* Tools row */
+    .filters { margin-bottom: 12px; width:99%; margin-left:auto; margin-right:auto; }
+    .action-buttons { display:flex; justify-content:center; align-items:center; gap:5px; height:100%; }
+    .notes-btn { display:block; width:100%; }
 
-    .sticky-header {
-      background: #f8f9fa;
-      padding-top: 10px;
-    }
+    /* Top action buttons */
+    .top-actions { display:flex; gap:.5rem; flex-wrap:wrap; justify-content:flex-end; }
 
-    #evaluationsTableWrapper thead th {
-      position: sticky;
-      top: 0;
-      z-index: 99;
-      background: #f8f9fa;
-      color: #000;
-    }
+    /* Small helper */
+    .muted { color:#6c757d; }
   </style>
 </head>
 <body>
   <div class="container">
+    <!-- Header (موحّد) -->
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
+      <h4 class="mb-0">إدارة تقييم اللجان</h4>
+      <div class="d-flex align-items-center gap-2">
+        <span id="userInfo" class="user-chip badge bg-light text-dark border">
+          <i class="bi bi-person"></i>
+          <span id="userUsername">—</span>
+          <span class="mx-1">—</span>
+          <span id="userFullName">—</span>
+          <span class="ms-2 badge bg-secondary" id="userRole">—</span>
+        </span>
+        <a class="btn btn-outline-primary" id="homeBtn" href="/committees-home.html">
+          <i class="bi bi-grid"></i> لوحة التحكم
+        </a>
+        <button id="logoutBtn" class="btn btn-danger">
+          <i class="bi bi-box-arrow-right"></i> خروج
+        </button>
+      </div>
+    </div>
+
     <div class="sticky-header">
-      <h3 class="text-center mb-4">⚙️ إدارة تقييم اللجان</h3>
+      <!-- فلاتر -->
       <div class="filters row">
-        <div class="col-md-4 mb-2">
+        <div class="col-md-3 mb-2">
           <label class="form-label">الكلية</label>
           <select id="collegeFilter" class="form-select">
             <option value="">جميع الكليات</option>
           </select>
         </div>
-        <div class="col-md-4 mb-2">
+        <div class="col-md-3 mb-2">
           <label class="form-label">اسم المدقق</label>
           <select id="auditorFilter" class="form-select">
             <option value="">جميع المدققين</option>
           </select>
         </div>
-        <div class="col-md-4 mb-2">
+        <div class="col-md-3 mb-2">
           <label class="form-label">بحث باسم اللجنة</label>
           <input type="text" id="committeeSearch" class="form-control" placeholder="اكتب للبحث...">
         </div>
+        <div class="col-md-3 mb-2">
+          <label class="form-label">إجراءات سريعة</label>
+          <div class="top-actions">
+            <button class="btn btn-sm btn-success" id="saveAllBtn" title="حفظ جميع الصفوف المعدلة">💾 حفظ الكل</button>
+            <button class="btn btn-sm btn-outline-secondary" id="reloadBtn">تحديث</button>
+          </div>
+        </div>
       </div>
-      <div class="card mb-3">
-        <div class="card-body d-flex flex-wrap justify-content-center gap-3" id="visitsToggles">
+
+      <!-- مجموعة الزيارات (Admin فقط) -->
+      <div class="card mb-3" id="visitsCard">
+        <div class="card-body d-flex flex-wrap justify-content-center gap-3">
           <div class="form-check"><input class="form-check-input visit-toggle" type="checkbox" id="visit1" value="الزيارة الأولى"><label class="form-check-label" for="visit1">الزيارة الأولى</label></div>
           <div class="form-check"><input class="form-check-input visit-toggle" type="checkbox" id="visit2" value="الزيارة الثانية"><label class="form-check-label" for="visit2">الزيارة الثانية</label></div>
           <div class="form-check"><input class="form-check-input visit-toggle" type="checkbox" id="visit3" value="الزيارة الثالثة"><label class="form-check-label" for="visit3">الزيارة الثالثة</label></div>
           <div class="form-check"><input class="form-check-input visit-toggle" type="checkbox" id="visit4" value="الزيارة الرابعة"><label class="form-check-label" for="visit4">الزيارة الرابعة</label></div>
           <div class="form-check"><input class="form-check-input visit-toggle" type="checkbox" id="visit5" value="الزيارة النهائية"><label class="form-check-label" for="visit5">الزيارة النهائية</label></div>
-          <button class="btn btn-sm btn-success" id="saveSettingsBtn">💾</button>
+          <button class="btn btn-sm btn-success" id="saveSettingsBtn" title="حفظ الإعدادات">💾</button>
         </div>
       </div>
-      <div class="card mb-3">
+
+      <!-- مجموعة إظهار/إخفاء الأعمدة (Admin فقط) -->
+      <div class="card mb-2" id="columnsCard">
         <div class="card-body d-flex flex-wrap justify-content-center gap-3 align-items-center" id="columnToggles">
           <div class="form-check"><input class="form-check-input col-toggle" type="checkbox" id="toggle_formation_decision" data-field="formation_decision" checked><label class="form-check-label" for="toggle_formation_decision">قرار التشكيل</label></div>
           <div class="form-check"><input class="form-check-input col-toggle" type="checkbox" id="toggle_work_plan" data-field="work_plan" checked><label class="form-check-label" for="toggle_work_plan">خطة العمل</label></div>
@@ -113,184 +127,534 @@
           <div class="form-check"><input class="form-check-input col-toggle" type="checkbox" id="toggle_statistical_analysis" data-field="statistical_analysis" checked><label class="form-check-label" for="toggle_statistical_analysis">التحليل الإحصائي</label></div>
         </div>
       </div>
-      <div id="infoContainer">
-        <div id="selectedVisitsContainer"></div>
-        <div id="completionRateContainer"></div>
-      </div>
+
+      <div id="selectedVisitsContainer"></div>
+      <div id="completionRateContainer"></div>
     </div>
+
+    <!-- جداول -->
     <table class="table table-bordered table-striped table-responsive" id="evaluationsTableWrapper">
       <thead>
         <tr>
-          <th>#</th><th>الكلية</th><th>اسم اللجنة</th><th>اسم المدقق</th><th class="date-col">تاريخ التدقيق</th>
-          <th class="col-formation_decision">قرار التشكيل</th><th class="col-work_plan">خطة العمل</th><th class="col-performance_indicators">مؤشرات الأداء</th>
-          <th class="col-meetings">عدد الاجتماعات</th><th class="col-consistency">التوافق بين الدعوات والاجتماعات</th><th class="col-coverage_books">كتب التغطية</th>
-          <th class="col-report1">تقرير إنجاز 1</th><th class="col-report2">تقرير إنجاز 2</th><th class="col-report3">تقرير إنجاز 3</th><th class="col-statistical_analysis">التحليل الإحصائي</th>
-          <th id="availabilityHeader">درجة التوفر من (9)</th><th>الملاحظات</th><th>إجراءات</th>
+          <th>#</th>
+          <th>الكلية</th>
+          <th>اسم اللجنة</th>
+          <th>اسم المدقق</th>
+          <th class="date-col">تاريخ التدقيق</th>
+
+          <th class="col-formation_decision">قرار التشكيل</th>
+          <th class="col-work_plan">خطة العمل</th>
+          <th class="col-performance_indicators">مؤشرات الأداء</th>
+          <th class="col-meetings">عدد الاجتماعات</th>
+          <th class="col-consistency">التوافق بين الدعوات والاجتماعات</th>
+          <th class="col-coverage_books">كتب التغطية</th>
+          <th class="col-report1">تقرير إنجاز 1</th>
+          <th class="col-report2">تقرير إنجاز 2</th>
+          <th class="col-report3">تقرير إنجاز 3</th>
+          <th class="col-statistical_analysis">التحليل الإحصائي</th>
+
+          <th id="availabilityHeader">درجة التوفر من (9)</th>
+          <th>الملاحظات</th>
+          <th>إجراءات</th>
         </tr>
       </thead>
-      <tbody id="committeesTable"><tr><td colspan="18" class="text-center">جاري التحميل...</td></tr></tbody>
+      <tbody id="committeesTable">
+        <tr><td colspan="18" class="text-center">جاري التحميل...</td></tr>
+      </tbody>
     </table>
   </div>
-  <div class="modal fade" id="notesModal" tabindex="-1"><div class="modal-dialog modal-lg"><div class="modal-content"><div class="modal-header"><h5 class="modal-title">📝 الملاحظات</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body" id="notesContent"></div></div></div></div>
-  <div class="modal fade" id="editModal" tabindex="-1"><div class="modal-dialog modal-lg"><div class="modal-content"><form id="editForm"><div class="modal-header"><h5 class="modal-title">✏️ تعديل التقييم (كامل)</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><input type="hidden" name="_id" id="edit_id"><div class="mb-3"><label class="form-label">الكلية</label><select class="form-select" id="editCollege" required></select></div><div class="mb-3"><label class="form-label">اسم اللجنة</label><input type="text" class="form-control" id="editCommittee" required></div><div class="mb-3"><label class="form-label">اسم المدقق</label><select class="form-select" id="editAuditor" required></select></div><div class="mb-3"><label class="form-label">تاريخ التدقيق</label><input type="date" class="form-control" id="editDate"></div><div class="mb-3"><label class="form-label">الملاحظات</label><div id="editEditor"></div><input type="hidden" id="editNotesInput"></div></div><div class="modal-footer"><button type="submit" class="btn btn-primary">💾 حفظ</button><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إغلاق</button></div></form></div></div></div>
-  <div class="toast-container">
-    <div id="toastSuccess" class="toast align-items-center text-bg-success border-0 mb-2" role="alert"><div class="d-flex"><div class="toast-body">✅ العملية نجحت</div><button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button></div></div>
-    <div id="toastError" class="toast align-items-center text-bg-danger border-0 mb-2" role="alert"><div class="d-flex"><div class="toast-body">❌ حدث خطأ</div><button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button></div></div>
-    <div id="toastConfirm" class="toast align-items-center text-bg-warning border-0 mb-2" role="alert"><div class="d-flex"><div class="toast-body" id="toastConfirmMsg">⚠️ هل أنت متأكد؟</div><div class="me-2 m-auto"><button type="button" class="btn btn-sm btn-danger" id="confirmYes">نعم</button><button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="toast">إلغاء</button></div></div></div>
+
+  <!-- datalist للاقتراحات -->
+  <datalist id="dl_colleges"></datalist>
+  <datalist id="dl_committees"></datalist>
+  <datalist id="dl_auditors"></datalist>
+
+  <!-- Modals -->
+  <div class="modal fade" id="notesModal" tabindex="-1">
+    <div class="modal-dialog modal-lg"><div class="modal-content">
+      <div class="modal-header"><h5 class="modal-title">📝 الملاحظات</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+      <div class="modal-body">
+        <div id="viewNotes" class="mb-3"></div>
+        <hr class="my-2">
+        <h6 class="mb-2">تحرير الملاحظات</h6>
+        <div id="editEditor"></div>
+        <input type="hidden" id="editNotesInput">
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-primary" id="saveNotesBtn">💾 حفظ</button>
+        <button class="btn btn-secondary" data-bs-dismiss="modal">إغلاق</button>
+      </div>
+    </div></div>
   </div>
+
+  <!-- Toasts -->
+  <div class="toast-container">
+    <div id="toastSuccess" class="toast align-items-center text-bg-success border-0 mb-2" role="alert">
+      <div class="d-flex"><div class="toast-body">✅ العملية نجحت</div><button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button></div>
+    </div>
+    <div id="toastError" class="toast align-items-center text-bg-danger border-0 mb-2" role="alert">
+      <div class="d-flex"><div class="toast-body">❌ حدث خطأ</div><button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button></div>
+    </div>
+    <div id="toastConfirm" class="toast align-items-center text-bg-warning border-0 mb-2" role="alert">
+      <div class="d-flex">
+        <div class="toast-body" id="toastConfirmMsg">⚠️ هل أنت متأكد؟</div>
+        <div class="me-2 m-auto">
+          <button type="button" class="btn btn-sm btn-danger" id="confirmYes">نعم</button>
+          <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="toast">إلغاء</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scripts -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/quill@1.3.6/dist/quill.min.js"></script>
+  <script src="https://cdn.quilljs.com/1.3.6/quill.min.js"></script>
   <script>
-    const quillEdit = new Quill('#editEditor', { theme: 'snow' });
+    /* ====== بيئة موحّدة ====== */
+    const RENDER_BASE = 'https://vdash-qkyv.onrender.com';
+    const host = location.hostname;
+    const isGithub = host.endsWith('github.io');
+    const isLocal  = host==='localhost' || host==='127.0.0.1';
+    const API_BASE = isGithub ? RENDER_BASE : (isLocal ? 'http://localhost:3000' : '');
+    const go = (path)=> isGithub ? (RENDER_BASE + path) : path;
+
     const toastSuccess = new bootstrap.Toast(document.getElementById('toastSuccess'));
-    const toastError = new bootstrap.Toast(document.getElementById('toastError'));
+    const toastError   = new bootstrap.Toast(document.getElementById('toastError'));
     const toastConfirmEl = document.getElementById('toastConfirm');
     const toastConfirm = new bootstrap.Toast(toastConfirmEl);
     let confirmCallback = null;
-    let lastCollege = "";
 
-    function showSuccess(msg="✅ العملية نجحت") {document.querySelector("#toastSuccess .toast-body").innerText = msg;toastSuccess.show();}
-    function showError(msg="❌ حدث خطأ") {document.querySelector("#toastError .toast-body").innerText = msg;toastError.show();}
-    function showConfirm(msg, callback) {document.getElementById("toastConfirmMsg").innerText = msg;confirmCallback = callback;toastConfirm.show();}
-    document.getElementById("confirmYes").addEventListener("click", () => {toastConfirm.hide();if (confirmCallback) confirmCallback();});
+    function showSuccess(msg="✅ العملية نجحت"){ document.querySelector("#toastSuccess .toast-body").innerText = msg; toastSuccess.show(); }
+    function showError(msg="❌ حدث خطأ"){ document.querySelector("#toastError .toast-body").innerText = msg; toastError.show(); }
+    function showConfirm(msg, cb){ document.getElementById("toastConfirmMsg").innerText = msg; confirmCallback = cb; toastConfirm.show(); }
+    document.getElementById("confirmYes").addEventListener("click", ()=>{ toastConfirm.hide(); if(confirmCallback) confirmCallback(); });
 
-    async function loadOptions() {
-      const colleges = await axios.get('/api/colleges');
-      const collegeFilter = document.getElementById('collegeFilter');const collegeSelect = document.getElementById('editCollege');
-      colleges.data.forEach(c => {const opt1 = document.createElement('option');opt1.value = c.name; opt1.textContent = c.name;collegeFilter.appendChild(opt1);const opt2 = document.createElement('option');opt2.value = c.name; opt2.textContent = c.name;collegeSelect.appendChild(opt2);});
-      const auditors = await axios.get('/api/auditors');
-      const auditorFilter = document.getElementById('auditorFilter');const auditorSelect = document.getElementById('editAuditor');
-      auditors.data.forEach(a => {const opt1 = document.createElement('option');opt1.value = a.name; opt1.textContent = a.name;auditorFilter.appendChild(opt1);const opt2 = document.createElement('option');opt2.value = a.name; opt2.textContent = a.name;auditorSelect.appendChild(opt2);});
+    const apiFetch = (path, opts={}) => fetch(`${API_BASE}${path}`, { credentials:'include', ...opts });
+
+    /* ====== شارة المستخدم + صلاحيات ====== */
+    let CURRENT_USER = null;
+    function renderUser(u){
+      const username = u?.username || (u?.email? u.email.split('@')[0] : '—');
+      document.getElementById('userUsername').textContent = username;
+      document.getElementById('userFullName').textContent = u?.name || '—';
+      document.getElementById('userRole').textContent     = u?.role || '—';
     }
-    loadOptions();
+    async function ensureAuth(){
+      try{
+        const r = await apiFetch('/auth/committees/me');
+        const j = await r.json();
+        if(!j?.authenticated){
+          location.href = go('/committees-login.html?next='+encodeURIComponent('/committees-evals-manage.html'));
+          throw 0;
+        }
+        if(j.user?.isActive === false){
+          showError('🚫 حسابك معطّل. الرجاء التواصل مع المشرف.');
+          setTimeout(()=>location.href=go('/committees-home.html'),1200);
+          throw 0;
+        }
+        CURRENT_USER = j.user;
+        renderUser(j.user);
 
-    function updateAvailability(row) {
+        // إخفاء المجموعات للمستخدم العادي
+        const isAdmin = (j.user?.role||'').toLowerCase() === 'admin';
+        document.getElementById('visitsCard').classList.toggle('d-none', !isAdmin);
+        document.getElementById('columnsCard').classList.toggle('d-none', !isAdmin);
+      }catch{ throw 0; }
+    }
+    document.getElementById('homeBtn').href = go('/committees-home.html');
+    document.getElementById('logoutBtn').addEventListener('click', async ()=>{
+      try{
+        const r = await apiFetch('/auth/committees/logout',{method:'POST',headers:{'Content-Type':'application/json'}});
+        if(r.ok){ showSuccess('✅ تم تسجيل الخروج'); setTimeout(()=>location.href=go('/committees-login.html'),700); }
+        else    { showError('❌ تعذر تسجيل الخروج'); }
+      }catch{ showError('❌ خطأ في الاتصال'); }
+    });
+
+    /* ====== Quill للملاحظات داخل المودال ====== */
+    const quillEdit = new Quill('#editEditor', { theme: 'snow' });
+    let NOTES_EDITING_ROW = null; // سيحمل مرجع الصف الجاري تحرير ملاحظاته
+
+    /* ====== تحميل قوائم التلميح (datalist) ====== */
+    async function loadDatalists(){
+      try{
+        const [cR, aR, mR] = await Promise.all([
+          apiFetch('/api/colleges'), apiFetch('/api/auditors'), apiFetch('/api/committee-names?q=')
+            .catch(()=>apiFetch('/api/committees-master'))
+        ]);
+        const colleges = await cR.json().catch(()=>[]);
+        const auditors = await aR.json().catch(()=>[]);
+        const committees = await mR.json().catch(()=>[]);
+
+        const dlC = document.getElementById('dl_colleges');
+        const dlA = document.getElementById('dl_auditors');
+        const dlM = document.getElementById('dl_committees');
+        dlC.innerHTML = ''; dlA.innerHTML=''; dlM.innerHTML='';
+
+        (colleges||[]).forEach(c=>{ const o=document.createElement('option'); o.value=c.name; dlC.appendChild(o); });
+        (auditors||[]).forEach(a=>{ const o=document.createElement('option'); o.value=a.name; dlA.appendChild(o); });
+        (committees||[]).forEach(m=>{ const o=document.createElement('option'); o.value=m.name; dlM.appendChild(o); });
+
+        // ملء فلاتر أعلى الجدول
+        const collegeFilter = document.getElementById('collegeFilter');
+        (colleges||[]).forEach(c=>{ const opt=document.createElement('option'); opt.value=c.name; opt.textContent=c.name; collegeFilter.appendChild(opt); });
+        const auditorFilter = document.getElementById('auditorFilter');
+        (auditors||[]).forEach(a=>{ const opt=document.createElement('option'); opt.value=a.name; opt.textContent=a.name; auditorFilter.appendChild(opt); });
+      }catch(e){ console.warn('datalist load error', e); }
+    }
+
+    /* ====== حساب درجة التوفر والاكتمال ====== */
+    function updateAvailability(row){
+      const numericFields = ["formation_decision","work_plan","performance_indicators","meetings","consistency","coverage_books","report1","report2","report3","statistical_analysis"];
       let sum = 0;
-      const fields = ["formation_decision","work_plan","performance_indicators","meetings","consistency","coverage_books","report1","report2","report3","statistical_analysis"];
-      fields.forEach(f => {const cell = row.querySelector(`[data-field="${f}"]`);if (!document.getElementById("toggle_" + f).checked) return;sum += parseFloat(cell?.innerText) || 0;});
-      const availabilityCell = row.querySelector(".availability-cell");availabilityCell.innerText = sum.toFixed(2);availabilityCell.classList.add("highlight");setTimeout(() => availabilityCell.classList.remove("highlight"), 1500);
-    }
-
-    function attachCellListeners(tr) {
-      tr.querySelectorAll('[contenteditable="true"]').forEach(cell => {
-        cell.addEventListener('focus', () => {const range = document.createRange();range.selectNodeContents(cell);const sel = window.getSelection();sel.removeAllRanges();sel.addRange(range);});
-        cell.addEventListener('input', () => {cell.classList.add("highlight");setTimeout(() => cell.classList.remove("highlight"), 1500);updateAvailability(tr);updateCompletionRate();});
+      numericFields.forEach(f=>{
+        const cell = row.querySelector(`[data-field="${f}"]`);
+        if(!cell) return;
+        const v = parseFloat((cell.innerText||'').replace(',', '.'));
+        if(!isNaN(v)) sum += v;
       });
+      const availabilityCell = row.querySelector(".availability-cell");
+      if(availabilityCell){
+        availabilityCell.innerText = (Math.round(sum*100)/100).toFixed(2);
+        availabilityCell.classList.add("highlight");
+        setTimeout(()=>availabilityCell.classList.remove("highlight"), 800);
+      }
+    }
+    function updateCompletionRate(){
+      const rows = document.querySelectorAll('#committeesTable tr');
+      let totalAvailability = 0, numCommittees = 0;
+      rows.forEach(row=>{
+        if(row.style.display==='none') return;
+        const availabilityCell = row.querySelector('.availability-cell');
+        if(availabilityCell){ totalAvailability += parseFloat(availabilityCell.innerText)||0; numCommittees++; }
+      });
+      // المقام = عدد الحقول الرقمية (ثابت 9 هنا)
+      const denominator = numCommittees * 9;
+      const pct = denominator>0 ? ((totalAvailability/denominator)*100).toFixed(2) : '0.00';
+      const lastCollege = document.getElementById('collegeFilter').value || 'جميع الكليات';
+      document.getElementById("completionRateContainer").innerHTML =
+        `📌 نسبة الاكتمال لـ <b>${lastCollege}</b> = ${pct}% — <span class="muted">عدد اللجان: ${numCommittees}</span>`;
+    }
+    function updateAvailabilityHeader(){
+      // بما أن جميع الأعمدة الرقمية نشطة، العنوان دائمًا من 9
+      document.getElementById("availabilityHeader").innerText = `درجة التوفر من (9)`;
     }
 
-    async function loadCommittees() {
-      try {
-        const college = document.getElementById('collegeFilter').value;const auditor = document.getElementById('auditorFilter').value;lastCollege = college || "جميع الكليات";let url = '/api/committees';const params = [];
-        if (college) params.push(`college=${encodeURIComponent(college)}`);if (auditor) params.push(`auditor_name=${encodeURIComponent(auditor)}`);if (params.length > 0) url += '?' + params.join('&');
-        const res = await axios.get(url);const tbody = document.getElementById('committeesTable');tbody.innerHTML = "";
-        if(res.data.length === 0){tbody.innerHTML = `<tr><td colspan="18" class="text-center">لا توجد بيانات</td></tr>`;document.getElementById("completionRateContainer").innerHTML = "";document.getElementById("selectedVisitsContainer").innerHTML = "الزيارات: لم يتم إختيار أي زيارة";return;}
-        res.data.sort((a,b)=>(a.college||"").localeCompare(b.college||"","ar"));res.data.forEach((c, idx) => {
-          const tr = document.createElement('tr');tr.innerHTML = `
-            <td>${idx+1}</td><td>${c.college}</td><td>${c.committee_name}</td><td>${c.auditor_name}</td><td>${c.audit_date ? new Date(c.audit_date).toLocaleDateString('ar-EG'): '-'}</td>
-            <td contenteditable="true" data-field="formation_decision" class="col-formation_decision">${c.formation_decision ?? 0}</td>
-            <td contenteditable="true" data-field="work_plan" class="col-work_plan">${c.work_plan ?? 0}</td>
-            <td contenteditable="true" data-field="performance_indicators" class="col-performance_indicators">${c.performance_indicators ?? 0}</td>
-            <td contenteditable="true" data-field="meetings" class="col-meetings">${c.meetings ?? 0}</td>
-            <td contenteditable="true" data-field="consistency" class="col-consistency">${c.consistency ?? 0}</td>
-            <td contenteditable="true" data-field="coverage_books" class="col-coverage_books">${c.coverage_books ?? 0}</td>
-            <td contenteditable="true" data-field="report1" class="col-report1">${c.report1 ?? 0}</td>
-            <td contenteditable="true" data-field="report2" class="col-report2">${c.report2 ?? 0}</td>
-            <td contenteditable="true" data-field="report3" class="col-report3">${c.report3 ?? 0}</td>
-            <td contenteditable="true" data-field="statistical_analysis" class="col-statistical_analysis">${c.statistical_analysis ?? 0}</td>
-            <td class="availability-cell">${c.availability_score ?? 0}</td>
-            <td>${c.notes && c.notes.trim() !== "" && c.notes.trim() !== "<p><br></p>"? `<button class="btn btn-sm btn-info notes-btn" onclick="showNotes(\`${c.notes}\`)">🔍</button>` : '<span class="text-muted">لا توجد ملاحظات</span>'}</td>
-            <td><div class="action-buttons"><button class="btn btn-sm btn-success" onclick="saveRow(this, '${c._id}')">💾</button><button class="btn btn-sm btn-primary" onclick='editCommittee(${JSON.stringify(c)})'>✏️</button><button class="btn btn-sm btn-danger" onclick="confirmDelete('${c._id}')">🗑️</button></div></td>`;
-          tbody.appendChild(tr);attachCellListeners(tr);updateAvailability(tr);
+    /* ====== ربط الخلايا القابلة للتحرير ====== */
+    function clamp01(val){
+      let v = Number(String(val).replace(',', '.'));
+      if(isNaN(v)) return null;   // null يعني غير صالح
+      if(v<0) v = 0;
+      if(v>1) v = 1;
+      // تقريب 2 منازل
+      return Math.round(v*100)/100;
+    }
+    function attachCellListeners(tr){
+      tr.querySelectorAll('[contenteditable="true"]').forEach(cell=>{
+        const field = cell.getAttribute('data-field') || '';
+        cell.addEventListener('focus', ()=>{
+          const range=document.createRange(); range.selectNodeContents(cell);
+          const sel=window.getSelection(); sel.removeAllRanges(); sel.addRange(range);
         });
-        updateCompletionRate();applyColumnVisibility();applyCommitteeSearch();
-      } catch (err) { showError("❌ فشل تحميل البيانات"); console.error(err); }
-    }
-    loadCommittees();
+        cell.addEventListener('input', ()=>{
+          cell.classList.add("highlight");
+          setTimeout(()=>cell.classList.remove("highlight"), 600);
 
-    document.getElementById('collegeFilter').addEventListener('change', loadCommittees);
-    document.getElementById('auditorFilter').addEventListener('change', loadCommittees);
+          // تحقق لقيم الدرجات فقط
+          if(['formation_decision','work_plan','performance_indicators','meetings','consistency','coverage_books','report1','report2','report3','statistical_analysis'].includes(field)){
+            const clamped = clamp01(cell.innerText);
+            const invalid = (clamped===null);
+            cell.classList.toggle('invalid', invalid);
+            if(!invalid) cell.innerText = clamped; // يضبط 0..1
+            updateAvailability(tr);
+            updateCompletionRate();
+          }
 
-    function showNotes(html) {document.getElementById('notesContent').innerHTML = html || "<i>لا توجد ملاحظات</i>";new bootstrap.Modal(document.getElementById('notesModal')).show();}
-    function editCommittee(c) {document.getElementById('edit_id').value = c._id;document.getElementById('editCollege').value = c.college;document.getElementById('editCommittee').value = c.committee_name;document.getElementById('editAuditor').value = c.auditor_name;document.getElementById('editDate').value = c.audit_date ? c.audit_date.split("T")[0] : "";quillEdit.root.innerHTML = c.notes || "";new bootstrap.Modal(document.getElementById('editModal')).show();}
-    document.getElementById('editForm').addEventListener('submit', async (e) => {e.preventDefault();document.getElementById('editNotesInput').value = quillEdit.root.innerHTML;const data = {college: document.getElementById('editCollege').value,committee_name: document.getElementById('editCommittee').value,auditor_name: document.getElementById('editAuditor').value,audit_date: document.getElementById('editDate').value,notes: document.getElementById('editNotesInput').value};try {await axios.put(`/api/committees/${document.getElementById('edit_id').value}`, data);showSuccess("✅ تم حفظ التعديلات بنجاح");bootstrap.Modal.getInstance(document.getElementById('editModal')).hide();loadCommittees();} catch (err) { console.error(err); showError("❌ خطأ أثناء الحفظ"); }});
-
-    async function saveRow(btn, id) {const row = btn.closest('tr');const updatedData = {};row.querySelectorAll('[contenteditable="true"]').forEach(cell => {if (!document.getElementById("toggle_" + cell.getAttribute('data-field')).checked) return;updatedData[cell.getAttribute('data-field')] = parseFloat(cell.innerText) || 0;});updatedData.availability_score = parseFloat(row.querySelector(".availability-cell").innerText) || 0;try {await axios.put(`/api/committees/${id}`, updatedData);showSuccess("✅ تم حفظ التعديلات");} catch (err) { console.error(err); showError("❌ خطأ أثناء الحفظ"); }}
-
-    function confirmDelete(id) {showConfirm("⚠️ هل أنت متأكد من الحذف؟", async () => {try {await axios.delete(`/api/committees/${id}`);showSuccess("🗑️ تم حذف السجل بنجاح");loadCommittees();} catch (err) { console.error(err); showError("❌ فشل الحذف"); }});}
-
-    function updateCompletionRate() {const rows = document.querySelectorAll('#committeesTable tr');let totalAvailability = 0;let numCommittees = 0;rows.forEach(row => {const availabilityCell = row.querySelector('.availability-cell');if (availabilityCell) {totalAvailability += parseFloat(availabilityCell.innerText) || 0;numCommittees++;}});const visibleCols = Array.from(document.querySelectorAll('.col-toggle:checked')).length;const denominator = numCommittees * visibleCols;const completionRate = denominator > 0 ? ((totalAvailability / denominator) * 100).toFixed(2) : 0;const completionDiv = document.getElementById("completionRateContainer");if (lastCollege && lastCollege !== "جميع الكليات") {completionDiv.innerHTML = `📌 نسبة الاكتمال لكلية ${lastCollege} = ${completionRate}%<br>📋 عدد لجان كلية ${lastCollege} = ${numCommittees}`;} else {completionDiv.innerHTML = `📌 نسبة الاكتمال لجميع الكليات = ${completionRate}%<br>📋 عدد لجان جميع الكليات = ${numCommittees}`;}}
-
-    function applyColumnVisibility() {
-      document.querySelectorAll('.col-toggle').forEach(cb => {
-        const field = cb.getAttribute('data-field');
-        document.querySelectorAll('.col-' + field).forEach(cell => {cell.classList.toggle('hidden-col', !cb.checked);});
+          markRowChanged(tr);
+        });
       });
-      document.querySelectorAll('#committeesTable tr').forEach(tr => updateAvailability(tr));
-      updateCompletionRate();
-      updateAvailabilityHeader();
     }
 
-    document.querySelectorAll('.col-toggle').forEach(cb => {cb.addEventListener('change', applyColumnVisibility);});
+    /* ====== علامة أن الصف تم تعديله ====== */
+    function markRowChanged(tr){ tr.dataset.dirty="1"; tr.classList.add('table-warning'); }
+    function clearRowChanged(tr){ delete tr.dataset.dirty; tr.classList.remove('table-warning'); }
 
-    function updateSelectedVisits() {
-      const selected = Array.from(document.querySelectorAll('.visit-toggle:checked')).map(cb => cb.value);
-      const container = document.getElementById('selectedVisitsContainer');
-      container.innerHTML = selected.length > 0 ? "الزيارات: " + selected.join(" | ") : "الزيارات: لم يتم إختيار أي زيارة";
+    /* ====== إنشاء صف من بيانات لجنة ====== */
+    function buildRow(c, idx){
+      const tr = document.createElement('tr');
+
+      // helper: safe text
+      const st = (v)=> (v==null?'':String(v));
+
+      tr.innerHTML = `
+        <td>${idx+1}</td>
+
+        <td contenteditable="true" data-field="college" list="dl_colleges">${st(c.college)}</td>
+        <td contenteditable="true" data-field="committee_name" list="dl_committees">${st(c.committee_name)}</td>
+        <td contenteditable="true" data-field="auditor_name" list="dl_auditors">${st(c.auditor_name)}</td>
+
+        <td class="date-col" contenteditable="true" data-field="audit_date">${c.audit_date ? c.audit_date.split('T')[0] : ''}</td>
+
+        <td contenteditable="true" data-field="formation_decision" class="col-formation_decision">${c.formation_decision ?? 0}</td>
+        <td contenteditable="true" data-field="work_plan" class="col-work_plan">${c.work_plan ?? 0}</td>
+        <td contenteditable="true" data-field="performance_indicators" class="col-performance_indicators">${c.performance_indicators ?? 0}</td>
+        <td contenteditable="true" data-field="meetings" class="col-meetings">${c.meetings ?? 0}</td>
+        <td contenteditable="true" data-field="consistency" class="col-consistency">${c.consistency ?? 0}</td>
+        <td contenteditable="true" data-field="coverage_books" class="col-coverage_books">${c.coverage_books ?? 0}</td>
+        <td contenteditable="true" data-field="report1" class="col-report1">${c.report1 ?? 0}</td>
+        <td contenteditable="true" data-field="report2" class="col-report2">${c.report2 ?? 0}</td>
+        <td contenteditable="true" data-field="report3" class="col-report3">${c.report3 ?? 0}</td>
+        <td contenteditable="true" data-field="statistical_analysis" class="col-statistical_analysis">${c.statistical_analysis ?? 0}</td>
+
+        <td class="availability-cell">${c.availability_score ?? 0}</td>
+
+        <td contenteditable="true" data-field="notes_plain">${stripHtml(c.notes||'')}</td>
+
+        <td>
+          <div class="action-buttons">
+            <button class="btn btn-sm btn-info" title="عرض/تحرير الملاحظات كمحرر" onclick='openNotesModal(this, ${JSON.stringify({ _id:c._id, notes:c.notes||'' }).replace(/'/g,"&#39;")})'>📝</button>
+            <button class="btn btn-sm btn-success" onclick="saveRow(this, '${c._id}')">💾</button>
+            <button class="btn btn-sm btn-danger" onclick="confirmDelete('${c._id}')">🗑️</button>
+          </div>
+        </td>
+      `;
+      return tr;
     }
-    document.querySelectorAll('.visit-toggle').forEach(cb => {cb.addEventListener('change', updateSelectedVisits);});
 
-    function updateAvailabilityHeader() {
-      const visibleCols = Array.from(document.querySelectorAll('.col-toggle:checked')).length;
-      document.getElementById("availabilityHeader").innerText = `درجة التوفر من (${visibleCols})`;
+    function stripHtml(html){
+      const tmp = document.createElement('div');
+      tmp.innerHTML = html;
+      return (tmp.textContent || tmp.innerText || '').trim();
     }
-    updateAvailabilityHeader();
 
-    async function loadSettings() {
-      try {
-        const res = await axios.get('/api/settings');
-        const settings = res.data;
-        if (settings.visibleColumns) {
-          document.querySelectorAll('.col-toggle').forEach(cb => {
-            cb.checked = settings.visibleColumns.includes(cb.getAttribute('data-field'));
-          });
+    /* ====== تحميل السجلات ====== */
+    async function loadCommittees(){
+      try{
+        const college = document.getElementById('collegeFilter').value;
+        const auditor = document.getElementById('auditorFilter').value;
+        let url = '/api/committees';
+        const params = [];
+        if(college) params.push('college='+encodeURIComponent(college));
+        if(auditor) params.push('auditor_name='+encodeURIComponent(auditor));
+        if(params.length) url += '?' + params.join('&');
+
+        const res = await apiFetch(url);
+        const arr = await res.json();
+
+        const tbody = document.getElementById('committeesTable');
+        tbody.innerHTML = '';
+
+        if(!Array.isArray(arr) || arr.length===0){
+          tbody.innerHTML = `<tr><td colspan="18" class="text-center">لا توجد بيانات</td></tr>`;
+          document.getElementById("completionRateContainer").innerHTML = '';
+          document.getElementById("selectedVisitsContainer").innerHTML = '';
+          return;
         }
-        if (settings.selectedVisits) {
-          document.querySelectorAll('.visit-toggle').forEach(cb => {
-            cb.checked = settings.selectedVisits.includes(cb.value);
-          });
-        }
-        applyColumnVisibility();
-        updateSelectedVisits();
-      } catch (err) {
-        console.error("❌ فشل تحميل الإعدادات", err);
-        document.getElementById("selectedVisitsContainer").innerHTML = "الزيارات: لم يتم إختيار أي زيارة";
+
+        // ترتيب بسيط: بالكلية ثم اللجنة
+        arr.sort((a,b)=> (a.college||'').localeCompare(b.college||'','ar') || (a.committee_name||'').localeCompare(b.committee_name||'','ar'));
+
+        arr.forEach((c, idx)=>{
+          const tr = buildRow(c, idx);
+          document.getElementById('committeesTable').appendChild(tr);
+          attachCellListeners(tr);
+          updateAvailability(tr);
+        });
+
+        updateCompletionRate();
+        applyCommitteeSearch();
+      }catch(err){
+        console.error(err);
+        showError('❌ فشل تحميل البيانات');
+        const tbody = document.getElementById('committeesTable');
+        tbody.innerHTML = `<tr><td colspan="18" class="text-center text-danger">فشل الجلب</td></tr>`;
       }
     }
 
-    async function saveSettings() {
-      try {
-        const visibleColumns = Array.from(document.querySelectorAll('.col-toggle:checked')).map(cb => cb.getAttribute('data-field'));
-        const selectedVisits = Array.from(document.querySelectorAll('.visit-toggle:checked')).map(cb => cb.value);
-        await axios.put('/api/settings', { visibleColumns, selectedVisits });
+    /* ====== بحث باسم اللجنة (فوري) ====== */
+    function applyCommitteeSearch(){
+      const searchTerm = document.getElementById("committeeSearch").value.trim().toLowerCase();
+      document.querySelectorAll("#committeesTable tr").forEach(row=>{
+        const committeeName = (row.cells[2]?.innerText || '').trim().toLowerCase();
+        row.style.display = committeeName.includes(searchTerm) ? '' : 'none';
+      });
+    }
+
+    document.getElementById('committeeSearch').addEventListener('input', ()=>{
+      applyCommitteeSearch();
+      updateCompletionRate();
+    });
+    document.getElementById('collegeFilter').addEventListener('change', loadCommittees);
+    document.getElementById('auditorFilter').addEventListener('change', loadCommittees);
+    document.getElementById('reloadBtn').addEventListener('click', loadCommittees);
+
+    /* ====== فتح/حفظ الملاحظات من المودال ====== */
+    function openNotesModal(btn, payload){
+      const tr = btn.closest('tr');
+      NOTES_EDITING_ROW = tr;
+      const html = payload?.notes || '';
+      document.getElementById('viewNotes').innerHTML = html || '<i class="muted">لا توجد ملاحظات</i>';
+      quillEdit.root.innerHTML = html || '';
+      new bootstrap.Modal(document.getElementById('notesModal')).show();
+    }
+    document.getElementById('saveNotesBtn').addEventListener('click', async ()=>{
+      if(!NOTES_EDITING_ROW) return;
+      const idCell = NOTES_EDITING_ROW; // الصف نفسه
+      const newHtml = quillEdit.root.innerHTML;
+      // عيّن النص المبسّط في الخلية القابلة للتحرير
+      const notesCell = NOTES_EDITING_ROW.querySelector('[data-field="notes_plain"]');
+      if(notesCell){ notesCell.innerText = stripHtml(newHtml); markRowChanged(NOTES_EDITING_ROW); }
+      // أغلق المودال (لا نرسل الآن حتى يضغط المستخدم 💾 الصف أو حفظ الكل)
+      bootstrap.Modal.getInstance(document.getElementById('notesModal')).hide();
+      showSuccess('تم تحديث الملاحظات (تحتاج حفظ الصف)');
+    });
+
+    /* ====== حفظ صف واحد ====== */
+    async function saveRow(btn, id){
+      const row = btn.closest('tr');
+      const updated = collectRowData(row);
+
+      // تحقق بسيط للتواريخ: YYYY-MM-DD
+      const date = updated.audit_date?.trim();
+      if(date && !/^\d{4}-\d{2}-\d{2}$/.test(date)){
+        showError('⚠️ صيغة التاريخ يجب أن تكون YYYY-MM-DD');
+        return;
+      }
+
+      try{
+        await axios.put(`${API_BASE}/api/committees/${id}`, updated, { withCredentials:true });
+        showSuccess("✅ تم حفظ التعديلات");
+        clearRowChanged(row);
+      }catch(err){
+        console.error(err);
+        showError("❌ خطأ أثناء الحفظ");
+      }
+    }
+
+    function collectRowData(row){
+      const data = {};
+      // حقول نصية/أساسية
+      ['college','committee_name','auditor_name','audit_date','notes_plain',
+       'formation_decision','work_plan','performance_indicators','meetings','consistency',
+       'coverage_books','report1','report2','report3','statistical_analysis'].forEach(f=>{
+        const cell = row.querySelector(`[data-field="${f}"]`);
+        if(!cell) return;
+        if(['formation_decision','work_plan','performance_indicators','meetings','consistency','coverage_books','report1','report2','report3','statistical_analysis'].includes(f)){
+          const clamped = clamp01(cell.innerText);
+          data[f] = (clamped===null) ? 0 : clamped;
+        }else{
+          data[f] = (cell.innerText||'').trim();
+        }
+      });
+
+      // الملاحظات الغنية: ليست موجودة في الخلية، ولكن إن فُتحت وعدّلها المستخدم، جعلنا notes_plain يتحدّث.
+      // نرسل للمخدّم notes (HTML) و notes_plain (نص)
+      // هنا نأخذ notes من modal إن كانت آخر قيمة متاحة فيه؛ وإلا نرسل النص البسيط فقط.
+      // للحفاظ على بساطة التدفق: لو المودال مفتوحًا على نفس الصف نأخذ من quill، وإلا نرسل النصّ البسيط.
+      const takeHtml = (NOTES_EDITING_ROW === row) ? quillEdit.root.innerHTML : null;
+      data.notes = (takeHtml!=null) ? takeHtml : (data.notes_plain ? `<p>${data.notes_plain}</p>` : '');
+
+      // درجة التوفر
+      const availabilityCell = row.querySelector('.availability-cell');
+      data.availability_score = parseFloat(availabilityCell?.innerText)||0;
+
+      return data;
+    }
+
+    /* ====== حذف ====== */
+    function confirmDelete(id){
+      showConfirm("⚠️ هل أنت متأكد من الحذف؟", async ()=>{
+        try{
+          await axios.delete(`${API_BASE}/api/committees/${id}`, { withCredentials:true });
+          showSuccess("🗑️ تم حذف السجل بنجاح");
+          loadCommittees();
+        }catch(err){
+          console.error(err);
+          showError("❌ فشل الحذف");
+        }
+      });
+    }
+
+    /* ====== حفظ كل الصفوف المعدّلة ====== */
+    document.getElementById('saveAllBtn').addEventListener('click', async ()=>{
+      const dirtyRows = Array.from(document.querySelectorAll('#committeesTable tr')).filter(tr => tr.dataset.dirty==='1');
+      if(!dirtyRows.length){ showInfo("لا توجد تغييرات"); return; }
+      let okCount = 0, failCount = 0;
+      for(const tr of dirtyRows){
+        try{
+          const id = tr.querySelector('[data-field="college"]') ? tr.querySelector('[data-field="college"]').closest('tr').querySelector('[data-field]') : null;
+          const idAttr = tr.querySelector('button.btn-success')?.getAttribute('onclick') || '';
+          const m = idAttr.match(/saveRow\(this,\s*'([^']+)'\)/);
+          const _id = m ? m[1] : null;
+          if(!_id){ failCount++; continue; }
+          const payload = collectRowData(tr);
+          await axios.put(`${API_BASE}/api/committees/${_id}`, payload, { withCredentials:true });
+          clearRowChanged(tr); okCount++;
+        }catch{ failCount++; }
+      }
+      showSuccess(`تم حفظ ${okCount} — فشل ${failCount}`);
+    });
+
+    function showInfo(msg){
+      // نستخدم Success Toast بنفس التصميم بلون افتراضي
+      showSuccess('ℹ️ ' + msg);
+    }
+
+    /* ====== إعدادات admin (الزيارات/الأعمدة) ====== */
+    function updateSelectedVisits(){
+      const selected = Array.from(document.querySelectorAll('.visit-toggle:checked')).map(cb=>cb.value);
+      const el = document.getElementById('selectedVisitsContainer');
+      el.innerHTML = selected.length ? ("الزيارات: " + selected.join(' | ')) : '';
+    }
+    async function loadSettings(){
+      // للمشرف فقط—لكن الاستدعاء لن يضر إن لم يكن Admin
+      try{
+        const res = await apiFetch('/api/settings');
+        const settings = await res.json();
+        if(settings?.visibleColumns){
+          document.querySelectorAll('.col-toggle').forEach(cb=>{
+            cb.checked = settings.visibleColumns.includes(cb.getAttribute('data-field'));
+          });
+        }
+        if(settings?.selectedVisits){
+          document.querySelectorAll('.visit-toggle').forEach(cb=>{
+            cb.checked = settings.selectedVisits.includes(cb.value);
+          });
+        }
+        updateSelectedVisits();
+        updateAvailabilityHeader();
+      }catch(e){ /* تجاهل */ }
+    }
+    async function saveSettings(){
+      try{
+        const visibleColumns = Array.from(document.querySelectorAll('.col-toggle:checked')).map(cb=>cb.getAttribute('data-field'));
+        const selectedVisits = Array.from(document.querySelectorAll('.visit-toggle:checked')).map(cb=>cb.value);
+        await axios.put(`${API_BASE}/api/settings`, { visibleColumns, selectedVisits }, { withCredentials:true });
         showSuccess("✅ تم حفظ الإعدادات بنجاح");
-      } catch (err) {
-        console.error("❌ فشل حفظ الإعدادات", err);
+        updateSelectedVisits();
+      }catch(err){
+        console.error(err);
         showError("❌ خطأ في حفظ الإعدادات");
       }
     }
     document.getElementById('saveSettingsBtn').addEventListener('click', saveSettings);
 
-    function applyCommitteeSearch() {
-      const searchTerm = document.getElementById("committeeSearch").value.trim().toLowerCase();
-      document.querySelectorAll("#committeesTable tr").forEach(row => {
-        const committeeName = row.cells[2]?.innerText.trim().toLowerCase() || "";
-        row.style.display = committeeName.includes(searchTerm) ? "" : "none";
-      });
-    }
-    document.getElementById("committeeSearch").addEventListener("input", applyCommitteeSearch);
+    // مبدئيًا نجعل كل الأعمدة الرقمية ظاهرة (المستخدم العادي لا يرى أدوات تغييرها)
+    document.querySelectorAll('.col-toggle').forEach(cb=>{
+      cb.addEventListener('change', ()=>{ /* للمشرف فقط—عنوان التوفر ثابت 9 هنا */ });
+    });
 
-    loadSettings();
+    /* ====== بدء التشغيل ====== */
+    (async function init(){
+      try{
+        await ensureAuth();
+        document.getElementById('homeBtn').href = go('/committees-home.html');
+
+        await loadDatalists();
+        await loadSettings();
+        await loadCommittees();
+      }catch{}
+    })();
   </script>
 </body>
 </html>
