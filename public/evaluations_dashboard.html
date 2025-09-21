@@ -18,7 +18,7 @@
     .sticky-header{background:#f8f9fa;padding-top:10px}
     #evaluationsTableWrapper thead th{position:sticky;top:0;z-index:99;background:#f8f9fa;color:#000}
 
-    /* أعمدة التاريخ (اتجاه يسار ليمين) */
+    /* أعمدة التاريخ (اتجاه يسار لليمين) */
     #evaluationsTableWrapper th.date-col,
     #evaluationsTableWrapper td.date-col{
       direction:ltr;text-align:center;width:110px;max-width:110px
@@ -32,10 +32,12 @@
     .notes-screen{display:inline-block}
     .print-notes{display:none;text-align:start}
 
-    /* تأثير Hover على صفوف الجدول */
-    #evaluationsTableWrapper tbody tr{transition: background-color .2s ease, box-shadow .2s ease}
-    #evaluationsTableWrapper tbody tr:hover{
-      background:#f1f7ff!important;
+    /* تأثير Hover على صفوف الجدول — استهداف الخلايا */
+    #evaluationsTableWrapper tbody tr > * {
+      transition: background-color .2s ease, box-shadow .2s ease;
+    }
+    #evaluationsTableWrapper tbody tr:hover > * {
+      background-color:#f1f7ff !important;
       box-shadow: inset 0 0 0 9999px rgba(13,110,253,.06);
     }
 
@@ -62,7 +64,7 @@
       <!-- الفلاتر -->
       <div class="filters row justify-content-center no-print">
         <div class="col-md-3 mb-2 text-center">
-          <label class="form-label d-block">الكلية</label>
+          <label class="form-label د-block">الكلية</label>
           <select id="collegeFilter" class="form-select">
             <option value="">جميع الكليات</option>
           </select>
