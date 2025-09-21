@@ -24,13 +24,20 @@
       direction:ltr;text-align:center;width:110px;max-width:110px
     }
 
-    /* مساحات معلومات أعلى الجدول */
-    #completionRateContainer,#selectedVisitsContainer{font-weight:bold;margin:5px 0;font-size:18px;color:#0d6efd;min-height:24px}
-    #infoContainer{font-weight:bold;margin:15px 0;font-size:18px;color:#0d6efd;text-align:center}
+    /* مساحات معلومات أعلى الجدول (بالأسود كما طُلب) */
+    #completionRateContainer,#selectedVisitsContainer{font-weight:bold;margin:5px 0;font-size:18px;color:#000;min-height:24px}
+    #infoContainer{font-weight:bold;margin:15px 0;font-size:18px;color:#000;text-align:center}
 
     /* ملاحظات: ما يظهر على الشاشة/الطباعة */
     .notes-screen{display:inline-block}
     .print-notes{display:none;text-align:start}
+
+    /* تأثير Hover على صفوف الجدول */
+    #evaluationsTableWrapper tbody tr{transition: background-color .2s ease, box-shadow .2s ease}
+    #evaluationsTableWrapper tbody tr:hover{
+      background:#f1f7ff!important;
+      box-shadow: inset 0 0 0 9999px rgba(13,110,253,.06);
+    }
 
     /* عناصر لا تُطبع */
     .no-print{}
@@ -41,7 +48,7 @@
       .print-header{display:block;margin-bottom:10px}
       .notes-screen{display:none!important}
       .print-notes{display:block!important;white-space:normal}
-      thead{display:table-header-group} /* محاولة تكرار الرأس مع كل صفحة */
+      thead{display:table-header-group}
       button,select,input{display:none!important}
     }
   </style>
@@ -49,7 +56,8 @@
 <body>
   <div class="container-fluid">
     <div class="sticky-header">
-      <h3 class="text-center mb-4">📊 عرض تقييم اللجان</h3>
+      <!-- إزالة أيقونة 📊 كما طُلب -->
+      <h3 class="text-center mb-4">عرض تقييم اللجان</h3>
 
       <!-- الفلاتر -->
       <div class="filters row justify-content-center no-print">
@@ -214,7 +222,7 @@
       }
     }
 
-    /* ===== نسبة الاكتمال + عدد اللجان ===== */
+    /* ===== نسبة الاكتمال + عدد اللجان (بدون أيقونات) ===== */
     function updateCompletionAndCounts(){
       const rows=[...document.querySelectorAll('#committeesTable tr')].filter(r=>r.style.display!=='none');
       let total=0;
@@ -226,11 +234,11 @@
       const countDiv=document.getElementById('committeesCountContainer');
       const lc = lastCollege || 'جميع الكليات';
       if(lc && lc!=='جميع الكليات'){
-        completionDiv.innerHTML = `📌 نسبة الاكتمال لكلية ${lc} = ${pct}%`;
-        countDiv.innerHTML      = `📋 عدد لجان كلية ${lc} = ${rows.length}`;
+        completionDiv.innerHTML = `نسبة الاكتمال لكلية ${lc} = ${pct}%`;
+        countDiv.innerHTML      = `عدد لجان كلية ${lc} = ${rows.length}`;
       }else{
-        completionDiv.innerHTML = `📌 نسبة الاكتمال لجميع الكليات = ${pct}%`;
-        countDiv.innerHTML      = `📋 عدد لجان جميع الكليات = ${rows.length}`;
+        completionDiv.innerHTML = `نسبة الاكتمال لجميع الكليات = ${pct}%`;
+        countDiv.innerHTML      = `عدد لجان جميع الكليات = ${rows.length}`;
       }
     }
 
@@ -288,11 +296,11 @@
           : 'لم يتم اختيار أي زيارة';
         visitsEl.textContent = `الزيارات: ${visits}`;
         // بعد الإعدادات => حمل اللجان
-        await loadCommittees(); // مهم: التحميل بعد الإعدادات
+        await loadCommittees();
       }catch(e){
         semesterEl.textContent='—';
         document.getElementById('selectedVisitsContainer').textContent='الزيارات: لم يتم اختيار أي زيارة';
-        await loadCommittees(); // حتى لو فشل الإعدادات نحاول تحميل الجدول
+        await loadCommittees();
       }
     }
 
