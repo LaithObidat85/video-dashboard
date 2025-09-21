@@ -32,14 +32,17 @@
     .filters{margin-bottom:12px;width:99%;margin-left:auto;margin-right:auto}
     .action-buttons{display:flex;justify-content:center;align-items:center;gap:5px;height:100%}
     .notes-btn{display:block;width:100%}
-    .top-actions{display:flex;gap:.5rem;flex-wrap:wrap;justify-content:flex-end}
+
+    /* شريط أعلى الأزرار */
+    .quick-actions-title{font-weight:700;text-align:center;margin-bottom:.25rem}
+    .top-actions{display:flex;gap:.5rem;flex-wrap:wrap;justify-content:center}
 
     .mini-toolbar{display:flex;gap:.25rem;margin-bottom:.5rem;flex-wrap:wrap}
     .mini-toolbar button{border:1px solid #ced4da;background:#f8f9fa;padding:.25rem .5rem;border-radius:.375rem}
     .mini-editor{border:1px solid #ced4da;border-radius:.5rem;padding:.5rem;min-height:180px;background:#fff}
     .muted{color:#6c757d}
 
-    .bulk-bar{display:flex;gap:.5rem;flex-wrap:wrap;align-items:center}
+    .bulk-bar{display:flex;gap:.5rem;flex-wrap:wrap;align-items:center;justify-content:flex-start}
     .selected-count{font-weight:700}
     .form-switch .form-check-input{cursor:pointer}
   </style>
@@ -86,20 +89,12 @@
           <input type="text" id="committeeSearch" class="form-control" placeholder="اكتب للبحث...">
         </div>
         <div class="col-md-3 mb-2">
-          <label class="form-label">إجراءات سريعة</label>
+          <!-- عنوان إجراءات سريعة باليمين في RTL، ومتمركز بصريا فوق الأزرار -->
+          <div class="quick-actions-title">إجراءات سريعة</div>
           <div class="top-actions">
             <button class="btn btn-sm btn-success" id="saveAllBtn" title="حفظ جميع الصفوف المعدلة">💾 حفظ الكل</button>
             <button class="btn btn-sm btn-outline-secondary" id="reloadBtn">تحديث</button>
           </div>
-        </div>
-      </div>
-
-      <!-- شريط الإجراءات الجماعية -->
-      <div class="card p-2 mb-2">
-        <div class="bulk-bar">
-          <span class="selected-count">المحدد: <span id="selectedCount">0</span></span>
-          <button class="btn btn-sm btn-danger" id="bulkDeleteBtn" title="حذف المحدد"><i class="bi bi-trash"></i> حذف المحدد</button>
-          <button class="btn btn-sm btn-primary" id="bulkEditBtn" title="تعديل المحدد"><i class="bi bi-pencil-square"></i> تعديل المحدد</button>
         </div>
       </div>
 
@@ -155,6 +150,15 @@
       <div id="termBadge"></div>
       <div id="selectedVisitsContainer"></div>
       <div id="completionRateContainer"></div>
+
+      <!-- شريط الإجراءات الجماعية (المكان الجديد تحت نسبة الاكتمال) -->
+      <div class="card p-2 mb-2">
+        <div class="bulk-bar">
+          <span class="selected-count">المحدد: <span id="selectedCount">0</span></span>
+          <button class="btn btn-sm btn-danger" id="bulkDeleteBtn" title="حذف المحدد"><i class="bi bi-trash"></i> حذف المحدد</button>
+          <button class="btn btn-sm btn-primary" id="bulkEditBtn" title="تعديل المحدد"><i class="bi bi-pencil-square"></i> تعديل المحدد</button>
+        </div>
+      </div>
     </div>
 
     <!-- جدول -->
@@ -271,7 +275,7 @@
     </div></div>
   </div>
 
-  <!-- Modal: تعديل صف (شبيه صفحة الإدخال) -->
+  <!-- Modal: تعديل صف -->
   <div class="modal fade" id="editRowModal" tabindex="-1">
     <div class="modal-dialog modal-lg"><div class="modal-content">
       <div class="modal-header"><h5 class="modal-title">تعديل التقييم</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
@@ -490,6 +494,25 @@
       document.getElementById("availabilityHeader").innerText = `درجة التوفر من (9)`;
     }
 
+    /* ====== إظهار/إخفاء الأعمدة لحظيًا ====== */
+    function applyColumnVisibilityInstant(){
+      document.querySelectorAll('.col-toggle').forEach(cb=>{
+        const field = cb.dataset.field;
+        const show  = cb.checked;
+        document.querySelectorAll(`th.col-${field}`).forEach(el=>{
+          el.classList.toggle('hidden-col', !show);
+        });
+        document.querySelectorAll(`#committeesTable td[data-field="${field}"]`).forEach(el=>{
+          el.classList.toggle('hidden-col', !show);
+        });
+      });
+    }
+    document.getElementById('columnsCard')?.addEventListener('change', (e)=>{
+      if(e.target.classList.contains('col-toggle')){
+        applyColumnVisibilityInstant();
+      }
+    });
+
     /* ====== تحميل الإعدادات + شارة الفصل/العام ====== */
     async function loadSettings(){
       try{
@@ -504,7 +527,15 @@
         updateSelectedVisits();
         updateAvailabilityHeader();
 
-        // عرض الشارة
+        // حالة الأعمدة المحفوظة
+        if(Array.isArray(settings?.visibleColumns) && settings.visibleColumns.length){
+          document.querySelectorAll('.col-toggle').forEach(cb=>{
+            cb.checked = settings.visibleColumns.includes(cb.dataset.field);
+          });
+        }
+        applyColumnVisibilityInstant();
+
+        // الشارة
         const term = settings?.term || '';
         const ay   = settings?.academicYear || '';
         let html = '';
@@ -542,21 +573,26 @@
           <input type="date" class="form-control form-control-sm" value="${c.audit_date ? c.audit_date.split('T')[0] : ''}">
         </td>
 
-        <td data-field="formation_decision"><input type="number" step="any" min="0" max="1" class="form-control form-control-sm" value="${c.formation_decision ?? 0}"></td>
-        <td data-field="work_plan"><input type="number" step="any" min="0" max="1" class="form-control form-control-sm" value="${c.work_plan ?? 0}"></td>
-        <td data-field="performance_indicators"><input type="number" step="any" min="0" max="1" class="form-control form-control-sm" value="${c.performance_indicators ?? 0}"></td>
-        <td data-field="meetings"><input type="number" step="any" min="0" max="1" class="form-control form-control-sm" value="${c.meetings ?? 0}"></td>
-        <td data-field="consistency"><input type="number" step="any" min="0" max="1" class="form-control form-control-sm" value="${c.consistency ?? 0}"></td>
-        <td data-field="coverage_books"><input type="number" step="any" min="0" max="1" class="form-control form-control-sm" value="${c.coverage_books ?? 0}"></td>
-        <td data-field="report1"><input type="number" step="any" min="0" max="1" class="form-control form-control-sm" value="${c.report1 ?? 0}"></td>
-        <td data-field="report2"><input type="number" step="any" min="0" max="1" class="form-control form-control-sm" value="${c.report2 ?? 0}"></td>
-        <td data-field="report3"><input type="number" step="any" min="0" max="1" class="form-control form-control-sm" value="${c.report3 ?? 0}"></td>
-        <td data-field="statistical_analysis"><input type="number" step="any" min="0" max="1" class="form-control form-control-sm" value="${c.statistical_analysis ?? 0}"></td>
+        <!-- حقول نصية (بدون أسهم) -->
+        <td data-field="formation_decision"><input type="text" class="form-control form-control-sm" value="${c.formation_decision ?? 0}"></td>
+        <td data-field="work_plan"><input type="text" class="form-control form-control-sm" value="${c.work_plan ?? 0}"></td>
+        <td data-field="performance_indicators"><input type="text" class="form-control form-control-sm" value="${c.performance_indicators ?? 0}"></td>
+        <td data-field="meetings"><input type="text" class="form-control form-control-sm" value="${c.meetings ?? 0}"></td>
+        <td data-field="consistency"><input type="text" class="form-control form-control-sm" value="${c.consistency ?? 0}"></td>
+        <td data-field="coverage_books"><input type="text" class="form-control form-control-sm" value="${c.coverage_books ?? 0}"></td>
+        <td data-field="report1"><input type="text" class="form-control form-control-sm" value="${c.report1 ?? 0}"></td>
+        <td data-field="report2"><input type="text" class="form-control form-control-sm" value="${c.report2 ?? 0}"></td>
+        <td data-field="report3"><input type="text" class="form-control form-control-sm" value="${c.report3 ?? 0}"></td>
+        <td data-field="statistical_analysis"><input type="text" class="form-control form-control-sm" value="${c.statistical_analysis ?? 0}"></td>
 
         <td class="availability-cell">${c.availability_score ?? 0}</td>
 
         <td data-field="notes">
-          ${ (c.notes && stripHtml(c.notes)) ? `<button class="btn btn-sm btn-info open-notes">عرض الملاحظات</button>` : `<span class="text-muted">لا توجد ملاحظات</span>`}
+          ${
+            (c.notes && stripHtml(c.notes))
+            ? `<button class="btn btn-sm btn-info open-notes">عرض الملاحظات</button>`
+            : `<span class="text-muted">لا توجد ملاحظات</span>`
+          }
         </td>
 
         <td>
@@ -568,9 +604,13 @@
         </td>
       `;
 
+      // ✅ اجعل القيم ظاهرة داخل القوائم المنسدلة
       tr.querySelector('[data-field="college"]').appendChild(selCollege);
       tr.querySelector('[data-field="committee_name"]').appendChild(selCommittee);
       tr.querySelector('[data-field="auditor_name"]').appendChild(selAuditor);
+
+      // ✅ خزّن الملاحظات الأصلية لإصلاح مشكلة "لا توجد ملاحظات"
+      tr.__notesHTML = c.notes || '';
 
       attachInputListeners(tr);
       updateAvailability(tr);
@@ -586,8 +626,12 @@
     }
 
     function attachInputListeners(tr){
-      tr.querySelectorAll('input[type="number"]').forEach(inp=>{
+      // مستمعات للحقول العددية (نصية الآن) ضمن الأعمدة التسعة
+      const numericFieldsSet = new Set(["formation_decision","work_plan","performance_indicators","meetings","consistency","coverage_books","report1","report2","report3","statistical_analysis"]);
+      tr.querySelectorAll('[data-field] input').forEach(inp=>{
         const field = inp.closest('td').dataset.field;
+        if(!numericFieldsSet.has(field)) return;
+
         inp.addEventListener('input', ()=>{
           const clamped = clamp01(inp.value);
           const invalid = (clamped===null);
@@ -641,6 +685,7 @@
           tbody.appendChild(tr);
         });
 
+        applyColumnVisibilityInstant();
         updateCompletionRate();
         applyCommitteeSearch();
         updateSelectedCounter();
@@ -651,6 +696,29 @@
         tbody.innerHTML = `<tr><td colspan="19" class="text-center text-danger">فشل الجلب</td></tr>`;
       }
     }
+
+    /* ====== حفظ كل المعدل ====== */
+    document.getElementById('saveAllBtn').addEventListener('click', async ()=>{
+      try{
+        const dirtyRows = Array.from(document.querySelectorAll('#committeesTable tr.table-warning'));
+        if(!dirtyRows.length){ showError('لا توجد تعديلات'); return; }
+        for(const tr of dirtyRows){
+          const id = tr.dataset.id;
+          const payload = collectRowData(tr);
+          const date = payload.audit_date?.trim();
+          if(date && !/^\d{4}-\d{2}-\d{2}$/.test(date)){
+            showError('⚠️ صيغة التاريخ يجب أن تكون YYYY-MM-DD');
+            return;
+          }
+          await axios.put(`${API_BASE}/api/committees/${id}`, payload, { withCredentials:true });
+          clearRowChanged(tr);
+        }
+        showSuccess('✅ تم حفظ جميع التعديلات');
+      }catch(e){
+        console.error(e);
+        showError('❌ خطأ أثناء حفظ الكل');
+      }
+    });
 
     /* ====== بحث باسم اللجنة ====== */
     function applyCommitteeSearch(){
@@ -710,12 +778,11 @@
       const availabilityCell = row.querySelector('.availability-cell');
       data.availability_score = parseFloat(availabilityCell?.innerText)||0;
 
-      // الملاحظات
       data.notes = row.__notesHTML || '';
       return data;
     }
 
-    /* ====== حفظ صف / حذف صف (تفويض أحداث) ====== */
+    /* ====== حفظ صف / حذف صف / فتح ملاحظات / تعديل صف ====== */
     document.getElementById('committeesTable').addEventListener('click', async (e)=>{
       const btnSave = e.target.closest('.save-row');
       const btnDelete = e.target.closest('.delete-row');
@@ -724,30 +791,18 @@
       const tr = e.target.closest('tr');
       if(!tr) return;
 
-      // عرض/تحرير الملاحظات
-      if(btnNotes){
-        openNotesModal(tr);
-        return;
-      }
+      if(btnNotes){ openNotesModal(tr); return; }
 
-      // تعديل عبر مودال شبيه صفحة الإدخال
-      if(btnEdit){
-        openEditRowModal(tr);
-        return;
-      }
+      if(btnEdit){ openEditRowModal(tr); return; }
 
-      // حفظ صف
       if(btnSave){
         const id = tr.dataset.id;
         const payload = collectRowData(tr);
-
-        // تحقق التاريخ
         const date = payload.audit_date?.trim();
         if(date && !/^\d{4}-\d{2}-\d{2}$/.test(date)){
           showError('⚠️ صيغة التاريخ يجب أن تكون YYYY-MM-DD');
           return;
         }
-
         try{
           await axios.put(`${API_BASE}/api/committees/${id}`, payload, { withCredentials:true });
           showSuccess("✅ تم حفظ التعديلات");
@@ -759,7 +814,6 @@
         return;
       }
 
-      // حذف صف
       if(btnDelete){
         showConfirm("⚠️ هل أنت متأكد من الحذف؟", async ()=>{
           try{
@@ -778,12 +832,10 @@
     let EDITING_ROW = null;
     function openEditRowModal(tr){
       EDITING_ROW = tr;
-      // املأ القوائم
       fillSelect(document.getElementById('er_college'), LIST_COLLEGES.map(x=>x.name), '— الكلية —');
       fillSelect(document.getElementById('er_committee'), LIST_COMMITTEES.map(x=>x.name), '— اسم اللجنة —');
       fillSelect(document.getElementById('er_auditor'), LIST_AUDITORS.map(x=>x.name), '— اسم المدقق —');
 
-      // عبّئ القيم
       document.getElementById('er_college').value   = tr.querySelector('[data-field="college"] select')?.value || '';
       document.getElementById('er_committee').value = tr.querySelector('[data-field="committee_name"] select')?.value || '';
       document.getElementById('er_auditor').value   = tr.querySelector('[data-field="auditor_name"] select')?.value || '';
@@ -795,12 +847,11 @@
     }
     document.getElementById('saveEditRowBtn').addEventListener('click', ()=>{
       if(!EDITING_ROW) return;
-      EDITING_ROW.querySelector('[data-field="college"] select').value       = document.getElementById('er_college').value || '';
-      EDITING_ROW.querySelector('[data-field="committee_name"] select').value= document.getElementById('er_committee').value || '';
-      EDITING_ROW.querySelector('[data-field="auditor_name"] select').value  = document.getElementById('er_auditor').value || '';
-      EDITING_ROW.querySelector('[data-field="audit_date"] input').value     = document.getElementById('er_date').value || '';
+      EDITING_ROW.querySelector('[data-field="college"] select').value        = document.getElementById('er_college').value || '';
+      EDITING_ROW.querySelector('[data-field="committee_name"] select').value = document.getElementById('er_committee').value || '';
+      EDITING_ROW.querySelector('[data-field="auditor_name"] select').value   = document.getElementById('er_auditor').value || '';
+      EDITING_ROW.querySelector('[data-field="audit_date"] input').value      = document.getElementById('er_date').value || '';
       EDITING_ROW.__notesHTML = erEditor().innerHTML || '';
-      // عكس زر الملاحظات بحسب وجود نص
       const notesCell = EDITING_ROW.querySelector('[data-field="notes"]');
       if(stripHtml(EDITING_ROW.__notesHTML)) notesCell.innerHTML = '<button class="btn btn-sm btn-info open-notes">عرض الملاحظات</button>';
       else notesCell.innerHTML = '<span class="text-muted">لا توجد ملاحظات</span>';
