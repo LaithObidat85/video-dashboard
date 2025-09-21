@@ -310,27 +310,28 @@
     document.getElementById('userRole').textContent     = u.role;
   }
   async function ensureAdmin(){
-    const meRes = await fetchJSON(api('/auth/committees/me'));
-    if(meRes.__nonJSON__ || meRes.__badJSON__ || !meRes.ok){
-      const rel = location.pathname + location.search + location.hash;
-      location.href = api(`/committees-login.html?next=${encodeURIComponent(rel)}`);
-      throw new Error('unauthenticated');
-    }
-    const me = meRes.data || {};
-    if(!me.authenticated){
-      const rel = location.pathname + location.search + location hash;
-      location.href = api(`/committees-login.html?next=${encodeURIComponent(rel)}`);
-      throw new Error('unauthenticated');
-    }
-    const role = (me.user?.role||'').toLowerCase();
-    if(role!=='admin'){
-      setToast(toastError,'❌ هذه الصفحة للمشرفين فقط'); toastError.show();
-      setTimeout(()=>location.href=api('/committees-home.html'),900);
-      throw new Error('not-admin');
-    }
-    renderUser(me.user);
-    return me.user;
+  const meRes = await fetchJSON(api('/auth/committees/me'));
+  if(meRes.__nonJSON__ || meRes.__badJSON__ || !meRes.ok){
+    const rel = location.pathname + location.search + location.hash;
+    location.href = api(`/committees-login.html?next=${encodeURIComponent(rel)}`);
+    throw new Error('unauthenticated');
   }
+  const me = meRes.data || {};
+  if(!me.authenticated){
+    const rel = location.pathname + location.search + location.hash; // ✅ تم التصحيح
+    location.href = api(`/committees-login.html?next=${encodeURIComponent(rel)}`);
+    throw new Error('unauthenticated');
+  }
+  const role = (me.user?.role||'').toLowerCase();
+  if(role!=='admin'){
+    setToast(toastError,'❌ هذه الصفحة للمشرفين فقط'); toastError.show();
+    setTimeout(()=>location.href=api('/committees-home.html'),900);
+    throw new Error('not-admin');
+  }
+  renderUser(me.user);
+  return me.user;
+}
+
   async function logout(){
     try{
       const r = await fetch(api('/auth/committees/logout'),{ method:'POST', headers:{'Content-Type':'application/json'}, credentials:'include' });
