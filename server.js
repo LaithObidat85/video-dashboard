@@ -20,6 +20,11 @@ require('dotenv').config();
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+// === Helpers ===
+const academicYearRegex = /^(20\d{2})[\/-](20\d{2})$/;
+function isValidISODate(s) {
+  return /^\d{4}-\d{2}-\d{2}$/.test(s);
+}
 
 /****************************************************
  * أمان أساسي
@@ -862,42 +867,131 @@ app.get('/auth/committees/me', (req, res) => {
  ****************************************************/
 app.post('/api/committees', authRequired, async (req, res) => {
   try {
+    // لو المرسل وضع تاريخ بصيغة YYYY-MM-DD حوّله Date
+    if (typeof req.body.audit_date === 'string' && isValidISODate(req.body.audit_date)) {
+      req.body.audit_date = new Date(req.body.audit_date + 'T00:00:00Z');
+    }
+
+    // املأ term/academicYear من الإعدادات إن لم تُرسل
+    const settings = await Settings.findOne();
+    if (!req.body.term && settings?.term) req.body.term = settings.term;
+    if (!req.body.academicYear && settings?.academicYear) req.body.academicYear = settings.academicYear;
+
+    if (req.body.academicYear && !academicYearRegex.test(req.body.academicYear)) {
+      return res.status(400).json({ message: 'صيغة العام الجامعي يجب أن تكون 2024-2025 أو 2024/2025' });
+    }
+
+    // تحديت قاموس أسماء اللجان
     await Committee.updateOne(
       { name: req.body.committee_name },
       { $setOnInsert: { name: req.body.committee_name } },
       { upsert: true }
     );
+
     const evaluation = new Evaluation(req.body);
     await evaluation.save();
     await logAudit(req, { model: 'Evaluation', action: 'create', docId: evaluation._id, payload: req.body });
+
     res.status(201).json({ message: '✅ تم حفظ التقييم بنجاح', evaluation });
   } catch (err) {
     res.status(400).json({ message: '❌ خطأ في حفظ التقييم', error: err.message });
   }
 });
+
 app.get('/api/committees', async (req, res) => {
   try {
-    const { college, auditor_name } = req.query;
-    let query = {};
+    const { college, auditor_name, term, academicYear } = req.query;
+    const query = {};
     if (college) query.college = college;
     if (auditor_name) query.auditor_name = auditor_name;
+    if (term) query.term = term;
+    if (academicYear) query.academicYear = academicYear;
+
     const evaluations = await Evaluation.find(query).sort({ createdAt: -1 });
     res.json(evaluations);
   } catch (err) {
     res.status(500).json({ message: '❌ خطأ في جلب التقييمات', error: err.message });
   }
 });
+
 app.put('/api/committees/:id', authRequired, async (req, res) => {
   try {
     const before = await Evaluation.findById(req.params.id).lean();
+    if (!before) return res.status(404).json({ message: '❌ التقييم غير موجود' });
+
+    if (typeof req.body.audit_date === 'string' && isValidISODate(req.body.audit_date)) {
+      req.body.audit_date = new Date(req.body.audit_date + 'T00:00:00Z');
+    }
+    if (typeof req.body.academicYear === 'string' && req.body.academicYear && !academicYearRegex.test(req.body.academicYear)) {
+      return res.status(400).json({ message: 'صيغة العام الجامعي يجب أن تكون 2024-2025 أو 2024/2025' });
+    }
+
     const updated = await Evaluation.findByIdAndUpdate(req.params.id, req.body, { new: true });
-    if (!updated) return res.status(404).json({ message: '❌ التقييم غير موجود' });
     await logAudit(req, { model: 'Evaluation', action: 'update', docId: req.params.id, payload: { before, after: updated.toObject() } });
     res.json(updated);
   } catch (err) {
     res.status(400).json({ message: '❌ خطأ في تعديل التقييم', error: err.message });
   }
 });
+
+app.post('/api/committees/bulk', authRequired, async (req, res) => {
+  try {
+    const { action, ids = [], patch = {} } = req.body || {};
+    if (!Array.isArray(ids) || ids.length === 0) {
+      return res.status(400).json({ message: 'قائمة المعرفات مطلوبة' });
+    }
+
+    if (action === 'delete') {
+      // الحذف الجماعي — Admin فقط
+      const u = currentUser(req);
+      if (!u || u.role !== 'admin') return res.status(403).json({ message: 'غير مصرح: Admin فقط' });
+
+      const before = await Evaluation.find({ _id: { $in: ids } }).lean();
+      const result = await Evaluation.deleteMany({ _id: { $in: ids } });
+      await logAudit(req, {
+        model: 'Evaluation', action: 'delete', docId: '__bulk__',
+        payload: { bulk: true, ids, before, deletedCount: result.deletedCount }
+      });
+      return res.json({ message: `🗑️ تم حذف ${result.deletedCount} سجل` });
+    }
+
+    if (action === 'update') {
+      // التعديل الجماعي — تحقق من الحقول المسموحة
+      const update = {};
+      const allowed = ['college','committee_name','auditor_name','term','academicYear','audit_date'];
+
+      Object.keys(patch || {}).forEach(k => {
+        if (allowed.includes(k)) update[k] = patch[k];
+      });
+
+      if (typeof update.audit_date === 'string') {
+        if (!isValidISODate(update.audit_date)) {
+          return res.status(400).json({ message: 'صيغة التاريخ يجب أن تكون YYYY-MM-DD' });
+        }
+        update.audit_date = new Date(update.audit_date + 'T00:00:00Z');
+      }
+      if (typeof update.academicYear === 'string' && update.academicYear && !academicYearRegex.test(update.academicYear)) {
+        return res.status(400).json({ message: 'صيغة العام الجامعي يجب أن تكون 2024-2025 أو 2024/2025' });
+      }
+
+      const before = await Evaluation.find({ _id: { $in: ids } }).lean();
+      await Evaluation.updateMany({ _id: { $in: ids } }, { $set: update });
+      const after = await Evaluation.find({ _id: { $in: ids } }).lean();
+
+      await logAudit(req, {
+        model: 'Evaluation', action: 'update', docId: '__bulk__',
+        payload: { bulk: true, ids, before, after, patch: update }
+      });
+      return res.json({ message: `✅ تم تحديث ${ids.length} سجل` });
+    }
+
+    return res.status(400).json({ message: 'نوع الإجراء غير مدعوم' });
+  } catch (err) {
+    res.status(500).json({ message: '❌ فشل في العملية الجماعية', error: err.message });
+  }
+});
+
+
 app.delete('/api/committees/:id', authRequired, requireRole('admin'), async (req, res) => {
   try {
     const before = await Evaluation.findById(req.params.id);
