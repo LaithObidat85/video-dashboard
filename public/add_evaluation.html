@@ -5,10 +5,32 @@
   <title>إدخال تقييم لجنة - نظام اللجان</title>
   <link rel="icon" type="image/png" href="https://www.dropbox.com/scl/fi/f283e4rvv5cf9x12a1cic/my-website-logo.png?rlkey=yia776im7klypy27af32m0scy&e=1&st=vhaprvzh&dl=1">
   <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <!-- Bootstrap -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.rtl.min.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
-  <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tom-select/dist/css/tom-select.bootstrap5.min.css">
+
+  <!-- Tom Select (محلي أولاً ثم CDN كاحتياط) -->
+  <link rel="stylesheet" href="/assets/tom-select.bootstrap5.min.css">
+  <script>window.__hasLocalTS = true;</script>
+  <script src="/assets/tom-select.complete.min.js" defer onerror="window.__hasLocalTS=false"></script>
+  <script>
+    if(!window.__hasLocalTS){
+      document.write('<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tom-select/dist/css/tom-select.bootstrap5.min.css">');
+      document.write('<script src="https://cdn.jsdelivr.net/npm/tom-select/dist/js/tom-select.complete.min.js" defer><\/script>');
+    }
+  </script>
+
+  <!-- Quill (محلي أولاً ثم CDN كاحتياط) -->
+  <link rel="stylesheet" href="/assets/quill.snow.css" id="quill-css">
+  <script>window.__hasLocalQuill = true;</script>
+  <script src="/assets/quill.min.js" defer onerror="window.__hasLocalQuill=false"></script>
+  <script>
+    if(!window.__hasLocalQuill){
+      document.write('<link rel="stylesheet" href="https://cdn.quilljs.com/1.3.6/quill.snow.css">');
+      document.write('<script src="https://cdn.quilljs.com/1.3.6/quill.min.js" defer><\/script>');
+    }
+  </script>
+
   <style>
     body{background:#f8f9fa;font-family:'Segoe UI',sans-serif}
     .container{max-width:1000px;margin-top:32px}
@@ -16,7 +38,6 @@
     .form-section{margin-bottom:16px;padding:16px;border:1px solid #dee2e6;border-radius:12px;background:#fff}
     .form-section h6{margin-bottom:12px;font-weight:700;color:#0d6efd}
 
-    /* شارة المستخدم */
     .user-chip{
       display:inline-flex;align-items:center;gap:.25rem;
       font-size:1rem!important;padding:.375rem .75rem!important;
@@ -24,20 +45,14 @@
     }
     .user-chip.badge #userRole{font-weight:500!important;}
 
-    /* جدول */
     .table thead th{position:sticky;top:0;background:#fff;z-index:1}
-
-    /* Quill height */
     #editor{height:160px;background:#fff}
 
-    /* سكلتون صغير */
     .sk{display:inline-block;width:120px;height:16px;border-radius:6px;background:linear-gradient(90deg,#eee 25%,#f5f5f5 37%,#eee 63%);background-size:400% 100%;animation:shimmer 1.2s infinite}
     @keyframes shimmer{0%{background-position:100% 0}100%{background-position:-100% 0}}
 
-    /* إبراز أخطاء المدى */
     .out-of-range{border-color:#dc3545!important; box-shadow:0 0 0 .2rem rgba(220,53,69,.15)!important}
 
-    /* بطاقات إحصائية بسيطة */
     .stat-card{border-radius:14px;border:1px solid #e9ecef;background:#fff;padding:12px 14px}
     .stat-label{color:#6c757d;font-size:.9rem}
     .stat-value{font-weight:700}
@@ -95,6 +110,7 @@
         <h6 class="d-flex align-items-center justify-content-between">
           بيانات اللجنة
           <div class="d-flex gap-2">
+            <!-- عدّلنا رابط إدارة الكليات هنا -->
             <a class="btn btn-sm btn-outline-secondary d-none" id="manageColleges" target="_blank"><i class="bi bi-box-arrow-up-right"></i> إدارة الكليات</a>
             <a class="btn btn-sm btn-outline-secondary d-none" id="manageCommittees" target="_blank"><i class="bi bi-box-arrow-up-right"></i> إدارة اللجان</a>
           </div>
@@ -141,47 +157,26 @@
               </tr>
             </thead>
             <tbody id="scoresTbody">
-              <!-- البنود -->
-              <tr>
-                <td><label for="formation_decision" class="mb-0">قرار التشكيل</label></td>
-                <td><input type="number" step="any" min="0" max="1" class="form-control score" name="formation_decision" id="formation_decision" placeholder="0"></td>
-              </tr>
-              <tr>
-                <td><label for="work_plan" class="mb-0">خطة عمل اللجنة</label></td>
-                <td><input type="number" step="any" min="0" max="1" class="form-control score" name="work_plan" id="work_plan" placeholder="0"></td>
-              </tr>
-              <tr>
-                <td><label for="performance_indicators" class="mb-0">مؤشرات أداء خطة عمل اللجنة قابلة للقياس</label></td>
-                <td><input type="number" step="any" min="0" max="1" class="form-control score" name="performance_indicators" id="performance_indicators" placeholder="0"></td>
-              </tr>
-              <tr>
-                <td><label for="meetings" class="mb-0">عدد الاجتماعات</label></td>
-                <td><input type="number" step="any" min="0" max="1" class="form-control score" name="meetings" id="meetings" placeholder="0"></td>
-              </tr>
-              <tr>
-                <td><label for="consistency" class="mb-0">التوافق بين الدعوات والاجتماعات</label></td>
-                <td><input type="number" step="any" min="0" max="1" class="form-control score" name="consistency" id="consistency" placeholder="0"></td>
-              </tr>
-              <tr>
-                <td><label for="coverage_books" class="mb-0">كتب التغطية</label></td>
-                <td><input type="number" step="any" min="0" max="1" class="form-control score" name="coverage_books" id="coverage_books" placeholder="0"></td>
-              </tr>
-              <tr>
-                <td><label for="report1" class="mb-0">تقرير إنجاز 1</label></td>
-                <td><input type="number" step="any" min="0" max="1" class="form-control score" name="report1" id="report1" placeholder="0"></td>
-              </tr>
-              <tr>
-                <td><label for="report2" class="mb-0">تقرير إنجاز 2</label></td>
-                <td><input type="number" step="any" min="0" max="1" class="form-control score" name="report2" id="report2" placeholder="0"></td>
-              </tr>
-              <tr>
-                <td><label for="report3" class="mb-0">تقرير إنجاز 3</label></td>
-                <td><input type="number" step="any" min="0" max="1" class="form-control score" name="report3" id="report3" placeholder="0"></td>
-              </tr>
-              <tr>
-                <td><label for="statistical_analysis" class="mb-0">تقييم أداء اللجنة (التحليل الإحصائي)</label></td>
-                <td><input type="number" step="any" min="0" max="1" class="form-control score" name="statistical_analysis" id="statistical_analysis" placeholder="0"></td>
-              </tr>
+              <tr><td><label for="formation_decision" class="mb-0">قرار التشكيل</label></td>
+                  <td><input type="number" step="any" min="0" max="1" class="form-control score" name="formation_decision" id="formation_decision" placeholder="0"></td></tr>
+              <tr><td><label for="work_plan" class="mb-0">خطة عمل اللجنة</label></td>
+                  <td><input type="number" step="any" min="0" max="1" class="form-control score" name="work_plan" id="work_plan" placeholder="0"></td></tr>
+              <tr><td><label for="performance_indicators" class="mb-0">مؤشرات أداء خطة عمل اللجنة قابلة للقياس</label></td>
+                  <td><input type="number" step="any" min="0" max="1" class="form-control score" name="performance_indicators" id="performance_indicators" placeholder="0"></td></tr>
+              <tr><td><label for="meetings" class="mb-0">عدد الاجتماعات</label></td>
+                  <td><input type="number" step="any" min="0" max="1" class="form-control score" name="meetings" id="meetings" placeholder="0"></td></tr>
+              <tr><td><label for="consistency" class="mb-0">التوافق بين الدعوات والاجتماعات</label></td>
+                  <td><input type="number" step="any" min="0" max="1" class="form-control score" name="consistency" id="consistency" placeholder="0"></td></tr>
+              <tr><td><label for="coverage_books" class="mb-0">كتب التغطية</label></td>
+                  <td><input type="number" step="any" min="0" max="1" class="form-control score" name="coverage_books" id="coverage_books" placeholder="0"></td></tr>
+              <tr><td><label for="report1" class="mb-0">تقرير إنجاز 1</label></td>
+                  <td><input type="number" step="any" min="0" max="1" class="form-control score" name="report1" id="report1" placeholder="0"></td></tr>
+              <tr><td><label for="report2" class="mb-0">تقرير إنجاز 2</label></td>
+                  <td><input type="number" step="any" min="0" max="1" class="form-control score" name="report2" id="report2" placeholder="0"></td></tr>
+              <tr><td><label for="report3" class="mb-0">تقرير إنجاز 3</label></td>
+                  <td><input type="number" step="any" min="0" max="1" class="form-control score" name="report3" id="report3" placeholder="0"></td></tr>
+              <tr><td><label for="statistical_analysis" class="mb-0">تقييم أداء اللجنة (التحليل الإحصائي)</label></td>
+                  <td><input type="number" step="any" min="0" max="1" class="form-control score" name="statistical_analysis" id="statistical_analysis" placeholder="0"></td></tr>
             </tbody>
           </table>
         </div>
@@ -288,9 +283,6 @@
 
   <!-- Scripts -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
-  <script src="https://cdn.quilljs.com/1.3.6/quill.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/tom-select/dist/js/tom-select.complete.min.js"></script>
   <script>
     /* ====== بيئة موحّدة ====== */
     const RENDER_BASE = 'https://vdash-qkyv.onrender.com';
@@ -322,7 +314,7 @@
         const r = await apiFetch('/auth/committees/me');
         const j = await r.json();
         if(!j?.authenticated){
-          const next = encodeURIComponent('/committees-evaluation-new.html');
+          const next = encodeURIComponent('/add_evaluation.html');
           location.href = go(`/committees-login.html?next=${next}`);
           throw 0;
         }
@@ -332,7 +324,6 @@
           throw 0;
         }
         renderUser(j.user);
-        // إظهار أزرار الإدارة/الإضافة السريعة للمشرف فقط
         const isAdmin = (j.user?.role||'').toLowerCase()==='admin';
         document.getElementById('addCollegeBtn').classList.toggle('d-none', !isAdmin);
         document.getElementById('addCommitteeBtn').classList.toggle('d-none', !isAdmin);
@@ -342,7 +333,8 @@
       }catch{ throw 0; }
     }
     document.getElementById('homeBtn').href = go('/committees-home.html');
-    document.getElementById('manageColleges').href  = go('/colleges-manage.html');
+    // ✅ عدّلنا هنا رابط إدارة الكليات
+    document.getElementById('manageColleges').href  = go('/manage_colleges.html');
     document.getElementById('manageCommittees').href = go('/committees-names-manage.html');
     document.getElementById('logoutBtn').addEventListener('click', async ()=>{
       try{
@@ -352,57 +344,64 @@
       }catch{ showError('❌ خطأ في الاتصال'); }
     });
 
-    /* ====== Quill ====== */
-    const quill = new Quill('#editor', { theme:'snow' });
+    /* ====== Quill آمن: لا توقف الصفحة إن لم تُحمّل ====== */
+    let quill = null;
+    function initQuillSafely(){
+      try{
+        if(window.Quill){
+          quill = new Quill('#editor', { theme:'snow' });
+        }else{
+          console.warn('Quill غير متاح (قد تكون CSP) — استخدام textarea بديل');
+          const host = document.getElementById('editor');
+          const ta = document.createElement('textarea');
+          ta.className = 'form-control'; ta.style.height='160px'; ta.id='notesFallback';
+          host.replaceWith(ta);
+        }
+      }catch(e){ console.error(e); }
+    }
 
     /* ====== TomSelect ====== */
-    let tsCommittee;
-    let tsCollege;
-
+    let tsCommittee, tsCollege;
+    function safeTomSelect(sel, opts){
+      if(window.TomSelect){
+        return new TomSelect(sel, opts);
+      }else{
+        // بدون مكتبة: اتركه Select عادي
+        return null;
+      }
+    }
     function initTomSelects(){
-      // الكليات
-      tsCollege = new TomSelect('#collegeSelect', {
-        maxItems: 1,
-        valueField: 'name',
-        labelField: 'name',
-        searchField: 'name',
-        placeholder: 'اختر/ابحث عن كلية',
-        load: function (query, cb) {
+      tsCollege = safeTomSelect('#collegeSelect', {
+        maxItems:1, valueField:'name', labelField:'name', searchField:'name',
+        placeholder:'اختر/ابحث عن كلية',
+        load: (query, cb)=>{
           fetch(`${API_BASE}/api/colleges`, { credentials:'include' })
-            .then(r => r.json()).then(list => cb(list))
-            .catch(()=>cb());
+            .then(r=>r.json()).then(list=>cb(list)).catch(()=>cb());
         },
-        render: {
-          option: (data, escape) => `<div>${escape(data.name||'')}</div>`,
-          item: (data, escape) => `<div>${escape(data.name||'')}</div>`
-        },
-        create: false, // الإضافة عبر المودال (admin فقط)
-        persist:false
+        render:{ option:(d,e)=>`<div>${e(d.name||'')}</div>`, item:(d,e)=>`<div>${e(d.name||'')}</div>` },
+        create:false, persist:false
       });
 
-      // اللجان
-      tsCommittee = new TomSelect('#committeeSelect', {
-        maxItems: 1,
-        valueField: 'name',
-        labelField: 'name',
-        searchField: 'name',
-        placeholder: 'اكتب للبحث عن لجنة',
-        load: function (query, cb) {
+      tsCommittee = safeTomSelect('#committeeSelect', {
+        maxItems:1, valueField:'name', labelField:'name', searchField:'name',
+        placeholder:'اكتب للبحث عن لجنة',
+        load: (query, cb)=>{
           const q = encodeURIComponent(query||'');
+          // حاول endpoint مخصص ثم fallback
           fetch(`${API_BASE}/api/committee-names?q=${q}`, { credentials:'include' })
-            .then(r => r.json()).then(list => cb(list))
-            .catch(()=>cb());
+            .then(r => r.ok ? r.json() : Promise.reject())
+            .then(list => cb(list))
+            .catch(()=>{
+              fetch(`${API_BASE}/api/committees-master`, { credentials:'include' })
+                .then(r=>r.json()).then(list=>cb(list)).catch(()=>cb());
+            });
         },
-        render: {
-          option: (data, escape) => `<div>${escape(data.name||'')}</div>`,
-          item: (data, escape) => `<div>${escape(data.name||'')}</div>`
-        },
-        create: false, // الإضافة عبر المودال (admin فقط)
-        persist:false
+        render:{ option:(d,e)=>`<div>${e(d.name||'')}</div>`, item:(d,e)=>`<div>${e(d.name||'')}</div>` },
+        create:false, persist:false
       });
     }
 
-    /* ====== تحميل المدققين ====== */
+    /* ====== المدققون ====== */
     async function loadAuditors(){
       try{
         const r = await apiFetch('/api/auditors');
@@ -416,12 +415,11 @@
       }catch(e){ console.warn('auditors error', e); }
     }
 
-    /* ====== إحصاءات صغيرة ====== */
+    /* ====== إحصاءات ====== */
     async function loadStats(){
       try{
         const [cR, mR] = await Promise.all([
-          apiFetch('/api/colleges'),
-          apiFetch('/api/committees-master')
+          apiFetch('/api/colleges'), apiFetch('/api/committees-master')
         ]);
         const colleges = await cR.json();
         const committees = await mR.json();
@@ -431,7 +429,6 @@
         document.getElementById('statColleges').textContent='—';
         document.getElementById('statCommittees').textContent='—';
       }
-      // آخر تغيير (اختياري)
       try{
         const x = await apiFetch('/api/audit-logs?model=Committee&limit=1&page=1');
         const j = await x.json();
@@ -441,165 +438,82 @@
       }catch{ document.getElementById('statLastChange').textContent='—'; }
     }
 
-    /* ====== درجات: منطق 0..1 + أسهم بـ 0.25 ====== */
-    function clamp01(v){
-      v = Number(v);
-      if (isNaN(v)) return '';
-      if (v < 0) return 0;
-      if (v > 1) return 1;
-      return v;
-    }
-    function stepAdd(val, delta){
-      const v = Number(val)||0;
-      const n = Math.round((v + delta) * 100) / 100;
-      return clamp01(n);
-    }
-    function markRange(el){
-      const v = Number(el.value);
-      const bad = isNaN(v) || v<0 || v>1;
-      el.classList.toggle('out-of-range', bad);
-    }
+    /* ====== درجات: 0..1 + أسهم 0.25 ====== */
+    function clamp01(v){ v=Number(v); if(isNaN(v)) return ''; if(v<0) return 0; if(v>1) return 1; return v; }
+    function stepAdd(val, d){ const v=Number(val)||0; const n=Math.round((v+d)*100)/100; return clamp01(n); }
+    function markRange(el){ const v=Number(el.value); const bad=isNaN(v)||v<0||v>1; el.classList.toggle('out-of-range',bad); }
     function bindScoreInputs(){
       document.querySelectorAll('.score').forEach(input=>{
-        // نسمح بأي قيمة بين 0 و 1
-        input.setAttribute('step','any');
-        input.setAttribute('min','0');
-        input.setAttribute('max','1');
-        input.addEventListener('input', ()=>{
-          input.value = input.value === '' ? '' : clamp01(input.value);
-          markRange(input);
-          recomputeAvailability();
-          saveDraftSilent();
-        });
-        input.addEventListener('change', ()=>{
-          input.value = input.value === '' ? '' : clamp01(input.value);
-          markRange(input);
-          recomputeAvailability();
-          saveDraftSilent();
-        });
-        // الأسهم ↑ ↓ بزيادة/نقصان 0.25
-        input.addEventListener('keydown', (e)=>{
-          if(e.key==='ArrowUp' || e.key==='ArrowDown'){
-            e.preventDefault();
-            const delta = e.key==='ArrowUp' ? 0.25 : -0.25;
-            input.value = stepAdd(input.value, delta);
-            markRange(input);
-            recomputeAvailability();
-            saveDraftSilent();
-          }
-        });
-        // عجلة الفأرة (اختياري)
-        input.addEventListener('wheel', (e)=>{
-          if(document.activeElement===input){
-            e.preventDefault();
-            const delta = (e.deltaY<0) ? 0.25 : -0.25;
-            input.value = stepAdd(input.value, delta);
-            markRange(input);
-            recomputeAvailability();
-            saveDraftSilent();
-          }
-        }, { passive:false });
+        input.setAttribute('step','any'); input.setAttribute('min','0'); input.setAttribute('max','1');
+        function upd(){ input.value = input.value===''? '' : clamp01(input.value); markRange(input); recomputeAvailability(); saveDraftSilent(); }
+        input.addEventListener('input', upd); input.addEventListener('change', upd);
+        input.addEventListener('keydown', (e)=>{ if(e.key==='ArrowUp'||e.key==='ArrowDown'){ e.preventDefault(); input.value = stepAdd(input.value, e.key==='ArrowUp'?0.25:-0.25); upd(); }});
+        input.addEventListener('wheel', (e)=>{ if(document.activeElement===input){ e.preventDefault(); input.value = stepAdd(input.value, e.deltaY<0?0.25:-0.25); upd(); }}, {passive:false});
       });
     }
-
     function recomputeAvailability(){
-      let sum = 0, count = 0;
-      document.querySelectorAll('.score').forEach(i=>{
-        const v = parseFloat(i.value);
-        if(!isNaN(v)){ sum += v; count++; }
-      });
+      let sum=0, cnt=0;
+      document.querySelectorAll('.score').forEach(i=>{ const v=parseFloat(i.value); if(!isNaN(v)){ sum+=v; cnt++; }});
       document.getElementById('availability_score').value = Math.round(sum*100)/100;
-      const percent = count>0 ? (sum / count) * 100 : 0;
+      const percent = cnt>0 ? (sum/cnt)*100 : 0;
       document.getElementById('availability_percent').value = `${percent.toFixed(1)}%`;
     }
-
-    document.getElementById('fillOnesBtn').addEventListener('click', ()=>{
-      document.querySelectorAll('.score').forEach(i=>{ i.value = 1; markRange(i); });
-      recomputeAvailability(); saveDraftSilent();
-    });
-    document.getElementById('clearZerosBtn').addEventListener('click', ()=>{
-      document.querySelectorAll('.score').forEach(i=>{ i.value = 0; markRange(i); });
-      recomputeAvailability(); saveDraftSilent();
-    });
+    document.getElementById('fillOnesBtn').addEventListener('click', ()=>{ document.querySelectorAll('.score').forEach(i=>{ i.value=1; markRange(i); }); recomputeAvailability(); saveDraftSilent(); });
+    document.getElementById('clearZerosBtn').addEventListener('click', ()=>{ document.querySelectorAll('.score').forEach(i=>{ i.value=0; markRange(i); }); recomputeAvailability(); saveDraftSilent(); });
 
     /* ====== مسوّدة محلية ====== */
-    const DRAFT_KEY = 'cmts.eval.draft';
-    function saveDraft(){
-      const data = collectForm();
-      localStorage.setItem(DRAFT_KEY, JSON.stringify(data));
-      showSuccess('💾 تم حفظ المسوّدة محليًا');
-    }
-    function saveDraftSilent(){
-      const data = collectForm();
-      localStorage.setItem(DRAFT_KEY, JSON.stringify(data));
-    }
+    const DRAFT_KEY='cmts.eval.draft';
+    const saveDraft=()=>{ localStorage.setItem(DRAFT_KEY, JSON.stringify(collectForm())); showSuccess('💾 تم حفظ المسوّدة محليًا'); };
+    const saveDraftSilent=()=>{ localStorage.setItem(DRAFT_KEY, JSON.stringify(collectForm())); };
     function loadDraft(){
       try{
-        const j = JSON.parse(localStorage.getItem(DRAFT_KEY)||'{}');
-        if(!j) return;
+        const j = JSON.parse(localStorage.getItem(DRAFT_KEY)||'{}'); if(!j) return;
         if(j.college && tsCollege){ tsCollege.addOption({name:j.college}); tsCollege.setValue(j.college,true); }
         if(j.committee_name && tsCommittee){ tsCommittee.addOption({name:j.committee_name}); tsCommittee.setValue(j.committee_name,true); }
-        (j.scores||[]).forEach(([name,val])=>{
-          const el = document.querySelector(`.score[name="${name}"]`);
-          if(el){ el.value = val; }
-        });
-        if(j.audit_date){ document.querySelector('[name="audit_date"]').value = j.audit_date; }
-        if(j.auditor_name){ document.getElementById('auditorSelect').value = j.auditor_name; }
-        quill.root.innerHTML = j.notes||'';
-        recomputeAvailability();
-        document.querySelectorAll('.score').forEach(markRange);
+        (j.scores||[]).forEach(([n,v])=>{ const el=document.querySelector(`.score[name="${n}"]`); if(el){ el.value=v; }});
+        if(j.audit_date){ document.querySelector('[name="audit_date"]').value=j.audit_date; }
+        if(j.auditor_name){ document.getElementById('auditorSelect').value=j.auditor_name; }
+        if(quill){ quill.root.innerHTML = j.notes||''; } else { const ta=document.getElementById('notesFallback'); if(ta) ta.value=j.notes||''; }
+        recomputeAvailability(); document.querySelectorAll('.score').forEach(markRange);
       }catch{}
     }
-    function clearDraft(){
-      localStorage.removeItem(DRAFT_KEY);
-      showInfo('🧹 تم حذف المسوّدة');
-    }
+    const clearDraft=()=>{ localStorage.removeItem(DRAFT_KEY); showInfo('🧹 تم حذف المسوّدة'); };
     function collectForm(){
-      const scores = Array.from(document.querySelectorAll('.score')).map(i => [i.name, i.value]);
+      const scores = Array.from(document.querySelectorAll('.score')).map(i=>[i.name,i.value]);
+      const notesVal = quill ? quill.root.innerHTML : (document.getElementById('notesFallback')?.value||'');
       return {
         college: tsCollege?.getValue() || document.getElementById('collegeSelect').value,
         committee_name: tsCommittee?.getValue() || document.getElementById('committeeSelect').value,
-        scores,
-        audit_date: document.querySelector('[name="audit_date"]').value,
+        scores, audit_date: document.querySelector('[name="audit_date"]').value,
         auditor_name: document.getElementById('auditorSelect').value,
-        notes: quill.root.innerHTML,
-        availability_score: document.getElementById('availability_score').value
+        notes: notesVal, availability_score: document.getElementById('availability_score').value
       };
     }
     document.getElementById('saveDraftBtn').addEventListener('click', saveDraft);
     document.getElementById('clearDraftBtn').addEventListener('click', clearDraft);
 
-    /* ====== تحميل آخر تقييم (اختياري) ====== */
+    /* ====== تحميل آخر تقييم ====== */
     document.getElementById('loadLastBtn').addEventListener('click', async ()=>{
       const college = tsCollege?.getValue() || document.getElementById('collegeSelect').value;
       const committee = tsCommittee?.getValue() || document.getElementById('committeeSelect').value;
       if(!college || !committee){ showInfo('اختر الكلية واللجنة أولًا'); return; }
       try{
-        // السيرفر لا يدعم فلترة committee_name صراحة؛ نرشّح في الواجهة:
         const r = await apiFetch('/api/committees?college='+encodeURIComponent(college));
         const arr = await r.json();
         const filtered = Array.isArray(arr) ? arr.filter(x => (x.committee_name||'')===committee) : [];
         if(filtered.length===0){ showInfo('لا يوجد تقييم سابق لهذه اللجنة'); return; }
         const last = filtered.sort((a,b)=> new Date(b.createdAt) - new Date(a.createdAt))[0];
-        // حاول ملء الحقول إن تطابقت الأسماء
-        const fields = ['formation_decision','work_plan','performance_indicators','meetings','consistency','coverage_books','report1','report2','report3','statistical_analysis'];
-        fields.forEach(f=>{
-          if(typeof last[f] !== 'undefined'){
-            const el = document.querySelector(`.score[name="${f}"]`);
-            if(el){ el.value = clamp01(last[f]); }
-          }
-        });
-        if(last.notes){ quill.root.innerHTML = last.notes; }
-        recomputeAvailability();
-        document.querySelectorAll('.score').forEach(markRange);
+        ['formation_decision','work_plan','performance_indicators','meetings','consistency','coverage_books','report1','report2','report3','statistical_analysis']
+          .forEach(f=>{ if(typeof last[f] !== 'undefined'){ const el=document.querySelector(`.score[name="${f}"]`); if(el){ el.value=clamp01(last[f]); }}});
+        const n = last.notes || '';
+        if(quill){ quill.root.innerHTML = n; } else { const ta=document.getElementById('notesFallback'); if(ta) ta.value=n; }
+        recomputeAvailability(); document.querySelectorAll('.score').forEach(markRange);
         showSuccess('✅ تم تحميل آخر تقييم');
-      }catch(e){
-        showError('❌ تعذر تحميل آخر تقييم');
-      }
+      }catch(e){ showError('❌ تعذر تحميل آخر تقييم'); }
     });
 
-    /* ====== إضافة سريعة (admin فقط) ====== */
-    const addCollegeModal   = new bootstrap.Modal(document.getElementById('addCollegeModal'));
+    /* ====== إضافة سريعة (admin) ====== */
+    const addCollegeModal = new bootstrap.Modal(document.getElementById('addCollegeModal'));
     const addCommitteeModal = new bootstrap.Modal(document.getElementById('addCommitteeModal'));
     document.getElementById('addCollegeBtn').addEventListener('click', ()=> addCollegeModal.show());
     document.getElementById('addCommitteeBtn').addEventListener('click', ()=> addCommitteeModal.show());
@@ -608,16 +522,12 @@
       const name = (document.getElementById('newCollegeName').value||'').trim();
       if(!name){ showInfo('أدخل اسم الكلية'); return; }
       try{
-        const r = await apiFetch('/api/colleges', {
-          method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ name })
-        });
+        const r = await apiFetch('/api/colleges',{ method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ name }) });
         const data = await r.json().catch(()=> ({}));
         if(!r.ok) throw new Error(data?.message||'فشل الإضافة');
-        tsCollege.addOption({ name }); tsCollege.setValue(name, true);
-        document.getElementById('newCollegeName').value='';
-        addCollegeModal.hide();
-        showSuccess('✅ تمت إضافة الكلية');
-        loadStats();
+        tsCollege?.addOption({ name }); tsCollege?.setValue(name,true);
+        document.getElementById('newCollegeName').value=''; addCollegeModal.hide();
+        showSuccess('✅ تمت إضافة الكلية'); loadStats();
       }catch(err){ showError('❌ '+(err.message||'فشل الإضافة')); }
     });
 
@@ -625,85 +535,55 @@
       const name = (document.getElementById('newCommitteeName').value||'').trim();
       if(!name){ showInfo('أدخل اسم اللجنة'); return; }
       try{
-        const r = await apiFetch('/api/committees-master', {
-          method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ name })
-        });
+        const r = await apiFetch('/api/committees-master',{ method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ name }) });
         const data = await r.json().catch(()=> ({}));
         if(!r.ok) throw new Error(data?.message||'فشل الإضافة (قد يكون الاسم مكررًا)');
-        tsCommittee.addOption({ name }); tsCommittee.setValue(name, true);
-        document.getElementById('newCommitteeName').value='';
-        addCommitteeModal.hide();
-        showSuccess('✅ تمت إضافة اللجنة');
-        loadStats();
+        tsCommittee?.addOption({ name }); tsCommittee?.setValue(name,true);
+        document.getElementById('newCommitteeName').value=''; addCommitteeModal.hide();
+        showSuccess('✅ تمت إضافة اللجنة'); loadStats();
       }catch(err){ showError('❌ '+(err.message||'فشل الإضافة')); }
     });
-
-    /* ====== تحميل الكليات/اللجان (initial) ====== */
-    function initSources(){
-      initTomSelects();
-      // preload options
-      fetch(`${API_BASE}/api/colleges`, { credentials:'include' }).then(r=>r.json()).then(list=>{
-        tsCollege.addOptions(list||[]);
-      }).catch(()=>{});
-      fetch(`${API_BASE}/api/committee-names?q=`, { credentials:'include' }).then(r=>r.json()).then(list=>{
-        tsCommittee.addOptions(list||[]);
-      }).catch(()=>{});
-    }
 
     /* ====== إرسال النموذج ====== */
     document.getElementById('committeeForm').addEventListener('submit', async function(e){
       e.preventDefault();
-      document.getElementById('notesInput').value = quill.root.innerHTML;
+      const notesVal = quill ? quill.root.innerHTML : (document.getElementById('notesFallback')?.value||'');
+      document.getElementById('notesInput').value = notesVal;
 
       const fd = new FormData(this);
-      // ضمان college / committee من TomSelect
       if(tsCollege)   fd.set('college', tsCollege.getValue());
       if(tsCommittee) fd.set('committee_name', tsCommittee.getValue());
-
       const data = Object.fromEntries(fd.entries());
 
       try{
-        const res = await apiFetch('/api/committees', {
-          method:'POST', headers:{'Content-Type':'application/json'},
-          body: JSON.stringify(data)
-        });
-        if(res.status===401){
-          showError('❌ انتهت الجلسة — سيتم التحويل لتسجيل الدخول');
-          setTimeout(()=> location.href = go('/committees-login.html'), 900);
-          return;
-        }
-        if(res.status===403){
-          showError('❌ لا تملك الصلاحية لإدخال التقييم');
-          return;
-        }
+        const res = await apiFetch('/api/committees', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(data) });
+        if(res.status===401){ showError('❌ انتهت الجلسة — سيتم التحويل لتسجيل الدخول'); setTimeout(()=> location.href = go('/committees-login.html'), 900); return; }
+        if(res.status===403){ showError('❌ لا تملك الصلاحية لإدخال التقييم'); return; }
         const j = await res.json().catch(()=> ({}));
         if(!res.ok) throw new Error(j?.message || '❌ فشل الحفظ');
 
         showSuccess('✅ تم حفظ التقييم بنجاح');
         localStorage.removeItem(DRAFT_KEY);
-        // تهيئة بسيطة بعد الحفظ
         this.reset();
-        quill.setContents([]);
-        if(tsCollege) tsCollege.clear();
-        if(tsCommittee) tsCommittee.clear();
+        if(quill) quill.setContents([]);
+        tsCollege?.clear(); tsCommittee?.clear();
         document.querySelectorAll('.score').forEach(i=>{ i.value=''; markRange(i); });
         recomputeAvailability();
-      }catch(err){
-        showError(err.message || '❌ حدث خطأ أثناء الحفظ');
-      }
+      }catch(err){ showError(err.message || '❌ حدث خطأ أثناء الحفظ'); }
     });
 
     /* ====== تشغيل ====== */
     (async function init(){
       try{
         await ensureAuth();
-        initSources();
+        initQuillSafely();
+        initTomSelects();
         await loadAuditors();
         await loadStats();
         bindScoreInputs();
         recomputeAvailability();
         loadDraft();
-      }catch(e){ /* تم التحويل أو إظهار رسائل عند الحاجة */ }
+      }catch(e){ /* تم التعامل مسبقًا */ }
     })();
   </script>
 </body>
