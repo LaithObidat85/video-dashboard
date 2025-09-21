@@ -40,16 +40,13 @@
     .user-chip.badge #userRole{font-weight:500!important}
     .table thead th{position:sticky;top:0;background:#fff;z-index:1}
     #editor,#notesFallback{height:160px;background:#fff}
-    .sk{display:inline-block;width:120px;height:16px;border-radius:6px;background:linear-gradient(90deg,#eee 25%,#f5f5f5 37%,#eee 63%);background-size:400% 100%;animation:shimmer 1.2s infinite}
-    @keyframes shimmer{0%{background-position:100% 0}100%{background-position:-100% 0}}
     .out-of-range{border-color:#dc3545!important;box-shadow:0 0 0 .2rem rgba(220,53,69,.15)!important}
-    .stat-card{border-radius:14px;border:1px solid #e9ecef;background:#fff;padding:12px 14px}
-    .stat-label{color:#6c757d;font-size:.9rem}
-    .stat-value{font-weight:700}
     /* محرّر بسيط بديل عن Quill إذا لم يتوفّر */
     .mini-toolbar{display:flex;gap:.25rem;margin-bottom:.5rem}
     .mini-toolbar button{border:1px solid #ced4da;background:#f8f9fa;padding:.25rem .5rem;border-radius:.375rem}
     .mini-editor{border:1px solid #ced4da;border-radius:.5rem;padding:.5rem;min-height:160px;background:#fff}
+    /* حقل بحث fallback لقائمة اللجان عند غياب TomSelect */
+    #committeeSearchWrap{display:none}
   </style>
 </head>
 <body>
@@ -65,13 +62,6 @@
         <a class="btn btn-outline-primary" id="homeBtn" href="/committees-home.html"><i class="bi bi-grid"></i> لوحة التحكم</a>
         <button id="logoutBtn" class="btn btn-danger"><i class="bi bi-box-arrow-right"></i> خروج</button>
       </div>
-    </div>
-
-    <!-- إحصاء خفيف -->
-    <div class="row g-3 mb-2">
-      <div class="col-md-4"><div class="stat-card"><div class="stat-label">إجمالي اللجان</div><div id="statCommittees" class="stat-value"><span class="sk"></span></div></div></div>
-      <div class="col-md-4"><div class="stat-card"><div class="stat-label">إجمالي الكليات</div><div id="statColleges" class="stat-value"><span class="sk"></span></div></div></div>
-      <div class="col-md-4"><div class="stat-card"><div class="stat-label">آخر تعديل (قوائم مرجعية)</div><div id="statLastChange" class="stat-value"><span class="sk" style="width:200px"></span></div></div></div>
     </div>
 
     <form id="committeeForm" class="card p-3">
@@ -94,8 +84,13 @@
               <button type="button" id="addCollegeBtn" class="btn btn-outline-secondary d-none" title="إضافة كلية"><i class="bi bi-plus"></i></button>
             </div>
           </div>
+
           <div class="col-md-6">
             <label class="form-label">اسم اللجنة</label>
+            <!-- يظهر حقل البحث فقط إذا لم تكن TomSelect متوفرة -->
+            <div id="committeeSearchWrap" class="mb-2">
+              <input type="text" id="committeeSearch" class="form-control form-control-sm" placeholder="ابحث داخل القائمة...">
+            </div>
             <div class="input-group">
               <select class="form-select" name="committee_name" id="committeeSelect" required placeholder="اكتب للبحث"></select>
               <button type="button" id="addCommitteeBtn" class="btn btn-outline-secondary d-none" title="إضافة لجنة"><i class="bi bi-plus"></i></button>
@@ -119,7 +114,6 @@
               <tr><th style="width:70%">البند</th><th style="width:30%">الدرجة (0..1)</th></tr>
             </thead>
             <tbody id="scoresTbody">
-              <!-- ملاحظة: step="any" من البداية -->
               <tr><td><label for="formation_decision" class="mb-0">قرار التشكيل</label></td>
                   <td><input type="number" step="any" min="0" max="1" class="form-control score" name="formation_decision" id="formation_decision" placeholder="0"></td></tr>
               <tr><td><label for="work_plan" class="mb-0">خطة عمل اللجنة</label></td>
@@ -155,7 +149,6 @@
         <h6>الملاحظات والمدقق</h6>
         <div class="mb-3">
           <label class="form-label">ملاحظات</label>
-          <!-- سيُبدَّل إلى mini-editor تلقائيًا إذا لم تتوفّر Quill -->
           <div id="editor"></div>
           <input type="hidden" name="notes" id="notesInput">
         </div>
@@ -186,7 +179,7 @@
     <div id="toastInfo" class="toast align-items-center text-bg-primary border-0 mb-2" role="status"><div class="d-flex"><div class="toast-body">ℹ️ معلومات</div><button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button></div></div>
   </div>
 
-  <!-- Modals (إضافة سريعة — للمشرف فقط) -->
+  <!-- Modals -->
   <div class="modal fade" id="addCollegeModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog"><div class="modal-content">
     <div class="modal-header"><h5 class="modal-title">إضافة كلية</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
     <div class="modal-body"><label class="form-label">اسم الكلية</label><input type="text" id="newCollegeName" class="form-control" placeholder="اسم الكلية"></div>
@@ -243,7 +236,6 @@
       if(window.Quill){
         quill=new Quill('#editor',{theme:'snow'});
       }else{
-        // محرّر بسيط يعمل بدون مكتبات
         const host=document.getElementById('editor');
         const wrap=document.createElement('div');
         wrap.innerHTML=`
@@ -268,7 +260,7 @@
       const ta=document.getElementById('notesFallback'); return ta?ta.value:'';
     }
 
-    /* ====== TomSelect / أو تعبئة عادية ====== */
+    /* ====== TomSelect / أو تعبئة عادية (+ بحث بديل) ====== */
     let tsCollege=null, tsCommittee=null;
     function initTomSelectsIfAvailable(){
       if(window.TomSelect){
@@ -283,7 +275,7 @@
       }
     }
     async function populatePlainSelectsIfNeeded(){
-      // إذا لم يوجد TomSelect؛ املأ الـselect مباشرة
+      // إذا لم يوجد TomSelect؛ املأ الـselect مباشرة + فعّل حقل بحث بديل
       if(!tsCollege){
         try{
           const r=await apiFetch('/api/colleges'); const list=await r.json();
@@ -298,25 +290,27 @@
           catch{ const r2=await apiFetch('/api/committees-master'); list=await r2.json(); }
           const sel=document.getElementById('committeeSelect'); sel.innerHTML='<option value="">اختر اللجنة...</option>';
           (list||[]).forEach(x=>{const o=document.createElement('option'); o.value=o.textContent=x.name||''; sel.appendChild(o);});
+          // تفعيل حقل البحث داخل الـselect (fallback)
+          const wrap=document.getElementById('committeeSearchWrap');
+          wrap.style.display='block';
+          document.getElementById('committeeSearch').addEventListener('input', (e)=>{
+            const q=e.target.value.trim();
+            [...sel.options].forEach(opt=>{
+              if(!opt.value) return; // اترك placeholder
+              const show = !q || opt.textContent.includes(q);
+              opt.hidden = !show;
+            });
+          });
         }catch{}
       }
     }
 
-    /* ====== المدققون + الإحصاءات ====== */
+    /* ====== المدققون ====== */
     async function loadAuditors(){
       try{ const r=await apiFetch('/api/auditors'); const arr=await r.json(); const sel=document.getElementById('auditorSelect'); arr.forEach(a=>{const o=document.createElement('option'); o.value=o.textContent=a.name; sel.appendChild(o);}); }catch{}
     }
-    async function loadStats(){
-      try{
-        const [cR,mR]=await Promise.all([apiFetch('/api/colleges'),apiFetch('/api/committees-master')]);
-        const colleges=await cR.json(), committees=await mR.json();
-        document.getElementById('statColleges').textContent=Array.isArray(colleges)?colleges.length:'—';
-        document.getElementById('statCommittees').textContent=Array.isArray(committees)?committees.length:'—';
-      }catch{document.getElementById('statColleges').textContent='—';document.getElementById('statCommittees').textContent='—'}
-      try{ const x=await apiFetch('/api/audit-logs?model=Committee&limit=1&page=1'); const j=await x.json(); const last=j?.items?.[0]; document.getElementById('statLastChange').textContent=last?.createdAt?new Date(last.createdAt).toLocaleString('ar-EG'):'—'; }catch{ document.getElementById('statLastChange').textContent='—'; }
-    }
 
-    /* ====== الدرجات: 0..1 + أسهم 0.25 + قبول أي قيمة (0.33) ====== */
+    /* ====== الدرجات: 0..1 + أسهم 0.25 + قبول أي قيمة ====== */
     function clamp01(v){v=Number(v); if(isNaN(v)) return ''; if(v<0) return 0; if(v>1) return 1; return v;}
     function stepAdd(val,delta){const v=Number(val); const base=isNaN(v)?0:v; const n=Math.round((base+delta)*100)/100; return clamp01(n);}
     function markRange(el){const v=Number(el.value); const bad=isNaN(v)||v<0||v>1; el.classList.toggle('out-of-range',bad);}
@@ -396,7 +390,7 @@
         const r=await apiFetch('/api/colleges',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name})});
         const data=await r.json().catch(()=>({})); if(!r.ok) throw new Error(data?.message||'فشل الإضافة');
         if(tsCollege){tsCollege.addOption({name}); tsCollege.setValue(name,true);} else {const s=document.getElementById('collegeSelect'); const o=document.createElement('option');o.value=o.textContent=name;s.appendChild(o); s.value=name;}
-        document.getElementById('newCollegeName').value=''; addCollegeModal.hide(); showSuccess('✅ تمت إضافة الكلية'); loadStats();
+        document.getElementById('newCollegeName').value=''; addCollegeModal.hide(); showSuccess('✅ تمت إضافة الكلية');
       }catch(err){showError('❌ '+(err.message||'فشل الإضافة'))}
     });
     document.getElementById('applyAddCommittee').addEventListener('click',async()=>{
@@ -405,7 +399,7 @@
         const r=await apiFetch('/api/committees-master',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name})});
         const data=await r.json().catch(()=>({})); if(!r.ok) throw new Error(data?.message||'فشل الإضافة (قد يكون مكررًا)');
         if(tsCommittee){tsCommittee.addOption({name}); tsCommittee.setValue(name,true);} else {const s=document.getElementById('committeeSelect'); const o=document.createElement('option');o.value=o.textContent=name;s.appendChild(o); s.value=name;}
-        document.getElementById('newCommitteeName').value=''; addCommitteeModal.hide(); showSuccess('✅ تمت إضافة اللجنة'); loadStats();
+        document.getElementById('newCommitteeName').value=''; addCommitteeModal.hide(); showSuccess('✅ تمت إضافة اللجنة');
       }catch(err){showError('❌ '+(err.message||'فشل الإضافة'))}
     });
 
@@ -436,7 +430,6 @@
         initTomSelectsIfAvailable();
         await populatePlainSelectsIfNeeded();
         await loadAuditors();
-        await loadStats();
         bindScoreInputs();
         recomputeAvailability();
         loadDraft();
