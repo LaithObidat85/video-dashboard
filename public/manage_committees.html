@@ -8,46 +8,46 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.rtl.min.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
   <style>
-    body { background:#f8f9fa; font-family:'Segoe UI',sans-serif; }
-    .container { margin-top:30px; max-width:98vw; } /* توسيع عرض الصفحة */
-
+    body{background:#f8f9fa;font-family:'Segoe UI',sans-serif}
+    .container{margin-top:30px;max-width:98vw}
     .user-chip{display:inline-flex;align-items:center;gap:.25rem;font-size:1rem!important;padding:.375rem .75rem!important;line-height:1.5!important;border-radius:.375rem;font-weight:700!important}
     .user-chip.badge #userRole{font-weight:500!important}
 
-    table{background:#fff;border-radius:12px;overflow:hidden;font-size:14px;width:100%;margin:auto} /* 100% بدلاً من 99% */
-    th{text-align:center;vertical-align:middle;background-color:#f8f9fa;color:#000}
-    td{text-align:center;vertical-align:middle}
+    table{background:#fff;border-radius:12px;overflow:hidden;font-size:14px;width:100%;margin:auto}
+    th,td{text-align:center;vertical-align:middle}
+    th{background:#f8f9fa;color:#000}
     td.invalid{background:#fde2e1!important}
     .highlight{background:#d4edda!important;transition:background-color 1s ease}
     .hidden-col{display:none!important}
 
     .sticky-header{background:#f8f9fa;padding-top:10px}
     #evaluationsTableWrapper thead th{position:sticky;top:0;z-index:9;background:#f8f9fa;color:#000}
-    #evaluationsTableWrapper th.date-col, #evaluationsTableWrapper td.date-col{direction:ltr;text-align:center;width:140px;max-width:140px}
+    #evaluationsTableWrapper th.date-col,#evaluationsTableWrapper td.date-col{direction:ltr;text-align:center;width:140px;max-width:140px}
+
+    /* أحجام الأعمدة */
+    th.w-wide, td.w-wide{min-width:200px}
+    th.w-narrow, td.w-narrow{min-width:70px;max-width:90px}
+    td.w-narrow input{padding:.125rem .25rem}
 
     .toast-container{position:fixed;top:20px;left:50%;transform:translateX(-50%);z-index:2000}
-    #completionRateContainer,#selectedVisitsContainer,#termBadge{ text-align:center;font-weight:bold;margin:5px 0;font-size:16px;min-height:24px }
+    #completionRateContainer,#selectedVisitsContainer,#termBadge{text-align:center;font-weight:bold;margin:5px 0;font-size:16px;min-height:24px}
     #termBadge .badge{font-size:.95rem}
 
     .filters{margin-bottom:12px;width:99%;margin-left:auto;margin-right:auto}
-    .action-buttons{display:flex;justify-content:center;align-items:center;gap:5px;height:100%}
-    .notes-btn{display:block;width:100%}
-
-    /* شريط أعلى الأزرار */
-    .quick-actions-title{margin-bottom:.25rem} /* صار form-label, نترك فقط الهامش */
 
     .mini-toolbar{display:flex;gap:.25rem;margin-bottom:.5rem;flex-wrap:wrap}
     .mini-toolbar button{border:1px solid #ced4da;background:#f8f9fa;padding:.25rem .5rem;border-radius:.375rem}
     .mini-editor{border:1px solid #ced4da;border-radius:.5rem;padding:.5rem;min-height:180px;background:#fff}
     .muted{color:#6c757d}
 
+    /* شريط الإجراءات (مكان شريط التحديد السابق) */
     .bulk-bar{display:flex;gap:.5rem;flex-wrap:wrap;align-items:center;justify-content:flex-start}
-    .selected-count{font-weight:700}
+    .bulk-title{font-weight:700;margin-inline-end:.25rem}
     .form-switch .form-check-input{cursor:pointer}
   </style>
 </head>
 <body>
-  <div class="container-fluid">
+  <div class="container">
     <!-- Header -->
     <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
       <h4 class="mb-0">إدارة تقييم اللجان</h4>
@@ -87,14 +87,7 @@
           <label class="form-label">بحث باسم اللجنة</label>
           <input type="text" id="committeeSearch" class="form-control" placeholder="اكتب للبحث...">
         </div>
-        <div class="col-md-3 mb-2">
-          <!-- العنوان صار form-label ليتطابق مع "بحث باسم اللجنة" -->
-          <label class="form-label quick-actions-title">إجراءات سريعة</label>
-          <div class="top-actions">
-            <button class="btn btn-sm btn-success" id="saveAllBtn" title="حفظ جميع الصفوف المعدلة">💾 حفظ الكل</button>
-            <button class="btn btn-sm btn-outline-secondary" id="reloadBtn">تحديث</button>
-          </div>
-        </div>
+        <div class="col-md-3 mb-2"><!-- خانة احتياط/موازنة --></div>
       </div>
 
       <!-- مجموعة الزيارات/الأعمدة/الفصل/العام (Admin فقط) -->
@@ -150,12 +143,12 @@
       <div id="selectedVisitsContainer"></div>
       <div id="completionRateContainer"></div>
 
-      <!-- شريط الإجراءات الجماعية -->
+      <!-- شريط الإجراءات: نقل حفظ الكل + تحديث هنا، وإزالة كل ما يخص التحديد -->
       <div class="card p-2 mb-2">
         <div class="bulk-bar">
-          <span class="selected-count">المحدد: <span id="selectedCount">0</span></span>
-          <button class="btn btn-sm btn-danger" id="bulkDeleteBtn" title="حذف المحدد"><i class="bi bi-trash"></i> حذف المحدد</button>
-          <button class="btn btn-sm btn-primary" id="bulkEditBtn" title="تعديل المحدد"><i class="bi bi-pencil-square"></i> تعديل المحدد</button>
+          <span class="bulk-title">إجراءات سريعة</span>
+          <button class="btn btn-sm btn-success" id="saveAllBtn" title="حفظ جميع الصفوف المعدلة">💾 حفظ الكل</button>
+          <button class="btn btn-sm btn-outline-secondary" id="reloadBtn">تحديث</button>
         </div>
       </div>
     </div>
@@ -164,31 +157,30 @@
     <table class="table table-bordered table-striped table-responsive" id="evaluationsTableWrapper">
       <thead>
         <tr>
-          <th><input type="checkbox" id="selectAll"></th>
           <th>#</th>
-          <th>الكلية</th>
-          <th>اسم اللجنة</th>
-          <th>اسم المدقق</th>
+          <th class="w-wide">الكلية</th>
+          <th class="w-wide">اسم اللجنة</th>
+          <th class="w-wide">اسم المدقق</th>
           <th class="date-col">تاريخ التدقيق</th>
 
-          <th class="col-formation_decision">قرار التشكيل</th>
-          <th class="col-work_plan">خطة العمل</th>
-          <th class="col-performance_indicators">مؤشرات الأداء</th>
-          <th class="col-meetings">عدد الاجتماعات</th>
-          <th class="col-consistency">التوافق بين الدعوات والاجتماعات</th>
-          <th class="col-coverage_books">كتب التغطية</th>
-          <th class="col-report1">تقرير إنجاز 1</th>
-          <th class="col-report2">تقرير إنجاز 2</th>
-          <th class="col-report3">تقرير إنجاز 3</th>
-          <th class="col-statistical_analysis">التحليل الإحصائي</th>
+          <th class="col-formation_decision w-narrow">قرار التشكيل</th>
+          <th class="col-work_plan w-narrow">خطة العمل</th>
+          <th class="col-performance_indicators w-narrow">مؤشرات الأداء</th>
+          <th class="col-meetings w-narrow">عدد الاجتماعات</th>
+          <th class="col-consistency w-narrow">التوافق بين الدعوات والاجتماعات</th>
+          <th class="col-coverage_books w-narrow">كتب التغطية</th>
+          <th class="col-report1 w-narrow">تقرير إنجاز 1</th>
+          <th class="col-report2 w-narrow">تقرير إنجاز 2</th>
+          <th class="col-report3 w-narrow">تقرير إنجاز 3</th>
+          <th class="col-statistical_analysis w-narrow">التحليل الإحصائي</th>
 
-          <th id="availabilityHeader">درجة التوفر من (9)</th>
-          <th>الملاحظات</th>
-          <th>إجراءات</th>
+          <th id="availabilityHeader" class="w-narrow">درجة التوفر من (9)</th>
+          <th class="w-wide">الملاحظات</th>
+          <th class="w-narrow">إجراءات</th>
         </tr>
       </thead>
       <tbody id="committeesTable">
-        <tr><td colspan="19" class="text-center">جاري التحميل...</td></tr>
+        <tr><td colspan="18" class="text-center">جاري التحميل...</td></tr>
       </tbody>
     </table>
   </div>
@@ -198,118 +190,49 @@
   <datalist id="dl_committees"></datalist>
   <datalist id="dl_auditors"></datalist>
 
-  <!-- Modal: عرض/تحرير الملاحظات -->
-  <div class="modal fade" id="notesModal" tabindex="-1">
-    <div class="modal-dialog modal-lg"><div class="modal-content">
-      <div class="modal-header"><h5 class="modal-title">📝 الملاحظات</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+  <!-- مودال موحّد: تفاصيل + ملاحظات -->
+  <div class="modal fade" id="editUnifiedModal" tabindex="-1">
+    <div class="modal-dialog modal-xl"><div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">تعديل التقييم والملاحظات</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
       <div class="modal-body">
-        <div id="viewNotes" class="mb-3"></div>
-        <hr class="my-2">
-        <h6 class="mb-2">تحرير الملاحظات</h6>
-        <div class="mini-toolbar">
-          <button type="button" data-cmd="bold"><b>B</b></button>
-          <button type="button" data-cmd="italic"><i>I</i></button>
-          <button type="button" data-cmd="underline"><u>U</u></button>
-          <button type="button" data-cmd="insertUnorderedList">• قائمة</button>
-        </div>
-        <div id="miniEditor" class="mini-editor" contenteditable="true"></div>
-      </div>
-      <div class="modal-footer">
-        <button class="btn btn-primary" id="saveNotesBtn">💾 حفظ</button>
-        <button class="btn btn-secondary" data-bs-dismiss="modal">إغلاق</button>
-      </div>
-    </div></div>
-  </div>
-
-  <!-- Modal: تعديل جماعي -->
-  <div class="modal fade" id="bulkEditModal" tabindex="-1">
-    <div class="modal-dialog"><div class="modal-content">
-      <div class="modal-header"><h5 class="modal-title">تعديل المحدد</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
-      <div class="modal-body">
-        <div class="form-check form-switch mb-2">
-          <input class="form-check-input" type="checkbox" id="applyCollege">
-          <label class="form-check-label" for="applyCollege">تعديل الكلية</label>
-        </div>
-        <select id="bulkCollege" class="form-select mb-3" disabled></select>
-
-        <div class="form-check form-switch mb-2">
-          <input class="form-check-input" type="checkbox" id="applyCommittee">
-          <label class="form-check-label" for="applyCommittee">تعديل اسم اللجنة</label>
-        </div>
-        <select id="bulkCommittee" class="form-select mb-3" disabled></select>
-
-        <div class="form-check form-switch mb-2">
-          <input class="form-check-input" type="checkbox" id="applyAuditor">
-          <label class="form-check-label" for="applyAuditor">تعديل اسم المدقق</label>
-        </div>
-        <select id="bulkAuditor" class="form-select mb-3" disabled></select>
-
-        <div class="form-check form-switch mb-2">
-          <input class="form-check-input" type="checkbox" id="applyDate">
-          <label class="form-check-label" for="applyDate">تعديل تاريخ التدقيق</label>
-        </div>
-        <input type="date" id="bulkDate" class="form-control mb-3" disabled>
-
-        <div class="form-check form-switch mb-2">
-          <input class="form-check-input" type="checkbox" id="applyTerm">
-          <label class="form-check-label" for="applyTerm">تعديل الفصل</label>
-        </div>
-        <select id="bulkTerm" class="form-select mb-3" disabled>
-          <option value="">— اختر الفصل —</option>
-          <option value="الفصل الأول">الفصل الأول</option>
-          <option value="الفصل الثاني">الفصل الثاني</option>
-          <option value="الفصل الصيفي">الفصل الصيفي</option>
-        </select>
-
-        <div class="form-check form-switch mb-2">
-          <input class="form-check-input" type="checkbox" id="applyAY">
-          <label class="form-check-label" for="applyAY">تعديل العام الجامعي</label>
-        </div>
-        <input type="text" id="bulkAY" class="form-control" placeholder="مثال: 2024-2025 أو 2024/2025" disabled>
-      </div>
-      <div class="modal-footer">
-        <button class="btn btn-primary" id="applyBulkEditBtn">تطبيق</button>
-        <button class="btn btn-secondary" data-bs-dismiss="modal">إغلاق</button>
-      </div>
-    </div></div>
-  </div>
-
-  <!-- Modal: تعديل صف -->
-  <div class="modal fade" id="editRowModal" tabindex="-1">
-    <div class="modal-dialog modal-lg"><div class="modal-content">
-      <div class="modal-header"><h5 class="modal-title">تعديل التقييم</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
-      <div class="modal-body">
-        <div class="row g-3">
-          <div class="col-md-6">
+        <!-- قسم تفاصيل التقييم -->
+        <div class="row g-3 mb-3">
+          <div class="col-md-4">
             <label class="form-label">الكلية</label>
             <select id="er_college" class="form-select"></select>
           </div>
-          <div class="col-md-6">
+          <div class="col-md-4">
             <label class="form-label">اسم اللجنة</label>
             <select id="er_committee" class="form-select"></select>
           </div>
-          <div class="col-md-6">
+          <div class="col-md-4">
             <label class="form-label">اسم المدقق</label>
             <select id="er_auditor" class="form-select"></select>
           </div>
-          <div class="col-md-6">
+          <div class="col-md-4">
             <label class="form-label">تاريخ التدقيق</label>
             <input type="date" id="er_date" class="form-control">
           </div>
         </div>
 
-        <hr class="my-3">
+        <hr class="my-2">
 
+        <!-- قسم الملاحظات -->
+        <h6 class="mb-2">📝 الملاحظات</h6>
+        <div id="viewNotes" class="mb-2"></div>
         <div class="mini-toolbar">
           <button type="button" data-cmd="bold"><b>B</b></button>
           <button type="button" data-cmd="italic"><i>I</i></button>
           <button type="button" data-cmd="underline"><u>U</u></button>
           <button type="button" data-cmd="insertUnorderedList">• قائمة</button>
         </div>
-        <div id="er_editor" class="mini-editor"></div>
+        <div id="er_editor" class="mini-editor" contenteditable="true"></div>
       </div>
       <div class="modal-footer">
-        <button class="btn btn-primary" id="saveEditRowBtn">حفظ التعديلات</button>
+        <button class="btn btn-primary" id="saveUnifiedBtn">💾 حفظ</button>
         <button class="btn btn-secondary" data-bs-dismiss="modal">إغلاق</button>
       </div>
     </div></div>
@@ -339,651 +262,461 @@
   <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
   <script>
     /* ====== بيئة موحّدة ====== */
-    const RENDER_BASE = 'https://vdash-qkyv.onrender.com';
-    const host = location.hostname;
-    const isGithub = host.endsWith('github.io');
-    const isLocal  = host==='localhost' || host==='127.0.0.1';
-    const API_BASE = isGithub ? RENDER_BASE : (isLocal ? 'http://localhost:3000' : '');
-    const go = (path)=> isGithub ? (RENDER_BASE + path) : path;
+    const RENDER_BASE='https://vdash-qkyv.onrender.com';
+    const host=location.hostname;
+    const isGithub=host.endsWith('github.io');
+    const isLocal=host==='localhost'||host==='127.0.0.1';
+    const API_BASE=isGithub?RENDER_BASE:(isLocal?'http://localhost:3000':'');
+    const go=(path)=>isGithub?(RENDER_BASE+path):path;
 
-    const toastSuccess = new bootstrap.Toast(document.getElementById('toastSuccess'));
-    const toastError   = new bootstrap.Toast(document.getElementById('toastError'));
-    const toastConfirmEl = document.getElementById('toastConfirm');
-    const toastConfirm = new bootstrap.Toast(toastConfirmEl);
-    let confirmCallback = null;
+    const toastSuccess=new bootstrap.Toast(document.getElementById('toastSuccess'));
+    const toastError  =new bootstrap.Toast(document.getElementById('toastError'));
+    const toastConfirmEl=document.getElementById('toastConfirm');
+    const toastConfirm=new bootstrap.Toast(toastConfirmEl);
+    let confirmCallback=null;
 
-    function showSuccess(msg="✅ العملية نجحت"){ document.querySelector("#toastSuccess .toast-body").innerText = msg; toastSuccess.show(); }
-    function showError(msg="❌ حدث خطأ"){ document.querySelector("#toastError .toast-body").innerText = msg; toastError.show(); }
-    function showConfirm(msg, cb){ document.getElementById("toastConfirmMsg").innerText = msg; confirmCallback = cb; toastConfirm.show(); }
-    document.getElementById("confirmYes").addEventListener("click", ()=>{ toastConfirm.hide(); if(confirmCallback) confirmCallback(); });
-
-    const apiFetch = (path, opts={}) => fetch(`${API_BASE}${path}`, { credentials:'include', ...opts });
+    function showSuccess(msg="✅ العملية نجحت"){document.querySelector("#toastSuccess .toast-body").innerText=msg;toastSuccess.show()}
+    function showError(msg="❌ حدث خطأ"){document.querySelector("#toastError .toast-body").innerText=msg;toastError.show()}
+    function showConfirm(msg,cb){document.getElementById("toastConfirmMsg").innerText=msg;confirmCallback=cb;toastConfirm.show()}
+    document.getElementById("confirmYes").addEventListener("click",()=>{toastConfirm.hide();if(confirmCallback)confirmCallback()})
+    const apiFetch=(path,opts={})=>fetch(`${API_BASE}${path}`,{credentials:'include',...opts});
 
     /* ====== شارة المستخدم + صلاحيات ====== */
-    let CURRENT_USER = null;
+    let CURRENT_USER=null;
     function renderUser(u){
-      const username = u?.username || (u?.email? u.email.split('@')[0] : '—');
-      document.getElementById('userUsername').textContent = username;
-      document.getElementById('userFullName').textContent = u?.name || '—';
-      document.getElementById('userRole').textContent     = u?.role || '—';
+      const username=u?.username||(u?.email?u.email.split('@')[0]:'—');
+      document.getElementById('userUsername').textContent=username;
+      document.getElementById('userFullName').textContent=u?.name||'—';
+      document.getElementById('userRole').textContent=u?.role||'—';
     }
     async function ensureAuth(){
       try{
-        const r = await apiFetch('/auth/committees/me');
-        const j = await r.json();
+        const r=await apiFetch('/auth/committees/me');
+        const j=await r.json();
         if(!j?.authenticated){
-          location.href = go('/committees-login.html?next='+encodeURIComponent('/manage_committees.html'));
-          throw 0;
+          location.href=go('/committees-login.html?next='+encodeURIComponent('/manage_committees.html'));throw 0;
         }
-        if(j.user?.isActive === false){
+        if(j.user?.isActive===false){
           showError('🚫 حسابك معطّل. الرجاء التواصل مع المشرف.');
-          setTimeout(()=>location.href=go('/committees-home.html'),1200);
-          throw 0;
+          setTimeout(()=>location.href=go('/committees-home.html'),1200);throw 0;
         }
-        CURRENT_USER = j.user;
-        renderUser(j.user);
-
-        const isAdmin = (j.user?.role||'').toLowerCase() === 'admin';
-        document.getElementById('visitsCard').classList.toggle('d-none', !isAdmin);
-        document.getElementById('columnsCard').classList.toggle('d-none', !isAdmin);
-        document.getElementById('termCard').classList.toggle('d-none', !isAdmin);
-      }catch{ throw 0; }
+        CURRENT_USER=j.user;renderUser(j.user);
+        const isAdmin=(j.user?.role||'').toLowerCase()==='admin';
+        document.getElementById('visitsCard').classList.toggle('d-none',!isAdmin);
+        document.getElementById('columnsCard').classList.toggle('d-none',!isAdmin);
+        document.getElementById('termCard').classList.toggle('d-none',!isAdmin);
+      }catch{throw 0;}
     }
-    document.getElementById('homeBtn').href = go('/committees-home.html');
-    document.getElementById('logoutBtn').addEventListener('click', async ()=>{
+    document.getElementById('homeBtn').href=go('/committees-home.html');
+    document.getElementById('logoutBtn').addEventListener('click',async()=>{
       try{
-        const r = await apiFetch('/auth/committees/logout',{method:'POST',headers:{'Content-Type':'application/json'}});
-        if(r.ok){ showSuccess('✅ تم تسجيل الخروج'); setTimeout(()=>location.href=go('/committees-login.html'),700); }
-        else    { showError('❌ تعذر تسجيل الخروج'); }
-      }catch{ showError('❌ خطأ في الاتصال'); }
+        const r=await apiFetch('/auth/committees/logout',{method:'POST',headers:{'Content-Type':'application/json'}});
+        if(r.ok){showSuccess('✅ تم تسجيل الخروج');setTimeout(()=>location.href=go('/committees-login.html'),700)}
+        else{showError('❌ تعذر تسجيل الخروج')}
+      }catch{showError('❌ خطأ في الاتصال')}
     });
 
-    /* ====== أدوات مساعدة (إظهار القيم في القوائم) ====== */
+    /* ====== أدوات مساعدة للقوائم ====== */
     function normalizeName(item){
-      if(typeof item === 'string') return item;
-      return item?.name ?? item?.committee_name ?? item?.college ?? item?.auditor_name ?? '';
+      if(typeof item==='string')return item;
+      return item?.name??item?.committee_name??item?.college??item?.auditor_name??'';
     }
-    function fillSelect(sel, arr, placeholder='— اختر —'){
-      sel.innerHTML = `<option value="">${placeholder}</option>`;
-      (arr||[]).forEach(v=>{
-        const val = normalizeName(v);
-        if(!val) return;
-        const o=document.createElement('option');
-        o.value=o.textContent=val;
-        sel.appendChild(o);
-      });
+    function fillSelect(sel,arr,placeholder='— اختر —'){
+      sel.innerHTML=`<option value="">${placeholder}</option>`;
+      (arr||[]).forEach(v=>{const val=normalizeName(v);if(!val)return;const o=document.createElement('option');o.value=o.textContent=val;sel.appendChild(o);});
     }
-    function buildSelect(optionsArray, current, field){
-      const sel = document.createElement('select');
-      sel.className = 'form-select form-select-sm';
-      sel.dataset.field = field;
-
-      const opts = (optionsArray||[]).map(normalizeName).filter(Boolean);
-      const set = new Set(opts);
-      // أضف القيمة الحالية إن لم تكن موجودة
+    function buildSelect(optionsArray,current,field){
+      const sel=document.createElement('select');
+      sel.className='form-select form-select-sm';
+      sel.dataset.field=field;
+      const opts=(optionsArray||[]).map(normalizeName).filter(Boolean);
+      const set=new Set(opts);
       if(current && !set.has(current)) set.add(current);
-
-      sel.innerHTML = `<option value=""></option>` + Array.from(set).map(v=>`<option value="${v}"${v===current?' selected':''}>${v}</option>`).join('');
-      if(current) sel.value = current;
+      sel.innerHTML=`<option value=""></option>`+Array.from(set).map(v=>`<option value="${v}"${v===current?' selected':''}>${v}</option>`).join('');
+      if(current) sel.value=current;
       return sel;
     }
 
     /* ====== مصادر (قوائم) ====== */
-    let LIST_COLLEGES = [], LIST_AUDITORS = [], LIST_COMMITTEES = [];
+    let LIST_COLLEGES=[],LIST_AUDITORS=[],LIST_COMMITTEES=[];
     async function loadDatalists(){
       try{
-        const [cR, aR, mR] = await Promise.all([
+        const [cR,aR,mR]=await Promise.all([
           apiFetch('/api/colleges'),
           apiFetch('/api/auditors'),
           apiFetch('/api/committee-names?q=').catch(()=>apiFetch('/api/committees-master'))
         ]);
-        LIST_COLLEGES = await cR.json().catch(()=>[]);
-        LIST_AUDITORS = await aR.json().catch(()=>[]);
-        LIST_COMMITTEES = await mR.json().catch(()=>[]);
+        LIST_COLLEGES=await cR.json().catch(()=>[]);
+        LIST_AUDITORS=await aR.json().catch(()=>[]);
+        LIST_COMMITTEES=await mR.json().catch(()=>[]);
 
-        const collegeFilter = document.getElementById('collegeFilter');
-        const auditorFilter = document.getElementById('auditorFilter');
-        (LIST_COLLEGES||[]).forEach(c=>{ const n=normalizeName(c); if(!n) return; const opt=document.createElement('option'); opt.value=n; opt.textContent=n; collegeFilter.appendChild(opt); });
-        (LIST_AUDITORS||[]).forEach(a=>{ const n=normalizeName(a); if(!n) return; const opt=document.createElement('option'); opt.value=n; opt.textContent=n; auditorFilter.appendChild(opt); });
+        const collegeFilter=document.getElementById('collegeFilter');
+        const auditorFilter=document.getElementById('auditorFilter');
+        (LIST_COLLEGES||[]).forEach(c=>{const n=normalizeName(c);if(!n)return;const opt=document.createElement('option');opt.value=n;opt.textContent=n;collegeFilter.appendChild(opt);});
+        (LIST_AUDITORS||[]).forEach(a=>{const n=normalizeName(a);if(!n)return;const opt=document.createElement('option');opt.value=n;opt.textContent=n;auditorFilter.appendChild(opt);});
 
-        // تحميل خيارات مودال التعديل الجماعي
-        fillSelect(document.getElementById('bulkCollege'),   LIST_COLLEGES, '— اختر —');
-        fillSelect(document.getElementById('bulkCommittee'), LIST_COMMITTEES, '— اختر —');
-        fillSelect(document.getElementById('bulkAuditor'),   LIST_AUDITORS, '— اختر —');
-      }catch(e){ console.warn('datalist load error', e); }
+        fillSelect(document.getElementById('er_college'),LIST_COLLEGES,'— الكلية —');
+        fillSelect(document.getElementById('er_committee'),LIST_COMMITTEES,'— اسم اللجنة —');
+        fillSelect(document.getElementById('er_auditor'),LIST_AUDITORS,'— اسم المدقق —');
+      }catch(e){console.warn('datalist load error',e);}
     }
 
-    /* ====== Mini Editor (بديل Quill) ====== */
-    let NOTES_EDITING_ROW = null;
-    const miniEditor = ()=> document.getElementById('miniEditor');
-    const erEditor = ()=> document.getElementById('er_editor');
-    document.addEventListener('click', (e)=>{
-      const btn = e.target.closest('[data-cmd]');
-      if(!btn) return;
-      const cmd = btn.getAttribute('data-cmd');
-      document.execCommand(cmd, false, null);
-      const mm = document.querySelector('.modal.show #er_editor') || document.getElementById('miniEditor');
-      if(mm) mm.focus();
+    /* ====== Mini Editor ====== */
+    document.addEventListener('click',(e)=>{
+      const btn=e.target.closest('[data-cmd]'); if(!btn) return;
+      const cmd=btn.getAttribute('data-cmd'); document.execCommand(cmd,false,null);
+      const mm=document.getElementById('er_editor'); if(mm) mm.focus();
     });
+    function stripHtml(html){const tmp=document.createElement('div');tmp.innerHTML=html;return (tmp.textContent||tmp.innerText||'').trim();}
 
-    function stripHtml(html){
-      const tmp = document.createElement('div');
-      tmp.innerHTML = html;
-      return (tmp.textContent || tmp.innerText || '').trim();
+    /* ====== الحقول العددية ====== */
+    const NUMERIC_FIELDS=["formation_decision","work_plan","performance_indicators","meetings","consistency","coverage_books","report1","report2","report3","statistical_analysis"];
+    function getVisibleNumericFields(){
+      return NUMERIC_FIELDS.filter(f=>{
+        const th=document.querySelector(`th.col-${f}`);
+        return th && !th.classList.contains('hidden-col');
+      });
     }
-
-    /* ====== حسابات ====== */
     function clamp01(val){
-      let v = Number(String(val).replace(',', '.'));
+      let v=Number(String(val).replace(',', '.'));
       if(isNaN(v)) return null;
-      if(v<0) v = 0;
-      if(v>1) v = 1;
+      if(v<0) v=0; if(v>1) v=1;
       return Math.round(v*100)/100;
     }
 
+    function updateAvailabilityHeader(){
+      const n=getVisibleNumericFields().length;
+      document.getElementById("availabilityHeader").innerText=`درجة التوفر من (${n})`;
+    }
     function updateAvailability(row){
-      const numericFields = ["formation_decision","work_plan","performance_indicators","meetings","consistency","coverage_books","report1","report2","report3","statistical_analysis"];
-      let sum = 0;
-      numericFields.forEach(f=>{
-        const cell = row.querySelector(`[data-field="${f}"]`);
+      const fields=getVisibleNumericFields();
+      let sum=0;
+      fields.forEach(f=>{
+        const cell=row.querySelector(`[data-field="${f}"]`);
         if(!cell) return;
-        const v = parseFloat((cell.querySelector('input')?.value ?? cell.innerText ?? '').toString().replace(',', '.'));
-        if(!isNaN(v)) sum += v;
+        const v=parseFloat((cell.querySelector('input')?.value ?? cell.innerText ?? '').toString().replace(',', '.'));
+        if(!isNaN(v)) sum+=v;
       });
-      const availabilityCell = row.querySelector(".availability-cell");
+      const availabilityCell=row.querySelector(".availability-cell");
       if(availabilityCell){
-        availabilityCell.innerText = (Math.round(sum*100)/100).toFixed(2);
+        availabilityCell.innerText=(Math.round(sum*100)/100).toFixed(2);
         availabilityCell.classList.add("highlight");
-        setTimeout(()=>availabilityCell.classList.remove("highlight"), 800);
+        setTimeout(()=>availabilityCell.classList.remove("highlight"),800);
       }
     }
+    function recalcAllAvailability(){
+      document.querySelectorAll('#committeesTable tr').forEach(updateAvailability);
+    }
     function updateCompletionRate(){
-      const rows = document.querySelectorAll('#committeesTable tr');
-      let totalAvailability = 0, numCommittees = 0;
+      const rows=document.querySelectorAll('#committeesTable tr');
+      let totalAvailability=0,numCommittees=0;
       rows.forEach(row=>{
         if(row.style.display==='none') return;
-        const availabilityCell = row.querySelector('.availability-cell');
-        if(availabilityCell){ totalAvailability += parseFloat(availabilityCell.innerText)||0; numCommittees++; }
+        const availabilityCell=row.querySelector('.availability-cell');
+        if(availabilityCell){ totalAvailability+=parseFloat(availabilityCell.innerText)||0; numCommittees++; }
       });
-      const denominator = numCommittees * 9;
-      const pct = denominator>0 ? ((totalAvailability/denominator)*100).toFixed(2) : '0.00';
-      const lastCollege = document.getElementById('collegeFilter').value || 'جميع الكليات';
-      document.getElementById("completionRateContainer").innerHTML =
-        `📌 نسبة الاكتمال لـ <b>${lastCollege}</b> = ${pct}% — <span class="muted">عدد اللجان: ${numCommittees}</span>`;
-    }
-    function updateAvailabilityHeader(){
-      document.getElementById("availabilityHeader").innerText = `درجة التوفر من (9)`;
+      const denominator=numCommittees * getVisibleNumericFields().length;
+      const pct=denominator>0 ? ((totalAvailability/denominator)*100).toFixed(2) : '0.00';
+      const lastCollege=document.getElementById('collegeFilter').value || 'جميع الكليات';
+      document.getElementById("completionRateContainer").innerHTML=`📌 نسبة الاكتمال لـ <b>${lastCollege}</b> = ${pct}% — <span class="muted">عدد اللجان: ${numCommittees}</span>`;
     }
 
     /* ====== إظهار/إخفاء الأعمدة لحظيًا ====== */
     function applyColumnVisibilityInstant(){
       document.querySelectorAll('.col-toggle').forEach(cb=>{
-        const field = cb.dataset.field;
-        const show  = cb.checked;
-        document.querySelectorAll(`th.col-${field}`).forEach(el=>{
-          el.classList.toggle('hidden-col', !show);
-        });
-        document.querySelectorAll(`#committeesTable td[data-field="${field}"]`).forEach(el=>{
-          el.classList.toggle('hidden-col', !show);
-        });
+        const field=cb.dataset.field; const show=cb.checked;
+        document.querySelectorAll(`th.col-${field}`).forEach(el=>el.classList.toggle('hidden-col',!show));
+        document.querySelectorAll(`#committeesTable td[data-field="${field}"]`).forEach(el=>el.classList.toggle('hidden-col',!show));
       });
+      updateAvailabilityHeader();
+      recalcAllAvailability();
+      updateCompletionRate();
     }
-    document.getElementById('columnsCard')?.addEventListener('change', (e)=>{
-      if(e.target.classList.contains('col-toggle')){
-        applyColumnVisibilityInstant();
-      }
+    document.getElementById('columnsCard')?.addEventListener('change',(e)=>{
+      if(e.target.classList.contains('col-toggle')) applyColumnVisibilityInstant();
     });
 
     /* ====== تحميل الإعدادات + شارة الفصل/العام ====== */
     async function loadSettings(){
       try{
-        const res = await apiFetch('/api/settings');
-        const settings = await res.json();
-
+        const res=await apiFetch('/api/settings'); const settings=await res.json();
         if(settings?.selectedVisits){
-          document.querySelectorAll('.visit-toggle').forEach(cb=>{
-            cb.checked = settings.selectedVisits.includes(cb.value);
-          });
+          document.querySelectorAll('.visit-toggle').forEach(cb=>{cb.checked=settings.selectedVisits.includes(cb.value)});
         }
-        updateSelectedVisits();
-        updateAvailabilityHeader();
-
         // حالة الأعمدة المحفوظة
         if(Array.isArray(settings?.visibleColumns) && settings.visibleColumns.length){
-          document.querySelectorAll('.col-toggle').forEach(cb=>{
-            cb.checked = settings.visibleColumns.includes(cb.dataset.field);
-          });
+          document.querySelectorAll('.col-toggle').forEach(cb=>{cb.checked=settings.visibleColumns.includes(cb.dataset.field)});
         }
         applyColumnVisibilityInstant();
 
         // الشارة
-        const term = settings?.term || '';
-        const ay   = settings?.academicYear || '';
-        let html = '';
-        if(term || ay){
-          html = `<span class="badge text-bg-info">📚 الفصل الحالي: <b>${term || '—'}</b> — العام: <b>${ay || '—'}</b></span>`;
-        }
-        document.getElementById('termBadge').innerHTML = html;
-
+        const term=settings?.term||''; const ay=settings?.academicYear||'';
+        let html=''; if(term||ay){html=`<span class="badge text-bg-info">📚 الفصل الحالي: <b>${term||'—'}</b> — العام: <b>${ay||'—'}</b></span>`;}
+        document.getElementById('termBadge').innerHTML=html;
       }catch{}
     }
     function updateSelectedVisits(){
-      const selected = Array.from(document.querySelectorAll('.visit-toggle:checked')).map(cb=>cb.value);
-      const el = document.getElementById('selectedVisitsContainer');
-      el.innerHTML = selected.length ? ("الزيارات: " + selected.join(' | ')) : '';
+      const selected=Array.from(document.querySelectorAll('.visit-toggle:checked')).map(cb=>cb.value);
+      document.getElementById('selectedVisitsContainer').innerHTML=selected.length?("الزيارات: "+selected.join(' | ')):'';
     }
+    document.getElementById('saveSettingsBtn')?.addEventListener('click',async()=>{
+      try{
+        const visibleColumns=Array.from(document.querySelectorAll('.col-toggle:checked')).map(cb=>cb.getAttribute('data-field'));
+        const selectedVisits=Array.from(document.querySelectorAll('.visit-toggle:checked')).map(cb=>cb.value);
+        await axios.put(`${API_BASE}/api/settings`,{visibleColumns,selectedVisits},{withCredentials:true});
+        showSuccess("✅ تم حفظ الإعدادات بنجاح");
+        updateSelectedVisits();
+        applyColumnVisibilityInstant();
+      }catch(err){console.error(err);showError("❌ خطأ في حفظ الإعدادات")}
+    });
 
     /* ====== إنشاء صف ====== */
-    function buildRow(c, idx){
-      const tr = document.createElement('tr');
-      tr.dataset.id = c._id;
+    function buildRow(c,idx){
+      const tr=document.createElement('tr');
+      tr.dataset.id=c._id;
 
-      const selCollege   = buildSelect(LIST_COLLEGES,   c.college, 'college');
-      const selCommittee = buildSelect(LIST_COMMITTEES, c.committee_name, 'committee_name');
-      const selAuditor   = buildSelect(LIST_AUDITORS,   c.auditor_name, 'auditor_name');
+      const selCollege=buildSelect(LIST_COLLEGES,c.college,'college');
+      const selCommittee=buildSelect(LIST_COMMITTEES,c.committee_name,'committee_name');
+      const selAuditor=buildSelect(LIST_AUDITORS,c.auditor_name,'auditor_name');
 
-      tr.innerHTML = `
-        <td><input type="checkbox" class="rowCheck"></td>
+      tr.innerHTML=`
         <td>${idx+1}</td>
 
-        <td data-field="college"></td>
-        <td data-field="committee_name"></td>
-        <td data-field="auditor_name"></td>
+        <td class="w-wide" data-field="college"></td>
+        <td class="w-wide" data-field="committee_name"></td>
+        <td class="w-wide" data-field="auditor_name"></td>
 
         <td class="date-col" data-field="audit_date">
           <input type="date" class="form-control form-control-sm" value="${c.audit_date ? c.audit_date.split('T')[0] : ''}">
         </td>
 
-        <!-- حقول نصية (بدون أسهم) -->
-        <td data-field="formation_decision"><input type="text" class="form-control form-control-sm" value="${c.formation_decision ?? 0}"></td>
-        <td data-field="work_plan"><input type="text" class="form-control form-control-sm" value="${c.work_plan ?? 0}"></td>
-        <td data-field="performance_indicators"><input type="text" class="form-control form-control-sm" value="${c.performance_indicators ?? 0}"></td>
-        <td data-field="meetings"><input type="text" class="form-control form-control-sm" value="${c.meetings ?? 0}"></td>
-        <td data-field="consistency"><input type="text" class="form-control form-control-sm" value="${c.consistency ?? 0}"></td>
-        <td data-field="coverage_books"><input type="text" class="form-control form-control-sm" value="${c.coverage_books ?? 0}"></td>
-        <td data-field="report1"><input type="text" class="form-control form-control-sm" value="${c.report1 ?? 0}"></td>
-        <td data-field="report2"><input type="text" class="form-control form-control-sm" value="${c.report2 ?? 0}"></td>
-        <td data-field="report3"><input type="text" class="form-control form-control-sm" value="${c.report3 ?? 0}"></td>
-        <td data-field="statistical_analysis"><input type="text" class="form-control form-control-sm" value="${c.statistical_analysis ?? 0}"></td>
+        <td class="w-narrow col-formation_decision" data-field="formation_decision"><input type="text" class="form-control form-control-sm" value="${c.formation_decision ?? 0}"></td>
+        <td class="w-narrow col-work_plan" data-field="work_plan"><input type="text" class="form-control form-control-sm" value="${c.work_plan ?? 0}"></td>
+        <td class="w-narrow col-performance_indicators" data-field="performance_indicators"><input type="text" class="form-control form-control-sm" value="${c.performance_indicators ?? 0}"></td>
+        <td class="w-narrow col-meetings" data-field="meetings"><input type="text" class="form-control form-control-sm" value="${c.meetings ?? 0}"></td>
+        <td class="w-narrow col-consistency" data-field="consistency"><input type="text" class="form-control form-control-sm" value="${c.consistency ?? 0}"></td>
+        <td class="w-narrow col-coverage_books" data-field="coverage_books"><input type="text" class="form-control form-control-sm" value="${c.coverage_books ?? 0}"></td>
+        <td class="w-narrow col-report1" data-field="report1"><input type="text" class="form-control form-control-sm" value="${c.report1 ?? 0}"></td>
+        <td class="w-narrow col-report2" data-field="report2"><input type="text" class="form-control form-control-sm" value="${c.report2 ?? 0}"></td>
+        <td class="w-narrow col-report3" data-field="report3"><input type="text" class="form-control form-control-sm" value="${c.report3 ?? 0}"></td>
+        <td class="w-narrow col-statistical_analysis" data-field="statistical_analysis"><input type="text" class="form-control form-control-sm" value="${c.statistical_analysis ?? 0}"></td>
 
-        <td class="availability-cell">${c.availability_score ?? 0}</td>
+        <td class="availability-cell w-narrow">${c.availability_score ?? 0}</td>
 
-        <td data-field="notes">
+        <td class="w-wide" data-field="notes">
           ${
             (c.notes && stripHtml(c.notes))
-            ? `<button class="btn btn-sm btn-secondary edit-row">تعديل</button>`  <!-- تبديل: هنا زر التعديل -->
+            ? `<button class="btn btn-sm btn-secondary btn-edit-open">تعديل</button>`
             : `<span class="text-muted">لا توجد ملاحظات</span>`
           }
         </td>
 
-        <td>
-          <div class="action-buttons">
-            <button class="btn btn-sm btn-info open-notes" title="عرض الملاحظات"><i class="bi bi-chat-dots"></i></button> <!-- تبديل: زر عرض الملاحظات -->
+        <td class="w-narrow">
+          <div class="d-flex justify-content-center align-items-center gap-1">
+            <button class="btn btn-sm btn-primary btn-edit-open" title="تعديل"><i class="bi bi-pencil-square"></i></button>
             <button class="btn btn-sm btn-success save-row" title="حفظ"><i class="bi bi-save"></i></button>
             <button class="btn btn-sm btn-danger delete-row" title="حذف"><i class="bi bi-trash"></i></button>
           </div>
         </td>
       `;
 
-      // إضافة القوائم المنسدلة
       tr.querySelector('[data-field="college"]').appendChild(selCollege);
       tr.querySelector('[data-field="committee_name"]').appendChild(selCommittee);
       tr.querySelector('[data-field="auditor_name"]').appendChild(selAuditor);
 
-      // حفظ الملاحظات الأصلية
-      tr.__notesHTML = c.notes || '';
-
+      tr.__notesHTML=c.notes||'';
       attachInputListeners(tr);
       updateAvailability(tr);
       return tr;
     }
 
     function attachInputListeners(tr){
-      const numericFieldsSet = new Set(["formation_decision","work_plan","performance_indicators","meetings","consistency","coverage_books","report1","report2","report3","statistical_analysis"]);
+      const numericFieldsSet=new Set(NUMERIC_FIELDS);
       tr.querySelectorAll('[data-field] input').forEach(inp=>{
-        const field = inp.closest('td').dataset.field;
-        if(!numericFieldsSet.has(field)) return;
+        const field=inp.closest('td').dataset.field;
+        if(!numericFieldsSet.has(field) && field!=='audit_date') return;
 
-        inp.addEventListener('input', ()=>{
-          const clamped = clamp01(inp.value);
-          const invalid = (clamped===null);
-          inp.classList.toggle('is-invalid', invalid);
-          if(!invalid) inp.value = clamped;
-          markRowChanged(tr);
-          updateAvailability(tr);
-          updateCompletionRate();
+        inp.addEventListener('input',()=>{
+          if(numericFieldsSet.has(field)){
+            const clamped=clamp01(inp.value);
+            const invalid=(clamped===null);
+            inp.classList.toggle('is-invalid',invalid);
+            if(!invalid) inp.value=clamped;
+            markRowChanged(tr);
+            updateAvailability(tr);
+            updateCompletionRate();
+          }else{
+            markRowChanged(tr);
+          }
         });
       });
-      tr.querySelectorAll('select, input[type="date"]').forEach(el=>{
-        el.addEventListener('change', ()=>{
-          markRowChanged(tr);
-        });
+      tr.querySelectorAll('select,input[type="date"]').forEach(el=>{
+        el.addEventListener('change',()=>{ markRowChanged(tr); if(el.type!=='date'){} });
       });
     }
-
-    function markRowChanged(tr){ tr.dataset.dirty="1"; tr.classList.add('table-warning'); }
-    function clearRowChanged(tr){ delete tr.dataset.dirty; tr.classList.remove('table-warning'); }
+    function markRowChanged(tr){tr.dataset.dirty="1";tr.classList.add('table-warning')}
+    function clearRowChanged(tr){delete tr.dataset.dirty;tr.classList.remove('table-warning')}
 
     /* ====== تحميل السجلات ====== */
     async function loadCommittees(){
       try{
-        const college = document.getElementById('collegeFilter').value;
-        const auditor = document.getElementById('auditorFilter').value;
-        let url = '/api/committees';
-        const params = [];
+        const college=document.getElementById('collegeFilter').value;
+        const auditor=document.getElementById('auditorFilter').value;
+        let url='/api/committees';
+        const params=[];
         if(college) params.push('college='+encodeURIComponent(college));
         if(auditor) params.push('auditor_name='+encodeURIComponent(auditor));
-        if(params.length) url += '?' + params.join('&');
+        if(params.length) url+='?'+params.join('&');
 
-        const res = await apiFetch(url);
-        const arr = await res.json();
+        const res=await apiFetch(url);
+        const arr=await res.json();
 
-        const tbody = document.getElementById('committeesTable');
-        tbody.innerHTML = '';
+        const tbody=document.getElementById('committeesTable');
+        tbody.innerHTML='';
 
-        if(!Array.isArray(arr) || arr.length===0){
-          tbody.innerHTML = `<tr><td colspan="19" class="text-center">لا توجد بيانات</td></tr>`;
-          document.getElementById("completionRateContainer").innerHTML = '';
-          document.getElementById("selectedVisitsContainer").innerHTML = '';
-          document.getElementById('selectedCount').textContent = '0';
-          document.getElementById('selectAll').checked = false;
+        if(!Array.isArray(arr)||arr.length===0){
+          tbody.innerHTML=`<tr><td colspan="18" class="text-center">لا توجد بيانات</td></tr>`;
+          document.getElementById("completionRateContainer").innerHTML='';
+          document.getElementById("selectedVisitsContainer").innerHTML='';
           return;
         }
 
-        arr.sort((a,b)=> (a.college||'').localeCompare(b.college||'','ar') || (a.committee_name||'').localeCompare(b.committee_name||'','ar'));
+        arr.sort((a,b)=>(a.college||'').localeCompare(b.college||'','ar') || (a.committee_name||'').localeCompare(b.committee_name||'','ar'));
 
-        arr.forEach((c, idx)=>{
-          const tr = buildRow(c, idx);
-          tbody.appendChild(tr);
-        });
+        arr.forEach((c,idx)=>{ const tr=buildRow(c,idx); tbody.appendChild(tr); });
 
-        applyColumnVisibilityInstant();
-        updateCompletionRate();
+        applyColumnVisibilityInstant();   // يحدّث العنوان ويعيد الحسابات
         applyCommitteeSearch();
-        updateSelectedCounter();
+        updateCompletionRate();
       }catch(err){
         console.error(err);
         showError('❌ فشل تحميل البيانات');
-        const tbody = document.getElementById('committeesTable');
-        tbody.innerHTML = `<tr><td colspan="19" class="text-center text-danger">فشل الجلب</td></tr>`;
+        const tbody=document.getElementById('committeesTable');
+        tbody.innerHTML=`<tr><td colspan="18" class="text-center text-danger">فشل الجلب</td></tr>`;
       }
     }
 
     /* ====== حفظ كل المعدل ====== */
-    document.getElementById('saveAllBtn').addEventListener('click', async ()=>{
+    document.getElementById('saveAllBtn').addEventListener('click',async()=>{
       try{
-        const dirtyRows = Array.from(document.querySelectorAll('#committeesTable tr.table-warning'));
-        if(!dirtyRows.length){ showError('لا توجد تعديلات'); return; }
+        const dirtyRows=Array.from(document.querySelectorAll('#committeesTable tr.table-warning'));
+        if(!dirtyRows.length){showError('لا توجد تعديلات');return;}
         for(const tr of dirtyRows){
-          const id = tr.dataset.id;
-          const payload = collectRowData(tr);
-          const date = payload.audit_date?.trim();
-          if(date && !/^\d{4}-\d{2}-\d{2}$/.test(date)){
-            showError('⚠️ صيغة التاريخ يجب أن تكون YYYY-MM-DD');
-            return;
-          }
-          await axios.put(`${API_BASE}/api/committees/${id}`, payload, { withCredentials:true });
+          const id=tr.dataset.id;
+          const payload=collectRowData(tr);
+          const date=payload.audit_date?.trim();
+          if(date && !/^\d{4}-\d{2}-\d{2}$/.test(date)){showError('⚠️ صيغة التاريخ يجب أن تكون YYYY-MM-DD');return;}
+          await axios.put(`${API_BASE}/api/committees/${id}`,payload,{withCredentials:true});
           clearRowChanged(tr);
         }
         showSuccess('✅ تم حفظ جميع التعديلات');
-      }catch(e){
-        console.error(e);
-        showError('❌ خطأ أثناء حفظ الكل');
-      }
+      }catch(e){console.error(e);showError('❌ خطأ أثناء حفظ الكل');}
     });
 
     /* ====== بحث باسم اللجنة ====== */
     function applyCommitteeSearch(){
-      const searchTerm = document.getElementById("committeeSearch").value.trim().toLowerCase();
+      const searchTerm=document.getElementById("committeeSearch").value.trim().toLowerCase();
       document.querySelectorAll("#committeesTable tr").forEach(row=>{
-        const committee = row.querySelector('[data-field="committee_name"] select')?.value || '';
-        row.style.display = committee.toLowerCase().includes(searchTerm) ? '' : 'none';
+        const committee=row.querySelector('[data-field="committee_name"] select')?.value||'';
+        row.style.display=committee.toLowerCase().includes(searchTerm)?'':'none';
       });
     }
-    document.getElementById('committeeSearch').addEventListener('input', ()=>{
-      applyCommitteeSearch();
-      updateCompletionRate();
-    });
-    document.getElementById('collegeFilter').addEventListener('change', loadCommittees);
-    document.getElementById('auditorFilter').addEventListener('change', loadCommittees);
-    document.getElementById('reloadBtn').addEventListener('click', loadCommittees);
+    document.getElementById('committeeSearch').addEventListener('input',()=>{applyCommitteeSearch();updateCompletionRate();});
+    document.getElementById('collegeFilter').addEventListener('change',loadCommittees);
+    document.getElementById('auditorFilter').addEventListener('change',loadCommittees);
+    document.getElementById('reloadBtn').addEventListener('click',loadCommittees);
 
-    /* ====== ملاحظات: فتح/حفظ ====== */
-    function openNotesModal(tr){
-      NOTES_EDITING_ROW = tr;
-      const html = tr.__notesHTML || '';
-      document.getElementById('viewNotes').innerHTML = html || '<i class="muted">لا توجد ملاحظات</i>';
-      document.getElementById('miniEditor').innerHTML = html || '';
-      new bootstrap.Modal(document.getElementById('notesModal')).show();
-    }
-    document.getElementById('saveNotesBtn').addEventListener('click', async ()=>{
-      if(!NOTES_EDITING_ROW) return;
-      const newHtml = document.getElementById('miniEditor').innerHTML;
-      NOTES_EDITING_ROW.__notesHTML = newHtml;
-      const notesCell = NOTES_EDITING_ROW.querySelector('[data-field="notes"]');
-      if(stripHtml(newHtml)){
-        // عند وجود ملاحظات نظهر زر "تعديل" كما هو مطلوب
-        notesCell.innerHTML = '<button class="btn btn-sm btn-secondary edit-row">تعديل</button>';
-      }else{
-        notesCell.innerHTML = '<span class="text-muted">لا توجد ملاحظات</span>';
-      }
-      markRowChanged(NOTES_EDITING_ROW);
-      bootstrap.Modal.getInstance(document.getElementById('notesModal')).hide();
-      showSuccess('تم تحديث الملاحظات (تحتاج حفظ الصف)');
-    });
-
-    /* ====== جمع بيانات صف ====== */
-    function collectRowData(row){
-      const data = {};
-      data.college = row.querySelector('[data-field="college"] select')?.value?.trim() || '';
-      data.committee_name = row.querySelector('[data-field="committee_name"] select')?.value?.trim() || '';
-      data.auditor_name = row.querySelector('[data-field="auditor_name"] select')?.value?.trim() || '';
-      data.audit_date = row.querySelector('[data-field="audit_date"] input')?.value || '';
-
-      ['formation_decision','work_plan','performance_indicators','meetings','consistency',
-       'coverage_books','report1','report2','report3','statistical_analysis'].forEach(f=>{
-        const inp = row.querySelector(`[data-field="${f}"] input`);
-        if(!inp) return;
-        const clamped = clamp01(inp.value);
-        data[f] = (clamped===null) ? 0 : clamped;
-      });
-
-      const availabilityCell = row.querySelector('.availability-cell');
-      data.availability_score = parseFloat(availabilityCell?.innerText)||0;
-
-      data.notes = row.__notesHTML || '';
-      return data;
-    }
-
-    /* ====== حفظ صف / حذف صف / فتح ملاحظات / تعديل صف ====== */
-    document.getElementById('committeesTable').addEventListener('click', async (e)=>{
-      const btnSave   = e.target.closest('.save-row');
-      const btnDelete = e.target.closest('.delete-row');
-      const btnNotes  = e.target.closest('.open-notes');
-      const btnEdit   = e.target.closest('.edit-row');
-      const tr = e.target.closest('tr');
-      if(!tr) return;
-
-      if(btnNotes){ openNotesModal(tr); return; }       // زر عرض الملاحظات (في عمود الإجراءات الآن)
-      if(btnEdit){ openEditRowModal(tr); return; }      // زر التعديل (في عمود الملاحظات عند وجودها)
-
-      if(btnSave){
-        const id = tr.dataset.id;
-        const payload = collectRowData(tr);
-        const date = payload.audit_date?.trim();
-        if(date && !/^\d{4}-\d{2}-\d{2}$/.test(date)){
-          showError('⚠️ صيغة التاريخ يجب أن تكون YYYY-MM-DD');
-          return;
-        }
-        try{
-          await axios.put(`${API_BASE}/api/committees/${id}`, payload, { withCredentials:true });
-          showSuccess("✅ تم حفظ التعديلات");
-          clearRowChanged(tr);
-        }catch(err){
-          console.error(err);
-          showError("❌ خطأ أثناء الحفظ");
-        }
-        return;
-      }
-
-      if(btnDelete){
-        showConfirm("⚠️ هل أنت متأكد من الحذف؟", async ()=>{
-          try{
-            await axios.delete(`${API_BASE}/api/committees/${tr.dataset.id}`, { withCredentials:true });
-            showSuccess("🗑️ تم حذف السجل بنجاح");
-            loadCommittees();
-          }catch(err){
-            console.error(err);
-            showError("❌ فشل الحذف");
-          }
-        });
-      }
-    });
-
-    /* ====== مودال تعديل صف ====== */
-    let EDITING_ROW = null;
-    function openEditRowModal(tr){
-      EDITING_ROW = tr;
-      fillSelect(document.getElementById('er_college'),   LIST_COLLEGES,   '— الكلية —');
-      fillSelect(document.getElementById('er_committee'), LIST_COMMITTEES, '— اسم اللجنة —');
-      fillSelect(document.getElementById('er_auditor'),   LIST_AUDITORS,   '— اسم المدقق —');
+    /* ====== مودال موحّد: فتح/حفظ ====== */
+    let EDITING_ROW=null;
+    function openUnifiedModal(tr){
+      EDITING_ROW=tr;
+      fillSelect(document.getElementById('er_college'),LIST_COLLEGES,'— الكلية —');
+      fillSelect(document.getElementById('er_committee'),LIST_COMMITTEES,'— اسم اللجنة —');
+      fillSelect(document.getElementById('er_auditor'),LIST_AUDITORS,'— اسم المدقق —');
 
       document.getElementById('er_college').value   = tr.querySelector('[data-field="college"] select')?.value || '';
       document.getElementById('er_committee').value = tr.querySelector('[data-field="committee_name"] select')?.value || '';
       document.getElementById('er_auditor').value   = tr.querySelector('[data-field="auditor_name"] select')?.value || '';
       document.getElementById('er_date').value      = tr.querySelector('[data-field="audit_date"] input')?.value || '';
 
-      erEditor().innerHTML = tr.__notesHTML || '';
+      const html=tr.__notesHTML||'';
+      document.getElementById('viewNotes').innerHTML = html || '<i class="muted">لا توجد ملاحظات</i>';
+      document.getElementById('er_editor').innerHTML = html || '';
 
-      new bootstrap.Modal(document.getElementById('editRowModal')).show();
+      new bootstrap.Modal(document.getElementById('editUnifiedModal')).show();
     }
-    document.getElementById('saveEditRowBtn').addEventListener('click', ()=>{
+    document.getElementById('committeesTable').addEventListener('click',async(e)=>{
+      const tr=e.target.closest('tr'); if(!tr) return;
+      if(e.target.closest('.btn-edit-open')){ openUnifiedModal(tr); return; }
+
+      const btnSave=e.target.closest('.save-row');
+      const btnDelete=e.target.closest('.delete-row');
+
+      if(btnSave){
+        const id=tr.dataset.id;
+        const payload=collectRowData(tr);
+        const date=payload.audit_date?.trim();
+        if(date && !/^\d{4}-\d{2}-\d{2}$/.test(date)){showError('⚠️ صيغة التاريخ يجب أن تكون YYYY-MM-DD');return;}
+        try{
+          await axios.put(`${API_BASE}/api/committees/${id}`,payload,{withCredentials:true});
+          showSuccess("✅ تم حفظ التعديلات");clearRowChanged(tr);
+        }catch(err){console.error(err);showError("❌ خطأ أثناء الحفظ");}
+        return;
+      }
+      if(btnDelete){
+        showConfirm("⚠️ هل أنت متأكد من الحذف؟",async()=>{
+          try{
+            await axios.delete(`${API_BASE}/api/committees/${tr.dataset.id}`,{withCredentials:true});
+            showSuccess("🗑️ تم حذف السجل بنجاح");
+            loadCommittees();
+          }catch(err){console.error(err);showError("❌ فشل الحذف");}
+        });
+      }
+    });
+
+    document.getElementById('saveUnifiedBtn').addEventListener('click',()=>{
       if(!EDITING_ROW) return;
       EDITING_ROW.querySelector('[data-field="college"] select').value        = document.getElementById('er_college').value || '';
       EDITING_ROW.querySelector('[data-field="committee_name"] select').value = document.getElementById('er_committee').value || '';
       EDITING_ROW.querySelector('[data-field="auditor_name"] select').value   = document.getElementById('er_auditor').value || '';
       EDITING_ROW.querySelector('[data-field="audit_date"] input').value      = document.getElementById('er_date').value || '';
-      EDITING_ROW.__notesHTML = erEditor().innerHTML || '';
-      const notesCell = EDITING_ROW.querySelector('[data-field="notes"]');
-      if(stripHtml(EDITING_ROW.__notesHTML)) notesCell.innerHTML = '<button class="btn btn-sm btn-secondary edit-row">تعديل</button>';
-      else notesCell.innerHTML = '<span class="text-muted">لا توجد ملاحظات</span>';
+
+      const newHtml=document.getElementById('er_editor').innerHTML;
+      EDITING_ROW.__notesHTML=newHtml||'';
+      const notesCell=EDITING_ROW.querySelector('[data-field="notes"]');
+      if(stripHtml(EDITING_ROW.__notesHTML)) notesCell.innerHTML='<button class="btn btn-sm btn-secondary btn-edit-open">تعديل</button>';
+      else notesCell.innerHTML='<span class="text-muted">لا توجد ملاحظات</span>';
+
       markRowChanged(EDITING_ROW);
-      bootstrap.Modal.getInstance(document.getElementById('editRowModal')).hide();
+      bootstrap.Modal.getInstance(document.getElementById('editUnifiedModal')).hide();
       showSuccess('تم تحديث الصف (تحتاج حفظ الصف)');
     });
 
-    /* ====== تحديد متعدد ====== */
-    function updateSelectedCounter(){
-      const count = document.querySelectorAll('#committeesTable .rowCheck:checked').length;
-      document.getElementById('selectedCount').textContent = count;
-      document.getElementById('selectAll').checked = (count>0 && count===document.querySelectorAll('#committeesTable .rowCheck').length);
-    }
-    document.getElementById('selectAll').addEventListener('change', (e)=>{
-      document.querySelectorAll('#committeesTable .rowCheck').forEach(cb=>cb.checked = e.target.checked);
-      updateSelectedCounter();
-    });
-    document.getElementById('committeesTable').addEventListener('change', (e)=>{
-      if(e.target.classList.contains('rowCheck')) updateSelectedCounter();
-    });
+    /* ====== جمع بيانات صف ====== */
+    function collectRowData(row){
+      const data={};
+      data.college=row.querySelector('[data-field="college"] select')?.value?.trim()||'';
+      data.committee_name=row.querySelector('[data-field="committee_name"] select')?.value?.trim()||'';
+      data.auditor_name=row.querySelector('[data-field="auditor_name"] select')?.value?.trim()||'';
+      data.audit_date=row.querySelector('[data-field="audit_date"] input')?.value||'';
 
-    /* ====== حذف جماعي ====== */
-    document.getElementById('bulkDeleteBtn').addEventListener('click', ()=>{
-      const ids = Array.from(document.querySelectorAll('#committeesTable .rowCheck:checked')).map(cb=>cb.closest('tr').dataset.id);
-      if(!ids.length){ showError('لا يوجد صفوف محددة'); return; }
-      showConfirm(`⚠️ حذف ${ids.length} سجل؟`, async ()=>{
-        try{
-          const resp = await axios.post(`${API_BASE}/api/committees/bulk`, { action:'delete', ids }, { withCredentials:true });
-          showSuccess(resp?.data?.message || 'تم الحذف');
-          loadCommittees();
-        }catch(err){
-          showError(err?.response?.data?.message || '❌ فشل الحذف الجماعي');
-        }
+      NUMERIC_FIELDS.forEach(f=>{
+        const inp=row.querySelector(`[data-field="${f}"] input`); if(!inp) return;
+        const clamped=clamp01(inp.value);
+        data[f]=(clamped===null)?0:clamped;
       });
-    });
 
-    /* ====== تعديل جماعي ====== */
-    const bulkEditModal = new bootstrap.Modal(document.getElementById('bulkEditModal'));
-    function toggleBulkField(chkId, inputId){
-      const chk = document.getElementById(chkId);
-      const inp = document.getElementById(inputId);
-      chk.addEventListener('change', ()=> inp.disabled = !chk.checked);
+      const availabilityCell=row.querySelector('.availability-cell');
+      data.availability_score=parseFloat(availabilityCell?.innerText)||0;
+      data.notes=row.__notesHTML||'';
+      return data;
     }
-    toggleBulkField('applyCollege','bulkCollege');
-    toggleBulkField('applyCommittee','bulkCommittee');
-    toggleBulkField('applyAuditor','bulkAuditor');
-    toggleBulkField('applyDate','bulkDate');
-    toggleBulkField('applyTerm','bulkTerm');
-    toggleBulkField('applyAY','bulkAY');
-
-    document.getElementById('bulkEditBtn').addEventListener('click', ()=>{
-      const ids = Array.from(document.querySelectorAll('#committeesTable .rowCheck:checked')).map(cb=>cb.closest('tr').dataset.id);
-      if(!ids.length){ showError('لا يوجد صفوف محددة'); return; }
-      bulkEditModal.show();
-    });
-
-    document.getElementById('applyBulkEditBtn').addEventListener('click', async ()=>{
-      const ids = Array.from(document.querySelectorAll('#committeesTable .rowCheck:checked')).map(cb=>cb.closest('tr').dataset.id);
-      if(!ids.length){ showError('لا يوجد صفوف محددة'); return; }
-
-      const patch = {};
-      if(document.getElementById('applyCollege').checked)   patch.college = document.getElementById('bulkCollege').value || '';
-      if(document.getElementById('applyCommittee').checked) patch.committee_name = document.getElementById('bulkCommittee').value || '';
-      if(document.getElementById('applyAuditor').checked)   patch.auditor_name = document.getElementById('bulkAuditor').value || '';
-      if(document.getElementById('applyDate').checked)      patch.audit_date = document.getElementById('bulkDate').value || '';
-      if(document.getElementById('applyTerm').checked)      patch.term = document.getElementById('bulkTerm').value || '';
-      if(document.getElementById('applyAY').checked)        patch.academicYear = document.getElementById('bulkAY').value || '';
-
-      if(Object.keys(patch).length===0){ showError('فعّل حقلاً واحدًا على الأقل'); return; }
-
-      try{
-        const resp = await axios.post(`${API_BASE}/api/committees/bulk`, { action:'update', ids, patch }, { withCredentials:true });
-        showSuccess(resp?.data?.message || 'تم التحديث');
-        bulkEditModal.hide();
-        loadCommittees();
-      }catch(err){
-        showError(err?.response?.data?.message || '❌ فشل التعديل الجماعي');
-      }
-    });
-
-    /* ====== إعدادات admin (زيارات/أعمدة/فصل/عام) ====== */
-    async function saveSettings(){
-      try{
-        const visibleColumns = Array.from(document.querySelectorAll('.col-toggle:checked')).map(cb=>cb.getAttribute('data-field'));
-        const selectedVisits = Array.from(document.querySelectorAll('.visit-toggle:checked')).map(cb=>cb.value);
-        await axios.put(`${API_BASE}/api/settings`, { visibleColumns, selectedVisits }, { withCredentials:true });
-        showSuccess("✅ تم حفظ الإعدادات بنجاح");
-        updateSelectedVisits();
-      }catch(err){
-        console.error(err);
-        showError("❌ خطأ في حفظ الإعدادات");
-      }
-    }
-    document.getElementById('saveSettingsBtn')?.addEventListener('click', saveSettings);
-
-    document.getElementById('saveTermBtn')?.addEventListener('click', async ()=>{
-      try{
-        const cur = await (await apiFetch('/api/settings')).json();
-        const body = {
-          visibleColumns: cur?.visibleColumns || [],
-          selectedVisits: cur?.selectedVisits || [],
-          term: document.getElementById('termSelect').value || '',
-          academicYear: document.getElementById('academicYearInput').value.trim()
-        };
-        await axios.put(`${API_BASE}/api/settings`, body, { withCredentials:true });
-        showSuccess('✅ تم حفظ الفصل/العام');
-        loadSettings();
-      }catch(err){
-        console.error(err);
-        showError('❌ تعذر حفظ الفصل/العام');
-      }
-    });
 
     /* ====== بدء التشغيل ====== */
     (async function init(){
       try{
         await ensureAuth();
-        document.getElementById('homeBtn').href = go('/committees-home.html');
-
+        document.getElementById('homeBtn').href=go('/committees-home.html');
         await loadDatalists();
         await loadSettings();
         await loadCommittees();
