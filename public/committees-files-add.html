@@ -1,0 +1,624 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <title>إضافة ملفات/روابط اللجان - نظام اللجان</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <link rel="icon" type="image/png" href="https://www.dropbox.com/scl/fi/f283e4rvv5cf9x12a1cic/my-website-logo.png?rlkey=yia776im7klypy27af32m0scy&e=1&st=vhaprvzh&dl=1">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.rtl.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
+  <style>
+    body{background:#f8f9fa;font-family:'Segoe UI',sans-serif}
+    .container{margin-top:40px;max-width:98vw}
+    .user-chip{display:inline-flex;align-items:center;gap:.25rem;font-size:1rem!important;padding:.375rem .75rem!important;line-height:1.5!important;border-radius:.375rem;font-weight:700!important}
+    .user-chip.badge #userRole{font-weight:500!important}
+
+    .section-card{border-radius:12px}
+    .section-head{display:flex;align-items:center;justify-content:space-between;gap:.5rem}
+    .muted{color:#6c757d}
+    .pill-toggle .btn{border-radius:20px}
+    .dropzone{border:2px dashed #ced4da;border-radius:.5rem;padding:18px;background:#fff;text-align:center;cursor:pointer}
+    .dropzone.dragover{background:#eef7ff;border-color:#86b7fe}
+    .file-chip{display:inline-flex;align-items:center;gap:.4rem;background:#eef7ff;border:1px solid #bee3f8;color:#0b5ed7;border-radius:999px;padding:.25rem .5rem}
+    .file-chip .remove{cursor:pointer}
+    .list-row{display:flex;gap:.5rem;align-items:center;background:#fff;border:1px solid #e9ecef;border-radius:.5rem;padding:.5rem}
+    .list-row .index{width:2rem;text-align:center;color:#6c757d}
+    .list-row .actions .btn{padding:.25rem .5rem}
+    .counter-badge{font-weight:700}
+    .sticky-panel{position:sticky;top:12px}
+    .toast-container{position:fixed;top:20px;left:50%;transform:translateX(-50%);z-index:2000}
+    .required-asterisk{color:#dc3545;margin-inline-start:.25rem}
+    .disabled-cover{pointer-events:none;opacity:.65}
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Header -->
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-2">
+      <h4 class="mb-0">إضافة ملفات/روابط اللجان</h4>
+      <div class="d-flex align-items-center gap-2">
+        <span id="userInfo" class="user-chip badge bg-light text-dark border">
+          <i class="bi bi-person"></i>
+          <span id="userUsername">—</span>
+          <span class="mx-1">—</span>
+          <span id="userFullName">—</span>
+          <span class="ms-2 badge bg-secondary" id="userRole">—</span>
+        </span>
+        <a class="btn btn-outline-primary" id="homeBtn" href="/committees-home.html">
+          <i class="bi bi-grid"></i> لوحة التحكم
+        </a>
+        <button id="logoutBtn" class="btn btn-danger">
+          <i class="bi bi-box-arrow-right"></i> خروج
+        </button>
+      </div>
+    </div>
+
+    <!-- Filters: College / Committee -->
+    <div class="card mb-3">
+      <div class="card-body row g-3">
+        <div class="col-md-4">
+          <label class="form-label">الكلية <span class="required-asterisk">*</span></label>
+          <select id="collegeSelect" class="form-select">
+            <option value="">— اختر الكلية —</option>
+          </select>
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">اسم اللجنة <span class="required-asterisk">*</span></label>
+          <select id="committeeSelect" class="form-select">
+            <option value="">— اختر اللجنة —</option>
+          </select>
+        </div>
+        <div class="col-md-4 d-flex align-items-end">
+          <div class="alert alert-info w-100 mb-0 py-2">
+            هذه الصفحة متاحة لكل الأدوار: <b>admin</b>، <b>user</b>، <b>subuser-member</b>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="row g-3">
+      <!-- Left: Forms -->
+      <div class="col-lg-9">
+        <!-- Single attachments -->
+        <div class="card section-card mb-3">
+          <div class="card-body">
+            <div class="section-head mb-3">
+              <h6 class="mb-0">قرار التشكيل</h6>
+              <div class="pill-toggle btn-group" role="group">
+                <input type="radio" class="btn-check" name="fdType" id="fdTypeFile" autocomplete="off" checked>
+                <label class="btn btn-outline-primary btn-sm" for="fdTypeFile"><i class="bi bi-file-earmark-arrow-up"></i> ملف</label>
+                <input type="radio" class="btn-check" name="fdType" id="fdTypeUrl" autocomplete="off">
+                <label class="btn btn-outline-primary btn-sm" for="fdTypeUrl"><i class="bi bi-link-45deg"></i> رابط</label>
+              </div>
+            </div>
+            <div id="fdFileZone" class="dropzone mb-2">
+              اسحب وأفلت الملف هنا أو انقر للاختيار
+              <input id="fdFileInput" type="file" hidden />
+            </div>
+            <div id="fdUrlBox" class="input-group mb-2" style="display:none">
+              <span class="input-group-text"><i class="bi bi-link-45deg"></i></span>
+              <input id="fdUrlInput" type="url" class="form-control" placeholder="https://example.com/file.pdf">
+            </div>
+            <div id="fdPreview" class="small muted"></div>
+          </div>
+        </div>
+
+        <div class="card section-card mb-3">
+          <div class="card-body">
+            <div class="section-head mb-3">
+              <h6 class="mb-0">خطة العمل</h6>
+              <div class="pill-toggle btn-group" role="group">
+                <input type="radio" class="btn-check" name="wpType" id="wpTypeFile" autocomplete="off" checked>
+                <label class="btn btn-outline-primary btn-sm" for="wpTypeFile"><i class="bi bi-file-earmark-arrow-up"></i> ملف</label>
+                <input type="radio" class="btn-check" name="wpType" id="wpTypeUrl" autocomplete="off">
+                <label class="btn btn-outline-primary btn-sm" for="wpTypeUrl"><i class="bi bi-link-45deg"></i> رابط</label>
+              </div>
+            </div>
+            <div id="wpFileZone" class="dropzone mb-2">
+              اسحب وأفلت الملف هنا أو انقر للاختيار
+              <input id="wpFileInput" type="file" hidden />
+            </div>
+            <div id="wpUrlBox" class="input-group mb-2" style="display:none">
+              <span class="input-group-text"><i class="bi bi-link-45deg"></i></span>
+              <input id="wpUrlInput" type="url" class="form-control" placeholder="https://example.com/file.pdf">
+            </div>
+            <div id="wpPreview" class="small muted"></div>
+          </div>
+        </div>
+
+        <!-- Multi: Invitations -->
+        <div class="card section-card mb-3">
+          <div class="card-body">
+            <div class="section-head mb-3">
+              <h6 class="mb-0">دعوات الاجتماع (عدد مفتوح)</h6>
+              <div>
+                <button id="addInvitationBtn" class="btn btn-sm btn-primary">
+                  <i class="bi bi-plus-circle"></i> إضافة دعوة
+                </button>
+              </div>
+            </div>
+            <div id="invitationsList" class="vstack gap-2"></div>
+          </div>
+        </div>
+
+        <!-- Multi: Minutes -->
+        <div class="card section-card mb-3">
+          <div class="card-body">
+            <div class="section-head mb-3">
+              <h6 class="mb-0">محاضر الاجتماع (عدد مفتوح)</h6>
+              <div>
+                <button id="addMinuteBtn" class="btn btn-sm btn-primary">
+                  <i class="bi bi-plus-circle"></i> إضافة محضر
+                </button>
+              </div>
+            </div>
+            <div id="minutesList" class="vstack gap-2"></div>
+          </div>
+        </div>
+
+        <!-- Multi: Coverage Letters -->
+        <div class="card section-card mb-3">
+          <div class="card-body">
+            <div class="section-head mb-3">
+              <h6 class="mb-0">كتب التغطية (عدد مفتوح)</h6>
+              <div>
+                <button id="addCoverageBtn" class="btn btn-sm btn-primary">
+                  <i class="bi bi-plus-circle"></i> إضافة كتاب تغطية
+                </button>
+              </div>
+            </div>
+            <div id="coverageList" class="vstack gap-2"></div>
+          </div>
+        </div>
+
+        <!-- Single: Reports & Statistical Analysis -->
+        <div class="row g-3">
+          <div class="col-md-6">
+            <div class="card section-card mb-3">
+              <div class="card-body">
+                <div class="section-head mb-3">
+                  <h6 class="mb-0">تقرير إنجاز 1</h6>
+                  <div class="pill-toggle btn-group" role="group">
+                    <input type="radio" class="btn-check" name="r1Type" id="r1TypeFile" autocomplete="off" checked>
+                    <label class="btn btn-outline-primary btn-sm" for="r1TypeFile">ملف</label>
+                    <input type="radio" class="btn-check" name="r1Type" id="r1TypeUrl" autocomplete="off">
+                    <label class="btn btn-outline-primary btn-sm" for="r1TypeUrl">رابط</label>
+                  </div>
+                </div>
+                <div id="r1FileZone" class="dropzone mb-2">
+                  اسحب وأفلت الملف هنا أو انقر للاختيار
+                  <input id="r1FileInput" type="file" hidden />
+                </div>
+                <div id="r1UrlBox" class="input-group mb-2" style="display:none">
+                  <span class="input-group-text"><i class="bi bi-link-45deg"></i></span>
+                  <input id="r1UrlInput" type="url" class="form-control" placeholder="https://example.com/file.pdf">
+                </div>
+                <div id="r1Preview" class="small muted"></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="col-md-6">
+            <div class="card section-card mb-3">
+              <div class="card-body">
+                <div class="section-head mb-3">
+                  <h6 class="mb-0">تقرير إنجاز 2</h6>
+                  <div class="pill-toggle btn-group" role="group">
+                    <input type="radio" class="btn-check" name="r2Type" id="r2TypeFile" autocomplete="off" checked>
+                    <label class="btn btn-outline-primary btn-sm" for="r2TypeFile">ملف</label>
+                    <input type="radio" class="btn-check" name="r2Type" id="r2TypeUrl" autocomplete="off">
+                    <label class="btn btn-outline-primary btn-sm" for="r2TypeUrl">رابط</label>
+                  </div>
+                </div>
+                <div id="r2FileZone" class="dropzone mb-2">
+                  اسحب وأفلت الملف هنا أو انقر للاختيار
+                  <input id="r2FileInput" type="file" hidden />
+                </div>
+                <div id="r2UrlBox" class="input-group mb-2" style="display:none">
+                  <span class="input-group-text"><i class="bi bi-link-45deg"></i></span>
+                  <input id="r2UrlInput" type="url" class="form-control" placeholder="https://example.com/file.pdf">
+                </div>
+                <div id="r2Preview" class="small muted"></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="col-md-6">
+            <div class="card section-card mb-3">
+              <div class="card-body">
+                <div class="section-head mb-3">
+                  <h6 class="mb-0">تقرير إنجاز 3</h6>
+                  <div class="pill-toggle btn-group" role="group">
+                    <input type="radio" class="btn-check" name="r3Type" id="r3TypeFile" autocomplete="off" checked>
+                    <label class="btn btn-outline-primary btn-sm" for="r3TypeFile">ملف</label>
+                    <input type="radio" class="btn-check" name="r3Type" id="r3TypeUrl" autocomplete="off">
+                    <label class="btn btn-outline-primary btn-sm" for="r3TypeUrl">رابط</label>
+                  </div>
+                </div>
+                <div id="r3FileZone" class="dropzone mb-2">
+                  اسحب وأفلت الملف هنا أو انقر للاختيار
+                  <input id="r3FileInput" type="file" hidden />
+                </div>
+                <div id="r3UrlBox" class="input-group mb-2" style="display:none">
+                  <span class="input-group-text"><i class="bi bi-link-45deg"></i></span>
+                  <input id="r3UrlInput" type="url" class="form-control" placeholder="https://example.com/file.pdf">
+                </div>
+                <div id="r3Preview" class="small muted"></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="col-md-6">
+            <div class="card section-card mb-3">
+              <div class="card-body">
+                <div class="section-head mb-3">
+                  <h6 class="mb-0">التحليل الإحصائي</h6>
+                  <div class="pill-toggle btn-group" role="group">
+                    <input type="radio" class="btn-check" name="saType" id="saTypeFile" autocomplete="off" checked>
+                    <label class="btn btn-outline-primary btn-sm" for="saTypeFile">ملف</label>
+                    <input type="radio" class="btn-check" name="saType" id="saTypeUrl" autocomplete="off">
+                    <label class="btn btn-outline-primary btn-sm" for="saTypeUrl">رابط</label>
+                  </div>
+                </div>
+                <div id="saFileZone" class="dropzone mb-2">
+                  اسحب وأفلت الملف هنا أو انقر للاختيار
+                  <input id="saFileInput" type="file" hidden />
+                </div>
+                <div id="saUrlBox" class="input-group mb-2" style="display:none">
+                  <span class="input-group-text"><i class="bi bi-link-45deg"></i></span>
+                  <input id="saUrlInput" type="url" class="form-control" placeholder="https://example.com/file.pdf">
+                </div>
+                <div id="saPreview" class="small muted"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Actions -->
+        <div class="card mb-5">
+          <div class="card-body d-flex flex-wrap gap-2">
+            <button id="saveBtn" class="btn btn-success"><i class="bi bi-save"></i> حفظ</button>
+            <button id="resetBtn" class="btn btn-outline-secondary"><i class="bi bi-arrow-counterclockwise"></i> تفريغ</button>
+            <a id="backBtn" class="btn btn-outline-primary" href="#"><i class="bi bi-arrow-right-circle"></i> رجوع</a>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right: Summary -->
+      <div class="col-lg-3">
+        <div class="sticky-panel">
+          <div class="card">
+            <div class="card-body">
+              <h6 class="mb-3">ملخص سريع</h6>
+              <div class="small mb-2">الكلية: <b id="sumCollege">—</b></div>
+              <div class="small mb-3">اللجنة: <b id="sumCommittee">—</b></div>
+
+              <ul class="list-unstyled small vstack gap-2">
+                <li>قرار التشكيل: <span id="sumFD" class="counter-badge">—</span></li>
+                <li>خطة العمل: <span id="sumWP" class="counter-badge">—</span></li>
+                <li>الدعوات: <span id="sumInv" class="counter-badge">0</span></li>
+                <li>المحاضر: <span id="sumMin" class="counter-badge">0</span></li>
+                <li>كتب التغطية: <span id="sumCov" class="counter-badge">0</span></li>
+                <li>تقرير 1: <span id="sumR1" class="counter-badge">—</span></li>
+                <li>تقرير 2: <span id="sumR2" class="counter-badge">—</span></li>
+                <li>تقرير 3: <span id="sumR3" class="counter-badge">—</span></li>
+                <li>التحليل الإحصائي: <span id="sumSA" class="counter-badge">—</span></li>
+              </ul>
+
+              <hr>
+              <div class="small muted">سيتم لاحقًا رفع الملفات/تثبيت الروابط عند ربط الصفحة مع نهايات السيرفر.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Toasts -->
+    <div class="toast-container">
+      <div id="toastSuccess" class="toast align-items-center text-bg-success border-0 mb-2" role="alert">
+        <div class="d-flex"><div class="toast-body">✅ تم تجهيز البيانات للإرسال</div><button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button></div>
+      </div>
+      <div id="toastError" class="toast align-items-center text-bg-danger border-0 mb-2" role="alert">
+        <div class="d-flex"><div class="toast-body">❌ حدث خطأ</div><button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+  <script>
+    /* ====== بيئة موحّدة ====== */
+    const RENDER_BASE='https://vdash-qkyv.onrender.com';
+    const host=location.hostname;
+    const isGithub=host.endsWith('github.io');
+    const isLocal=host==='localhost'||host==='127.0.0.1';
+    const API_BASE=isGithub?RENDER_BASE:(isLocal?'http://localhost:3000':'');
+    const go=(path)=>isGithub?(RENDER_BASE+path):path;
+
+    const toastSuccess=new bootstrap.Toast(document.getElementById('toastSuccess'));
+    const toastError  =new bootstrap.Toast(document.getElementById('toastError'));
+    const apiFetch=(path,opts={})=>fetch(`${API_BASE}${path}`,{credentials:'include',...opts});
+
+    /* ====== صلاحيات/جلسة ====== */
+    let CURRENT_USER=null;
+    function renderUser(u){
+      const username=u?.username||(u?.email?u.email.split('@')[0]:'—');
+      document.getElementById('userUsername').textContent=username;
+      document.getElementById('userFullName').textContent=u?.name||'—';
+      document.getElementById('userRole').textContent=u?.role||'—';
+    }
+    async function ensureAuth(){
+      try{
+        const r=await apiFetch('/auth/committees/me');
+        const j=await r.json();
+        if(!j?.authenticated){
+          location.href=go('/committees-login.html?next='+encodeURIComponent('/committees-files-add.html'));throw 0;
+        }
+        if(j.user?.isActive===false){
+          alert('🚫 حسابك معطّل. الرجاء التواصل مع المشرف.');
+          location.href=go('/committees-home.html');throw 0;
+        }
+        CURRENT_USER=j.user;renderUser(j.user);
+      }catch{throw 0;}
+    }
+    document.getElementById('homeBtn').href=go('/committees-home.html');
+    document.getElementById('logoutBtn').addEventListener('click',async()=>{
+      try{
+        const r=await apiFetch('/auth/committees/logout',{method:'POST',headers:{'Content-Type':'application/json'}});
+        if(r.ok){toastSuccess.show();setTimeout(()=>location.href=go('/committees-login.html'),700)}
+        else{toastError.show()}
+      }catch{toastError.show()}
+    });
+    document.getElementById('backBtn').href=go('/committees-home.html');
+
+    /* ====== القوائم (كلية/لجنة) ====== */
+    function normalizeName(item){ if(typeof item==='string') return item; return item?.name||item?.committee_name||item?.college||''; }
+    async function loadDatalists(){
+      const [cR,mR]=await Promise.all([
+        apiFetch('/api/colleges'),
+        apiFetch('/api/committee-names?q=').catch(()=>apiFetch('/api/committees-master'))
+      ]);
+      const colleges=await cR.json().catch(()=>[]);
+      const committees=await mR.json().catch(()=>[]);
+      const collegeSel=document.getElementById('collegeSelect');
+      const committeeSel=document.getElementById('committeeSelect');
+      (colleges||[]).forEach(c=>{const n=normalizeName(c);if(!n)return;const o=document.createElement('option');o.value=o.textContent=n;collegeSel.appendChild(o);});
+      (committees||[]).forEach(c=>{const n=normalizeName(c);if(!n)return;const o=document.createElement('option');o.value=o.textContent=n;committeeSel.appendChild(o);});
+    }
+    function refreshSummary(){
+      document.getElementById('sumCollege').textContent=state.college||'—';
+      document.getElementById('sumCommittee').textContent=state.committee_name||'—';
+      document.getElementById('sumFD').textContent=state.formation_decision? (state.formation_decision.type==='url'?'رابط':'ملف'): '—';
+      document.getElementById('sumWP').textContent=state.work_plan? (state.work_plan.type==='url'?'رابط':'ملف'): '—';
+      document.getElementById('sumInv').textContent=state.invitations.length;
+      document.getElementById('sumMin').textContent=state.minutes.length;
+      document.getElementById('sumCov').textContent=state.coverage_letters.length;
+      document.getElementById('sumR1').textContent=state.report1? (state.report1.type==='url'?'رابط':'ملف'): '—';
+      document.getElementById('sumR2').textContent=state.report2? (state.report2.type==='url'?'رابط':'ملف'): '—';
+      document.getElementById('sumR3').textContent=state.report3? (state.report3.type==='url'?'رابط':'ملف'): '—';
+      document.getElementById('sumSA').textContent=state.statistical_analysis? (state.statistical_analysis.type==='url'?'رابط':'ملف'): '—';
+      toggleActions();
+    }
+    function toggleActions(){
+      const disabled = !(state.college && state.committee_name);
+      document.getElementById('saveBtn').classList.toggle('disabled-cover',disabled);
+    }
+
+    document.getElementById('collegeSelect').addEventListener('change',e=>{state.college=e.target.value;refreshSummary();});
+    document.getElementById('committeeSelect').addEventListener('change',e=>{state.committee_name=e.target.value;refreshSummary();});
+
+    /* ====== State ====== */
+    const state={
+      college:'',
+      committee_name:'',
+      formation_decision:null,
+      work_plan:null,
+      invitations:[],
+      minutes:[],
+      coverage_letters:[],
+      report1:null, report2:null, report3:null,
+      statistical_analysis:null
+    };
+
+    /* ====== أدوات مشتركة ====== */
+    function humanFile(f){ return `${f.name} — ${(f.size/1024).toFixed(1)} KB`; }
+    function isValidUrl(u){ try{ new URL(u); return true; } catch{ return false; } }
+
+    function wireSingle(sectionKey, typeRadios, fileZoneId, fileInputId, urlBoxId, urlInputId, previewId){
+      const [radioFile, radioUrl]=typeRadios;
+      const zone=document.getElementById(fileZoneId);
+      const fileInput=document.getElementById(fileInputId);
+      const urlBox=document.getElementById(urlBoxId);
+      const urlInput=document.getElementById(urlInputId);
+      const preview=document.getElementById(previewId);
+
+      function setMode(){
+        const isFile=radioFile.checked;
+        zone.style.display=isFile?'block':'none';
+        urlBox.style.display=isFile?'none':'flex';
+        if(!isFile){ state[sectionKey]=null; preview.innerHTML=''; }
+        refreshSummary();
+      }
+      radioFile.addEventListener('change',setMode);
+      radioUrl.addEventListener('change',setMode);
+      setMode();
+
+      zone.addEventListener('click',()=>fileInput.click());
+      ['dragenter','dragover'].forEach(ev=>zone.addEventListener(ev,e=>{e.preventDefault();e.stopPropagation();zone.classList.add('dragover');}));
+      ;['dragleave','drop'].forEach(ev=>zone.addEventListener(ev,e=>{e.preventDefault();e.stopPropagation();zone.classList.remove('dragover');}));
+      zone.addEventListener('drop',e=>{
+        const f=e.dataTransfer.files?.[0]; if(!f) return;
+        state[sectionKey]={type:'file',file:f,name:f.name}; preview.innerHTML=`<span class="file-chip"><i class="bi bi-paperclip"></i>${humanFile(f)}<i class="bi bi-x-circle remove"></i></span>`;
+        preview.querySelector('.remove').addEventListener('click',()=>{state[sectionKey]=null;preview.innerHTML='';refreshSummary();});
+        refreshSummary();
+      });
+      fileInput.addEventListener('change',e=>{
+        const f=e.target.files?.[0]; if(!f) return;
+        state[sectionKey]={type:'file',file:f,name:f.name}; preview.innerHTML=`<span class="file-chip"><i class="bi bi-paperclip"></i>${humanFile(f)}<i class="bi bi-x-circle remove"></i></span>`;
+        preview.querySelector('.remove').addEventListener('click',()=>{state[sectionKey]=null;preview.innerHTML='';fileInput.value='';refreshSummary();});
+        refreshSummary();
+      });
+      urlInput.addEventListener('input',()=>{
+        const v=urlInput.value.trim();
+        if(!v){ state[sectionKey]=null; preview.textContent=''; refreshSummary(); return; }
+        if(isValidUrl(v)){
+          state[sectionKey]={type:'url',value:v,name:''};
+          preview.innerHTML=`<span class="text-success"><i class="bi bi-check2-circle"></i> رابط صالح</span>`;
+        }else{
+          state[sectionKey]=null;
+          preview.innerHTML=`<span class="text-danger"><i class="bi bi-exclamation-triangle"></i> رابط غير صالح</span>`;
+        }
+        refreshSummary();
+      });
+    }
+
+    function addMultiRow(listEl, arrRef){
+      const row=document.createElement('div');
+      row.className='list-row';
+      row.innerHTML=`
+        <span class="index">#</span>
+        <div class="btn-group btn-group-sm" role="group" aria-label="type">
+          <input type="radio" class="btn-check" name="t-${crypto.randomUUID()}" id="f-${crypto.randomUUID()}" checked>
+          <label class="btn btn-outline-primary">ملف</label>
+          <input type="radio" class="btn-check" id="u-${crypto.randomUUID()}">
+          <label class="btn btn-outline-primary">رابط</label>
+        </div>
+        <div class="flex-grow-1 file-area">
+          <div class="dropzone mb-0">انقر لاختيار ملف<input type="file" hidden /></div>
+        </div>
+        <div class="flex-grow-1 url-area" style="display:none">
+          <div class="input-group">
+            <span class="input-group-text"><i class="bi bi-link-45deg"></i></span>
+            <input type="url" class="form-control" placeholder="https://example.com/file.pdf">
+          </div>
+        </div>
+        <div class="actions ms-2">
+          <button class="btn btn-outline-danger"><i class="bi bi-trash"></i></button>
+        </div>
+      `;
+      const idxSpan=row.querySelector('.index');
+      const drop=row.querySelector('.file-area .dropzone');
+      const fileInput=row.querySelector('.file-area input[type="file"]');
+      const urlArea=row.querySelector('.url-area');
+      const urlInput=row.querySelector('.url-area input[type="url"]');
+      const delBtn=row.querySelector('.actions .btn');
+
+      const radios=row.querySelectorAll('.btn-check');
+      const [fileRadio,urlRadio]=radios;
+
+      const item={type:'file',file:null,value:'',name:''};
+      arrRef.push(item);
+
+      function refreshIndex(){ idxSpan.textContent = (Array.from(listEl.children).indexOf(row)+1); }
+      function switchMode(){
+        const isFile=fileRadio.checked;
+        row.querySelector('.file-area').style.display=isFile?'block':'none';
+        row.querySelector('.url-area').style.display=isFile?'none':'block';
+        item.type=isFile?'file':'url';
+        item.file=null; item.value=''; item.name='';
+        drop.innerHTML='انقر لاختيار ملف<input type="file" hidden />';
+        refreshSummary();
+      }
+      radios.forEach(r=>r.addEventListener('change',switchMode));
+      switchMode();
+
+      drop.addEventListener('click',()=>fileInput.click());
+      fileInput.addEventListener('change',e=>{
+        const f=e.target.files?.[0]; if(!f) return;
+        item.file=f; item.name=f.name;
+        drop.innerHTML=`<span class="file-chip"><i class="bi bi-paperclip"></i>${humanFile(f)}<i class="bi bi-x-circle remove"></i></span>`;
+        drop.querySelector('.remove').addEventListener('click',()=>{item.file=null;item.name='';fileInput.value='';drop.innerHTML='انقر لاختيار ملف<input type="file" hidden />';refreshSummary();});
+        refreshSummary();
+      });
+      urlInput.addEventListener('input',()=>{
+        const v=urlInput.value.trim();
+        if(isValidUrl(v)){ item.value=v; urlInput.classList.remove('is-invalid'); }
+        else{ item.value=''; if(v) urlInput.classList.add('is-invalid'); else urlInput.classList.remove('is-invalid'); }
+        refreshSummary();
+      });
+      delBtn.addEventListener('click',()=>{
+        const i=arrRef.indexOf(item);
+        if(i>=0) arrRef.splice(i,1);
+        row.remove(); Array.from(listEl.children).forEach(()=>{}); 
+        Array.from(listEl.children).forEach(()=>{}); 
+        Array.from(listEl.children).forEach(refreshIndex);
+        refreshSummary();
+      });
+
+      listEl.appendChild(row);
+      Array.from(listEl.children).forEach(refreshIndex);
+      refreshSummary();
+    }
+
+    /* ====== ربط الأقسام ====== */
+    wireSingle('formation_decision', [document.getElementById('fdTypeFile'),document.getElementById('fdTypeUrl')], 'fdFileZone','fdFileInput','fdUrlBox','fdUrlInput','fdPreview');
+    wireSingle('work_plan', [document.getElementById('wpTypeFile'),document.getElementById('wpTypeUrl')], 'wpFileZone','wpFileInput','wpUrlBox','wpUrlInput','wpPreview');
+
+    wireSingle('report1', [document.getElementById('r1TypeFile'),document.getElementById('r1TypeUrl')], 'r1FileZone','r1FileInput','r1UrlBox','r1UrlInput','r1Preview');
+    wireSingle('report2', [document.getElementById('r2TypeFile'),document.getElementById('r2TypeUrl')], 'r2FileZone','r2FileInput','r2UrlBox','r2UrlInput','r2Preview');
+    wireSingle('report3', [document.getElementById('r3TypeFile'),document.getElementById('r3TypeUrl')], 'r3FileZone','r3FileInput','r3UrlBox','r3UrlInput','r3Preview');
+    wireSingle('statistical_analysis', [document.getElementById('saTypeFile'),document.getElementById('saTypeUrl')], 'saFileZone','saFileInput','saUrlBox','saUrlInput','saPreview');
+
+    document.getElementById('addInvitationBtn').addEventListener('click',()=>addMultiRow(document.getElementById('invitationsList'), state.invitations));
+    document.getElementById('addMinuteBtn').addEventListener('click',()=>addMultiRow(document.getElementById('minutesList'), state.minutes));
+    document.getElementById('addCoverageBtn').addEventListener('click',()=>addMultiRow(document.getElementById('coverageList'), state.coverage_letters));
+
+    /* ====== حفظ/تفريغ ====== */
+    function buildPayloadPreview(){
+      // ملاحظة: للملفات سنضع قيمة تمهيدية "FILE:<name>" حتى نربط الرفع لاحقًا
+      function mapSingle(x){
+        if(!x) return null;
+        if(x.type==='url') return { type:'url', value:x.value, name:x.name||'' };
+        if(x.type==='file' && x.file) return { type:'file', value:`FILE:${x.file.name}`, name:x.file.name };
+        return null;
+      }
+      function mapMany(arr){
+        return arr.map(it=> it.type==='url'
+          ? { type:'url', value: it.value, name: it.name||'' }
+          : (it.file ? { type:'file', value:`FILE:${it.file.name}`, name: it.file.name } : null)
+        ).filter(Boolean);
+      }
+      return {
+        college: state.college,
+        committee_name: state.committee_name,
+        formation_decision: mapSingle(state.formation_decision),
+        work_plan: mapSingle(state.work_plan),
+        invitations: mapMany(state.invitations),
+        minutes: mapMany(state.minutes),
+        coverage_letters: mapMany(state.coverage_letters),
+        report1: mapSingle(state.report1),
+        report2: mapSingle(state.report2),
+        report3: mapSingle(state.report3),
+        statistical_analysis: mapSingle(state.statistical_analysis)
+      };
+    }
+
+    document.getElementById('saveBtn').addEventListener('click',async()=>{
+      try{
+        if(!state.college || !state.committee_name){
+          alert('الرجاء اختيار الكلية واسم اللجنة'); return;
+        }
+        const payload=buildPayloadPreview();
+        console.log('Prepared payload (preview only):', payload);
+        // لاحقًا: سنستبدل بما يناسب (FormData للملفات + JSON للروابط) إلى endpoint تحدده
+        toastSuccess.show();
+      }catch(e){ console.error(e); toastError.show(); }
+    });
+
+    document.getElementById('resetBtn').addEventListener('click',()=>{
+      // تفريغ سريع
+      location.reload();
+    });
+
+    /* ====== بدء التشغيل ====== */
+    (async function init(){
+      try{
+        await ensureAuth();
+        await loadDatalists();
+        refreshSummary();
+      }catch{}
+    })();
+  </script>
+</body>
+</html>
