@@ -75,7 +75,7 @@
               فصل
             </button>
           </div>
-          <div class="form-text">الاتصال يتم بحساب المستخدم الشخصي ويمنح صلاحية <code>drive.file</code> فقط. </div>
+          <div class="form-text">الاتصال يتم بحساب المستخدم الشخصي ويمنح صلاحية <code>drive.readonly</code> فقط (اختيار ملفات موجودة دون رفع).</div>
         </div>
       </div>
     </div>
@@ -120,17 +120,17 @@
                 <label class="form-label">رابط قرار التشكيل</label>
                 <div class="input-group">
                   <span class="input-group-text"><i class="bi bi-link-45deg"></i></span>
-                  <input id="fdUrl" type="url" class="form-control" placeholder="https://example.com/formation.pdf">
-                  <button class="btn btn-outline-primary" data-pick="fdUrl"><i class="bi bi-cloud-upload"></i> من Drive</button>
+                  <input id="fdUrl" type="url" class="form-control" placeholder="https://drive.google.com/...">
+                  <button class="btn btn-outline-primary" data-pick="fdUrl"><i class="bi bi-folder2-open"></i> من Drive</button>
                 </div>
-                <div id="fdHint" class="form-text">يمكنك اختيار/رفع ملف من Google Drive وسيتم تعبئة الرابط تلقائيًا.</div>
+                <div id="fdHint" class="form-text">اختر ملفًا موجودًا من Google Drive أو ألصق الرابط يدويًا.</div>
               </div>
               <div class="col-md-6">
                 <label class="form-label">رابط خطة العمل</label>
                 <div class="input-group">
                   <span class="input-group-text"><i class="bi bi-link-45deg"></i></span>
-                  <input id="wpUrl" type="url" class="form-control" placeholder="https://example.com/workplan.pdf">
-                  <button class="btn btn-outline-primary" data-pick="wpUrl"><i class="bi bi-cloud-upload"></i> من Drive</button>
+                  <input id="wpUrl" type="url" class="form-control" placeholder="https://drive.google.com/...">
+                  <button class="btn btn-outline-primary" data-pick="wpUrl"><i class="bi bi-folder2-open"></i> من Drive</button>
                 </div>
               </div>
             </div>
@@ -170,32 +170,32 @@
                 <label class="form-label">رابط تقرير إنجاز 1</label>
                 <div class="input-group">
                   <span class="input-group-text"><i class="bi bi-link-45deg"></i></span>
-                  <input id="r1Url" type="url" class="form-control" placeholder="https://example.com/report1.pdf">
-                  <button class="btn btn-outline-primary" data-pick="r1Url"><i class="bi bi-cloud-upload"></i> من Drive</button>
+                  <input id="r1Url" type="url" class="form-control" placeholder="https://drive.google.com/...">
+                  <button class="btn btn-outline-primary" data-pick="r1Url"><i class="bi bi-folder2-open"></i> من Drive</button>
                 </div>
               </div>
               <div class="col-md-6">
                 <label class="form-label">رابط تقرير إنجاز 2</label>
                 <div class="input-group">
                   <span class="input-group-text"><i class="bi bi-link-45deg"></i></span>
-                  <input id="r2Url" type="url" class="form-control" placeholder="https://example.com/report2.pdf">
-                  <button class="btn btn-outline-primary" data-pick="r2Url"><i class="bi bi-cloud-upload"></i> من Drive</button>
+                  <input id="r2Url" type="url" class="form-control" placeholder="https://drive.google.com/...">
+                  <button class="btn btn-outline-primary" data-pick="r2Url"><i class="bi bi-folder2-open"></i> من Drive</button>
                 </div>
               </div>
               <div class="col-md-6">
                 <label class="form-label">رابط تقرير إنجاز 3</label>
                 <div class="input-group">
                   <span class="input-group-text"><i class="bi bi-link-45deg"></i></span>
-                  <input id="r3Url" type="url" class="form-control" placeholder="https://example.com/report3.pdf">
-                  <button class="btn btn-outline-primary" data-pick="r3Url"><i class="bi bi-cloud-upload"></i> من Drive</button>
+                  <input id="r3Url" type="url" class="form-control" placeholder="https://drive.google.com/...">
+                  <button class="btn btn-outline-primary" data-pick="r3Url"><i class="bi bi-folder2-open"></i> من Drive</button>
                 </div>
               </div>
               <div class="col-md-6">
                 <label class="form-label">رابط التحليل الإحصائي</label>
                 <div class="input-group">
                   <span class="input-group-text"><i class="bi bi-link-45deg"></i></span>
-                  <input id="saUrl" type="url" class="form-control" placeholder="https://example.com/statistics.pdf">
-                  <button class="btn btn-outline-primary" data-pick="saUrl"><i class="bi bi-cloud-upload"></i> من Drive</button>
+                  <input id="saUrl" type="url" class="form-control" placeholder="https://drive.google.com/...">
+                  <button class="btn btn-outline-primary" data-pick="saUrl"><i class="bi bi-folder2-open"></i> من Drive</button>
                 </div>
               </div>
             </div>
@@ -272,7 +272,8 @@
     /* ====== بيانات Google ====== */
     const GOOGLE_CLIENT_ID = 'YOUR_GOOGLE_CLIENT_ID';
     const GOOGLE_API_KEY   = 'YOUR_GOOGLE_API_KEY';
-    const DRIVE_SCOPE      = 'https://www.googleapis.com/auth/drive.file'; // أقل صلاحية مناسبة لسيناريوك :contentReference[oaicite:5]{index=5}
+    // ▼ تم التبديل إلى قراءة فقط
+    const DRIVE_SCOPE      = 'https://www.googleapis.com/auth/drive.readonly';
     let googleAccessToken  = null;
 
     /* ====== صلاحيات/جلسة نظامك ====== */
@@ -372,7 +373,7 @@
     wireSingleUrl('r3Url', (x)=>state.report3=x);
     wireSingleUrl('saUrl', (x)=>state.statistical_analysis=x);
 
-    /* ====== Google Drive: GIS + Picker ====== */
+    /* ====== Google Drive: GIS + Picker (اختيار فقط) ====== */
     let pickerApiLoaded=false;
     function setGDriveState(connected, emailText=''){
       const badge=document.getElementById('gdriveState');
@@ -386,14 +387,9 @@
         badge.textContent='غير متصل';
         btnDisc.classList.add('d-none');
       }
-      // فعّل/عطّل كل أزرار "من Drive"
-      document.querySelectorAll('[data-pick]').forEach(b=>{
-        b.disabled = !connected;
-      });
-      // وأزرار الصفوف الديناميكية لاحقًا يتم تفعيلها تلقائيًا عند الإنشاء حسب googleAccessToken
+      document.querySelectorAll('[data-pick]').forEach(b=>{ b.disabled = !connected; });
     }
 
-    // تحميل gapi picker
     function loadPickerApi(){
       return new Promise(res=>{
         if(pickerApiLoaded) return res();
@@ -401,12 +397,11 @@
       });
     }
 
-    // تدفق الحصول على Access Token باستخدام Google Identity Services (Token client)
     let gisTokenClient=null;
     function initGis(){
       gisTokenClient = google.accounts.oauth2.initTokenClient({
         client_id: GOOGLE_CLIENT_ID,
-        scope: DRIVE_SCOPE,
+        scope: DRIVE_SCOPE, // readonly
         callback: (resp)=>{
           if(resp && resp.access_token){
             googleAccessToken = resp.access_token;
@@ -419,17 +414,13 @@
       if(googleAccessToken) return true;
       if(!gisTokenClient) initGis();
       return new Promise(resolve=>{
-        gisTokenClient.requestAccessToken({prompt: 'consent'}); // أول مرة سيظهر consent
-        const wait = setInterval(()=>{
-          if(googleAccessToken){ clearInterval(wait); resolve(true); }
-        }, 200);
+        gisTokenClient.requestAccessToken({prompt: 'consent'});
+        const wait = setInterval(()=>{ if(googleAccessToken){ clearInterval(wait); resolve(true); } }, 200);
         setTimeout(()=>{ clearInterval(wait); resolve(!!googleAccessToken); }, 10000);
       });
     }
 
-    // استرجاع webViewLink لملف
     async function fetchWebViewLink(fileId){
-      // Drive files.get with fields=webViewLink (يتطلب توكن صالح) :contentReference[oaicite:6]{index=6}
       const r = await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}?fields=webViewLink`, {
         headers: { Authorization: 'Bearer ' + googleAccessToken }
       });
@@ -437,7 +428,6 @@
       return j.webViewLink || `https://drive.google.com/file/d/${fileId}/view`;
     }
 
-    // فتح Google Picker (اختيار + رفع)
     async function openDrivePicker(onPicked){
       const ok = await ensureDriveToken();
       if(!ok){ alert('تعذر الاتصال بـ Google Drive'); return; }
@@ -447,19 +437,17 @@
         .setIncludeFolders(true)
         .setSelectFolderEnabled(false);
 
-      const uploadView = new google.picker.DocsUploadView(); // يوفّر الرفع داخل نفس النافذة :contentReference[oaicite:7]{index=7}
+      // لا يوجد DocsUploadView في وضع readonly (اختيار فقط)
 
       const picker = new google.picker.PickerBuilder()
-        .setAppId('') // اختياري
         .setOAuthToken(googleAccessToken)
         .setDeveloperKey(GOOGLE_API_KEY)
         .addView(viewDocs)
-        .addView(uploadView)
         .setLocale('ar')
         .setSize(880, 520)
         .setCallback(async (data)=>{
           if(data.action === google.picker.Action.PICKED && data.docs && data.docs.length){
-            const file = data.docs[0]; // أول عنصر
+            const file = data.docs[0];
             const fileId = file.id;
             try{
               const link = await fetchWebViewLink(fileId);
@@ -474,7 +462,6 @@
       picker.setVisible(true);
     }
 
-    // زر الاتصال/الفصل
     document.getElementById('gdriveConnectBtn').addEventListener('click', async ()=>{
       const ok = await ensureDriveToken();
       setGDriveState(ok);
@@ -484,7 +471,6 @@
       setGDriveState(false);
     });
 
-    // ربط أزرار "من Drive" للحقول المفردة
     document.querySelectorAll('[data-pick]').forEach(btn=>{
       btn.addEventListener('click', ()=>{
         const targetId = btn.getAttribute('data-pick');
@@ -496,7 +482,7 @@
       });
     });
 
-    /* ====== القوائم المتعددة (روابط فقط) + زر Drive في كل صف ====== */
+    /* ====== القوائم المتعددة (روابط فقط) + زر Drive لكل صف ====== */
     function addMultiUrlRow(listEl, arrRef){
       const row=document.createElement('div');
       row.className='list-row';
@@ -505,8 +491,8 @@
         <div class="flex-grow-1">
           <div class="input-group">
             <span class="input-group-text"><i class="bi bi-link-45deg"></i></span>
-            <input type="url" class="form-control url-input" placeholder="https://example.com/doc.pdf">
-            <button class="btn btn-outline-primary btn-drive-row"><i class="bi bi-cloud-upload"></i></button>
+            <input type="url" class="form-control url-input" placeholder="https://drive.google.com/...">
+            <button class="btn btn-outline-primary btn-drive-row"><i class="bi bi-folder2-open"></i></button>
           </div>
           <div class="form-text">يمكنك أيضًا كتابة عنوان مختصر في الحقل التالي (اختياري).</div>
           <input type="text" class="form-control form-control-sm mt-1 title-input" placeholder="عنوان اختياري (مثال: دعوة اجتماع 1)">
@@ -598,13 +584,8 @@
         await ensureAuth();
         await loadDatalists();
         refreshSummary();
-
-        // تفعيل حالة أزرار Drive حسب اتصال المستخدم
         setGDriveState(false);
-
-        // تحميل مكتبة gapi عند الجاهزية
         window.addEventListener('load', ()=>{
-          if(window.gapi){ /* noop: سنستدعي gapi.load عند أول openDrivePicker */ }
           if(window.google && window.google.accounts){ initGis(); }
         });
       }catch{}
