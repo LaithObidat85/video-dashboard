@@ -7,49 +7,44 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.rtl.min.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@latest/font/bootstrap-icons.css">
-
   <style>
 .user-chip{
-  display: inline-flex;
-  align-items: center;
-  gap: .25rem;
-  font-size: 1rem;
-  padding: .375rem .75rem;
-  line-height: 1.5;
-  border-radius: .375rem;
+  display:inline-flex;
+  align-items:center;
+  gap:.25rem;
+  font-size:1rem;
+  padding:.375rem .75rem;
+  line-height:1.5;
+  border-radius:.375rem
 }
-
-    body{background:#f8f9fa;font-family:'Segoe UI',sans-serif}
-    .container{max-width:1100px;margin-top:40px}
-    .card-link{display:block;text-decoration:none;color:inherit;border-radius:16px;box-shadow:0 6px 18px rgba(0,0,0,.08);transition:.2s}
-    .card-link:hover{transform:translateY(-3px);box-shadow:0 8px 24px rgba(0,0,0,.12)}
-    .icon{font-size:38px}
-    .admin-only{display:none;} /* تُزال برمجياً عند admin */
-    .user-chip{font-size:.9rem}
+body{background:#f8f9fa;font-family:'Segoe UI',sans-serif}
+.container{max-width:1100px;margin-top:40px}
+.card-link{display:block;text-decoration:none;color:inherit;border-radius:16px;box-shadow:0 6px 18px rgba(0,0,0,.08);transition:.2s}
+.card-link:hover{transform:translateY(-3px);box-shadow:0 8px 24px rgba(0,0,0,.12)}
+.icon{font-size:38px}
+.admin-only{display:none}
+.user-chip{font-size:.9rem}
   </style>
 </head>
 <body>
   <div class="container">
-    <!-- Header -->
     <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-2">
-  <h3 class="mb-0">لوحة نظام اللجان</h3>
-  <div class="d-flex align-items-center gap-2">
-    <span id="userInfo" class="user-chip badge bg-light text-dark border">
-      <i class="bi bi-person"></i>
-      <span id="userUsername">—</span>
-      <span class="mx-1">—</span>
-      <span id="userFullName">—</span>
-      <span class="ms-2 badge bg-secondary" id="userRole">—</span>
-    </span>
-    <button id="logoutBtn" class="btn btn-danger">
-      <i class="bi bi-box-arrow-right"></i> خروج
-    </button>
-  </div>
-</div>
+      <h3 class="mb-0">لوحة نظام اللجان</h3>
+      <div class="d-flex align-items-center gap-2">
+        <span id="userInfo" class="user-chip badge bg-light text-dark border">
+          <i class="bi bi-person"></i>
+          <span id="userUsername">—</span>
+          <span class="mx-1">—</span>
+          <span id="userFullName">—</span>
+          <span class="ms-2 badge bg-secondary" id="userRole">—</span>
+        </span>
+        <button id="logoutBtn" class="btn btn-danger">
+          <i class="bi bi-box-arrow-right"></i> خروج
+        </button>
+      </div>
+    </div>
 
-    <!-- Grid -->
     <div class="row g-4">
-      <!-- add_evaluation.html (user/admin) -->
       <div class="col-12 col-sm-6 col-lg-4">
         <a href="/add_evaluation.html" class="card-link p-4 bg-white d-block h-100">
           <div class="icon text-primary"><i class="bi bi-journal-plus"></i></div>
@@ -58,16 +53,14 @@
         </a>
       </div>
 
-      <!-- manage_committees.html (admin-only) -->
       <div class="col-12 col-sm-6 col-lg-4" data-admin="true">
-        <a href="/manage_committees.html" class="card-link p-4 bg-white d-block h-100">
+        <a href="https://vdash-qkyv.onrender.com/manage_committees.html" class="card-link p-4 bg-white d-block h-100">
           <div class="icon text-success"><i class="bi bi-gear"></i></div>
           <h5 class="mt-3">إدارة تقييم اللجان</h5>
           <p class="mb-0 text-muted">تحرير/حذف التقييمات</p>
         </a>
       </div>
 
-      <!-- committees-names-manage.html (admin-only) -->
       <div class="col-12 col-sm-6 col-lg-4 admin-only" data-admin="true">
         <a href="/committees-names-manage.html" class="card-link p-4 bg-white d-block h-100">
           <div class="icon text-info"><i class="bi bi-list-check"></i></div>
@@ -76,7 +69,6 @@
         </a>
       </div>
 
-      <!-- manage_colleges.html (admin-only) -->
       <div class="col-12 col-sm-6 col-lg-4 admin-only" data-admin="true">
         <a href="/manage_colleges.html" class="card-link p-4 bg-white d-block h-100">
           <div class="icon text-warning"><i class="bi bi-building"></i></div>
@@ -85,7 +77,6 @@
         </a>
       </div>
 
-      <!-- manage_auditors.html (admin-only) -->
       <div class="col-12 col-sm-6 col-lg-4 admin-only" data-admin="true">
         <a href="/manage_auditors.html" class="card-link p-4 bg-white d-block h-100">
           <div class="icon text-danger"><i class="bi bi-person-badge"></i></div>
@@ -94,25 +85,14 @@
         </a>
       </div>
 
-      <!-- users-manage.html (admin-only) -->
-<div class="col-12 col-sm-6 col-lg-4 admin-only" data-admin="true">
-  <a href="/users-manage.html" class="card-link p-4 bg-white d-block h-100">
-    <div class="icon text-dark"><i class="bi bi-people-fill"></i></div>
-    <h5 class="mt-3">إدارة المستخدمين</h5>
-    <p class="mb-0 text-muted">إضافة/تعديل/تعطيل مستخدم</p>
-  </a>
-</div>
-
-      <!-- audit-logs.html (admin-only) -->
       <div class="col-12 col-sm-6 col-lg-4 admin-only" data-admin="true">
-        <a href="/audit-logs.html" class="card-link p-4 bg-white d-block h-100">
-          <div class="icon text-secondary"><i class="bi bi-clipboard-data"></i></div>
-          <h5 class="mt-3">سجل العمليات</h5>
-          <p class="mb-0 text-muted">من أجرى الإضافة/التعديل/الحذف</p>
+        <a href="/users-manage.html" class="card-link p-4 bg-white d-block h-100">
+          <div class="icon text-dark"><i class="bi bi-people-fill"></i></div>
+          <h5 class="mt-3">إدارة المستخدمين</h5>
+          <p class="mb-0 text-muted">إضافة/تعديل/تعطيل مستخدم</p>
         </a>
       </div>
 
-      <!-- evaluations_dashboard.html (عام) -->
       <div class="col-12 col-sm-6 col-lg-4">
         <a href="/evaluations_dashboard.html" class="card-link p-4 bg-white d-block h-100" target="_blank">
           <div class="icon text-secondary"><i class="bi bi-bar-chart-line"></i></div>
@@ -123,7 +103,6 @@
     </div>
   </div>
 
-  <!-- Toasts -->
   <div class="toast-container position-fixed top-0 start-50 translate-middle-x p-3" style="z-index:2000">
     <div id="toastSuccess" class="toast align-items-center text-bg-success border-0 mb-2" role="alert">
       <div class="d-flex">
@@ -166,25 +145,45 @@
       const username = user?.username || (user?.email ? user.email.split('@')[0] : '—');
       document.getElementById('userUsername').textContent = username || '—';
       document.getElementById('userFullName').textContent = user?.name || '—';
-
-      // ✅ عرض "member" بدلاً من user
       const roleRaw = (user?.role || '—').toLowerCase();
       const roleShown = roleRaw === 'user' ? 'member' : (user?.role || '—');
       document.getElementById('userRole').textContent = roleShown;
 
-      if (roleRaw === 'admin') {
-        // أظهر العناصر الإدارية
-        document.querySelectorAll('.admin-only').forEach(el => el.classList.remove('admin-only'));
-      } else {
-        // ✅ عضو (subuser/member): أخفِ كل البطاقات عدا رابط العرض العام
-        document.querySelectorAll('.row.g-4 > [class^="col-"]').forEach(col => {
+      const cols = document.querySelectorAll('.row.g-4 > [class^="col-"]');
+      function showBy(fn){
+        cols.forEach(col => {
           const a = col.querySelector('a.card-link');
           if (!a) return;
-          if (!/\/evaluations_dashboard\.html\b/.test(a.getAttribute('href') || '')) {
-            col.style.display = 'none';
-          }
+          const href = a.getAttribute('href') || '';
+          col.style.display = fn(href) ? '' : 'none';
         });
       }
+
+      if (roleRaw === 'admin') {
+        document.querySelectorAll('.admin-only').forEach(el => el.classList.remove('admin-only'));
+        cols.forEach(col => { col.style.display = ''; });
+        return;
+      }
+
+      if (roleRaw === 'user') {
+        showBy(href =>
+          /\/add_evaluation\.html\b/.test(href) ||
+          /\/evaluations_dashboard\.html\b/.test(href) ||
+          /manage_committees\.html\b/.test(href)
+        );
+        return;
+      }
+
+      if (roleRaw === 'subuser-member') {
+        showBy(href =>
+          /\/evaluations_dashboard\.html\b/.test(href)
+        );
+        return;
+      }
+
+      showBy(href =>
+        /\/evaluations_dashboard\.html\b/.test(href)
+      );
     }
 
     async function ensureAuth(){
