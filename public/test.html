@@ -53,24 +53,38 @@
       </div>
     </div>
 
-    <!-- اختيار الكلية واللجنة -->
+    <!-- اختيار الكلية/اللجنة + الفصل/العام -->
     <div class="card mb-3">
-      <div class="card-body row g-3">
-        <div class="col-md-4">
+      <div class="card-body row g-3 align-items-end">
+        <div class="col-md-3">
           <label class="form-label">الكلية <span class="required-asterisk">*</span></label>
           <select id="collegeSelect" class="form-select">
             <option value="">— اختر الكلية —</option>
           </select>
         </div>
-        <div class="col-md-4">
+        <div class="col-md-3">
           <label class="form-label">اسم اللجنة <span class="required-asterisk">*</span></label>
           <select id="committeeSelect" class="form-select">
             <option value="">— اختر اللجنة —</option>
           </select>
         </div>
-        <div class="col-md-4 d-flex align-items-end">
+        <div class="col-md-2">
+          <label class="form-label">الفصل الدراسي <span class="required-asterisk">*</span></label>
+          <select id="termSelect" class="form-select">
+            <option value="">— اختر الفصل —</option>
+            <option value="الفصل الأول">الفصل الأول</option>
+            <option value="الفصل الثاني">الفصل الثاني</option>
+            <option value="الفصل الصيفي">الفصل الصيفي</option>
+          </select>
+        </div>
+        <div class="col-md-2">
+          <label class="form-label">العام الجامعي <span class="required-asterisk">*</span></label>
+          <input id="academicYearInput" type="text" class="form-control" placeholder="مثال: 2024-2025 أو 2024/2025">
+          <div id="ayHelp" class="form-text">صيغة صحيحة: 20xx-20yy أو 20xx/20yy</div>
+        </div>
+        <div class="col-md-2">
           <div class="alert alert-info w-100 mb-0 py-2">
-            هذه الصفحة متاحة للأدوار: <b>admin</b>، <b>user</b>، <b>subuser-member</b>
+            متاح للأدوار: <b>admin</b>، <b>user</b>، <b>subuser-member</b>
           </div>
         </div>
       </div>
@@ -208,8 +222,9 @@
           <div class="card">
             <div class="card-body">
               <h6 class="mb-3">ملخص سريع</h6>
-              <div class="small mb-2">الكلية: <b id="sumCollege">—</b></div>
-              <div class="small mb-3">اللجنة: <b id="sumCommittee">—</b></div>
+              <div class="small mb-1">الكلية: <b id="sumCollege">—</b></div>
+              <div class="small mb-1">اللجنة: <b id="sumCommittee">—</b></div>
+              <div class="small mb-3">الفصل/العام: <b id="sumTermAy">—</b></div>
 
               <ul class="list-unstyled small vstack gap-2">
                 <li>قرار التشكيل: <span id="sumFD" class="counter-badge">—</span></li>
@@ -308,6 +323,8 @@
     const state={
       college:'',
       committee_name:'',
+      term:'',
+      academicYear:'',
       formation_decision:null, // {type:'url', value:'...'}
       work_plan:null,
       invitations:[], // [{value, title}]
@@ -317,9 +334,11 @@
       statistical_analysis:null
     };
 
+    /* ====== ملخص وحالة الأزرار ====== */
     function refreshSummary(){
       document.getElementById('sumCollege').textContent=state.college||'—';
       document.getElementById('sumCommittee').textContent=state.committee_name||'—';
+      document.getElementById('sumTermAy').textContent=(state.term||'—')+' / '+(state.academicYear||'—');
       document.getElementById('sumFD').textContent=state.formation_decision? 'رابط' : '—';
       document.getElementById('sumWP').textContent=state.work_plan? 'رابط' : '—';
       document.getElementById('sumInv').textContent=state.invitations.length;
@@ -335,11 +354,36 @@
       toggleActions();
     }
     function toggleActions(){
-      const disabled = !(state.college && state.committee_name);
-      document.getElementById('saveBtn').classList.toggle('disabled-cover',disabled);
+      const requiredFilled = !!(state.college && state.committee_name && state.term && validAcademicYear(state.academicYear));
+      document.getElementById('saveBtn').classList.toggle('disabled-cover',!requiredFilled);
     }
+
+    /* ====== ربط مدخلات الهوية ====== */
     document.getElementById('collegeSelect').addEventListener('change',e=>{state.college=e.target.value;refreshSummary();});
     document.getElementById('committeeSelect').addEventListener('change',e=>{state.committee_name=e.target.value;refreshSummary();});
+    document.getElementById('termSelect').addEventListener('change',e=>{state.term=e.target.value;refreshSummary();});
+
+    /* ====== التحقق من العام الجامعي ====== */
+    const ayInput=document.getElementById('academicYearInput');
+    function validAcademicYear(v){
+      if(!v) return false;
+      const rx=/^(20\d{2})[\/-](20\d{2})$/; // مثل السيرفر
+      return rx.test(String(v).trim());
+    }
+    function normalizeAcademicYear(v){
+      const t=String(v).trim();
+      if(!validAcademicYear(t)) return '';
+      const m=t.match(/(20\d{2}).*(20\d{2})/);
+      if(!m) return t;
+      return `${m[1]}-${m[2]}`; // نخزنها دائماً بشرطة
+    }
+    ayInput.addEventListener('input',()=>{
+      const v=ayInput.value;
+      const ok=validAcademicYear(v);
+      ayInput.classList.toggle('is-invalid',!ok && v.trim().length>0);
+      state.academicYear = ok ? normalizeAcademicYear(v) : '';
+      refreshSummary();
+    });
 
     /* ====== التحقق من الروابط ====== */
     function isValidUrl(u){ try{ new URL(u); return true; } catch{ return false; } }
@@ -353,7 +397,6 @@
         refreshSummary();
       });
     }
-
     wireSingleUrl('fdUrl', (x)=>state.formation_decision=x);
     wireSingleUrl('wpUrl', (x)=>state.work_plan=x);
     wireSingleUrl('r1Url', (x)=>state.report1=x);
@@ -372,8 +415,8 @@
             <span class="input-group-text"><i class="bi bi-link-45deg"></i></span>
             <input type="url" class="form-control url-input" placeholder="https://example.com/doc.pdf">
           </div>
-          <div class="form-text">يمكنك أيضًا كتابة عنوان مختصر في الحقل التالي (اختياري).</div>
-          <input type="text" class="form-control form-control-sm mt-1 title-input" placeholder="عنوان اختياري (مثال: دعوة اجتماع 1)">
+          <div class="form-text">يمكنك كتابة عنوان مختصر (اختياري).</div>
+          <input type="text" class="form-control form-control-sm mt-1 title-input" placeholder="عنوان اختياري">
         </div>
         <div class="actions ms-2">
           <button class="btn btn-outline-danger"><i class="bi bi-trash"></i></button>
@@ -401,7 +444,6 @@
         const i=arrRef.indexOf(item);
         if(i>=0) arrRef.splice(i,1);
         row.remove();
-        Array.from(listEl.children).forEach(()=>{}); 
         Array.from(listEl.children).forEach(refreshIndex);
         refreshSummary();
       });
@@ -410,17 +452,18 @@
       Array.from(listEl.children).forEach(refreshIndex);
       refreshSummary();
     }
-
     document.getElementById('addInvitationBtn').addEventListener('click',()=>addMultiUrlRow(document.getElementById('invitationsList'), state.invitations));
     document.getElementById('addMinuteBtn').addEventListener('click',()=>addMultiUrlRow(document.getElementById('minutesList'), state.minutes));
     document.getElementById('addCoverageBtn').addEventListener('click',()=>addMultiUrlRow(document.getElementById('coverageList'), state.coverage_letters));
 
-    /* ====== حفظ/تفريغ ====== */
+    /* ====== بناء الحمولة وحفظ/تفريغ ====== */
     function buildPayload(){
       return {
         college: state.college,
         committee_name: state.committee_name,
-        formation_decision: state.formation_decision, // {type:'url', value:'...'} أو null
+        term: state.term,
+        academicYear: state.academicYear, // مُطبّع بصيغة 2024-2025
+        formation_decision: state.formation_decision,
         work_plan: state.work_plan,
         invitations: state.invitations.filter(x=>x.value).map(x=>({ type:'url', value:x.value, title:x.title||'' })),
         minutes: state.minutes.filter(x=>x.value).map(x=>({ type:'url', value:x.value, title:x.title||'' })),
@@ -434,17 +477,15 @@
 
     document.getElementById('saveBtn').addEventListener('click',async()=>{
       try{
-        if(!state.college || !state.committee_name){
-          alert('الرجاء اختيار الكلية واسم اللجنة'); return;
-        }
-        // تحققات سريعة للروابط المفردة (اختياري)
-        const singles=['formation_decision','work_plan','report1','report2','report3','statistical_analysis'];
-        for(const k of singles){
-          const v=state[k]; if(v && (!v.value || !isValidUrl(v.value))){ alert('هناك رابط غير صالح في: '+k); return; }
-        }
+        // تحقق الحقول الإلزامية
+        if(!state.college){ alert('الرجاء اختيار الكلية'); return; }
+        if(!state.committee_name){ alert('الرجاء اختيار اسم اللجنة'); return; }
+        if(!state.term){ alert('الرجاء اختيار الفصل الدراسي'); return; }
+        if(!validAcademicYear(ayInput.value)){ ayInput.classList.add('is-invalid'); ayInput.focus(); alert('صيغة العام الجامعي غير صحيحة'); return; }
+
         const payload=buildPayload();
         console.log('Prepared payload (preview only):', payload);
-        // لاحقًا سيتم الإرسال إلى خادمك عبر endpoint مناسب:
+        // لاحقًا: إرسال إلى الخادم
         // await fetch(`${API_BASE}/api/committees-files`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload), credentials:'include' });
         toastSuccess.show();
       }catch(e){ console.error(e); toastError.show(); }
