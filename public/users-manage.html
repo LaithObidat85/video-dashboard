@@ -86,15 +86,12 @@
   </style>
 </head>
 <body>
-<!--  <div class="container"> -->
   <div class="container-fluid" style="padding-top:40px">
     <!-- Header -->
     <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-2">
-      <!-- يمين: العنوان فقط -->
       <div class="d-flex align-items-center gap-2">
         <h3 class="mb-0">إدارة المستخدمين</h3>
       </div>
-      <!-- يسار: معلومات المستخدم + خروج + لوحة التحكم -->
       <div class="d-flex align-items-center gap-2">
   <span id="userInfo" class="user-chip badge bg-light text-dark border">
     <i class="bi bi-person"></i>
@@ -115,7 +112,6 @@
 
     </div>
 
-    <!-- إضافة مستخدم -->
     <!-- إضافة مستخدم (قابلة للطي) -->
 <div class="card mb-4">
   <div class="card-header p-0">
@@ -170,7 +166,6 @@
     </div>
   </div>
 </div>
-
 
     <!-- أدوات الجدول -->
     <div class="card mb-3">
@@ -248,13 +243,15 @@
                 <th>البريد</th>
                 <th>الدور</th>
                 <th>الحالة</th>
-                <th>الإنشاء</th>
+                <th>آخر إجراء</th>       <!-- ✅ جديد -->
+                <th>آخر دخول</th>        <!-- ✅ جديد -->
+                <th>الإنشاء/التحديث</th>
                 <th>إجراءات</th>
               </tr>
             </thead>
             <tbody id="usersTbody">
               <!-- سكلتون أولي -->
-              <tr><td colspan="9">
+              <tr><td colspan="11">
                 <div class="skeleton" style="height:18px;margin:8px 0;"></div>
                 <div class="skeleton" style="height:18px;margin:8px 0;"></div>
                 <div class="skeleton" style="height:18px;margin:8px 0;"></div>
@@ -355,38 +352,29 @@ document.addEventListener('DOMContentLoaded', () => {
     const isRender = host.endsWith('onrender.com');
     const isLocal  = host === 'localhost' || host === '127.0.0.1';
 
-    // عندما تكون الصفحة على GitHub Pages نوجّه الطلبات إلى Render.
-    // عندما تكون على Render نستخدم نفس الأصل (سلسلة فارغة).
-    // محليًا نوجّه إلى بورت 3000.
     const API_BASE = isGithub ? RENDER_BASE : (isLocal ? 'http://localhost:3000' : '');
      
-  // Helper لتحويل الروابط (login/home) لنفس أصل الـ API عند تشغيل الصفحة من GitHub Pages
-const go = (path) => isGithub ? (RENDER_BASE + path) : path;
+  const go = (path) => isGithub ? (RENDER_BASE + path) : path;
 
 const apiFetch = (path, opts = {}) =>
   fetch(`${API_BASE}${path}`, { credentials: 'include', ...opts });
 
-/* عدّل زر "لوحة التحكم" ليوجَّه حسب البيئة */
 document.addEventListener('DOMContentLoaded', () => {
   const homeBtn = document.getElementById('homeBtn');
   if (homeBtn) homeBtn.href = go('/committees-home.html');
 });
 
 
-    
-
     /* ====== Toasts ====== */
     const toastSuccess = new bootstrap.Toast(document.getElementById('toastSuccess'));
     const toastError   = new bootstrap.Toast(document.getElementById('toastError'));
     const toastInfo    = new bootstrap.Toast(document.getElementById('toastInfo'));
-    /* ====== Confirm Toast (تأكيد عبر توست) ====== */
 const toastConfirmEl  = document.getElementById('toastConfirm');
 const toastConfirm    = new bootstrap.Toast(toastConfirmEl, { autohide: false });
 const confirmMsgEl    = toastConfirmEl.querySelector('#toastConfirmMsg');
 const confirmYesBtn   = toastConfirmEl.querySelector('#toastConfirmYes');
 const confirmNoBtn    = toastConfirmEl.querySelector('#toastConfirmNo');
 
-/** يعرض توست تأكيد ويعيد Promise<boolean> */
 function confirmToast({ message='هل تريد المتابعة؟', confirmText='تأكيد', cancelText='إلغاء' } = {}){
   return new Promise((resolve)=>{
     confirmMsgEl.textContent = message;
@@ -425,7 +413,9 @@ function confirmToast({ message='هل تريد المتابعة؟', confirmText=
       const username = user?.username || (user?.email? user.email.split('@')[0] : '—');
       document.getElementById('userUsername').textContent = username;
       document.getElementById('userFullName').textContent = user?.name || '—';
-      document.getElementById('userRole').textContent = user?.role || '—';
+      // ✅ إظهار member بدلاً من user في الشارة فقط
+      const roleRaw = (user?.role || '').toLowerCase();
+      document.getElementById('userRole').textContent = roleRaw==='user' ? 'member' : (user?.role || '—');
     }
     async function ensureAdmin(){
       const me = await fetchMe();
@@ -494,11 +484,24 @@ function confirmToast({ message='هل تريد المتابعة؟', confirmText=
         <input class="form-check-input inline-active" type="checkbox" role="switch" data-id="${id}" ${isActive?'checked':''} title="تفعيل/تعطيل فوري">
       </div>`; }
 
+    const pageAr = m => ({Evaluation:'تقييم اللجان',College:'الكليات',Auditor:'المدققون',Committee:'أسماء اللجان',Settings:'الإعدادات',User:'المستخدمون'})[m] || (m||'—');
+    const actionAr = a => a==='create'?'إضافة':(a==='update'?'تعديل':(a==='delete'?'حذف':(a||'—')));
+
+    function renderLastActionCell(u){
+      const la = u.lastAction;
+      if(!la) return '—';
+      const when = la.createdAt ? new Date(la.createdAt).toLocaleString('ar-EG') : '—';
+      return `${actionAr(la.action)} على صفحة ${pageAr(la.model)}<br><small class="text-muted">${when}</small>`;
+    }
+    function renderLastLoginCell(u){
+      return u.lastLogin ? new Date(u.lastLogin).toLocaleString('ar-EG') : '—';
+    }
+
     function renderRows(users, offset=0){
   const esc = s => String(s ?? '').replace(/"/g,'&quot;');
 
   if(!Array.isArray(users) || users.length===0){
-    tbody.innerHTML = `<tr class="text-center text-muted"><td colspan="9">لا يوجد نتائج</td></tr>`;
+    tbody.innerHTML = `<tr class="text-center text-muted"><td colspan="11">لا يوجد نتائج</td></tr>`;
     return;
   }
 
@@ -536,7 +539,17 @@ function confirmToast({ message='هل تريد المتابعة؟', confirmText=
         ${activeToggle(u._id||u.id, u.isActive!==false)}
       </td>
 
-      <!-- سنحدّث هذه الخلية بعد الحفظ مباشرة -->
+      <!-- ✅ آخر إجراء -->
+      <td class="cell-lastaction">
+        ${renderLastActionCell(u)}
+      </td>
+
+      <!-- ✅ آخر دخول -->
+      <td class="cell-lastlogin">
+        ${renderLastLoginCell(u)}
+      </td>
+
+      <!-- تاريخ الإنشاء/التحديث (كما هو مع تحديث فوري عند الحفظ) -->
       <td class="cell-created">
         ${ (u.updatedAt||u.createdAt) ? new Date(u.updatedAt||u.createdAt).toLocaleString('ar-EG') : '—' }
       </td>
@@ -562,7 +575,6 @@ function confirmToast({ message='هل تريد المتابعة؟', confirmText=
 
     /* ====== تحميل المستخدمين ====== */
     async function fetchUsers(){
-      // قراءة الفلاتر من UI
       state.search = document.getElementById('q').value.trim();
       state.role   = document.getElementById('fRole').value;
       state.active = document.getElementById('fActive').value;
@@ -572,7 +584,7 @@ function confirmToast({ message='هل تريد المتابعة؟', confirmText=
       saveFilters();
       qs.set({ q: state.search, role: state.role, active: state.active, sort: state.sort, limit: state.limit, page: state.page });
 
-      tbody.innerHTML = `<tr><td colspan="9">
+      tbody.innerHTML = `<tr><td colspan="11">
         <div class="skeleton" style="height:18px;margin:8px 0;"></div>
         <div class="skeleton" style="height:18px;margin:8px 0;"></div>
         <div class="skeleton" style="height:18px;margin:8px 0;"></div>
@@ -599,7 +611,7 @@ function confirmToast({ message='هل تريد المتابعة؟', confirmText=
         document.getElementById('pageNum').textContent = state.page;
         renderRows(state.items, (state.page-1)*state.limit);
       }catch(e){
-        tbody.innerHTML = `<tr class="text-center text-danger"><td colspan="9">حدث خطأ في جلب المستخدمين</td></tr>`;
+        tbody.innerHTML = `<tr class="text-center text-danger"><td colspan="11">حدث خطأ في جلب المستخدمين</td></tr>`;
         console.error('fetchUsers error:', e);
       }
     }
@@ -624,7 +636,7 @@ function confirmToast({ message='هل تريد المتابعة؟', confirmText=
         return false;
       }finally{
         row?.classList.remove('saving');
-        fetchUsers(); // لتحديث الشارات
+        fetchUsers(); // لتحديث الشارات والأعمدة الجديدة
       }
     }
 
@@ -697,7 +709,6 @@ async function deleteUser(id, name){
     const addForm = document.getElementById('addUserForm');
     const addBtn = document.getElementById('addBtn');
 
-    // إظهار/إخفاء كلمة المرور
     const pwInput = document.getElementById('pwInput');
     const togglePwBtn = document.getElementById('togglePwBtn');
     togglePwBtn.addEventListener('click', ()=>{
@@ -726,7 +737,6 @@ async function deleteUser(id, name){
     }
     pwInput.addEventListener('input', renderPwMeter);
 
-    // تحقّق بسيط من التفرّد عبر البحث
     let _debTimer;
     function debounce(fn,ms){ return (...a)=>{ clearTimeout(_debTimer); _debTimer=setTimeout(()=>fn(...a),ms); }; }
     const checkUnique = debounce(async ()=>{
@@ -770,21 +780,26 @@ async function deleteUser(id, name){
       }
     });
 
-    /* ====== تصدير CSV لما هو معروض ====== */
     function exportCSV(rows){
-      const header = ['name','username','email','role','isActive','createdAt'];
+      const header = ['name','username','email','role','isActive','lastAction.action','lastAction.model','lastAction.createdAt','lastLogin','createdAt','updatedAt'];
       const toCSV = s => `"${String(s??'').replace(/"/g,'""')}"`;
-      const lines = [header.join(',')].concat(rows.map(r =>
-        [r.name, r.username, r.email, r.role, r.isActive!==false, r.createdAt?new Date(r.createdAt).toISOString():'']
-          .map(toCSV).join(',')
-      ));
+      const lines = [header.join(',')].concat(rows.map(r =>{
+        const la = r.lastAction || {};
+        return [
+          r.name, r.username, r.email, r.role, r.isActive!==false,
+          la.action||'', la.model||'', la.createdAt?new Date(la.createdAt).toISOString():'',
+          r.lastLogin?new Date(r.lastLogin).toISOString():'',
+          r.createdAt?new Date(r.createdAt).toISOString():'',
+          r.updatedAt?new Date(r.updatedAt).toISOString():''
+        ].map(toCSV).join(',');
+      }));
       const blob = new Blob([lines.join('\n')], {type:'text/csv;charset=utf-8;'});
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a'); a.href = url; a.download = 'users.csv'; a.click();
       URL.revokeObjectURL(url);
     }
 
-    /* ====== أحداث الجدول ====== */
+    /* ====== أحداث الجدول/الفلاتر ====== */
     document.getElementById('btnReload').addEventListener('click', ()=>{ state.page=1; fetchUsers(); });
     document.getElementById('btnExport').addEventListener('click', ()=> exportCSV(state.items));
 
@@ -838,52 +853,37 @@ async function deleteUser(id, name){
       }
     });
 
-    /* ====== تحرير مباشر (name/username/email) مع حفظ تلقائي ====== */
+/* ====== تحرير مباشر (name/username/email) مع حفظ تلقائي ====== */
 async function saveInline(inputEl){
   const id    = inputEl.dataset.id;
   const field = inputEl.dataset.field;
   const value = inputEl.value.trim();
-
   if(!id || !field) return;
-
-  // منع حفظ لا يلزم: قارن بالقيمة الأصلية إن أردت (اختياري)
-  // هنا نحفظ دائمًا بمجرد الخروج أو Enter
   const row = tbody.querySelector(`tr[data-id="${id}"]`);
   row?.classList.add('cell-saving');
-
-  // إعادة استخدام دالتك الموجودة لتحديث جزئي
   const ok = await updateUserPartial(id, { [field]: value });
-
   if(ok){
-    // حدّث خانة التاريخ/الوقت مباشرةً إلى الآن (كما طلبت)
     const createdCell = row?.querySelector('.cell-created');
     if(createdCell){
       createdCell.textContent = new Date().toLocaleString('ar-EG');
     }
   }
-
   row?.classList.remove('cell-saving');
 }
-
-// حفظ عند الخروج من الحقل
 tbodyEl.addEventListener('blur', (e)=>{
   const t = e.target;
   if(t.classList.contains('inline-edit')){
     saveInline(t);
   }
 }, true);
-
-// حفظ عند Enter
 tbodyEl.addEventListener('keydown', (e)=>{
   const t = e.target;
   if(t.classList.contains('inline-edit') && e.key === 'Enter'){
     e.preventDefault();
-    t.blur(); // سيشغّل الحفظ عبر حدث blur
+    t.blur();
   }
 });
 
-
-    // تغيير الدور جماعيًا من القائمة
     document.querySelectorAll('.dropdown-menu [data-role]').forEach(a=>{
       a.addEventListener('click', (e)=>{
         e.preventDefault();
@@ -911,16 +911,14 @@ tbodyEl.addEventListener('keydown', (e)=>{
   bulkAction({ action:'delete' }, '🗑️ تم حذف المحددين');
 });
 
-
-    /* ====== إقلاع (IIFE بدل top-level await) ====== */
     (async function init(){
       try{
-        await ensureAdmin();      // يتحقق أنه admin ويعرض الشارة
-        loadFilters();            // يسترجع الفلاتر المخزنة
+        await ensureAdmin();
+        loadFilters();
         const urlp = new URLSearchParams(location.search);
         state.page  = parseInt(urlp.get('page')||'1',10);
-        renderPwMeter();          // يرسم مقياس قوة كلمة المرور مبدئياً
-        await fetchUsers();       // يجلب المستخدمين ويعرضهم
+        renderPwMeter();
+        await fetchUsers();
       }catch(e){
         console.error('init error:', e);
       }
