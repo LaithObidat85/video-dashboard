@@ -81,7 +81,7 @@
 .user-chip.badge #userRole{
   font-weight: 500 !important; /* أو 400 لتبقى عادية */
 }
-
+.inline-role { min-width: 160px; }
 
   </style>
 </head>
@@ -541,7 +541,7 @@ function confirmToast({ message='هل تريد المتابعة؟', confirmText=
                value="${esc(u.email)}" placeholder="—">
       </td>
 
-      <td style="width:140px">${roleSelect(u._id||u.id, u.role||'user')}</td>
+      <td style="width:180px">${roleSelect(u._id||u.id, u.role||'user')}</td>
       <td style="width:110px">
         ${u.isActive===false?'<span class="badge badge-inactive">معطّل</span>':'<span class="badge badge-active">نشط</span>'}
         ${activeToggle(u._id||u.id, u.isActive!==false)}
