@@ -6,22 +6,19 @@
   <link rel="icon" type="image/png" href="https://www.dropbox.com/scl/fi/f283e4rvv5cf9x12a1cic/my-website-logo.png?rlkey=yia776im7klypy27af32m0scy&e=1&st=vhaprvzh&dl=1">
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.rtl.min.css">
-  <!-- <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css"> -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@latest/font/bootstrap-icons.css">
 
   <style>
-/* مساواة ارتفاع شارة معلومات المستخدم بزر "خروج" */
 .user-chip{
   display: inline-flex;
   align-items: center;
   gap: .25rem;
-  font-size: 1rem;         /* نفس حجم خط الأزرار */
-  padding: .375rem .75rem; /* نفس حشوة الأزرار */
-  line-height: 1.5;        /* نفس خط الأساس للأزرار */
-  border-radius: .375rem;  /* نفس نصف القطر للأزرار */
+  font-size: 1rem;
+  padding: .375rem .75rem;
+  line-height: 1.5;
+  border-radius: .375rem;
 }
 
-    
     body{background:#f8f9fa;font-family:'Segoe UI',sans-serif}
     .container{max-width:1100px;margin-top:40px}
     .card-link{display:block;text-decoration:none;color:inherit;border-radius:16px;box-shadow:0 6px 18px rgba(0,0,0,.08);transition:.2s}
@@ -44,13 +41,11 @@
       <span id="userFullName">—</span>
       <span class="ms-2 badge bg-secondary" id="userRole">—</span>
     </span>
-    <!-- حُذف زر: عرض عام (بدون تسجيل) -->
     <button id="logoutBtn" class="btn btn-danger">
       <i class="bi bi-box-arrow-right"></i> خروج
     </button>
   </div>
 </div>
-
 
     <!-- Grid -->
     <div class="row g-4">
@@ -107,7 +102,6 @@
     <p class="mb-0 text-muted">إضافة/تعديل/تعطيل مستخدم</p>
   </a>
 </div>
-
 
       <!-- audit-logs.html (admin-only) -->
       <div class="col-12 col-sm-6 col-lg-4 admin-only" data-admin="true">
@@ -172,13 +166,23 @@
       const username = user?.username || (user?.email ? user.email.split('@')[0] : '—');
       document.getElementById('userUsername').textContent = username || '—';
       document.getElementById('userFullName').textContent = user?.name || '—';
-      document.getElementById('userRole').textContent = user?.role || '—';
 
-      // إذا كان Admin أظهر البطاقات (بإزالة الكلاس الذي يفرض display:none)
-      if ((user?.role || '').toLowerCase() === 'admin') {
-        document.querySelectorAll('.admin-only').forEach(el => {
-          el.classList.remove('admin-only');     // هذا يلغي القاعدة في الـCSS
-          // أو بديل: el.style.display = 'block';
+      // ✅ عرض "member" بدلاً من user
+      const roleRaw = (user?.role || '—').toLowerCase();
+      const roleShown = roleRaw === 'user' ? 'member' : (user?.role || '—');
+      document.getElementById('userRole').textContent = roleShown;
+
+      if (roleRaw === 'admin') {
+        // أظهر العناصر الإدارية
+        document.querySelectorAll('.admin-only').forEach(el => el.classList.remove('admin-only'));
+      } else {
+        // ✅ عضو (subuser/member): أخفِ كل البطاقات عدا رابط العرض العام
+        document.querySelectorAll('.row.g-4 > [class^="col-"]').forEach(col => {
+          const a = col.querySelector('a.card-link');
+          if (!a) return;
+          if (!/\/evaluations_dashboard\.html\b/.test(a.getAttribute('href') || '')) {
+            col.style.display = 'none';
+          }
         });
       }
     }
