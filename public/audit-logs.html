@@ -298,7 +298,7 @@
   const escapeHtml=(s)=> String(s).replace(/[&<>"']/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
   const normalizeValue=(v)=> v==null? '' : (v instanceof Date? v.toISOString() : (Array.isArray(v)||typeof v==='object')? JSON.stringify(v) : String(v));
   function computeDiffKeys(b,a){ const B=b||{},A=a||{}; const keys=new Set([...Object.keys(B),...Object.keys(A)]); const changed=new Set(); keys.forEach(k=>{ if(normalizeValue(B[k])!==normalizeValue(A[k])) changed.add(k); }); return changed; }
-  const roleAr = (r)=> r==='admin'?'مدير (admin)':'مستخدم (user)';
+  const roleAr = (r)=> r==='admin'?'مدير (admin)':(r==='subuser-member'?'subuser-member':'مستخدم (user)');
   function kv(label,val,key,diff,mode){ if(val==null||val==='') return ''; const cls=diff&&diff.has(key)?(mode==='before'?'diff-removed':'diff-added'):''; return `<dt>${label}</dt><dd class="${cls}">${escapeHtml(val)}</dd>`; }
   function userActiveBadge(val,key,diff,mode){ const is=!!val; const base=is?'<span class="badge text-bg-success">نشط</span>':'<span class="badge text-bg-danger">معطّل</span>'; const cls=diff&&diff.has(key)?(mode==='before'?'diff-removed':'diff-added'):''; return `<dt>الحالة</dt><dd class="${cls}">${base}</dd>`; }
 
