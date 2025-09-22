@@ -20,6 +20,7 @@ const userSchema = new mongoose.Schema({
   password:    { type: String, required: true }, // مشفّرة بـ bcrypt
   role:        { type: String, enum: ['admin', 'user'], default: 'user' },
   isActive:    { type: Boolean, default: true },
+  lastLogin: { type: Date },           // ✅ جديد
   createdAt:   { type: Date, default: Date.now }
 });
 
