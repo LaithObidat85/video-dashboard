@@ -664,12 +664,14 @@ app.post('/auth/committees/register', authRequired, requireRole('admin'), async 
       return res.status(400).json({ message: 'الاسم واسم المستخدم والبريد وكلمة المرور مطلوبة' });
     }
     const hash = await bcrypt.hash(password, 10);
+    const allowedRoles = ['admin', 'user', 'subuser-member'];
+    const roleSafe = allowedRoles.includes(role) ? role : 'user';
     const user = await User.create({
       name: name.trim(),
       username: username.trim(),
       email: email.toLowerCase().trim(),
       password: hash,
-      role: role === 'admin' ? 'admin' : 'user',
+      role: roleSafe,
       isActive: true
     });
     await logAudit(req, {
@@ -690,6 +692,7 @@ app.post('/auth/committees/register', authRequired, requireRole('admin'), async 
   }
 });
 
+
 app.get('/api/users', authRequired, requireRole('admin'), async (req, res) => {
   try {
     let { search = '', role = '', active = '', page = 1, limit = 20, sort = '-createdAt' } = req.query;
@@ -702,7 +705,7 @@ app.get('/api/users', authRequired, requireRole('admin'), async (req, res) => {
       const rx = new RegExp(safe, 'i');
       filter.$or = [{ name: rx }, { username: rx }, { email: rx }];
     }
-    if (role === 'admin' || role === 'user') filter.role = role;
+    if (['admin','user','subuser-member'].includes(role)) filter.role = role;
     if (active === 'true') filter.isActive = true;
     if (active === 'false') filter.isActive = false;
 
@@ -761,7 +764,7 @@ app.put('/api/users/:id', authRequired, requireRole('admin'), async (req, res) =
     const update = {};
     if (typeof name === 'string')     update.name = name.trim();
     if (typeof username === 'string') update.username = username.trim();
-    if (role === 'admin' || role === 'user') update.role = role;
+    if (['admin','user','subuser-member'].includes(role)) update.role = role;
     if (typeof isActive === 'boolean') update.isActive = isActive;
     if (typeof email === 'string')    update.email = email.toLowerCase().trim(); // ✅ دعم تعديل البريد
 
@@ -891,15 +894,16 @@ app.post('/api/users/bulk', authRequired, requireRole('admin'), async (req, res)
     }
 
     // --- set-role ---
-    if (action === 'set-role') {
-      const role = req.body?.role === 'admin' ? 'admin' : 'user';
-      const before = await User.find({ _id: { $in: ids } }, 'name username email role isActive').lean();
-      await User.updateMany({ _id: { $in: ids } }, { $set: { role } });
-      const after = before.map(u => ({ ...u, role }));
-      await logAudit(req, { model: 'User', action: 'update', docId: '__bulk__',
-        payload: { bulk: true, action: 'set-role', role, ids, before, after } });
-      return res.json({ message: '✅ تم تغيير الأدوار' });
-    }
+   if (action === 'set-role') {
+  const role = ['admin','user','subuser-member'].includes(req.body?.role) ? req.body.role : 'user';
+  const before = await User.find({ _id: { $in: ids } }, 'name username email role isActive').lean();
+  await User.updateMany({ _id: { $in: ids } }, { $set: { role } });
+  const after = before.map(u => ({ ...u, role }));
+  await logAudit(req, { model: 'User', action: 'update', docId: '__bulk__',
+    payload: { bulk: true, action: 'set-role', role, ids, before, after } });
+  return res.json({ message: '✅ تم تغيير الأدوار' });
+}
+
 
     // --- delete ---
     if (action === 'delete') {
