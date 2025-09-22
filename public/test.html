@@ -1,296 +1,932 @@
+
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-  <meta charset="UTF-8">
-  <title>إدارة تقييم اللجان</title>
+  <meta charset="UTF-8" />
+  <title>إدارة المستخدمين - نظام اللجان</title>
+  <link rel="icon" type="image/png" href="https://www.dropbox.com/scl/fi/f283e4rvv5cf9x12a1cic/my-website-logo.png?rlkey=yia776im7klypy27af32m0scy&e=1&st=vhaprvzh&dl=1">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.rtl.min.css">
-  <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
   <style>
-    body { background: #f8f9fa; font-family: 'Segoe UI', sans-serif; }
-    .container { margin-top: 30px; }
-    table { background: #fff; border-radius: 10px; overflow: hidden; font-size: 14px; width: 99%; margin: auto; }
-    th { text-align: center; vertical-align: middle; background-color: #f8f9fa; color: #000; }
-    td { text-align: center; vertical-align: middle; }
-    td[contenteditable="true"] { background: #fefae0; cursor: text; }
-    .highlight { background-color: #d4edda !important; transition: background-color 1s ease; }
-    .toast-container { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); z-index: 2000; }
-    .filters { margin-bottom: 20px; width: 99%; margin-left: auto; margin-right: auto; }
-    .action-buttons { display: flex; justify-content: center; align-items: center; gap: 5px; height: 100%; }
-    .notes-btn { display: block; width: 100%; }
 
-    #evaluationsTableWrapper th.date-col,
-    #evaluationsTableWrapper td.date-col {
-      direction: ltr;
-      text-align: center;
-      width: 100px;
-      max-width: 100px;
-    }
+    /* مساواة ارتفاع شارة معلومات المستخدم بزر "خروج" */
+.user-chip{
+  display: inline-flex;
+  align-items: center;
+  gap: .25rem;
+  font-size: 1rem;         /* نفس حجم خط الأزرار */
+  padding: .375rem .75rem; /* نفس حشوة الأزرار */
+  line-height: 1.5;        /* نفس خط الأساس للأزرار */
+  border-radius: .375rem;  /* نفس نصف القطر للأزرار */
+}
+    
+    body{background:#f8f9fa;font-family:'Segoe UI',sans-serif}
+    .container{max-width:1200px;margin-top:40px}
+    .card{border-radius:16px;box-shadow:0 6px 18px rgba(0,0,0,.06)}
+  /*  .user-chip{font-size:.9rem} */
+    .muted{opacity:.75}
 
-    #completionRateContainer {
-      text-align: center;
-      font-weight: bold;
-      margin: 5px 0;
-      font-size: 18px;
-      color: #0d6efd;
-    }
+    /* سكلتون  */
+    .skeleton{position:relative;overflow:hidden;background:linear-gradient(90deg,#eee 25%,#f5f5f5 37%,#eee 63%);background-size:400% 100%;animation:shimmer 1.2s infinite}
+    @keyframes shimmer{0%{background-position:100% 0}100%{background-position:-100% 0}}
 
-    #selectedVisitsContainer {
-      text-align: center;
-      font-weight: bold;
-      margin: 5px 0;
-      font-size: 18px;
-      color: #0d6efd;
-      min-height: 24px;
-    }
+    /* شارة الحالة */
+    .badge-active{background:#1987541a;color:#198754}
+    .badge-inactive{background:#dc35451a;color:#dc3545}
 
-    #infoContainer {
-      text-align: center;
-      font-weight: bold;
-      margin: 15px 0;
-      font-size: 18px;
-      color: #0d6efd;
-    }
+    /* توضيح  التحديث الفوري */
+    .saving{opacity:.5;pointer-events:none}
+    .row-highlight{animation:flash .8s ease}
+    @keyframes flash{0%{background:#fff3cd}100%{background:transparent}}
 
-    .hidden-col { display: none !important; }
+    /* جدول ثابت الرأس */
+    .table-responsive{max-height:540px;overflow:auto}
+    thead th{position:sticky;top:0;z-index:1;background:#fff}
 
-    .sticky-header {
-      background: #f8f9fa;
-      padding-top: 10px;
-    }
+    /* قوة كلمة المرور */
+    .pw-meter{height:6px;border-radius:6px;overflow:hidden;background:#e9ecef}
+    .pw-meter > div{height:100%}
 
-    #evaluationsTableWrapper thead th {
-      position: sticky;
-      top: 0;
-      z-index: 99;
-      background: #f8f9fa;
-      color: #000;
-    }
+    /* أدوات أعلى الجدول */
+    .toolbar{gap:.5rem}
+/* تحرير مباشر داخل الجدول */
+.inline-edit{
+  font-size:.9rem;
+  padding:.25rem .5rem;
+  height:2rem;
+}
+.cell-saving{ opacity:.6; }
+
+    
+/* اجعل شارة معلومات المستخدم بارتفاع زر "خروج" */
+.user-chip.badge{
+  display: inline-flex;
+  align-items: center;
+  gap: .25rem;
+  padding: .375rem .75rem !important; /* نفس الأزرار */
+  font-size: 1rem !important;         /* نفس الأزرار */
+  line-height: 1.5 !important;        /* نفس الأزرار */
+  border-radius: .375rem;              /* نفس الأزرار */
+  font-weight: 400;                    /* أخف من الـ badge الافتراضي */
+}
+
+/* لتجنّب تصغيرها مرة أخرى إن وُجد تعريف سابق */
+.user-chip{ font-size: 1rem !important; }
+
+
+    /* اجعل نص الشارة عريضًا، مع استثناء شارة الدور الداخلية */
+.user-chip.badge{
+  font-weight: 700 !important;
+}
+.user-chip.badge #userRole{
+  font-weight: 500 !important; /* أو 400 لتبقى عادية */
+}
+
+
   </style>
 </head>
 <body>
-  <div class="container">
-    <div class="sticky-header">
-      <h3 class="text-center mb-4">⚙️ إدارة تقييم اللجان</h3>
-      <div class="filters row">
-        <div class="col-md-4 mb-2">
-          <label class="form-label">الكلية</label>
-          <select id="collegeFilter" class="form-select">
-            <option value="">جميع الكليات</option>
+<!--  <div class="container"> -->
+  <div class="container-fluid" style="padding-top:40px">
+    <!-- Header -->
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-2">
+      <!-- يمين: العنوان فقط -->
+      <div class="d-flex align-items-center gap-2">
+        <h3 class="mb-0">إدارة المستخدمين</h3>
+      </div>
+      <!-- يسار: معلومات المستخدم + خروج + لوحة التحكم -->
+      <div class="d-flex align-items-center gap-2">
+  <span id="userInfo" class="user-chip badge bg-light text-dark border">
+    <i class="bi bi-person"></i>
+    <span id="userUsername">—</span>
+    <span class="mx-1">—</span>
+    <span id="userFullName">—</span>
+    <span class="ms-2 badge bg-secondary" id="userRole">—</span>
+  </span>
+
+  <a class="btn btn-outline-primary" id="homeBtn" href="/committees-home.html">
+    <i class="bi bi-grid"></i> لوحة التحكم
+  </a>
+
+  <button id="logoutBtn" class="btn btn-danger">
+    <i class="bi bi-box-arrow-right"></i> خروج
+  </button>
+</div>
+
+    </div>
+
+    <!-- إضافة مستخدم -->
+    <!-- إضافة مستخدم (قابلة للطي) -->
+<div class="card mb-4">
+  <div class="card-header p-0">
+    <button type="button" class="btn btn-link w-100 text-start p-3 d-flex justify-content-between align-items-center"
+        data-bs-toggle="collapse" data-bs-target="#addUserCollapse"
+        aria-expanded="false" aria-controls="addUserCollapse">
+  <span class="fw-semibold"><i class="bi bi-person-plus"></i> إضافة مستخدم جديد</span>
+  <i class="bi bi-plus-lg" id="addFormToggleIcon"></i>
+</button>
+  </div>
+
+  <div id="addUserCollapse" class="collapse">
+    <div class="card-body">
+      <form id="addUserForm" class="row g-3">
+        <div class="col-md-3">
+          <label class="form-label">اسم المستخدم</label>
+          <input type="text" class="form-control" name="username" autocomplete="username" required>
+          <div class="form-text" id="userCheckHint"></div>
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">الاسم الكامل</label>
+          <input type="text" class="form-control" name="name" required>
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">البريد الإلكتروني</label>
+          <input type="email" class="form-control" name="email" autocomplete="email" required>
+          <div class="form-text" id="emailCheckHint"></div>
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">كلمة المرور</label>
+          <div class="input-group">
+            <input type="password" class="form-control" name="password" id="pwInput" minlength="8" required>
+            <button type="button" class="btn btn-outline-secondary" id="togglePwBtn" title="إظهار/إخفاء">
+              <i class="bi bi-eye"></i>
+            </button>
+          </div>
+          <div class="pw-meter mt-2"><div id="pwBar"></div></div>
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">الدور</label>
+          <select class="form-select" name="role" required>
+            <option value="user">user</option>
+            <option value="admin">admin</option>
           </select>
         </div>
-        <div class="col-md-4 mb-2">
-          <label class="form-label">اسم المدقق</label>
-          <select id="auditorFilter" class="form-select">
-            <option value="">جميع المدققين</option>
+        <div class="col-12">
+          <button class="btn btn-primary" id="addBtn">
+            <span class="btn-label"><i class="bi bi-check2-circle"></i> إضافة</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+
+    <!-- أدوات الجدول -->
+    <div class="card mb-3">
+      <div class="card-body d-flex flex-wrap align-items-end toolbar">
+        <div>
+          <label class="form-label">بحث</label>
+          <input type="text" id="q" class="form-control" placeholder="اسم/اسم مستخدم/بريد">
+        </div>
+        <div>
+          <label class="form-label">الدور</label>
+          <select id="fRole" class="form-select">
+            <option value="">الكل</option>
+            <option value="admin">admin</option>
+            <option value="user">user</option>
           </select>
         </div>
-        <div class="col-md-4 mb-2">
-          <label class="form-label">بحث باسم اللجنة</label>
-          <input type="text" id="committeeSearch" class="form-control" placeholder="اكتب للبحث...">
+        <div>
+          <label class="form-label">الحالة</label>
+          <select id="fActive" class="form-select">
+            <option value="">الكل</option>
+            <option value="true">نشط</option>
+            <option value="false">معطّل</option>
+          </select>
         </div>
-      </div>
-      <div class="card mb-3">
-        <div class="card-body d-flex flex-wrap justify-content-center gap-3" id="visitsToggles">
-          <div class="form-check"><input class="form-check-input visit-toggle" type="checkbox" id="visit1" value="الزيارة الأولى"><label class="form-check-label" for="visit1">الزيارة الأولى</label></div>
-          <div class="form-check"><input class="form-check-input visit-toggle" type="checkbox" id="visit2" value="الزيارة الثانية"><label class="form-check-label" for="visit2">الزيارة الثانية</label></div>
-          <div class="form-check"><input class="form-check-input visit-toggle" type="checkbox" id="visit3" value="الزيارة الثالثة"><label class="form-check-label" for="visit3">الزيارة الثالثة</label></div>
-          <div class="form-check"><input class="form-check-input visit-toggle" type="checkbox" id="visit4" value="الزيارة الرابعة"><label class="form-check-label" for="visit4">الزيارة الرابعة</label></div>
-          <div class="form-check"><input class="form-check-input visit-toggle" type="checkbox" id="visit5" value="الزيارة النهائية"><label class="form-check-label" for="visit5">الزيارة النهائية</label></div>
-          <button class="btn btn-sm btn-success" id="saveSettingsBtn">💾</button>
+        <div>
+          <label class="form-label">الترتيب</label>
+          <select id="sort" class="form-select">
+            <option value="-createdAt">الأحدث أولًا</option>
+            <option value="createdAt">الأقدم أولًا</option>
+            <option value="name">الاسم (أ-ي)</option>
+            <option value="-name">الاسم (ي-أ)</option>
+          </select>
         </div>
-      </div>
-      <div class="card mb-3">
-        <div class="card-body d-flex flex-wrap justify-content-center gap-3 align-items-center" id="columnToggles">
-          <div class="form-check"><input class="form-check-input col-toggle" type="checkbox" id="toggle_formation_decision" data-field="formation_decision" checked><label class="form-check-label" for="toggle_formation_decision">قرار التشكيل</label></div>
-          <div class="form-check"><input class="form-check-input col-toggle" type="checkbox" id="toggle_work_plan" data-field="work_plan" checked><label class="form-check-label" for="toggle_work_plan">خطة العمل</label></div>
-          <div class="form-check"><input class="form-check-input col-toggle" type="checkbox" id="toggle_performance_indicators" data-field="performance_indicators" checked><label class="form-check-label" for="toggle_performance_indicators">مؤشرات الأداء</label></div>
-          <div class="form-check"><input class="form-check-input col-toggle" type="checkbox" id="toggle_meetings" data-field="meetings" checked><label class="form-check-label" for="toggle_meetings">عدد الاجتماعات</label></div>
-          <div class="form-check"><input class="form-check-input col-toggle" type="checkbox" id="toggle_consistency" data-field="consistency" checked><label class="form-check-label" for="toggle_consistency">التوافق بين الدعوات والاجتماعات</label></div>
-          <div class="form-check"><input class="form-check-input col-toggle" type="checkbox" id="toggle_coverage_books" data-field="coverage_books" checked><label class="form-check-label" for="toggle_coverage_books">كتب التغطية</label></div>
-          <div class="form-check"><input class="form-check-input col-toggle" type="checkbox" id="toggle_report1" data-field="report1" checked><label class="form-check-label" for="toggle_report1">تقرير إنجاز 1</label></div>
-          <div class="form-check"><input class="form-check-input col-toggle" type="checkbox" id="toggle_report2" data-field="report2" checked><label class="form-check-label" for="toggle_report2">تقرير إنجاز 2</label></div>
-          <div class="form-check"><input class="form-check-input col-toggle" type="checkbox" id="toggle_report3" data-field="report3" checked><label class="form-check-label" for="toggle_report3">تقرير إنجاز 3</label></div>
-          <div class="form-check"><input class="form-check-input col-toggle" type="checkbox" id="toggle_statistical_analysis" data-field="statistical_analysis" checked><label class="form-check-label" for="toggle_statistical_analysis">التحليل الإحصائي</label></div>
+        <div>
+          <label class="form-label">لكل صفحة</label>
+          <select id="limit" class="form-select">
+            <option>10</option><option selected>20</option><option>50</option>
+          </select>
         </div>
-      </div>
-      <div id="infoContainer">
-        <div id="selectedVisitsContainer"></div>
-        <div id="completionRateContainer"></div>
+        <div class="ms-auto d-flex gap-2">
+          <button class="btn btn-outline-secondary" id="btnExport"><i class="bi bi-filetype-csv"></i> تصدير CSV</button>
+          <button class="btn btn-outline-secondary" id="btnReload"><i class="bi bi-arrow-repeat"></i> تحديث</button>
+        </div>
       </div>
     </div>
-    <table class="table table-bordered table-striped table-responsive" id="evaluationsTableWrapper">
-      <thead>
-        <tr>
-          <th>#</th><th>الكلية</th><th>اسم اللجنة</th><th>اسم المدقق</th><th class="date-col">تاريخ التدقيق</th>
-          <th class="col-formation_decision">قرار التشكيل</th><th class="col-work_plan">خطة العمل</th><th class="col-performance_indicators">مؤشرات الأداء</th>
-          <th class="col-meetings">عدد الاجتماعات</th><th class="col-consistency">التوافق بين الدعوات والاجتماعات</th><th class="col-coverage_books">كتب التغطية</th>
-          <th class="col-report1">تقرير إنجاز 1</th><th class="col-report2">تقرير إنجاز 2</th><th class="col-report3">تقرير إنجاز 3</th><th class="col-statistical_analysis">التحليل الإحصائي</th>
-          <th id="availabilityHeader">درجة التوفر من (9)</th><th>الملاحظات</th><th>إجراءات</th>
-        </tr>
-      </thead>
-      <tbody id="committeesTable"><tr><td colspan="18" class="text-center">جاري التحميل...</td></tr></tbody>
-    </table>
+
+    <!-- الجدول -->
+    <div class="card">
+      <div class="card-body">
+        <!-- شريط إجراءات جماعية -->
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <div class="d-flex flex-wrap gap-2">
+            <button class="btn btn-sm btn-outline-success" id="bulkActivate" disabled><i class="bi bi-toggle-on"></i> تفعيل</button>
+            <button class="btn btn-sm btn-outline-warning" id="bulkDeactivate" disabled><i class="bi bi-toggle-off"></i> تعطيل</button>
+            <div class="btn-group">
+              <button class="btn btn-sm btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown"><i class="bi bi-person-gear"></i> تغيير الدور</button>
+              <ul class="dropdown-menu">
+                <li><a class="dropdown-item" href="#" data-role="admin">اجعلهم admin</a></li>
+                <li><a class="dropdown-item" href="#" data-role="user">اجعلهم user</a></li>
+              </ul>
+            </div>
+            <button class="btn btn-sm btn-outline-danger" id="bulkDelete" disabled><i class="bi bi-trash3"></i> حذف المحدد</button>
+          </div>
+          <div class="text-muted"><span id="countSpan">—</span></div>
+        </div>
+
+        <div class="table-responsive">
+          <table class="table table-hover align-middle">
+            <thead class="table-light">
+              <tr>
+                <th style="width:40px" class="text-center"><input class="form-check-input" type="checkbox" id="chkAll"></th>
+                <th>#</th>
+                <th>الاسم الكامل</th>
+                <th>اسم المستخدم</th>
+                <th>البريد</th>
+                <th>الدور</th>
+                <th>الحالة</th>
+                <th>الإنشاء</th>
+                <th>إجراءات</th>
+              </tr>
+            </thead>
+            <tbody id="usersTbody">
+              <!-- سكلتون أولي -->
+              <tr><td colspan="9">
+                <div class="skeleton" style="height:18px;margin:8px 0;"></div>
+                <div class="skeleton" style="height:18px;margin:8px 0;"></div>
+                <div class="skeleton" style="height:18px;margin:8px 0;"></div>
+              </td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- صفحات -->
+        <div class="d-flex justify-content-between align-items-center mt-3">
+          <div class="text-muted">الصفحة <span id="pageNum">1</span></div>
+          <div class="btn-group">
+            <button class="btn btn-outline-secondary btn-sm" id="prevPage"><i class="bi bi-chevron-right"></i> السابق</button>
+            <button class="btn btn-outline-secondary btn-sm" id="nextPage">التالي <i class="bi bi-chevron-left"></i></button>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
-  <div class="modal fade" id="notesModal" tabindex="-1"><div class="modal-dialog modal-lg"><div class="modal-content"><div class="modal-header"><h5 class="modal-title">📝 الملاحظات</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body" id="notesContent"></div></div></div></div>
-  <div class="modal fade" id="editModal" tabindex="-1"><div class="modal-dialog modal-lg"><div class="modal-content"><form id="editForm"><div class="modal-header"><h5 class="modal-title">✏️ تعديل التقييم (كامل)</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><input type="hidden" name="_id" id="edit_id"><div class="mb-3"><label class="form-label">الكلية</label><select class="form-select" id="editCollege" required></select></div><div class="mb-3"><label class="form-label">اسم اللجنة</label><input type="text" class="form-control" id="editCommittee" required></div><div class="mb-3"><label class="form-label">اسم المدقق</label><select class="form-select" id="editAuditor" required></select></div><div class="mb-3"><label class="form-label">تاريخ التدقيق</label><input type="date" class="form-control" id="editDate"></div><div class="mb-3"><label class="form-label">الملاحظات</label><div id="editEditor"></div><input type="hidden" id="editNotesInput"></div></div><div class="modal-footer"><button type="submit" class="btn btn-primary">💾 حفظ</button><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إغلاق</button></div></form></div></div></div>
-  <div class="toast-container">
-    <div id="toastSuccess" class="toast align-items-center text-bg-success border-0 mb-2" role="alert"><div class="d-flex"><div class="toast-body">✅ العملية نجحت</div><button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button></div></div>
-    <div id="toastError" class="toast align-items-center text-bg-danger border-0 mb-2" role="alert"><div class="d-flex"><div class="toast-body">❌ حدث خطأ</div><button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button></div></div>
-    <div id="toastConfirm" class="toast align-items-center text-bg-warning border-0 mb-2" role="alert"><div class="d-flex"><div class="toast-body" id="toastConfirmMsg">⚠️ هل أنت متأكد؟</div><div class="me-2 m-auto"><button type="button" class="btn btn-sm btn-danger" id="confirmYes">نعم</button><button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="toast">إلغاء</button></div></div></div>
+
+  <!-- Modal: إعادة كلمة مرور -->
+  <div class="modal fade" id="resetPwModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">إعادة تعيين كلمة المرور</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-2">سيتم تعيين كلمة مرور جديدة للمستخدم: <strong id="resetTargetName">—</strong></div>
+          <label class="form-label">كلمة المرور الجديدة</label>
+          <div class="input-group">
+            <input type="text" id="newPwInput" class="form-control" autocomplete="off">
+          </div>
+          <div class="form-text">انسخها وأبلغ المستخدم بها بأمان.</div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" data-bs-dismiss="modal">إغلاق</button>
+          <button class="btn btn-primary" id="applyResetBtn"><i class="bi bi-check2-circle"></i> تطبيق</button>
+        </div>
+      </div>
+    </div>
   </div>
+
+  <!-- Toasts -->
+  <div class="toast-container position-fixed top-0 start-50 translate-middle-x p-3" style="z-index:2000">
+    <div id="toastSuccess" class="toast align-items-center text-bg-success border-0 mb-2" role="alert" aria-live="assertive" aria-atomic="true">
+      <div class="d-flex">
+        <div class="toast-body">✅ تم التنفيذ بنجاح</div>
+        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+      </div>
+    </div>
+    <div id="toastError" class="toast align-items-center text-bg-danger border-0 mb-2" role="alert" aria-live="assertive" aria-atomic="true">
+      <div class="d-flex">
+        <div class="toast-body">❌ حدث خطأ</div>
+        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+      </div>
+    </div>
+    <div id="toastInfo" class="toast align-items-center text-bg-primary border-0 mb-2" role="status" aria-live="polite">
+      <div class="d-flex">
+        <div class="toast-body">ℹ️ معلومات</div>
+        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+      </div>
+    </div>
+    <!-- Toast: تأكيد -->
+<div id="toastConfirm" class="toast text-bg-warning border-0 mb-2" role="alert" aria-live="assertive" aria-atomic="true">
+  <div class="d-flex align-items-start">
+    <div class="toast-body">
+      <div id="toastConfirmMsg">هل تريد المتابعة؟</div>
+      <div class="mt-2 pt-2 border-top d-flex gap-2">
+        <button type="button" class="btn btn-danger btn-sm" id="toastConfirmYes">تأكيد</button>
+        <button type="button" class="btn btn-light btn-sm" id="toastConfirmNo" data-bs-dismiss="toast">إلغاء</button>
+      </div>
+    </div>
+    <button type="button" class="btn-close btn-close-white m-2" data-bs-dismiss="toast"></button>
+  </div>
+</div>
+
+  </div>
+
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/quill@1.3.6/dist/quill.min.js"></script>
+  
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  const collapseEl = document.getElementById('addUserCollapse');
+  const iconEl = document.getElementById('addFormToggleIcon');
+  collapseEl.addEventListener('show.bs.collapse', () => iconEl.className = 'bi bi-dash-lg');
+  collapseEl.addEventListener('hide.bs.collapse', () => iconEl.className = 'bi bi-plus-lg');
+});
+</script>
+
+  
   <script>
-    const quillEdit = new Quill('#editEditor', { theme: 'snow' });
+    /* ====== API BASE & fetch مغلّف ====== */
+    const RENDER_BASE = 'https://vdash-qkyv.onrender.com'; // دومين خدمتك على Render
+    const host = location.hostname;
+    const isGithub = host.endsWith('github.io');
+    const isRender = host.endsWith('onrender.com');
+    const isLocal  = host === 'localhost' || host === '127.0.0.1';
+
+    // عندما تكون الصفحة على GitHub Pages نوجّه الطلبات إلى Render.
+    // عندما تكون على Render نستخدم نفس الأصل (سلسلة فارغة).
+    // محليًا نوجّه إلى بورت 3000.
+    const API_BASE = isGithub ? RENDER_BASE : (isLocal ? 'http://localhost:3000' : '');
+     
+  // Helper لتحويل الروابط (login/home) لنفس أصل الـ API عند تشغيل الصفحة من GitHub Pages
+const go = (path) => isGithub ? (RENDER_BASE + path) : path;
+
+const apiFetch = (path, opts = {}) =>
+  fetch(`${API_BASE}${path}`, { credentials: 'include', ...opts });
+
+/* عدّل زر "لوحة التحكم" ليوجَّه حسب البيئة */
+document.addEventListener('DOMContentLoaded', () => {
+  const homeBtn = document.getElementById('homeBtn');
+  if (homeBtn) homeBtn.href = go('/committees-home.html');
+});
+
+
+    
+
+    /* ====== Toasts ====== */
     const toastSuccess = new bootstrap.Toast(document.getElementById('toastSuccess'));
-    const toastError = new bootstrap.Toast(document.getElementById('toastError'));
-    const toastConfirmEl = document.getElementById('toastConfirm');
-    const toastConfirm = new bootstrap.Toast(toastConfirmEl);
-    let confirmCallback = null;
-    let lastCollege = "";
+    const toastError   = new bootstrap.Toast(document.getElementById('toastError'));
+    const toastInfo    = new bootstrap.Toast(document.getElementById('toastInfo'));
+    /* ====== Confirm Toast (تأكيد عبر توست) ====== */
+const toastConfirmEl  = document.getElementById('toastConfirm');
+const toastConfirm    = new bootstrap.Toast(toastConfirmEl, { autohide: false });
+const confirmMsgEl    = toastConfirmEl.querySelector('#toastConfirmMsg');
+const confirmYesBtn   = toastConfirmEl.querySelector('#toastConfirmYes');
+const confirmNoBtn    = toastConfirmEl.querySelector('#toastConfirmNo');
 
-    function showSuccess(msg="✅ العملية نجحت") {document.querySelector("#toastSuccess .toast-body").innerText = msg;toastSuccess.show();}
-    function showError(msg="❌ حدث خطأ") {document.querySelector("#toastError .toast-body").innerText = msg;toastError.show();}
-    function showConfirm(msg, callback) {document.getElementById("toastConfirmMsg").innerText = msg;confirmCallback = callback;toastConfirm.show();}
-    document.getElementById("confirmYes").addEventListener("click", () => {toastConfirm.hide();if (confirmCallback) confirmCallback();});
+/** يعرض توست تأكيد ويعيد Promise<boolean> */
+function confirmToast({ message='هل تريد المتابعة؟', confirmText='تأكيد', cancelText='إلغاء' } = {}){
+  return new Promise((resolve)=>{
+    confirmMsgEl.textContent = message;
+    confirmYesBtn.textContent = confirmText;
+    confirmNoBtn.textContent  = cancelText;
 
-    async function loadOptions() {
-      const colleges = await axios.get('/api/colleges');
-      const collegeFilter = document.getElementById('collegeFilter');const collegeSelect = document.getElementById('editCollege');
-      colleges.data.forEach(c => {const opt1 = document.createElement('option');opt1.value = c.name; opt1.textContent = c.name;collegeFilter.appendChild(opt1);const opt2 = document.createElement('option');opt2.value = c.name; opt2.textContent = c.name;collegeSelect.appendChild(opt2);});
-      const auditors = await axios.get('/api/auditors');
-      const auditorFilter = document.getElementById('auditorFilter');const auditorSelect = document.getElementById('editAuditor');
-      auditors.data.forEach(a => {const opt1 = document.createElement('option');opt1.value = a.name; opt1.textContent = a.name;auditorFilter.appendChild(opt1);const opt2 = document.createElement('option');opt2.value = a.name; opt2.textContent = a.name;auditorSelect.appendChild(opt2);});
-    }
-    loadOptions();
+    const onYes = () => { cleanup(); toastConfirm.hide(); resolve(true); };
+    const onNo  = () => { cleanup(); resolve(false); };
+    const onHidden = () => { cleanup(); resolve(false); };
 
-    function updateAvailability(row) {
-      let sum = 0;
-      const fields = ["formation_decision","work_plan","performance_indicators","meetings","consistency","coverage_books","report1","report2","report3","statistical_analysis"];
-      fields.forEach(f => {const cell = row.querySelector(`[data-field="${f}"]`);if (!document.getElementById("toggle_" + f).checked) return;sum += parseFloat(cell?.innerText) || 0;});
-      const availabilityCell = row.querySelector(".availability-cell");availabilityCell.innerText = sum.toFixed(2);availabilityCell.classList.add("highlight");setTimeout(() => availabilityCell.classList.remove("highlight"), 1500);
+    function cleanup(){
+      confirmYesBtn.removeEventListener('click', onYes);
+      confirmNoBtn.removeEventListener('click', onNo);
+      toastConfirmEl.removeEventListener('hidden.bs.toast', onHidden);
     }
 
-    function attachCellListeners(tr) {
-      tr.querySelectorAll('[contenteditable="true"]').forEach(cell => {
-        cell.addEventListener('focus', () => {const range = document.createRange();range.selectNodeContents(cell);const sel = window.getSelection();sel.removeAllRanges();sel.addRange(range);});
-        cell.addEventListener('input', () => {cell.classList.add("highlight");setTimeout(() => cell.classList.remove("highlight"), 1500);updateAvailability(tr);updateCompletionRate();});
-      });
+    confirmYesBtn.addEventListener('click', onYes, { once:true });
+    confirmNoBtn.addEventListener('click', onNo,  { once:true });
+    toastConfirmEl.addEventListener('hidden.bs.toast', onHidden, { once:true });
+
+    toastConfirm.show();
+  });
+}
+
+    const setToast = (el,msg)=>{ el._element.querySelector('.toast-body').innerText = msg; };
+
+    /* ====== Auth ====== */
+    async function fetchMe(){
+      try{
+        const r = await apiFetch('/auth/committees/me');
+        if(!r.ok) throw 0;
+        return await r.json();
+      }catch{ return {authenticated:false}; }
+    }
+    function renderUser(user){
+      const username = user?.username || (user?.email? user.email.split('@')[0] : '—');
+      document.getElementById('userUsername').textContent = username;
+      document.getElementById('userFullName').textContent = user?.name || '—';
+      document.getElementById('userRole').textContent = user?.role || '—';
+    }
+    async function ensureAdmin(){
+      const me = await fetchMe();
+      if(!me.authenticated){
+        const next = encodeURIComponent('/users-manage.html');
+        location.href = go(`/committees-login.html?next=${next}`);
+        return Promise.reject();
+      }
+      if((me.user?.role||'').toLowerCase()!=='admin'){
+        setToast(toastError,'❌ هذه الصفحة للمشرفين فقط'); toastError.show();
+        setTimeout(()=>location.href=go('/committees-home.html'),1000);
+        return Promise.reject();
+      }
+      renderUser(me.user);
+      return me.user;
+    }
+    document.getElementById('logoutBtn').addEventListener('click', async ()=>{
+      try{
+        const r = await apiFetch('/auth/committees/logout',{method:'POST',headers:{'Content-Type':'application/json'}});
+        if(r.ok){ setToast(toastSuccess,'✅ تم تسجيل الخروج'); toastSuccess.show(); setTimeout(()=>location.href=go('/committees-login.html'),700); }
+        else{ setToast(toastError,'❌ تعذر تسجيل الخروج'); toastError.show(); }
+      }catch{ setToast(toastError,'❌ خطأ في الاتصال'); toastError.show(); }
+    });
+
+    /* ====== Helpers ====== */
+    const qs = {
+      get(){ return new URLSearchParams(location.search); },
+      set(obj){
+        const p = new URLSearchParams();
+        Object.entries(obj).forEach(([k,v])=>{ if(v!=='' && v!=null) p.set(k,v); });
+        history.replaceState(null,'','?'+p.toString());
+      }
+    };
+    const state = {
+      page: 1, limit: 20, sort: '-createdAt',
+      search: '', role: '', active: '',
+      total: 0, items: [],
+      selected: new Set(),
+    };
+
+    function saveFilters(){
+      localStorage.setItem('users.filters', JSON.stringify({
+        search: state.search, role: state.role, active: state.active, sort: state.sort, limit: state.limit
+      }));
+    }
+    function loadFilters(){
+      try{
+        const o = JSON.parse(localStorage.getItem('users.filters')||'{}');
+        if(o.search!=null) document.getElementById('q').value = o.search;
+        if(o.role!=null)   document.getElementById('fRole').value = o.role;
+        if(o.active!=null) document.getElementById('fActive').value = o.active;
+        if(o.sort!=null)   document.getElementById('sort').value = o.sort;
+        if(o.limit!=null)  document.getElementById('limit').value = o.limit;
+      }catch{}
     }
 
-    async function loadCommittees() {
-      try {
-        const college = document.getElementById('collegeFilter').value;const auditor = document.getElementById('auditorFilter').value;lastCollege = college || "جميع الكليات";let url = '/api/committees';const params = [];
-        if (college) params.push(`college=${encodeURIComponent(college)}`);if (auditor) params.push(`auditor_name=${encodeURIComponent(auditor)}`);if (params.length > 0) url += '?' + params.join('&');
-        const res = await axios.get(url);const tbody = document.getElementById('committeesTable');tbody.innerHTML = "";
-        if(res.data.length === 0){tbody.innerHTML = `<tr><td colspan="18" class="text-center">لا توجد بيانات</td></tr>`;document.getElementById("completionRateContainer").innerHTML = "";document.getElementById("selectedVisitsContainer").innerHTML = "الزيارات: لم يتم إختيار أي زيارة";return;}
-        res.data.sort((a,b)=>(a.college||"").localeCompare(b.college||"","ar"));res.data.forEach((c, idx) => {
-          const tr = document.createElement('tr');tr.innerHTML = `
-            <td>${idx+1}</td><td>${c.college}</td><td>${c.committee_name}</td><td>${c.auditor_name}</td><td>${c.audit_date ? new Date(c.audit_date).toLocaleDateString('ar-EG'): '-'}</td>
-            <td contenteditable="true" data-field="formation_decision" class="col-formation_decision">${c.formation_decision ?? 0}</td>
-            <td contenteditable="true" data-field="work_plan" class="col-work_plan">${c.work_plan ?? 0}</td>
-            <td contenteditable="true" data-field="performance_indicators" class="col-performance_indicators">${c.performance_indicators ?? 0}</td>
-            <td contenteditable="true" data-field="meetings" class="col-meetings">${c.meetings ?? 0}</td>
-            <td contenteditable="true" data-field="consistency" class="col-consistency">${c.consistency ?? 0}</td>
-            <td contenteditable="true" data-field="coverage_books" class="col-coverage_books">${c.coverage_books ?? 0}</td>
-            <td contenteditable="true" data-field="report1" class="col-report1">${c.report1 ?? 0}</td>
-            <td contenteditable="true" data-field="report2" class="col-report2">${c.report2 ?? 0}</td>
-            <td contenteditable="true" data-field="report3" class="col-report3">${c.report3 ?? 0}</td>
-            <td contenteditable="true" data-field="statistical_analysis" class="col-statistical_analysis">${c.statistical_analysis ?? 0}</td>
-            <td class="availability-cell">${c.availability_score ?? 0}</td>
-            <td>${c.notes && c.notes.trim() !== "" && c.notes.trim() !== "<p><br></p>"? `<button class="btn btn-sm btn-info notes-btn" onclick="showNotes(\`${c.notes}\`)">🔍</button>` : '<span class="text-muted">لا توجد ملاحظات</span>'}</td>
-            <td><div class="action-buttons"><button class="btn btn-sm btn-success" onclick="saveRow(this, '${c._id}')">💾</button><button class="btn btn-sm btn-primary" onclick='editCommittee(${JSON.stringify(c)})'>✏️</button><button class="btn btn-sm btn-danger" onclick="confirmDelete('${c._id}')">🗑️</button></div></td>`;
-          tbody.appendChild(tr);attachCellListeners(tr);updateAvailability(tr);
+    const tbody = document.getElementById('usersTbody');
+    function rowCheckbox(id, checked){ return `<input class="form-check-input chkRow" type="checkbox" value="${id}" ${checked?'checked':''}>`; }
+    function roleSelect(id, role){ return `
+      <select class="form-select form-select-sm inline-role" data-id="${id}" title="تغيير فوري">
+        <option value="user" ${role==='user'?'selected':''}>user</option>
+        <option value="admin" ${role==='admin'?'selected':''}>admin</option>
+      </select>`; }
+    function activeToggle(id, isActive){ return `
+      <div class="form-check form-switch">
+        <input class="form-check-input inline-active" type="checkbox" role="switch" data-id="${id}" ${isActive?'checked':''} title="تفعيل/تعطيل فوري">
+      </div>`; }
+
+    function renderRows(users, offset=0){
+  const esc = s => String(s ?? '').replace(/"/g,'&quot;');
+
+  if(!Array.isArray(users) || users.length===0){
+    tbody.innerHTML = `<tr class="text-center text-muted"><td colspan="9">لا يوجد نتائج</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = users.map((u,i)=>`
+    <tr data-id="${u._id||u.id}">
+      <td class="text-center">
+        <input class="form-check-input chkRow" type="checkbox" value="${u._id||u.id}" ${state.selected.has(u._id||u.id)?'checked':''}>
+      </td>
+      <td>${offset + i + 1}</td>
+
+      <!-- الاسم الكامل (قابل للتحرير) -->
+      <td>
+        <input class="form-control form-control-sm inline-edit"
+               data-id="${u._id||u.id}" data-field="name"
+               value="${esc(u.name)}" placeholder="—">
+      </td>
+
+      <!-- اسم المستخدم (قابل للتحرير) -->
+      <td>
+        <input class="form-control form-control-sm inline-edit"
+               data-id="${u._id||u.id}" data-field="username"
+               value="${esc(u.username)}" placeholder="—">
+      </td>
+
+      <!-- البريد (قابل للتحرير) -->
+      <td>
+        <input class="form-control form-control-sm inline-edit"
+               data-id="${u._id||u.id}" data-field="email"
+               value="${esc(u.email)}" placeholder="—">
+      </td>
+
+      <td style="width:140px">${roleSelect(u._id||u.id, u.role||'user')}</td>
+      <td style="width:110px">
+        ${u.isActive===false?'<span class="badge badge-inactive">معطّل</span>':'<span class="badge badge-active">نشط</span>'}
+        ${activeToggle(u._id||u.id, u.isActive!==false)}
+      </td>
+
+      <!-- سنحدّث هذه الخلية بعد الحفظ مباشرة -->
+      <td class="cell-created">
+        ${ (u.updatedAt||u.createdAt) ? new Date(u.updatedAt||u.createdAt).toLocaleString('ar-EG') : '—' }
+      </td>
+
+      <td>
+        <button class="btn btn-sm btn-outline-primary resetBtn" data-id="${u._id||u.id}" data-name="${u.name||u.username||'—'}"><i class="bi bi-key"></i></button>
+        <button class="btn btn-sm btn-outline-danger delBtn" data-id="${u._id||u.id}" data-name="${u.name||u.username||'—'}"><i class="bi bi-trash3"></i></button>
+      </td>
+    </tr>
+  `).join('');
+
+  updateBulkBar();
+}
+
+
+    function updateBulkBar(){
+      const any = state.selected.size>0;
+      document.getElementById('bulkActivate').disabled = !any;
+      document.getElementById('bulkDeactivate').disabled = !any;
+      document.getElementById('bulkDelete').disabled = !any;
+      document.getElementById('countSpan').textContent = `المحدّد: ${state.selected.size} | الإجمالي: ${state.total}`;
+    }
+
+    /* ====== تحميل المستخدمين ====== */
+    async function fetchUsers(){
+      // قراءة الفلاتر من UI
+      state.search = document.getElementById('q').value.trim();
+      state.role   = document.getElementById('fRole').value;
+      state.active = document.getElementById('fActive').value;
+      state.sort   = document.getElementById('sort').value;
+      state.limit  = parseInt(document.getElementById('limit').value,10) || 20;
+
+      saveFilters();
+      qs.set({ q: state.search, role: state.role, active: state.active, sort: state.sort, limit: state.limit, page: state.page });
+
+      tbody.innerHTML = `<tr><td colspan="9">
+        <div class="skeleton" style="height:18px;margin:8px 0;"></div>
+        <div class="skeleton" style="height:18px;margin:8px 0;"></div>
+        <div class="skeleton" style="height:18px;margin:8px 0;"></div>
+      </td></tr>`;
+      try{
+        const params = new URLSearchParams();
+        if(state.search) params.set('search',state.search);
+        if(state.role)   params.set('role',state.role);
+        if(state.active) params.set('active',state.active);
+        if(state.sort)   params.set('sort',state.sort);
+        params.set('page', state.page);
+        params.set('limit', state.limit);
+
+        const r = await apiFetch('/api/users?'+params.toString());
+        if(r.status===401 || r.status===403){
+          setToast(toastError,'❌ انتهت الجلسة أو لا تملك صلاحية'); toastError.show();
+          setTimeout(()=>location.href=go('/committees-login.html'),900);
+          return;
+        }
+        if(!r.ok) throw new Error('HTTP '+r.status);
+        const data = await r.json();
+        state.items = data.data || data;
+        state.total = data?.meta?.total ?? state.items.length;
+        document.getElementById('pageNum').textContent = state.page;
+        renderRows(state.items, (state.page-1)*state.limit);
+      }catch(e){
+        tbody.innerHTML = `<tr class="text-center text-danger"><td colspan="9">حدث خطأ في جلب المستخدمين</td></tr>`;
+        console.error('fetchUsers error:', e);
+      }
+    }
+
+    /* ====== تعديل فوري: الدور/الحالة ====== */
+    async function updateUserPartial(id, patch){
+      const row = tbody.querySelector(`tr[data-id="${id}"]`);
+      row?.classList.add('saving');
+      try{
+        const r = await apiFetch('/api/users/'+id,{
+          method:'PUT',
+          headers:{'Content-Type':'application/json'},
+          body: JSON.stringify(patch)
         });
-        updateCompletionRate();applyColumnVisibility();applyCommitteeSearch();
-      } catch (err) { showError("❌ فشل تحميل البيانات"); console.error(err); }
-    }
-    loadCommittees();
-
-    document.getElementById('collegeFilter').addEventListener('change', loadCommittees);
-    document.getElementById('auditorFilter').addEventListener('change', loadCommittees);
-
-    function showNotes(html) {document.getElementById('notesContent').innerHTML = html || "<i>لا توجد ملاحظات</i>";new bootstrap.Modal(document.getElementById('notesModal')).show();}
-    function editCommittee(c) {document.getElementById('edit_id').value = c._id;document.getElementById('editCollege').value = c.college;document.getElementById('editCommittee').value = c.committee_name;document.getElementById('editAuditor').value = c.auditor_name;document.getElementById('editDate').value = c.audit_date ? c.audit_date.split("T")[0] : "";quillEdit.root.innerHTML = c.notes || "";new bootstrap.Modal(document.getElementById('editModal')).show();}
-    document.getElementById('editForm').addEventListener('submit', async (e) => {e.preventDefault();document.getElementById('editNotesInput').value = quillEdit.root.innerHTML;const data = {college: document.getElementById('editCollege').value,committee_name: document.getElementById('editCommittee').value,auditor_name: document.getElementById('editAuditor').value,audit_date: document.getElementById('editDate').value,notes: document.getElementById('editNotesInput').value};try {await axios.put(`/api/committees/${document.getElementById('edit_id').value}`, data);showSuccess("✅ تم حفظ التعديلات بنجاح");bootstrap.Modal.getInstance(document.getElementById('editModal')).hide();loadCommittees();} catch (err) { console.error(err); showError("❌ خطأ أثناء الحفظ"); }});
-
-    async function saveRow(btn, id) {const row = btn.closest('tr');const updatedData = {};row.querySelectorAll('[contenteditable="true"]').forEach(cell => {if (!document.getElementById("toggle_" + cell.getAttribute('data-field')).checked) return;updatedData[cell.getAttribute('data-field')] = parseFloat(cell.innerText) || 0;});updatedData.availability_score = parseFloat(row.querySelector(".availability-cell").innerText) || 0;try {await axios.put(`/api/committees/${id}`, updatedData);showSuccess("✅ تم حفظ التعديلات");} catch (err) { console.error(err); showError("❌ خطأ أثناء الحفظ"); }}
-
-    function confirmDelete(id) {showConfirm("⚠️ هل أنت متأكد من الحذف؟", async () => {try {await axios.delete(`/api/committees/${id}`);showSuccess("🗑️ تم حذف السجل بنجاح");loadCommittees();} catch (err) { console.error(err); showError("❌ فشل الحذف"); }});}
-
-    function updateCompletionRate() {const rows = document.querySelectorAll('#committeesTable tr');let totalAvailability = 0;let numCommittees = 0;rows.forEach(row => {const availabilityCell = row.querySelector('.availability-cell');if (availabilityCell) {totalAvailability += parseFloat(availabilityCell.innerText) || 0;numCommittees++;}});const visibleCols = Array.from(document.querySelectorAll('.col-toggle:checked')).length;const denominator = numCommittees * visibleCols;const completionRate = denominator > 0 ? ((totalAvailability / denominator) * 100).toFixed(2) : 0;const completionDiv = document.getElementById("completionRateContainer");if (lastCollege && lastCollege !== "جميع الكليات") {completionDiv.innerHTML = `📌 نسبة الاكتمال لكلية ${lastCollege} = ${completionRate}%<br>📋 عدد لجان كلية ${lastCollege} = ${numCommittees}`;} else {completionDiv.innerHTML = `📌 نسبة الاكتمال لجميع الكليات = ${completionRate}%<br>📋 عدد لجان جميع الكليات = ${numCommittees}`;}}
-
-    function applyColumnVisibility() {
-      document.querySelectorAll('.col-toggle').forEach(cb => {
-        const field = cb.getAttribute('data-field');
-        document.querySelectorAll('.col-' + field).forEach(cell => {cell.classList.toggle('hidden-col', !cb.checked);});
-      });
-      document.querySelectorAll('#committeesTable tr').forEach(tr => updateAvailability(tr));
-      updateCompletionRate();
-      updateAvailabilityHeader();
-    }
-
-    document.querySelectorAll('.col-toggle').forEach(cb => {cb.addEventListener('change', applyColumnVisibility);});
-
-    function updateSelectedVisits() {
-      const selected = Array.from(document.querySelectorAll('.visit-toggle:checked')).map(cb => cb.value);
-      const container = document.getElementById('selectedVisitsContainer');
-      container.innerHTML = selected.length > 0 ? "الزيارات: " + selected.join(" | ") : "الزيارات: لم يتم إختيار أي زيارة";
-    }
-    document.querySelectorAll('.visit-toggle').forEach(cb => {cb.addEventListener('change', updateSelectedVisits);});
-
-    function updateAvailabilityHeader() {
-      const visibleCols = Array.from(document.querySelectorAll('.col-toggle:checked')).length;
-      document.getElementById("availabilityHeader").innerText = `درجة التوفر من (${visibleCols})`;
-    }
-    updateAvailabilityHeader();
-
-    async function loadSettings() {
-      try {
-        const res = await axios.get('/api/settings');
-        const settings = res.data;
-        if (settings.visibleColumns) {
-          document.querySelectorAll('.col-toggle').forEach(cb => {
-            cb.checked = settings.visibleColumns.includes(cb.getAttribute('data-field'));
-          });
-        }
-        if (settings.selectedVisits) {
-          document.querySelectorAll('.visit-toggle').forEach(cb => {
-            cb.checked = settings.selectedVisits.includes(cb.value);
-          });
-        }
-        applyColumnVisibility();
-        updateSelectedVisits();
-      } catch (err) {
-        console.error("❌ فشل تحميل الإعدادات", err);
-        document.getElementById("selectedVisitsContainer").innerHTML = "الزيارات: لم يتم إختيار أي زيارة";
+        const data = await r.json().catch(()=> ({}));
+        if(!r.ok) throw new Error(data?.message || 'فشل التعديل');
+        row?.classList.add('row-highlight');
+        setTimeout(()=>row?.classList.remove('row-highlight'),600);
+        return true;
+      }catch(err){
+        setToast(toastError,'❌ '+(err.message||'فشل التعديل')); toastError.show();
+        return false;
+      }finally{
+        row?.classList.remove('saving');
+        fetchUsers(); // لتحديث الشارات
       }
     }
 
-    async function saveSettings() {
-      try {
-        const visibleColumns = Array.from(document.querySelectorAll('.col-toggle:checked')).map(cb => cb.getAttribute('data-field'));
-        const selectedVisits = Array.from(document.querySelectorAll('.visit-toggle:checked')).map(cb => cb.value);
-        await axios.put('/api/settings', { visibleColumns, selectedVisits });
-        showSuccess("✅ تم حفظ الإعدادات بنجاح");
-      } catch (err) {
-        console.error("❌ فشل حفظ الإعدادات", err);
-        showError("❌ خطأ في حفظ الإعدادات");
+   /* ====== حذف واحد (بتوست تأكيد) ====== */
+async function deleteUser(id, name){
+  const ok = await confirmToast({
+    message: `سيتم حذف المستخدم: ${name}\nلا يمكن التراجع.`,
+    confirmText: 'نعم، احذف',
+    cancelText: 'إلغاء'
+  });
+  if(!ok){
+    setToast(toastInfo,'تم الإلغاء'); toastInfo.show();
+    return;
+  }
+
+  try{
+    const r = await apiFetch('/api/users/'+id,{ method:'DELETE' });
+    const data = await r.json().catch(()=> ({}));
+    if(!r.ok) throw new Error(data?.message || 'فشل الحذف');
+    setToast(toastSuccess,'🗑️ تم حذف المستخدم'); toastSuccess.show();
+    state.selected.delete(id);
+    fetchUsers();
+  }catch(err){
+    setToast(toastError,'❌ '+(err.message||'فشل الحذف')); toastError.show();
+  }
+}
+
+
+    /* ====== إعادة تعيين كلمة المرور ====== */
+    const resetModal = new bootstrap.Modal(document.getElementById('resetPwModal'));
+    let resetTargetId = null;
+    document.getElementById('applyResetBtn').addEventListener('click', async ()=>{
+      const pw = document.getElementById('newPwInput').value.trim();
+      if(!pw){ setToast(toastInfo,'أدخل كلمة مرور جديدة'); toastInfo.show(); return; }
+      try{
+        const r = await apiFetch('/api/users/'+resetTargetId+'/password',{
+          method:'PUT',
+          headers:{'Content-Type':'application/json'},
+          body: JSON.stringify({ newPassword: pw })
+        });
+        const data = await r.json().catch(()=> ({}));
+        if(!r.ok) throw new Error(data?.message || 'فشل التغيير');
+        setToast(toastSuccess,'✅ تم تغيير كلمة المرور'); toastSuccess.show();
+        resetModal.hide();
+      }catch(err){
+        setToast(toastError,'❌ '+(err.message||'فشل تغيير كلمة المرور')); toastError.show();
+      }
+    });
+
+    /* ====== إجراءات جماعية ====== */
+    async function bulkAction(payload, okMsg){
+      if(state.selected.size===0) return;
+      try{
+        const r = await apiFetch('/api/users/bulk',{
+          method:'POST',
+          headers:{'Content-Type':'application/json'},
+          body: JSON.stringify({ ids:[...state.selected], ...payload })
+        });
+        const data = await r.json().catch(()=> ({}));
+        if(!r.ok) throw new Error(data?.message || 'فشل التنفيذ');
+        setToast(toastSuccess, okMsg); toastSuccess.show();
+        state.selected.clear();
+        fetchUsers();
+      }catch(err){
+        setToast(toastError,'❌ '+(err.message||'فشل التنفيذ')); toastError.show();
       }
     }
-    document.getElementById('saveSettingsBtn').addEventListener('click', saveSettings);
 
-    function applyCommitteeSearch() {
-      const searchTerm = document.getElementById("committeeSearch").value.trim().toLowerCase();
-      document.querySelectorAll("#committeesTable tr").forEach(row => {
-        const committeeName = row.cells[2]?.innerText.trim().toLowerCase() || "";
-        row.style.display = committeeName.includes(searchTerm) ? "" : "none";
-      });
+    /* ====== إضافة مستخدم (تحقق فوري + مقياس قوة + إظهار/إخفاء) ====== */
+    const addForm = document.getElementById('addUserForm');
+    const addBtn = document.getElementById('addBtn');
+
+    // إظهار/إخفاء كلمة المرور
+    const pwInput = document.getElementById('pwInput');
+    const togglePwBtn = document.getElementById('togglePwBtn');
+    togglePwBtn.addEventListener('click', ()=>{
+      const isPw = pwInput.type === 'password';
+      pwInput.type = isPw ? 'text' : 'password';
+      togglePwBtn.innerHTML = isPw ? '<i class="bi bi-eye-slash"></i>' : '<i class="bi bi-eye"></i>';
+      pwInput.focus();
+    });
+
+    function pwStrength(pw){
+      let s=0;
+      if(pw.length>=8) s++;
+      if(/[A-Z]/.test(pw) && /[a-z]/.test(pw)) s++;
+      if(/\d/.test(pw)) s++;
+      if(/[^A-Za-z0-9]/.test(pw)) s++;
+      if(pw.length>=12) s++;
+      return Math.min(s,5);
     }
-    document.getElementById("committeeSearch").addEventListener("input", applyCommitteeSearch);
+    function renderPwMeter(){
+      const pw = pwInput.value;
+      const score = pwStrength(pw);
+      const bar = document.getElementById('pwBar');
+      const colors = ['#dc3545','#fd7e14','#ffc107','#20c997','#198754'];
+      bar.style.width = (score*20)+'%';
+      bar.style.background = colors[Math.max(0,score-1)] || '#e9ecef';
+    }
+    pwInput.addEventListener('input', renderPwMeter);
 
-    loadSettings();
+    // تحقّق بسيط من التفرّد عبر البحث
+    let _debTimer;
+    function debounce(fn,ms){ return (...a)=>{ clearTimeout(_debTimer); _debTimer=setTimeout(()=>fn(...a),ms); }; }
+    const checkUnique = debounce(async ()=>{
+      const u = addForm.username.value.trim();
+      const e = addForm.email.value.trim();
+      if(!u && !e) return;
+      try{
+        const params = new URLSearchParams({ search: u||e, limit: 5 });
+        const r = await apiFetch('/api/users?'+params.toString());
+        if(!r.ok) return;
+        const data = await r.json();
+        const arr = data.data || data;
+        const uTaken = u && arr.some(x => (x.username||'').toLowerCase()===u.toLowerCase());
+        const eTaken = e && arr.some(x => (x.email||'').toLowerCase()===e.toLowerCase());
+        document.getElementById('userCheckHint').textContent = uTaken ? '⚠️ اسم المستخدم مستخدم' : '';
+        document.getElementById('emailCheckHint').textContent = eTaken ? '⚠️ البريد مستخدم' : '';
+      }catch{}
+    }, 450);
+    addForm.username.addEventListener('blur', checkUnique);
+    addForm.email.addEventListener('blur', checkUnique);
+
+    addForm.addEventListener('submit', async (e)=>{
+      e.preventDefault();
+      addBtn.disabled = true; addBtn.classList.add('saving');
+      try{
+        const fd = new FormData(addForm);
+        const payload = Object.fromEntries(fd.entries());
+        const r = await apiFetch('/auth/committees/register', {
+          method:'POST', headers:{'Content-Type':'application/json'},
+          body: JSON.stringify(payload)
+        });
+        const data = await r.json().catch(()=> ({}));
+        if(!r.ok) throw new Error(data?.message || 'فشل الإضافة');
+        setToast(toastSuccess,'✅ تم إنشاء المستخدم'); toastSuccess.show();
+        addForm.reset(); renderPwMeter();
+        state.page = 1; fetchUsers();
+      }catch(err){
+        setToast(toastError,'❌ '+(err.message||'فشل الإضافة')); toastError.show();
+      }finally{
+        addBtn.disabled = false; addBtn.classList.remove('saving');
+      }
+    });
+
+    /* ====== تصدير CSV لما هو معروض ====== */
+    function exportCSV(rows){
+      const header = ['name','username','email','role','isActive','createdAt'];
+      const toCSV = s => `"${String(s??'').replace(/"/g,'""')}"`;
+      const lines = [header.join(',')].concat(rows.map(r =>
+        [r.name, r.username, r.email, r.role, r.isActive!==false, r.createdAt?new Date(r.createdAt).toISOString():'']
+          .map(toCSV).join(',')
+      ));
+      const blob = new Blob([lines.join('\n')], {type:'text/csv;charset=utf-8;'});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a'); a.href = url; a.download = 'users.csv'; a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    /* ====== أحداث الجدول ====== */
+    document.getElementById('btnReload').addEventListener('click', ()=>{ state.page=1; fetchUsers(); });
+    document.getElementById('btnExport').addEventListener('click', ()=> exportCSV(state.items));
+
+    document.getElementById('q').addEventListener('input', debounce(()=>{ state.page=1; fetchUsers(); }, 400));
+    document.getElementById('fRole').addEventListener('change', ()=>{ state.page=1; fetchUsers(); });
+    document.getElementById('fActive').addEventListener('change', ()=>{ state.page=1; fetchUsers(); });
+    document.getElementById('sort').addEventListener('change', ()=>{ state.page=1; fetchUsers(); });
+    document.getElementById('limit').addEventListener('change', ()=>{ state.page=1; fetchUsers(); });
+
+    document.getElementById('prevPage').addEventListener('click', ()=>{ if(state.page>1){ state.page--; fetchUsers(); } });
+    document.getElementById('nextPage').addEventListener('click', ()=>{ if(state.items.length===state.limit){ state.page++; fetchUsers(); } });
+
+    document.getElementById('chkAll').addEventListener('change', (e)=>{
+      const ch = e.target.checked;
+      document.querySelectorAll('.chkRow').forEach(x=>{
+        x.checked = ch;
+        const id = x.value;
+        if(ch) state.selected.add(id); else state.selected.delete(id);
+      });
+      updateBulkBar();
+    });
+
+    const tbodyEl = document.getElementById('usersTbody');
+    tbodyEl.addEventListener('change', (e)=>{
+      const t = e.target;
+      if(t.classList.contains('chkRow')){
+        const id = t.value;
+        if(t.checked) state.selected.add(id); else state.selected.delete(id);
+        const all = Array.from(tbodyEl.querySelectorAll('.chkRow'));
+        document.getElementById('chkAll').checked = (all.length>0 && all.every(x=>x.checked));
+        updateBulkBar();
+      } else if(t.classList.contains('inline-role')){
+        const id = t.dataset.id;
+        updateUserPartial(id, { role: t.value });
+      } else if(t.classList.contains('inline-active')){
+        const id = t.dataset.id;
+        updateUserPartial(id, { isActive: t.checked });
+      }
+    });
+
+    tbodyEl.addEventListener('click', (e)=>{
+      const btn = e.target.closest('button');
+      if(!btn) return;
+      if(btn.classList.contains('delBtn')){
+        deleteUser(btn.dataset.id, btn.dataset.name);
+      }else if(btn.classList.contains('resetBtn')){
+        resetTargetId = btn.dataset.id;
+        document.getElementById('resetTargetName').textContent = btn.dataset.name;
+        document.getElementById('newPwInput').value = '';
+        resetModal.show();
+      }
+    });
+
+    /* ====== تحرير مباشر (name/username/email) مع حفظ تلقائي ====== */
+async function saveInline(inputEl){
+  const id    = inputEl.dataset.id;
+  const field = inputEl.dataset.field;
+  const value = inputEl.value.trim();
+
+  if(!id || !field) return;
+
+  // منع حفظ لا يلزم: قارن بالقيمة الأصلية إن أردت (اختياري)
+  // هنا نحفظ دائمًا بمجرد الخروج أو Enter
+  const row = tbody.querySelector(`tr[data-id="${id}"]`);
+  row?.classList.add('cell-saving');
+
+  // إعادة استخدام دالتك الموجودة لتحديث جزئي
+  const ok = await updateUserPartial(id, { [field]: value });
+
+  if(ok){
+    // حدّث خانة التاريخ/الوقت مباشرةً إلى الآن (كما طلبت)
+    const createdCell = row?.querySelector('.cell-created');
+    if(createdCell){
+      createdCell.textContent = new Date().toLocaleString('ar-EG');
+    }
+  }
+
+  row?.classList.remove('cell-saving');
+}
+
+// حفظ عند الخروج من الحقل
+tbodyEl.addEventListener('blur', (e)=>{
+  const t = e.target;
+  if(t.classList.contains('inline-edit')){
+    saveInline(t);
+  }
+}, true);
+
+// حفظ عند Enter
+tbodyEl.addEventListener('keydown', (e)=>{
+  const t = e.target;
+  if(t.classList.contains('inline-edit') && e.key === 'Enter'){
+    e.preventDefault();
+    t.blur(); // سيشغّل الحفظ عبر حدث blur
+  }
+});
+
+
+    // تغيير الدور جماعيًا من القائمة
+    document.querySelectorAll('.dropdown-menu [data-role]').forEach(a=>{
+      a.addEventListener('click', (e)=>{
+        e.preventDefault();
+        const role = a.dataset.role;
+        if(state.selected.size===0) return;
+        bulkAction({ action:'set-role', role }, '✅ تم تغيير الأدوار');
+      });
+    });
+    document.getElementById('bulkActivate').addEventListener('click', ()=> bulkAction({ action:'activate' }, '✅ تم تفعيل المحددين'));
+    document.getElementById('bulkDeactivate').addEventListener('click', ()=> bulkAction({ action:'deactivate' }, '✅ تم تعطيل المحددين'));
+    document.getElementById('bulkDelete').addEventListener('click', async ()=>{
+  if(state.selected.size === 0){
+    setToast(toastInfo,'لم يتم تحديد مستخدمين'); toastInfo.show();
+    return;
+  }
+  const ok = await confirmToast({
+    message: `سيتم حذف ${state.selected.size} مستخدم/ين. لا يمكن التراجع.`,
+    confirmText: 'نعم، احذف',
+    cancelText: 'إلغاء'
+  });
+  if(!ok){
+    setToast(toastInfo,'تم الإلغاء'); toastInfo.show();
+    return;
+  }
+  bulkAction({ action:'delete' }, '🗑️ تم حذف المحددين');
+});
+
+
+    /* ====== إقلاع (IIFE بدل top-level await) ====== */
+    (async function init(){
+      try{
+        await ensureAdmin();      // يتحقق أنه admin ويعرض الشارة
+        loadFilters();            // يسترجع الفلاتر المخزنة
+        const urlp = new URLSearchParams(location.search);
+        state.page  = parseInt(urlp.get('page')||'1',10);
+        renderPwMeter();          // يرسم مقياس قوة كلمة المرور مبدئياً
+        await fetchUsers();       // يجلب المستخدمين ويعرضهم
+      }catch(e){
+        console.error('init error:', e);
+      }
+    })();
+
   </script>
 </body>
 </html>
