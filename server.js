@@ -638,12 +638,18 @@ app.post('/auth/committees/login', async (req, res) => {
     if (!user) return res.status(401).json({ message: 'بيانات الدخول غير صحيحة' });
     const ok = await bcrypt.compare(password, user.password);
     if (!ok) return res.status(401).json({ message: 'بيانات الدخول غير صحيحة' });
+
+    // ✅ تسجيل آخر دخول
+    user.lastLogin = new Date();
+    await user.save();
+
     req.session.user = {
       id: String(user._id),
       name: user.name,
       email: user.email,
       username: user.username || (user.email ? user.email.split('@')[0] : undefined),
-      role: user.role
+      role: user.role,
+      lastLogin: user.lastLogin
     };
     res.json({ message: '✅ تم تسجيل الدخول', user: req.session.user });
   } catch (err) {
@@ -713,12 +719,37 @@ app.get('/api/users', authRequired, requireRole('admin'), async (req, res) => {
     } else sortObj.createdAt = -1;
 
     const skip = (page - 1) * limit;
+
+    // ✅ اجلب المستخدمين مع lastLogin
     const [items, total] = await Promise.all([
-      User.find(filter, 'name username email role isActive createdAt').sort(sortObj).skip(skip).limit(limit).lean(),
+      User.find(filter, 'name username email role isActive createdAt updatedAt lastLogin')
+        .sort(sortObj).skip(skip).limit(limit).lean(),
       User.countDocuments(filter)
     ]);
 
-    res.json({ data: items, meta: { page, limit, total, hasMore: skip + items.length < total } });
+    // ✅ احضر آخر إجراء لكل مستخدم من AuditLog (action+model+createdAt)
+    const idsStr = items.map(u => String(u._id));
+    let lastByUser = {};
+    if (idsStr.length) {
+      const agg = await AuditLog.aggregate([
+        { $match: { 'user.id': { $in: idsStr } } },
+        { $sort: { createdAt: -1 } },
+        { $group: {
+            _id: '$user.id',
+            action: { $first: '$action' },
+            model: { $first: '$model' },
+            createdAt: { $first: '$createdAt' }
+        } }
+      ]);
+      agg.forEach(x => { lastByUser[x._id] = { action: x.action, model: x.model, createdAt: x.createdAt }; });
+    }
+
+    const enriched = items.map(u => ({
+      ...u,
+      lastAction: lastByUser[String(u._id)] || null
+    }));
+
+    res.json({ data: enriched, meta: { page, limit, total, hasMore: skip + items.length < total } });
   } catch (err) {
     res.status(500).json({ message: '❌ خطأ في جلب المستخدمين', error: err.message });
   }
@@ -1212,7 +1243,6 @@ app.put('/api/settings', authRequired, requireRole('admin'), async (req, res) =>
     res.status(400).json({ message: '❌ خطأ في حفظ الإعدادات', error: err.message });
   }
 });
-
 app.get('/api/audit-logs', authRequired, requireRole('admin'), async (req, res) => {
   try {
     let { model, action, q, from, to, page = 1, limit = 20 } = req.query;
