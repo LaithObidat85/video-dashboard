@@ -726,36 +726,61 @@ app.get('/api/users', authRequired, requireRole('admin'), async (req, res) => {
 
 app.put('/api/users/:id', authRequired, requireRole('admin'), async (req, res) => {
   try {
-    const { name, username, role, isActive } = req.body || {};
+    const { name, username, role, isActive, email } = req.body || {};
     const update = {};
-    if (typeof name === 'string') update.name = name.trim();
+    if (typeof name === 'string')     update.name = name.trim();
     if (typeof username === 'string') update.username = username.trim();
     if (role === 'admin' || role === 'user') update.role = role;
     if (typeof isActive === 'boolean') update.isActive = isActive;
+    if (typeof email === 'string')    update.email = email.toLowerCase().trim(); // ✅ دعم تعديل البريد
 
     const before = await User.findById(req.params.id);
     if (!before) return res.status(404).json({ message: '❌ المستخدم غير موجود' });
 
-    const updated = await User.findByIdAndUpdate(req.params.id, update, { new: true });
+    const updated = await User.findByIdAndUpdate(req.params.id, update, { new: true, runValidators: true });
+    // ✅ نسجّل كل الحقول المهمة بما فيها البريد
     await logAudit(req, {
       model: 'User',
       action: 'update',
       docId: req.params.id,
       payload: {
-        before: { name: before.name, username: before.username, role: before.role, isActive: before.isActive },
-        after: { name: updated.name, username: updated.username, role: updated.role, isActive: updated.isActive }
+        before: {
+          name: before.name,
+          username: before.username,
+          email: before.email,
+          role: before.role,
+          isActive: before.isActive
+        },
+        after: {
+          name: updated.name,
+          username: updated.username,
+          email: updated.email,
+          role: updated.role,
+          isActive: updated.isActive
+        }
       }
     });
 
     res.json({
       message: '✅ تم التعديل',
-      user: { id: updated._id, name: updated.name, username: updated.username, role: updated.role, isActive: updated.isActive }
+      user: {
+        id: updated._id,
+        name: updated.name,
+        username: updated.username,
+        email: updated.email,
+        role: updated.role,
+        isActive: updated.isActive
+      }
     });
   } catch (err) {
-    if (err && err.code === 11000) return res.status(409).json({ message: 'اسم المستخدم مستخدم مسبقًا' });
+    // ⚠️ في حال كان لديك فهارس فريدة على username/email سيظهر code=11000
+    if (err && err.code === 11000) {
+      return res.status(409).json({ message: 'اسم المستخدم أو البريد مستخدم مسبقًا' });
+    }
     res.status(500).json({ message: '❌ خطأ في تعديل المستخدم', error: err.message });
   }
 });
+
 
 app.put('/api/users/:id/password', authRequired, requireRole('admin'), async (req, res) => {
   try {
@@ -769,12 +794,26 @@ app.put('/api/users/:id/password', authRequired, requireRole('admin'), async (re
     user.password = hash;
     await user.save();
 
-    await logAudit(req, { model: 'User', action: 'update', docId: user._id, payload: { passwordChanged: true } });
+    // ✅ نسجّل في الـ Audit Log مع هوية المستخدم المستهدف
+    await logAudit(req, {
+      model: 'User',
+      action: 'update',
+      docId: user._id,
+      payload: {
+        passwordChanged: true,
+        targetId: String(user._id),
+        targetName: user.name,
+        targetUsername: user.username,
+        targetEmail: user.email
+      }
+    });
+
     res.json({ message: '✅ تم تغيير كلمة المرور' });
   } catch (err) {
     res.status(500).json({ message: '❌ خطأ في تغيير كلمة المرور', error: err.message });
   }
 });
+
 
 app.delete('/api/users/:id', authRequired, requireRole('admin'), async (req, res) => {
   try {
