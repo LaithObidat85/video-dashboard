@@ -152,10 +152,11 @@
         </div>
         <div class="col-md-3">
           <label class="form-label">الدور</label>
-          <select class="form-select" name="role" required>
-            <option value="user">user</option>
-            <option value="admin">admin</option>
-          </select>
+         <select class="form-select" name="role" required>
+  <option value="user">user</option>
+  <option value="admin">admin</option>
+  <option value="subuser-member">subuser-member</option>
+</select>
         </div>
         <div class="col-12">
           <button class="btn btn-primary" id="addBtn">
@@ -177,10 +178,11 @@
         <div>
           <label class="form-label">الدور</label>
           <select id="fRole" class="form-select">
-            <option value="">الكل</option>
-            <option value="admin">admin</option>
-            <option value="user">user</option>
-          </select>
+  <option value="">الكل</option>
+  <option value="admin">admin</option>
+  <option value="user">user</option>
+  <option value="subuser-member">subuser-member</option>
+</select>
         </div>
         <div>
           <label class="form-label">الحالة</label>
@@ -223,9 +225,11 @@
             <div class="btn-group">
               <button class="btn btn-sm btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown"><i class="bi bi-person-gear"></i> تغيير الدور</button>
               <ul class="dropdown-menu">
-                <li><a class="dropdown-item" href="#" data-role="admin">اجعلهم admin</a></li>
-                <li><a class="dropdown-item" href="#" data-role="user">اجعلهم user</a></li>
-              </ul>
+  <li><a class="dropdown-item" href="#" data-role="admin">اجعلهم admin</a></li>
+  <li><a class="dropdown-item" href="#" data-role="user">اجعلهم user</a></li>
+  <li><a class="dropdown-item" href="#" data-role="subuser-member">اجعلهم subuser-member</a></li>
+</ul>
+
             </div>
             <button class="btn btn-sm btn-outline-danger" id="bulkDelete" disabled><i class="bi bi-trash3"></i> حذف المحدد</button>
           </div>
@@ -474,11 +478,15 @@ function confirmToast({ message='هل تريد المتابعة؟', confirmText=
 
     const tbody = document.getElementById('usersTbody');
     function rowCheckbox(id, checked){ return `<input class="form-check-input chkRow" type="checkbox" value="${id}" ${checked?'checked':''}>`; }
-    function roleSelect(id, role){ return `
+    function roleSelect(id, role){
+  return `
       <select class="form-select form-select-sm inline-role" data-id="${id}" title="تغيير فوري">
         <option value="user" ${role==='user'?'selected':''}>user</option>
         <option value="admin" ${role==='admin'?'selected':''}>admin</option>
-      </select>`; }
+        <option value="subuser-member" ${role==='subuser-member'?'selected':''}>subuser-member</option>
+      </select>`;
+}
+
     function activeToggle(id, isActive){ return `
       <div class="form-check form-switch">
         <input class="form-check-input inline-active" type="checkbox" role="switch" data-id="${id}" ${isActive?'checked':''} title="تفعيل/تعطيل فوري">
