@@ -36,15 +36,20 @@ app.use(helmet({
     directives: {
       "default-src": ["'self'"],
 
+      // السماح لسكربتات Google و jsDelivr
       "script-src": [
         "'self'", "'unsafe-inline'",
         "https://cdn.jsdelivr.net",
         "https://accounts.google.com",
         "https://apis.google.com",
-        "https://ssl.gstatic.com"
+        "https://ssl.gstatic.com",
+        "https://www.gstatic.com"
       ],
 
-      // 🔧 مهم: أضف content.googleapis.com و *.googleusercontent.com
+      // 👇 مهم: السماح بمعالجات أحداث inline على العناصر (فقط، لا يعني eval)
+      "script-src-attr": ["'self'", "'unsafe-inline'"],
+
+      // السماح للاتصالات الخارجية التي يحتاجها GIS/Picker
       "connect-src": [
         "'self'",
         "https://vdash-qkyv.onrender.com",
@@ -53,38 +58,43 @@ app.use(helmet({
         "https://content.googleapis.com",
         "https://oauth2.googleapis.com",
         "https://accounts.google.com",
-        "https://picker.googleapis.com"
+        "https://picker.googleapis.com",
+        "https://cdn.jsdelivr.net",
+        "https://www.gstatic.com"
       ],
 
-      // 🔧 مهم: اسمح لأي فريمات Google (GIS consent + Google Picker)
+      // نوافذ الموافقة ونافذة Picker
       "frame-src": [
         "'self'",
         "https://accounts.google.com",
-        "https://accounts.google.com/gsi/",
-        "https://*.google.com",
-        "https://*.googleusercontent.com",
         "https://docs.google.com",
         "https://drive.google.com",
         "https://picker.googleapis.com"
       ],
-      // بعض المتصفحات القديمة ترجع child-src، فنعطيها نفس القيم
-      "child-src": [
+
+      "style-src": [
+        "'self'", "'unsafe-inline'",
+        "https://cdn.jsdelivr.net",
+        "https://fonts.googleapis.com"
+      ],
+      "font-src": [
         "'self'",
-        "https://accounts.google.com",
-        "https://*.google.com",
-        "https://*.googleusercontent.com",
-        "https://docs.google.com",
-        "https://drive.google.com"
+        "https://cdn.jsdelivr.net",
+        "https://fonts.gstatic.com",
+        "https://ssl.gstatic.com",
+        "data:"
       ],
 
-      "style-src": ["'self'", "'unsafe-inline'", "https://cdn.jsdelivr.net", "https://fonts.googleapis.com"],
-      "font-src": ["'self'", "https://cdn.jsdelivr.net", "https://fonts.gstatic.com", "https://ssl.gstatic.com", "data:"],
-
-      // 🔧 أضف كل googleusercontent لصور الحساب/البيكر
       "img-src": [
         "'self'", "data:", "blob:",
-        "https://www.dropbox.com", "https://dl.dropboxusercontent.com", "https://*.dropboxusercontent.com", "https://*.dropbox.com",
-        "https://*.googleusercontent.com", "https://*.gstatic.com", "https://*.google.com"
+        "https://www.dropbox.com",
+        "https://dl.dropboxusercontent.com",
+        "https://*.dropboxusercontent.com",
+        "https://*.dropbox.com",
+        "https://lh3.googleusercontent.com",
+        "https://ssl.gstatic.com",
+        "https://www.gstatic.com",
+        "https://content.googleapis.com"
       ],
 
       "object-src": ["'none'"],
@@ -94,6 +104,7 @@ app.use(helmet({
     }
   }
 }));
+
 
 /****************************************************
  * CORS + الجلسة عبر النطاقات (GitHub Pages ↔ Render)
