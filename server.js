@@ -51,17 +51,18 @@ app.use(helmet({
 
       // السماح للاتصالات الخارجية التي يحتاجها GIS/Picker
       "connect-src": [
-        "'self'",
-        "https://vdash-qkyv.onrender.com",
-        "https://laithobidat85.github.io",
-        "https://www.googleapis.com",
-        "https://content.googleapis.com",
-        "https://oauth2.googleapis.com",
-        "https://accounts.google.com",
-        "https://picker.googleapis.com",
-        "https://cdn.jsdelivr.net",
-        "https://www.gstatic.com"
-      ],
+  "'self'",
+  "https://vdash-qkyv.onrender.com",
+  "https://laithobidat85.github.io",
+  "https://www.googleapis.com",
+  "https://content.googleapis.com",
+  "https://oauth2.googleapis.com",
+  "https://accounts.google.com",
+  "https://picker.googleapis.com",
+  "https://cdn.jsdelivr.net",
+  "https://www.gstatic.com",
+  "https://*.googleusercontent.com"     // ⬅️ جديد
+],
 
       // نوافذ الموافقة ونافذة Picker
       "frame-src": [
@@ -86,16 +87,16 @@ app.use(helmet({
       ],
 
       "img-src": [
-        "'self'", "data:", "blob:",
-        "https://www.dropbox.com",
-        "https://dl.dropboxusercontent.com",
-        "https://*.dropboxusercontent.com",
-        "https://*.dropbox.com",
-        "https://lh3.googleusercontent.com",
-        "https://ssl.gstatic.com",
-        "https://www.gstatic.com",
-        "https://content.googleapis.com"
-      ],
+  "'self'", "data:", "blob:",
+  "https://www.dropbox.com",
+  "https://dl.dropboxusercontent.com",
+  "https://*.dropboxusercontent.com",
+  "https://*.dropbox.com",
+  "https://ssl.gstatic.com",
+  "https://www.gstatic.com",
+  "https://content.googleapis.com",
+  "https://*.googleusercontent.com"     // ⬅️ بدّل lh3.* إلى wildcard
+],
 
       "object-src": ["'none'"],
       "base-uri": ["'self'"],
