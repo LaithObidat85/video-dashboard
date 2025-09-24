@@ -1,11 +1,9 @@
 // server.js
-
 /***************************************************
- * نظام المستخدمين الخاص باللجان + نظام الفيديو
+ * نظام المستخدمين الخاص باللجان + نظام الفيديو + تعيينات اللجان
  ****************************************************/
 const bcrypt = require('bcryptjs');
 const User = require('./models/userSchema');
-
 const express = require('express');
 const mongoose = require('mongoose');
 const path = require('path');
@@ -20,13 +18,12 @@ require('dotenv').config();
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-// === Helpers ===
+
+/* ========== Helpers ========== */
 const academicYearRegex = /^(20\d{2})[\/-](20\d{2})$/;
 function isValidISODate(s) {
   return /^\d{4}-\d{2}-\d{2}$/.test(s);
 }
-
-
 // ✅ فاحص URL بسيط (خادم)
 function isValidHttpUrl(u) {
   try {
@@ -36,24 +33,15 @@ function isValidHttpUrl(u) {
     return false;
   }
 }
-
 function normalizeUrlObj(x) {
   if (!x || typeof x !== 'object') return null;
   const v = (x.value || '').trim();
   if (!v || !isValidHttpUrl(v)) return null;
-  return {
-    type: 'url',
-    value: v,
-    title: typeof x.title === 'string' ? x.title.trim() : ''
-  };
+  return { type: 'url', value: v, title: typeof x.title === 'string' ? x.title.trim() : '' };
 }
-
 function normalizeUrlArray(arr) {
-  return Array.isArray(arr)
-    ? arr.map(normalizeUrlObj).filter(Boolean)
-    : [];
+  return Array.isArray(arr) ? arr.map(normalizeUrlObj).filter(Boolean) : [];
 }
-
 
 /****************************************************
  * أمان أساسي
@@ -64,36 +52,33 @@ app.use(helmet({
     useDefaults: true,
     directives: {
       "default-src": ["'self'"],
-
-      // السماح لسكربتات Google و jsDelivr
       "script-src": [
-        "'self'", "'unsafe-inline'",
+        "'self'",
+        "'unsafe-inline'",
         "https://cdn.jsdelivr.net",
         "https://accounts.google.com",
         "https://apis.google.com",
         "https://ssl.gstatic.com",
         "https://www.gstatic.com"
       ],
-
-      // 👇 مهم: السماح بمعالجات أحداث inline على العناصر (فقط، لا يعني eval)
+      // السماح بمعالجات أحداث inline على العناصر
       "script-src-attr": ["'self'", "'unsafe-inline'"],
-
-      // السماح للاتصالات الخارجية التي يحتاجها GIS/Picker
+      // السماح بالاتصالات الخارجية اللازمة
       "connect-src": [
-  "'self'",
-  "https://vdash-qkyv.onrender.com",
-  "https://laithobidat85.github.io",
-  "https://www.googleapis.com",
-  "https://content.googleapis.com",
-  "https://oauth2.googleapis.com",
-  "https://accounts.google.com",
-  "https://picker.googleapis.com",
-  "https://cdn.jsdelivr.net",
-  "https://www.gstatic.com",
-  "https://*.googleusercontent.com"     // ⬅️ جديد
-],
-
-      // نوافذ الموافقة ونافذة Picker
+        "'self'",
+        "https://vdash-qkyv.onrender.com",
+        "https://laithobidat85.github.io",
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+        "https://www.googleapis.com",
+        "https://content.googleapis.com",
+        "https://oauth2.googleapis.com",
+        "https://accounts.google.com",
+        "https://picker.googleapis.com",
+        "https://cdn.jsdelivr.net",
+        "https://www.gstatic.com",
+        "https://*.googleusercontent.com"
+      ],
       "frame-src": [
         "'self'",
         "https://accounts.google.com",
@@ -101,9 +86,9 @@ app.use(helmet({
         "https://drive.google.com",
         "https://picker.googleapis.com"
       ],
-
       "style-src": [
-        "'self'", "'unsafe-inline'",
+        "'self'",
+        "'unsafe-inline'",
         "https://cdn.jsdelivr.net",
         "https://fonts.googleapis.com"
       ],
@@ -114,19 +99,19 @@ app.use(helmet({
         "https://ssl.gstatic.com",
         "data:"
       ],
-
       "img-src": [
-  "'self'", "data:", "blob:",
-  "https://www.dropbox.com",
-  "https://dl.dropboxusercontent.com",
-  "https://*.dropboxusercontent.com",
-  "https://*.dropbox.com",
-  "https://ssl.gstatic.com",
-  "https://www.gstatic.com",
-  "https://content.googleapis.com",
-  "https://*.googleusercontent.com"     // ⬅️ بدّل lh3.* إلى wildcard
-],
-
+        "'self'",
+        "data:",
+        "blob:",
+        "https://www.dropbox.com",
+        "https://dl.dropboxusercontent.com",
+        "https://*.dropboxusercontent.com",
+        "https://*.dropbox.com",
+        "https://ssl.gstatic.com",
+        "https://www.gstatic.com",
+        "https://content.googleapis.com",
+        "https://*.googleusercontent.com"
+      ],
       "object-src": ["'none'"],
       "base-uri": ["'self'"],
       "form-action": ["'self'"],
@@ -135,19 +120,18 @@ app.use(helmet({
   }
 }));
 
-
 /****************************************************
  * CORS + الجلسة عبر النطاقات (GitHub Pages ↔ Render)
  ****************************************************/
 app.set('trust proxy', 1);
-
 const ALLOWED_ORIGINS = [
-  'https://laithobidat85.github.io',   // الواجهة على GitHub Pages
-  'https://vdash-qkyv.onrender.com',   // نفس الدومين على Render (مهم جدًا)
-  'http://localhost:3000',             // الخادم محليًا
+  'https://laithobidat85.github.io', // الواجهة على GitHub Pages
+  'https://vdash-qkyv.onrender.com', // نفس الدومين على Render
+  'http://localhost:3000',           // الخادم محليًا
   'http://localhost:5500',
   'http://127.0.0.1:5500'
 ];
+
 app.use(
   cors({
     origin: (origin, cb) => {
@@ -260,12 +244,11 @@ const Auditor = require('./models/auditorSchema');
 const settingsSchema = new mongoose.Schema({
   visibleColumns: [String],
   selectedVisits: [String],
-  term: { type: String, default: '' },          // NEW
-  academicYear: { type: String, default: '' },  // NEW
+  term: { type: String, default: '' },         // NEW
+  academicYear: { type: String, default: '' }, // NEW
   updatedAt: { type: Date, default: Date.now }
 });
 const Settings = mongoose.model('Settings', settingsSchema);
-
 
 /****************************************************
  * Committees Files (روابط ملفات اللجان) — مع الفصل/العام
@@ -283,59 +266,36 @@ const committeeFilesSchema = new mongoose.Schema(
   {
     college: { type: String, required: true, trim: true },
     committee_name: { type: String, required: true, trim: true },
-
-    // ✅ نجعلها مطلوبة عندما نريد التفرد على مستوى الفصل/العام
     academicYear: { type: String, required: true, trim: true }, // مثال: 2024/2025 أو 2024-2025
     term: { type: String, required: true, trim: true },          // مثال: الفصل الأول
-
     formation_decision: urlObjSchema,
     work_plan: urlObjSchema,
-
     invitations: [urlObjSchema],
     minutes: [urlObjSchema],
     coverage_letters: [urlObjSchema],
-
     report1: urlObjSchema,
     report2: urlObjSchema,
     report3: urlObjSchema,
     statistical_analysis: urlObjSchema,
-
-    createdBy: {
-      id: String,
-      name: String,
-      email: String,
-      username: String,
-      role: String
-    }
+    createdBy: { id: String, name: String, email: String, username: String, role: String }
   },
   { timestamps: true }
 );
-
 // ✅ فهرس فريد على مستوى (كلية + لجنة + عام + فصل)
 committeeFilesSchema.index(
   { college: 1, committee_name: 1, academicYear: 1, term: 1 },
   { unique: true }
 );
-
 const CommitteeFiles = mongoose.model('CommitteeFiles', committeeFilesSchema);
-
-
-
 
 /****************************************************
  * سجلات التدقيق (Audit Log)
  ****************************************************/
 const auditLogSchema = new mongoose.Schema({
-  model: { type: String, required: true }, // Evaluation/College/Auditor/Committee/Settings/User
-  action: { type: String, required: true }, // create/update/delete
+  model: { type: String, required: true }, // Evaluation/College/Auditor/Committee/Settings/User/CommitteeFiles/CommitteeAssignment
+  action: { type: String, required: true }, // create/update/delete/upsert
   docId: { type: String },
-  user: {
-    id: String,
-    name: String,
-    email: String,
-    username: String,
-    role: String
-  },
+  user: { id: String, name: String, email: String, username: String, role: String },
   payload: { type: Object },
   createdAt: { type: Date, default: Date.now }
 });
@@ -399,11 +359,13 @@ app.post('/api/verify-password', async (req, res) => {
     return res.status(500).json({ success: false, message: '❌ خطأ في التحقق' });
   }
 });
+
 app.get('/api/check-session/:section', (req, res) => {
   const { section } = req.params;
   if (req.session && req.session[`${section}Auth`]) return res.json({ authenticated: true });
   return res.json({ authenticated: false });
 });
+
 app.post('/api/logout/:section', (req, res) => {
   const { section } = req.params;
   if (req.session) req.session[`${section}Auth`] = false;
@@ -501,7 +463,11 @@ app.post('/api/departments', async (req, res) => {
 });
 app.put('/api/departments/:id', async (req, res) => {
   try {
-    const updated = await Department.findByIdAndUpdate(req.params.id, { name: req.body.name }, { new: true });
+    const updated = await Department.findByIdAndUpdate(
+      req.params.id,
+      { name: req.body.name },
+      { new: true }
+    );
     if (!updated) return res.status(404).json({ message: '❌ القسم غير موجود' });
     res.json(updated);
   } catch (err) {
@@ -608,6 +574,7 @@ app.post('/api/links/:id/move', async (req, res) => {
     if (!link) return res.status(404).json({ message: '❌ الرابط غير موجود' });
     const links = await Link.find().sort({ order: 1 });
     const index = links.findIndex((l) => l.id === link.id);
+
     if (direction === 'up' && index > 0) {
       const prev = links[index - 1];
       [link.order, prev.order] = [prev.order, link.order];
@@ -661,7 +628,7 @@ app.get('/api/backups/download/:id', async (req, res) => {
   try {
     const backup = await Backup.findById(req.params.id);
     if (!backup) return res.status(404).json({ message: '❌ النسخة غير موجودة' });
-    res.setHeader('Content-Disposition', `attachment; filename=backup-${backup.date.toISOString()}.json`);
+    res.setHeader('Content-Disposition', `attachment; filename="backup-${backup.date.toISOString()}.json"`);
     res.setHeader('Content-Type', 'application/json');
     res.send(JSON.stringify(backup, null, 2));
   } catch (err) {
@@ -819,7 +786,6 @@ app.post('/auth/committees/register', authRequired, requireRole('admin'), async 
   }
 });
 
-
 app.get('/api/users', authRequired, requireRole('admin'), async (req, res) => {
   try {
     let { search = '', role = '', active = '', page = 1, limit = 20, sort = '-createdAt' } = req.query;
@@ -832,7 +798,7 @@ app.get('/api/users', authRequired, requireRole('admin'), async (req, res) => {
       const rx = new RegExp(safe, 'i');
       filter.$or = [{ name: rx }, { username: rx }, { email: rx }];
     }
-    if (['admin','user','subuser-member'].includes(role)) filter.role = role;
+    if (['admin', 'user', 'subuser-member'].includes(role)) filter.role = role;
     if (active === 'true') filter.isActive = true;
     if (active === 'false') filter.isActive = false;
 
@@ -850,35 +816,37 @@ app.get('/api/users', authRequired, requireRole('admin'), async (req, res) => {
 
     const skip = (page - 1) * limit;
 
-    // ✅ اجلب المستخدمين مع lastLogin
     const [items, total] = await Promise.all([
       User.find(filter, 'name username email role isActive createdAt updatedAt lastLogin')
-        .sort(sortObj).skip(skip).limit(limit).lean(),
+        .sort(sortObj)
+        .skip(skip)
+        .limit(limit)
+        .lean(),
       User.countDocuments(filter)
     ]);
 
-    // ✅ احضر آخر إجراء لكل مستخدم من AuditLog (action+model+createdAt)
-    const idsStr = items.map(u => String(u._id));
+    // ✅ آخر إجراء لكل مستخدم من AuditLog
+    const idsStr = items.map((u) => String(u._id));
     let lastByUser = {};
     if (idsStr.length) {
       const agg = await AuditLog.aggregate([
         { $match: { 'user.id': { $in: idsStr } } },
         { $sort: { createdAt: -1 } },
-        { $group: {
+        {
+          $group: {
             _id: '$user.id',
             action: { $first: '$action' },
             model: { $first: '$model' },
             createdAt: { $first: '$createdAt' }
-        } }
+          }
+        }
       ]);
-      agg.forEach(x => { lastByUser[x._id] = { action: x.action, model: x.model, createdAt: x.createdAt }; });
+      agg.forEach((x) => {
+        lastByUser[x._id] = { action: x.action, model: x.model, createdAt: x.createdAt };
+      });
     }
 
-    const enriched = items.map(u => ({
-      ...u,
-      lastAction: lastByUser[String(u._id)] || null
-    }));
-
+    const enriched = items.map((u) => ({ ...u, lastAction: lastByUser[String(u._id)] || null }));
     res.json({ data: enriched, meta: { page, limit, total, hasMore: skip + items.length < total } });
   } catch (err) {
     res.status(500).json({ message: '❌ خطأ في جلب المستخدمين', error: err.message });
@@ -889,17 +857,20 @@ app.put('/api/users/:id', authRequired, requireRole('admin'), async (req, res) =
   try {
     const { name, username, role, isActive, email } = req.body || {};
     const update = {};
-    if (typeof name === 'string')     update.name = name.trim();
+    if (typeof name === 'string') update.name = name.trim();
     if (typeof username === 'string') update.username = username.trim();
-    if (['admin','user','subuser-member'].includes(role)) update.role = role;
+    if (['admin', 'user', 'subuser-member'].includes(role)) update.role = role;
     if (typeof isActive === 'boolean') update.isActive = isActive;
-    if (typeof email === 'string')    update.email = email.toLowerCase().trim(); // ✅ دعم تعديل البريد
+    if (typeof email === 'string') update.email = email.toLowerCase().trim();
 
     const before = await User.findById(req.params.id);
     if (!before) return res.status(404).json({ message: '❌ المستخدم غير موجود' });
 
-    const updated = await User.findByIdAndUpdate(req.params.id, update, { new: true, runValidators: true });
-    // ✅ نسجّل كل الحقول المهمة بما فيها البريد
+    const updated = await User.findByIdAndUpdate(req.params.id, update, {
+      new: true,
+      runValidators: true
+    });
+
     await logAudit(req, {
       model: 'User',
       action: 'update',
@@ -921,7 +892,6 @@ app.put('/api/users/:id', authRequired, requireRole('admin'), async (req, res) =
         }
       }
     });
-
     res.json({
       message: '✅ تم التعديل',
       user: {
@@ -934,7 +904,6 @@ app.put('/api/users/:id', authRequired, requireRole('admin'), async (req, res) =
       }
     });
   } catch (err) {
-    // ⚠️ في حال كان لديك فهارس فريدة على username/email سيظهر code=11000
     if (err && err.code === 11000) {
       return res.status(409).json({ message: 'اسم المستخدم أو البريد مستخدم مسبقًا' });
     }
@@ -942,20 +911,15 @@ app.put('/api/users/:id', authRequired, requireRole('admin'), async (req, res) =
   }
 });
 
-
 app.put('/api/users/:id/password', authRequired, requireRole('admin'), async (req, res) => {
   try {
     const { newPassword } = req.body || {};
     if (!newPassword) return res.status(400).json({ message: 'كلمة المرور الجديدة مطلوبة' });
-
     const user = await User.findById(req.params.id);
     if (!user) return res.status(404).json({ message: '❌ المستخدم غير موجود' });
-
     const hash = await bcrypt.hash(newPassword, 10);
     user.password = hash;
     await user.save();
-
-    // ✅ نسجّل في الـ Audit Log مع هوية المستخدم المستهدف
     await logAudit(req, {
       model: 'User',
       action: 'update',
@@ -968,19 +932,16 @@ app.put('/api/users/:id/password', authRequired, requireRole('admin'), async (re
         targetEmail: user.email
       }
     });
-
     res.json({ message: '✅ تم تغيير كلمة المرور' });
   } catch (err) {
     res.status(500).json({ message: '❌ خطأ في تغيير كلمة المرور', error: err.message });
   }
 });
 
-
 app.delete('/api/users/:id', authRequired, requireRole('admin'), async (req, res) => {
   try {
     const before = await User.findById(req.params.id);
     if (!before) return res.status(404).json({ message: '❌ المستخدم غير موجود' });
-
     await User.findByIdAndDelete(req.params.id);
     await logAudit(req, {
       model: 'User',
@@ -1000,56 +961,64 @@ app.post('/api/users/bulk', authRequired, requireRole('admin'), async (req, res)
     const action = req.body?.action;
     if (ids.length === 0) return res.status(400).json({ message: 'قائمة المعرفات مطلوبة' });
 
-    // --- activate ---
     if (action === 'activate') {
       const before = await User.find({ _id: { $in: ids } }, 'name username email role isActive').lean();
       await User.updateMany({ _id: { $in: ids } }, { $set: { isActive: true } });
-      const after = before.map(u => ({ ...u, isActive: true }));
-      await logAudit(req, { model: 'User', action: 'update', docId: '__bulk__',
-        payload: { bulk: true, action: 'activate', ids, before, after } });
+      const after = before.map((u) => ({ ...u, isActive: true }));
+      await logAudit(req, {
+        model: 'User',
+        action: 'update',
+        docId: '__bulk__',
+        payload: { bulk: true, action: 'activate', ids, before, after }
+      });
       return res.json({ message: '✅ تم تفعيل المستخدمين' });
     }
 
-    // --- deactivate ---
     if (action === 'deactivate') {
       const before = await User.find({ _id: { $in: ids } }, 'name username email role isActive').lean();
       await User.updateMany({ _id: { $in: ids } }, { $set: { isActive: false } });
-      const after = before.map(u => ({ ...u, isActive: false }));
-      await logAudit(req, { model: 'User', action: 'update', docId: '__bulk__',
-        payload: { bulk: true, action: 'deactivate', ids, before, after } });
+      const after = before.map((u) => ({ ...u, isActive: false }));
+      await logAudit(req, {
+        model: 'User',
+        action: 'update',
+        docId: '__bulk__',
+        payload: { bulk: true, action: 'deactivate', ids, before, after }
+      });
       return res.json({ message: '✅ تم تعطيل المستخدمين' });
     }
 
-    // --- set-role ---
-   if (action === 'set-role') {
-  const role = ['admin','user','subuser-member'].includes(req.body?.role) ? req.body.role : 'user';
-  const before = await User.find({ _id: { $in: ids } }, 'name username email role isActive').lean();
-  await User.updateMany({ _id: { $in: ids } }, { $set: { role } });
-  const after = before.map(u => ({ ...u, role }));
-  await logAudit(req, { model: 'User', action: 'update', docId: '__bulk__',
-    payload: { bulk: true, action: 'set-role', role, ids, before, after } });
-  return res.json({ message: '✅ تم تغيير الأدوار' });
-}
+    if (action === 'set-role') {
+      const role = ['admin', 'user', 'subuser-member'].includes(req.body?.role) ? req.body.role : 'user';
+      const before = await User.find({ _id: { $in: ids } }, 'name username email role isActive').lean();
+      await User.updateMany({ _id: { $in: ids } }, { $set: { role } });
+      const after = before.map((u) => ({ ...u, role }));
+      await logAudit(req, {
+        model: 'User',
+        action: 'update',
+        docId: '__bulk__',
+        payload: { bulk: true, action: 'set-role', role, ids, before, after }
+      });
+      return res.json({ message: '✅ تم تغيير الأدوار' });
+    }
 
-
-    // --- delete ---
     if (action === 'delete') {
       const before = await User.find({ _id: { $in: ids } }, 'name username email role').lean();
       await User.deleteMany({ _id: { $in: ids } });
-      const after = before.map(u => ({ ...u, _deleted: true }));
-      await logAudit(req, { model: 'User', action: 'delete', docId: '__bulk__',
-        payload: { bulk: true, action: 'delete', ids, before, after } });
+      const after = before.map((u) => ({ ...u, _deleted: true }));
+      await logAudit(req, {
+        model: 'User',
+        action: 'delete',
+        docId: '__bulk__',
+        payload: { bulk: true, action: 'delete', ids, before, after }
+      });
       return res.json({ message: '🗑️ تم حذف المستخدمين' });
     }
 
-    // إذا لم يكن النوع مدعومًا
     return res.status(400).json({ message: 'نوع الإجراء غير مدعوم' });
-
   } catch (err) {
     return res.status(500).json({ message: '❌ فشل في تنفيذ الإجراء الجماعي', error: err.message });
   }
 });
-
 
 /****************************************************
  * الخروج/المستخدم الحالي (اللجان)
@@ -1068,31 +1037,23 @@ app.get('/auth/committees/me', (req, res) => {
  ****************************************************/
 app.post('/api/committees', authRequired, async (req, res) => {
   try {
-    // لو المرسل وضع تاريخ بصيغة YYYY-MM-DD حوّله Date
     if (typeof req.body.audit_date === 'string' && isValidISODate(req.body.audit_date)) {
       req.body.audit_date = new Date(req.body.audit_date + 'T00:00:00Z');
     }
-
-    // املأ term/academicYear من الإعدادات إن لم تُرسل
     const settings = await Settings.findOne();
     if (!req.body.term && settings?.term) req.body.term = settings.term;
     if (!req.body.academicYear && settings?.academicYear) req.body.academicYear = settings.academicYear;
-
     if (req.body.academicYear && !academicYearRegex.test(req.body.academicYear)) {
       return res.status(400).json({ message: 'صيغة العام الجامعي يجب أن تكون 2024-2025 أو 2024/2025' });
     }
-
-    // تحديت قاموس أسماء اللجان
     await Committee.updateOne(
       { name: req.body.committee_name },
       { $setOnInsert: { name: req.body.committee_name } },
       { upsert: true }
     );
-
     const evaluation = new Evaluation(req.body);
     await evaluation.save();
     await logAudit(req, { model: 'Evaluation', action: 'create', docId: evaluation._id, payload: req.body });
-
     res.status(201).json({ message: '✅ تم حفظ التقييم بنجاح', evaluation });
   } catch (err) {
     res.status(400).json({ message: '❌ خطأ في حفظ التقييم', error: err.message });
@@ -1107,7 +1068,6 @@ app.get('/api/committees', async (req, res) => {
     if (auditor_name) query.auditor_name = auditor_name;
     if (term) query.term = term;
     if (academicYear) query.academicYear = academicYear;
-
     const evaluations = await Evaluation.find(query).sort({ createdAt: -1 });
     res.json(evaluations);
   } catch (err) {
@@ -1119,16 +1079,19 @@ app.put('/api/committees/:id', authRequired, async (req, res) => {
   try {
     const before = await Evaluation.findById(req.params.id).lean();
     if (!before) return res.status(404).json({ message: '❌ التقييم غير موجود' });
-
     if (typeof req.body.audit_date === 'string' && isValidISODate(req.body.audit_date)) {
       req.body.audit_date = new Date(req.body.audit_date + 'T00:00:00Z');
     }
     if (typeof req.body.academicYear === 'string' && req.body.academicYear && !academicYearRegex.test(req.body.academicYear)) {
       return res.status(400).json({ message: 'صيغة العام الجامعي يجب أن تكون 2024-2025 أو 2024/2025' });
     }
-
     const updated = await Evaluation.findByIdAndUpdate(req.params.id, req.body, { new: true });
-    await logAudit(req, { model: 'Evaluation', action: 'update', docId: req.params.id, payload: { before, after: updated.toObject() } });
+    await logAudit(req, {
+      model: 'Evaluation',
+      action: 'update',
+      docId: req.params.id,
+      payload: { before, after: updated.toObject() }
+    });
     res.json(updated);
   } catch (err) {
     res.status(400).json({ message: '❌ خطأ في تعديل التقييم', error: err.message });
@@ -1141,30 +1104,25 @@ app.post('/api/committees/bulk', authRequired, async (req, res) => {
     if (!Array.isArray(ids) || ids.length === 0) {
       return res.status(400).json({ message: 'قائمة المعرفات مطلوبة' });
     }
-
     if (action === 'delete') {
-      // الحذف الجماعي — Admin فقط
       const u = currentUser(req);
       if (!u || u.role !== 'admin') return res.status(403).json({ message: 'غير مصرح: Admin فقط' });
-
       const before = await Evaluation.find({ _id: { $in: ids } }).lean();
       const result = await Evaluation.deleteMany({ _id: { $in: ids } });
       await logAudit(req, {
-        model: 'Evaluation', action: 'delete', docId: '__bulk__',
+        model: 'Evaluation',
+        action: 'delete',
+        docId: '__bulk__',
         payload: { bulk: true, ids, before, deletedCount: result.deletedCount }
       });
       return res.json({ message: `🗑️ تم حذف ${result.deletedCount} سجل` });
     }
-
     if (action === 'update') {
-      // التعديل الجماعي — تحقق من الحقول المسموحة
       const update = {};
-      const allowed = ['college','committee_name','auditor_name','term','academicYear','audit_date'];
-
-      Object.keys(patch || {}).forEach(k => {
+      const allowed = ['college', 'committee_name', 'auditor_name', 'term', 'academicYear', 'audit_date'];
+      Object.keys(patch || {}).forEach((k) => {
         if (allowed.includes(k)) update[k] = patch[k];
       });
-
       if (typeof update.audit_date === 'string') {
         if (!isValidISODate(update.audit_date)) {
           return res.status(400).json({ message: 'صيغة التاريخ يجب أن تكون YYYY-MM-DD' });
@@ -1174,31 +1132,34 @@ app.post('/api/committees/bulk', authRequired, async (req, res) => {
       if (typeof update.academicYear === 'string' && update.academicYear && !academicYearRegex.test(update.academicYear)) {
         return res.status(400).json({ message: 'صيغة العام الجامعي يجب أن تكون 2024-2025 أو 2024/2025' });
       }
-
       const before = await Evaluation.find({ _id: { $in: ids } }).lean();
       await Evaluation.updateMany({ _id: { $in: ids } }, { $set: update });
       const after = await Evaluation.find({ _id: { $in: ids } }).lean();
-
       await logAudit(req, {
-        model: 'Evaluation', action: 'update', docId: '__bulk__',
+        model: 'Evaluation',
+        action: 'update',
+        docId: '__bulk__',
         payload: { bulk: true, ids, before, after, patch: update }
       });
       return res.json({ message: `✅ تم تحديث ${ids.length} سجل` });
     }
-
     return res.status(400).json({ message: 'نوع الإجراء غير مدعوم' });
   } catch (err) {
     res.status(500).json({ message: '❌ فشل في العملية الجماعية', error: err.message });
   }
 });
 
-
 app.delete('/api/committees/:id', authRequired, requireRole('admin'), async (req, res) => {
   try {
     const before = await Evaluation.findById(req.params.id);
     const deleted = await Evaluation.findByIdAndDelete(req.params.id);
     if (!deleted) return res.status(404).json({ message: '❌ التقييم غير موجود' });
-    await logAudit(req, { model: 'Evaluation', action: 'delete', docId: req.params.id, payload: before ? before.toObject() : null });
+    await logAudit(req, {
+      model: 'Evaluation',
+      action: 'delete',
+      docId: req.params.id,
+      payload: before ? before.toObject() : null
+    });
     res.json({ message: '🗑️ تم حذف التقييم' });
   } catch (err) {
     res.status(400).json({ message: '❌ خطأ في الحذف', error: err.message });
@@ -1231,7 +1192,12 @@ app.put('/api/colleges/:id', authRequired, requireRole('admin'), async (req, res
     const before = await College.findById(req.params.id).lean();
     const updated = await College.findByIdAndUpdate(req.params.id, { name: req.body.name }, { new: true });
     if (!updated) return res.status(404).json({ message: '❌ الكلية غير موجودة' });
-    await logAudit(req, { model: 'College', action: 'update', docId: req.params.id, payload: { before, after: updated.toObject() } });
+    await logAudit(req, {
+      model: 'College',
+      action: 'update',
+      docId: req.params.id,
+      payload: { before, after: updated.toObject() }
+    });
     res.json(updated);
   } catch (err) {
     res.status(400).json({ error: err.message });
@@ -1242,7 +1208,12 @@ app.delete('/api/colleges/:id', authRequired, requireRole('admin'), async (req, 
     const before = await College.findById(req.params.id);
     const deleted = await College.findByIdAndDelete(req.params.id);
     if (!deleted) return res.status(404).json({ message: '❌ الكلية غير موجودة' });
-    await logAudit(req, { model: 'College', action: 'delete', docId: req.params.id, payload: before ? before.toObject() : null });
+    await logAudit(req, {
+      model: 'College',
+      action: 'delete',
+      docId: req.params.id,
+      payload: before ? before.toObject() : null
+    });
     res.json({ message: '🗑️ تم حذف الكلية' });
   } catch (err) {
     res.status(400).json({ error: err.message });
@@ -1272,7 +1243,12 @@ app.put('/api/committees-master/:id', authRequired, requireRole('admin'), async 
     const before = await Committee.findById(req.params.id).lean();
     const updated = await Committee.findByIdAndUpdate(req.params.id, { name: req.body.name }, { new: true });
     if (!updated) return res.status(404).json({ message: '❌ اللجنة غير موجودة' });
-    await logAudit(req, { model: 'Committee', action: 'update', docId: req.params.id, payload: { before, after: updated.toObject() } });
+    await logAudit(req, {
+      model: 'Committee',
+      action: 'update',
+      docId: req.params.id,
+      payload: { before, after: updated.toObject() }
+    });
     res.json(updated);
   } catch (err) {
     res.status(400).json({ error: err.message });
@@ -1283,7 +1259,12 @@ app.delete('/api/committees-master/:id', authRequired, requireRole('admin'), asy
     const before = await Committee.findById(req.params.id);
     const deleted = await Committee.findByIdAndDelete(req.params.id);
     if (!deleted) return res.status(404).json({ message: '❌ اللجنة غير موجودة' });
-    await logAudit(req, { model: 'Committee', action: 'delete', docId: req.params.id, payload: before ? before.toObject() : null });
+    await logAudit(req, {
+      model: 'Committee',
+      action: 'delete',
+      docId: req.params.id,
+      payload: before ? before.toObject() : null
+    });
     res.json({ message: '🗑️ تم حذف اللجنة' });
   } catch (err) {
     res.status(400).json({ error: err.message });
@@ -1313,7 +1294,12 @@ app.put('/api/auditors/:id', authRequired, requireRole('admin'), async (req, res
     const before = await Auditor.findById(req.params.id).lean();
     const updated = await Auditor.findByIdAndUpdate(req.params.id, { name: req.body.name }, { new: true });
     if (!updated) return res.status(404).json({ message: '❌ المدقق غير موجود' });
-    await logAudit(req, { model: 'Auditor', action: 'update', docId: req.params.id, payload: { before, after: updated.toObject() } });
+    await logAudit(req, {
+      model: 'Auditor',
+      action: 'update',
+      docId: req.params.id,
+      payload: { before, after: updated.toObject() }
+    });
     res.json(updated);
   } catch (err) {
     res.status(400).json({ error: err.message });
@@ -1324,7 +1310,12 @@ app.delete('/api/auditors/:id', authRequired, requireRole('admin'), async (req, 
     const before = await Auditor.findById(req.params.id);
     const deleted = await Auditor.findByIdAndDelete(req.params.id);
     if (!deleted) return res.status(404).json({ message: '❌ المدقق غير موجود' });
-    await logAudit(req, { model: 'Auditor', action: 'delete', docId: req.params.id, payload: before ? before.toObject() : null });
+    await logAudit(req, {
+      model: 'Auditor',
+      action: 'delete',
+      docId: req.params.id,
+      payload: before ? before.toObject() : null
+    });
     res.json({ message: '🗑️ تم حذف المدقق' });
   } catch (err) {
     res.status(400).json({ error: err.message });
@@ -1352,28 +1343,37 @@ app.put('/api/settings', authRequired, requireRole('admin'), async (req, res) =>
     if (!settings) {
       settings = new Settings(req.body);
       await settings.save();
-      await logAudit(req, { model: 'Settings', action: 'update', docId: settings._id, payload: { before: null, after: settings.toObject() } });
+      await logAudit(req, {
+        model: 'Settings',
+        action: 'update',
+        docId: settings._id,
+        payload: { before: null, after: settings.toObject() }
+      });
       return res.json(settings);
     }
     const before = settings.toObject();
-
-    // الحقول القديمة
-    settings.visibleColumns = Array.isArray(req.body.visibleColumns) ? req.body.visibleColumns : (settings.visibleColumns || []);
-    settings.selectedVisits = Array.isArray(req.body.selectedVisits) ? req.body.selectedVisits : (settings.selectedVisits || []);
-
-    // الحقول الجديدة
+    settings.visibleColumns = Array.isArray(req.body.visibleColumns)
+      ? req.body.visibleColumns
+      : (settings.visibleColumns || []);
+    settings.selectedVisits = Array.isArray(req.body.selectedVisits)
+      ? req.body.selectedVisits
+      : (settings.selectedVisits || []);
     if (typeof req.body.term === 'string') settings.term = req.body.term.trim();
     if (typeof req.body.academicYear === 'string') settings.academicYear = req.body.academicYear.trim();
-
     settings.updatedAt = new Date();
     await settings.save();
-
-    await logAudit(req, { model: 'Settings', action: 'update', docId: settings._id, payload: { before, after: settings.toObject() } });
+    await logAudit(req, {
+      model: 'Settings',
+      action: 'update',
+      docId: settings._id,
+      payload: { before, after: settings.toObject() }
+    });
     res.json(settings);
   } catch (err) {
     res.status(400).json({ message: '❌ خطأ في حفظ الإعدادات', error: err.message });
   }
 });
+
 app.get('/api/audit-logs', authRequired, requireRole('admin'), async (req, res) => {
   try {
     let { model, action, q, from, to, page = 1, limit = 20 } = req.query;
@@ -1432,29 +1432,22 @@ app.delete('/api/audit-logs/by-ids', authRequired, requireRole('admin'), async (
   }
 });
 
-
 /****************************************************
  * API: Committees Files (روابط ملفات اللجان)
- * يتوافق مع واجهتك الأمامية: POST /api/committees-files
+ * POST /api/committees-files
  ****************************************************/
-
-// إنشاء/تحديث عبر مفتاح (college+committee_name) ـ upsert
 app.post('/api/committees-files', authRequired, async (req, res) => {
   try {
     const body = req.body || {};
     const college = (body.college || '').trim();
     const committee_name = (body.committee_name || '').trim();
-
-    // ✅ اجلب إعدادات افتراضية لو ما أرسلها الواجهة (اختياري)
     const settings = await Settings.findOne().lean().catch(() => null);
     let academicYear = (body.academicYear || settings?.academicYear || '').trim();
-    let term         = (body.term || settings?.term || '').trim();
+    let term = (body.term || settings?.term || '').trim();
 
     if (!college || !committee_name) {
       return res.status(400).json({ message: 'الكلية واسم اللجنة مطلوبة' });
     }
-
-    // ✅ تحقق العام الجامعي (إن أرسل)
     if (!academicYear || !academicYearRegex.test(academicYear)) {
       return res.status(400).json({ message: 'صيغة العام الجامعي يجب أن تكون 2024-2025 أو 2024/2025' });
     }
@@ -1493,7 +1486,6 @@ app.post('/api/committees-files', authRequired, async (req, res) => {
       { upsert: true }
     );
 
-    // ✅ المفتاح يشمل العام + الفصل
     const doc = await CommitteeFiles.findOneAndUpdate(
       { college, committee_name, academicYear, term },
       { $set: payload },
@@ -1511,15 +1503,14 @@ app.post('/api/committees-files', authRequired, async (req, res) => {
   }
 });
 
-// قراءة: قائمة أو عنصر واحد عبر الفلاتر
 app.get('/api/committees-files', authRequired, async (req, res) => {
   try {
     const { college, committee_name, academicYear, term, page = 1, limit = 20 } = req.query;
     const filter = {};
-    if (college)        filter.college = college;
+    if (college) filter.college = college;
     if (committee_name) filter.committee_name = committee_name;
-    if (academicYear)   filter.academicYear = academicYear;
-    if (term)           filter.term = term;
+    if (academicYear) filter.academicYear = academicYear;
+    if (term) filter.term = term;
 
     const p = Math.max(1, parseInt(page, 10) || 1);
     const l = Math.min(100, Math.max(1, parseInt(limit, 10) || 20));
@@ -1536,8 +1527,6 @@ app.get('/api/committees-files', authRequired, async (req, res) => {
   }
 });
 
-
-// قراءة عنصر واحد بالـID
 app.get('/api/committees-files/:id', authRequired, async (req, res) => {
   try {
     const item = await CommitteeFiles.findById(req.params.id);
@@ -1548,7 +1537,6 @@ app.get('/api/committees-files/:id', authRequired, async (req, res) => {
   }
 });
 
-// تعديل بالـID
 app.put('/api/committees-files/:id', authRequired, async (req, res) => {
   try {
     const before = await CommitteeFiles.findById(req.params.id).lean();
@@ -1556,7 +1544,6 @@ app.put('/api/committees-files/:id', authRequired, async (req, res) => {
 
     const b = req.body || {};
     const update = {
-      // لا نسمح بتغيير المفتاحين عبر PUT، لكن إن أردتها أضف تحققًا هنا
       formation_decision: normalizeUrlObj(b.formation_decision),
       work_plan: normalizeUrlObj(b.work_plan),
       invitations: normalizeUrlArray(b.invitations),
@@ -1587,29 +1574,106 @@ app.put('/api/committees-files/:id', authRequired, async (req, res) => {
   }
 });
 
-// حذف بالـID (مقترح جعله Admin فقط)
 app.delete('/api/committees-files/:id', authRequired, requireRole('admin'), async (req, res) => {
   try {
     const before = await CommitteeFiles.findById(req.params.id);
     const deleted = await CommitteeFiles.findByIdAndDelete(req.params.id);
     if (!deleted) return res.status(404).json({ message: 'غير موجود' });
-
     await logAudit(req, {
       model: 'CommitteeFiles',
       action: 'delete',
       docId: req.params.id,
       payload: before ? before.toObject() : null
     });
-
     res.json({ message: '🗑️ تم الحذف' });
   } catch (err) {
     res.status(500).json({ message: '❌ خطأ في الحذف', error: err.message });
   }
 });
 
+/****************************************************
+ * نظام تعيينات اللجان (جديد للسيناريو الجديد)
+ * يربط subuser-member بـ (كلية + لجنة) مع فهرس فريد
+ ****************************************************/
+const committeeAssignmentSchema = new mongoose.Schema(
+  {
+    userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+    college: { type: String, required: true, trim: true },
+    committee_name: { type: String, required: true, trim: true },
+    note: { type: String, default: '' }
+  },
+  { timestamps: true }
+);
+committeeAssignmentSchema.index({ userId: 1, college: 1, committee_name: 1 }, { unique: true });
+const CommitteeAssignment = mongoose.model('CommitteeAssignment', committeeAssignmentSchema);
 
+// GET: جميع التعيينات — Admin فقط (تحتاجها صفحة إدارة التعيينات)
+app.get('/api/committee-assignments', authRequired, requireRole('admin'), async (req, res) => {
+  try {
+    const items = await CommitteeAssignment.find({})
+      .populate('userId', 'name username email role')
+      .sort({ createdAt: -1 })
+      .lean();
+    res.json(items);
+  } catch (err) {
+    res.status(500).json({ message: '❌ فشل في الجلب', error: err.message });
+  }
+});
 
+// POST: إضافة تعيين — Admin فقط
+app.post('/api/committee-assignments', authRequired, requireRole('admin'), async (req, res) => {
+  try {
+    const { userId, college, committee_name, note } = req.body || {};
+    if (!userId || !college || !committee_name) {
+      return res.status(400).json({ message: 'المستخدم والكلية واللجنة مطلوبة' });
+    }
+    const user = await User.findById(userId);
+    if (!user) return res.status(404).json({ message: 'المستخدم غير موجود' });
+    // اختياري: التأكد أنه subuser-member
+    if (user.role !== 'subuser-member') {
+      return res.status(400).json({ message: 'المستخدم يجب أن يكون من نوع subuser-member' });
+    }
 
+    const doc = await CommitteeAssignment.create({
+      userId,
+      college: String(college).trim(),
+      committee_name: String(committee_name).trim(),
+      note: (note || '').trim()
+    });
+
+    await logAudit(req, {
+      model: 'CommitteeAssignment',
+      action: 'create',
+      docId: doc._id,
+      payload: { userId: String(userId), college, committee_name, note: (note || '').trim() }
+    });
+
+    res.status(201).json({ message: '✅ تم إضافة التعيين', item: doc });
+  } catch (err) {
+    if (err && err.code === 11000) {
+      return res.status(409).json({ message: 'هذا التعيين موجود مسبقًا للمستخدم' });
+    }
+    res.status(500).json({ message: '❌ فشل في الحفظ', error: err.message });
+  }
+});
+
+// DELETE: حذف تعيين — Admin فقط
+app.delete('/api/committee-assignments/:id', authRequired, requireRole('admin'), async (req, res) => {
+  try {
+    const before = await CommitteeAssignment.findById(req.params.id).lean();
+    if (!before) return res.status(404).json({ message: '❌ التعيين غير موجود' });
+    await CommitteeAssignment.findByIdAndDelete(req.params.id);
+    await logAudit(req, {
+      model: 'CommitteeAssignment',
+      action: 'delete',
+      docId: req.params.id,
+      payload: before
+    });
+    res.json({ message: '🗑️ تم حذف التعيين' });
+  } catch (err) {
+    res.status(500).json({ message: '❌ فشل في الحذف', error: err.message });
+  }
+});
 
 /****************************************************
  * نظام المصادقة القديم للفيديو — فصل الجلسة عن نظام اللجان
@@ -1623,9 +1687,11 @@ app.get('/api/redirect/:id', async (req, res) => {
     res.status(500).send('❌ خطأ في إعادة التوجيه');
   }
 });
+
 app.get('/auth/login', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'login.html'));
 });
+
 app.post('/auth/login', (req, res) => {
   const { email, password, id } = req.body;
   if (email && email.endsWith('@iu.edu.jo')) {
@@ -1635,10 +1701,12 @@ app.post('/auth/login', (req, res) => {
     return res.send('❌ يجب إدخال بريد ينتهي بـ @iu.edu.jo');
   }
 });
+
 app.get('/auth/logout', (req, res) => {
   if (req.session) delete req.session.videoUser;
   res.redirect('/viewlinks.html');
 });
+
 app.get('/protected', async (req, res) => {
   if (!req.session.videoUser) return res.redirect('/auth/login');
   const linkId = req.query.id;
@@ -1646,7 +1714,9 @@ app.get('/protected', async (req, res) => {
   try {
     const link = await Link.findById(linkId);
     if (!link) return res.send('❌ الرابط غير موجود');
-    res.send(`<iframe src="${link.link}" style="width:100%;height:100vh;border:none;"></iframe>`);
+    res.send(
+      `<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head><body style="margin:0"><iframe src="${link.link}" style="width:100%;height:100vh;border:none;"></iframe></body></html>`
+    );
   } catch {
     res.redirect('/auth/login');
   }
