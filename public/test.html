@@ -250,60 +250,46 @@
     </div>
   </div>
 
+  <!-- ====== Google: ثوابت ومتغيّرات Global + initGis (مرّة واحدة) ====== -->
+  <script>
+    // مفاتيح Google
+    window.GOOGLE_CLIENT_ID = '656975767411-lu47r57vrfmhrplrd11rdgbm34cqofsn.apps.googleusercontent.com';
+    window.GOOGLE_API_KEY   = 'AIzaSyAaUEq7_7nbhj7Ch-7X0OWKyREUK8bH_EY';
 
-  <!-- ضيف هذا السطر قبل: <script src="https://accounts.google.com/gsi/client"...> -->
-<script>
-  window.initGis = function() {
-    gisTokenClient = google.accounts.oauth2.initTokenClient({
-      client_id: GOOGLE_CLIENT_ID,
-      scope: DRIVE_SCOPE,
-      callback: (resp) => {
-        console.log('GIS token response:', resp);
-        if (resp && resp.access_token) {
-          googleAccessToken = resp.access_token;
-          setGDriveState(true);
+    // نطاق القراءة فقط (اختيار ملفات موجودة)
+    window.DRIVE_SCOPE = 'https://www.googleapis.com/auth/drive.readonly';
+    // إن أردت الرفع أيضًا: استبدل السطر أعلاه بهذه القيمة
+    // window.DRIVE_SCOPE = 'https://www.googleapis.com/auth/drive.file';
+
+    // حالة الجلسة مع Google
+    window.googleAccessToken = null;
+    window.gisTokenClient    = null;
+
+    // تُستدعى تلقائيًا بعد تحميل سكربت GSI (انظر onload بالأسفل)
+    window.initGis = function () {
+      if (!window.google || !google.accounts || !google.accounts.oauth2) return;
+      window.gisTokenClient = google.accounts.oauth2.initTokenClient({
+        client_id: window.GOOGLE_CLIENT_ID,
+        scope: window.DRIVE_SCOPE,
+        callback: (resp) => {
+          console.log('GIS token response:', resp);
+          if (resp && resp.access_token) {
+            window.googleAccessToken = resp.access_token;
+            if (typeof window.setGDriveState === 'function') window.setGDriveState(true);
+          }
         }
-      }
-    });
-  };
-</script>
+      });
+    };
+  </script>
 
-<script>
-  // ⬅️ ثوابت/متغيّرات يجب أن تكون Global قبل onload
-  window.GOOGLE_CLIENT_ID = '656975767411-lu47r57vrfmhrplrd11rdgbm34cqofsn.apps.googleusercontent.com';
-  window.GOOGLE_API_KEY   = 'AIzaSyAaUEq7_7nbhj7Ch-7X0OWKyREUK8bH_EY';
-  // اختر أحد النطاقين:
-  window.DRIVE_SCOPE      = 'https://www.googleapis.com/auth/drive.readonly'; // اختيار فقط
-  // window.DRIVE_SCOPE   = 'https://www.googleapis.com/auth/drive.file';     // اختيار + رفع
-
-  window.googleAccessToken = null;
-  window.gisTokenClient    = null;
-
-  // مهم: اجعلها على window ليشوفها onload
-  window.initGis = function () {
-    if (!window.google || !google.accounts || !google.accounts.oauth2) return;
-    window.gisTokenClient = google.accounts.oauth2.initTokenClient({
-      client_id: window.GOOGLE_CLIENT_ID,
-      scope: window.DRIVE_SCOPE,
-      callback: (resp) => {
-        console.log('GIS token response:', resp);
-        if (resp && resp.access_token) {
-          window.googleAccessToken = resp.access_token;
-          // إذا كانت setGDriveState معرّفة في سكربتك الرئيسي
-          if (typeof window.setGDriveState === 'function') window.setGDriveState(true);
-        }
-      }
-    });
-  };
-</script>
-
-  
   <!-- Google APIs (Picker + GIS) -->
   <script src="https://accounts.google.com/gsi/client" async defer onload="initGis()"></script>
   <script src="https://apis.google.com/js/api.js" async defer></script>
 
-  <!-- Scripts -->
+  <!-- Bootstrap JS -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+  <!-- ====== تطبيق الصفحة ====== -->
   <script>
     /* ====== بيئة موحّدة ====== */
     const RENDER_BASE='https://vdash-qkyv.onrender.com';
@@ -316,12 +302,6 @@
     const toastSuccess=new bootstrap.Toast(document.getElementById('toastSuccess'));
     const toastError  =new bootstrap.Toast(document.getElementById('toastError'));
     const apiFetch=(path,opts={})=>fetch(`${API_BASE}${path}`,{credentials:'include',...opts});
-
-    /* ====== بيانات Google ====== */
-    
-    // ▼ تم التبديل إلى قراءة فقط
-    const DRIVE_SCOPE = 'https://www.googleapis.com/auth/drive.file';
-    let googleAccessToken  = null;
 
     /* ====== صلاحيات/جلسة نظامك ====== */
     let CURRENT_USER=null;
@@ -444,33 +424,19 @@
       });
     }
 
-    let gisTokenClient=null;
-    function initGis(){
-      gisTokenClient = google.accounts.oauth2.initTokenClient({
-        client_id: GOOGLE_CLIENT_ID,
-        scope: DRIVE_SCOPE, // readonly
-        callback: (resp) => {
-  console.log('GIS token response:', resp);
-  if (resp && resp.access_token) {
-    googleAccessToken = resp.access_token;
-    setGDriveState(true);
-  }
-}
-      });
-    }
     async function ensureDriveToken(){
-      if(googleAccessToken) return true;
-      if(!gisTokenClient) initGis();
+      if (window.googleAccessToken) return true;
+      if (!window.gisTokenClient) window.initGis();
       return new Promise(resolve=>{
-        gisTokenClient.requestAccessToken({prompt: 'consent'});
-        const wait = setInterval(()=>{ if(googleAccessToken){ clearInterval(wait); resolve(true); } }, 200);
-        setTimeout(()=>{ clearInterval(wait); resolve(!!googleAccessToken); }, 10000);
+        window.gisTokenClient.requestAccessToken({ prompt: 'consent' });
+        const wait = setInterval(()=>{ if(window.googleAccessToken){ clearInterval(wait); resolve(true); } }, 200);
+        setTimeout(()=>{ clearInterval(wait); resolve(!!window.googleAccessToken); }, 10000);
       });
     }
 
     async function fetchWebViewLink(fileId){
       const r = await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}?fields=webViewLink`, {
-        headers: { Authorization: 'Bearer ' + googleAccessToken }
+        headers: { Authorization: 'Bearer ' + window.googleAccessToken }
       });
       const j = await r.json();
       return j.webViewLink || `https://drive.google.com/file/d/${fileId}/view`;
@@ -485,14 +451,12 @@
         .setIncludeFolders(true)
         .setSelectFolderEnabled(false);
 
-      // لا يوجد DocsUploadView في وضع readonly (اختيار فقط)
-
-      const uploadView = new google.picker.DocsUploadView();
       const picker = new google.picker.PickerBuilder()
-        .setOAuthToken(googleAccessToken)
-        .setDeveloperKey(GOOGLE_API_KEY)
+        .setOAuthToken(window.googleAccessToken)
+        .setDeveloperKey(window.GOOGLE_API_KEY)
         .addView(viewDocs)
-        .addView(uploadView)   // رجّع الرفع
+        // للسماح بالرفع أيضًا (يتطلّب drive.file):
+        // .addView(new google.picker.DocsUploadView())
         .setOrigin(window.location.origin)
         .setLocale('ar')
         .setSize(880, 520)
@@ -518,7 +482,7 @@
       setGDriveState(ok);
     });
     document.getElementById('gdriveDisconnectBtn').addEventListener('click', ()=>{
-      googleAccessToken = null;
+      window.googleAccessToken = null;
       setGDriveState(false);
     });
 
@@ -526,7 +490,7 @@
       btn.addEventListener('click', ()=>{
         const targetId = btn.getAttribute('data-pick');
         const inputEl = document.getElementById(targetId);
-        openDrivePicker((link, file)=>{
+        openDrivePicker((link)=>{
           inputEl.value = link;
           inputEl.dispatchEvent(new Event('input'));
         });
@@ -543,13 +507,13 @@
           <div class="input-group">
             <span class="input-group-text"><i class="bi bi-link-45deg"></i></span>
             <input type="url" class="form-control url-input" placeholder="https://drive.google.com/...">
-            <button class="btn btn-outline-primary btn-drive-row"><i class="bi bi-folder2-open"></i></button>
+            <button class="btn btn-outline-primary btn-drive-row" type="button"><i class="bi bi-folder2-open"></i></button>
           </div>
           <div class="form-text">يمكنك أيضًا كتابة عنوان مختصر في الحقل التالي (اختياري).</div>
           <input type="text" class="form-control form-control-sm mt-1 title-input" placeholder="عنوان اختياري (مثال: دعوة اجتماع 1)">
         </div>
         <div class="actions ms-2">
-          <button class="btn btn-outline-danger"><i class="bi bi-trash"></i></button>
+          <button class="btn btn-outline-danger" type="button"><i class="bi bi-trash"></i></button>
         </div>
       `;
       const idxSpan=row.querySelector('.index');
@@ -580,7 +544,7 @@
       });
 
       driveBtn.addEventListener('click', ()=>{
-        openDrivePicker((link, file)=>{
+        openDrivePicker((link)=>{
           urlInput.value = link;
           urlInput.dispatchEvent(new Event('input'));
         });
@@ -636,7 +600,6 @@
         await loadDatalists();
         refreshSummary();
         setGDriveState(false);
-        
       }catch{}
     })();
   </script>
