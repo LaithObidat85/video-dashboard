@@ -446,6 +446,7 @@
         .setDeveloperKey(GOOGLE_API_KEY)
         .addView(viewDocs)
         .addView(uploadView)   // رجّع الرفع
+        .setOrigin(window.location.origin)
         .setLocale('ar')
         .setSize(880, 520)
         .setCallback(async (data)=>{
