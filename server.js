@@ -268,7 +268,7 @@ const Settings = mongoose.model('Settings', settingsSchema);
 
 
 /****************************************************
- * Committees Files (روابط ملفات اللجان)
+ * Committees Files (روابط ملفات اللجان) — مع الفصل/العام
  ****************************************************/
 const urlObjSchema = new mongoose.Schema(
   {
@@ -283,6 +283,10 @@ const committeeFilesSchema = new mongoose.Schema(
   {
     college: { type: String, required: true, trim: true },
     committee_name: { type: String, required: true, trim: true },
+
+    // ✅ نجعلها مطلوبة عندما نريد التفرد على مستوى الفصل/العام
+    academicYear: { type: String, required: true, trim: true }, // مثال: 2024/2025 أو 2024-2025
+    term: { type: String, required: true, trim: true },          // مثال: الفصل الأول
 
     formation_decision: urlObjSchema,
     work_plan: urlObjSchema,
@@ -307,10 +311,14 @@ const committeeFilesSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-// توثيق واحد لكل (كلية + لجنة)
-committeeFilesSchema.index({ college: 1, committee_name: 1 }, { unique: true });
+// ✅ فهرس فريد على مستوى (كلية + لجنة + عام + فصل)
+committeeFilesSchema.index(
+  { college: 1, committee_name: 1, academicYear: 1, term: 1 },
+  { unique: true }
+);
 
 const CommitteeFiles = mongoose.model('CommitteeFiles', committeeFilesSchema);
+
 
 
 
@@ -1437,26 +1445,37 @@ app.post('/api/committees-files', authRequired, async (req, res) => {
     const college = (body.college || '').trim();
     const committee_name = (body.committee_name || '').trim();
 
+    // ✅ اجلب إعدادات افتراضية لو ما أرسلها الواجهة (اختياري)
+    const settings = await Settings.findOne().lean().catch(() => null);
+    let academicYear = (body.academicYear || settings?.academicYear || '').trim();
+    let term         = (body.term || settings?.term || '').trim();
+
     if (!college || !committee_name) {
       return res.status(400).json({ message: 'الكلية واسم اللجنة مطلوبة' });
     }
 
-    // طَبِّع الحقول القادمة من الواجهة
+    // ✅ تحقق العام الجامعي (إن أرسل)
+    if (!academicYear || !academicYearRegex.test(academicYear)) {
+      return res.status(400).json({ message: 'صيغة العام الجامعي يجب أن تكون 2024-2025 أو 2024/2025' });
+    }
+    if (!term) {
+      return res.status(400).json({ message: 'حقل الفصل (term) مطلوب' });
+    }
+
     const payload = {
       college,
       committee_name,
+      academicYear,
+      term,
       formation_decision: normalizeUrlObj(body.formation_decision),
       work_plan: normalizeUrlObj(body.work_plan),
-
       invitations: normalizeUrlArray(body.invitations),
       minutes: normalizeUrlArray(body.minutes),
       coverage_letters: normalizeUrlArray(body.coverage_letters),
-
       report1: normalizeUrlObj(body.report1),
       report2: normalizeUrlObj(body.report2),
       report3: normalizeUrlObj(body.report3),
       statistical_analysis: normalizeUrlObj(body.statistical_analysis),
-
       createdBy: currentUser(req)
         ? {
             id: String(currentUser(req).id || ''),
@@ -1468,34 +1487,24 @@ app.post('/api/committees-files', authRequired, async (req, res) => {
         : undefined
     };
 
-    // تحديث قاموس أسماء اللجان ليستفيد منه الـautocomplete
-    if (committee_name) {
-      await Committee.updateOne(
-        { name: committee_name },
-        { $setOnInsert: { name: committee_name } },
-        { upsert: true }
-      );
-    }
+    await Committee.updateOne(
+      { name: committee_name },
+      { $setOnInsert: { name: committee_name } },
+      { upsert: true }
+    );
 
-    // Upsert حسب (college + committee_name)
+    // ✅ المفتاح يشمل العام + الفصل
     const doc = await CommitteeFiles.findOneAndUpdate(
-      { college, committee_name },
+      { college, committee_name, academicYear, term },
       { $set: payload },
       { new: true, upsert: true }
     );
 
-    await logAudit(req, {
-      model: 'CommitteeFiles',
-      action: 'upsert',
-      docId: doc._id,
-      payload
-    });
-
+    await logAudit(req, { model: 'CommitteeFiles', action: 'upsert', docId: doc._id, payload });
     return res.status(201).json({ message: '✅ تم الحفظ', item: doc });
   } catch (err) {
-    // معالجة تعارض الفهرس الفريد
     if (err && err.code === 11000) {
-      return res.status(409).json({ message: 'تعارض في (الكلية + اللجنة)' });
+      return res.status(409).json({ message: 'تعارض في (الكلية + اللجنة + العام + الفصل)' });
     }
     console.error(err);
     return res.status(500).json({ message: '❌ خطأ في الحفظ', error: err.message });
@@ -1505,10 +1514,12 @@ app.post('/api/committees-files', authRequired, async (req, res) => {
 // قراءة: قائمة أو عنصر واحد عبر الفلاتر
 app.get('/api/committees-files', authRequired, async (req, res) => {
   try {
-    const { college, committee_name, page = 1, limit = 20 } = req.query;
+    const { college, committee_name, academicYear, term, page = 1, limit = 20 } = req.query;
     const filter = {};
-    if (college) filter.college = college;
+    if (college)        filter.college = college;
     if (committee_name) filter.committee_name = committee_name;
+    if (academicYear)   filter.academicYear = academicYear;
+    if (term)           filter.term = term;
 
     const p = Math.max(1, parseInt(page, 10) || 1);
     const l = Math.min(100, Math.max(1, parseInt(limit, 10) || 20));
@@ -1524,6 +1535,7 @@ app.get('/api/committees-files', authRequired, async (req, res) => {
     res.status(500).json({ message: '❌ خطأ في الجلب', error: err.message });
   }
 });
+
 
 // قراءة عنصر واحد بالـID
 app.get('/api/committees-files/:id', authRequired, async (req, res) => {
