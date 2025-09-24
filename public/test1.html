@@ -1,208 +1,674 @@
-
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
   <meta charset="UTF-8" />
-  <title>لوحة نظام اللجان</title>
-  <link rel="icon" type="image/png" href="https://www.dropbox.com/scl/fi/f283e4rvv5cf9x12a1cic/my-website-logo.png?rlkey=yia776im7klypy27af32m0scy&e=1&st=vhaprvzh&dl=1">
+  <title>عرض روابط ملفات اللجان</title>
   <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <link rel="icon" type="image/png" href="https://www.dropbox.com/scl/fi/f283e4rvv5cf9x12a1cic/my-website-logo.png?rlkey=yia776im7klypy27af32m0scy&e=1&st=vhaprvzh&dl=1">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.rtl.min.css">
-  <!-- <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css"> -->
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@latest/font/bootstrap-icons.css">
-
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
   <style>
     body{background:#f8f9fa;font-family:'Segoe UI',sans-serif}
-    .container{max-width:1100px;margin-top:40px}
-    .card-link{display:block;text-decoration:none;color:inherit;border-radius:16px;box-shadow:0 6px 18px rgba(0,0,0,.08);transition:.2s}
-    .card-link:hover{transform:translateY(-3px);box-shadow:0 8px 24px rgba(0,0,0,.12)}
-    .icon{font-size:38px}
-    .admin-only{display:none;} /* تُزال برمجياً عند admin */
-    .user-chip{font-size:.9rem}
+    .container{margin-top:32px;max-width:1400px}
+    .filter-card{position:sticky;top:12px;z-index:5}
+    .user-chip{display:inline-flex;align-items:center;gap:.25rem;font-size:1rem!important;padding:.375rem .75rem!important;border-radius:.375rem;font-weight:700!important}
+    .muted{color:#6c757d}
+    .results-header{display:flex;flex-wrap:wrap;gap:.75rem;align-items:center;justify-content:space-between}
+    .counter-badge{font-weight:700}
+    .section-card .card-header{background:#f1f3f5}
+    .link-row{display:flex;gap:.5rem;align-items:center;justify-content:space-between;border:1px solid #e9ecef;border-radius:.5rem;padding:.5rem;background:#fff}
+    .link-title{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:60ch}
+    .empty-hint{border:1px dashed #ced4da;border-radius:.5rem;padding:1rem;background:#fff}
+    .skeleton{position:relative;overflow:hidden;background-color:#e9ecef;border-radius:.5rem}
+    .skeleton::after{content:"";position:absolute;inset:0;transform:translateX(-100%);background:linear-gradient(90deg,transparent,rgba(255,255,255,.35),transparent);animation:shimmer 1.2s infinite}
+    @keyframes shimmer{100%{transform:translateX(100%)}}
+    .toast-container{position:fixed;top:20px;left:50%;transform:translateX(-50%);z-index:2000}
+    .disabled-cover{pointer-events:none;opacity:.65}
   </style>
 </head>
 <body>
   <div class="container">
     <!-- Header -->
-    <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-2">
-  <h3 class="mb-0">لوحة نظام اللجان</h3>
-  <div class="d-flex align-items-center gap-2">
-    <span id="userInfo" class="user-chip badge bg-light text-dark border">
-      <i class="bi bi-person"></i>
-      <span id="userUsername">—</span>
-      <span class="mx-1">—</span>
-      <span id="userFullName">—</span>
-      <span class="ms-2 badge bg-secondary" id="userRole">—</span>
-    </span>
-    <!-- حُذف زر: عرض عام (بدون تسجيل) -->
-    <button id="logoutBtn" class="btn btn-danger">
-      <i class="bi bi-box-arrow-right"></i> خروج
-    </button>
-  </div>
-</div>
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
+      <h4 class="mb-0"><i class="bi bi-collection"></i> عرض روابط ملفات اللجان</h4>
+      <div class="d-flex align-items-center gap-2">
+        <span id="userInfo" class="user-chip badge bg-light text-dark border">
+          <i class="bi bi-person"></i>
+          <span id="userUsername">—</span>
+          <span class="mx-1">—</span>
+          <span id="userFullName">—</span>
+          <span class="ms-2 badge bg-secondary" id="userRole">—</span>
+        </span>
+        <a class="btn btn-outline-primary" id="homeBtn" href="/committees-home.html">
+          <i class="bi bi-grid"></i> لوحة التحكم
+        </a>
+        <button id="logoutBtn" class="btn btn-danger">
+          <i class="bi bi-box-arrow-right"></i> خروج
+        </button>
+      </div>
+    </div>
 
-
-    <!-- Grid -->
     <div class="row g-4">
-      <!-- add_evaluation.html (user/admin) -->
-      <div class="col-12 col-sm-6 col-lg-4">
-        <a href="/add_evaluation.html" class="card-link p-4 bg-white d-block h-100">
-          <div class="icon text-primary"><i class="bi bi-journal-plus"></i></div>
-          <h5 class="mt-3">إدخال تقييم لجنة</h5>
-          <p class="mb-0 text-muted">إضافة تقييم جديد</p>
-        </a>
+      <!-- Filters -->
+      <div class="col-lg-4 col-xl-3">
+        <div class="card filter-card">
+          <div class="card-body">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+              <h6 class="mb-0">المرشّحات</h6>
+              <span id="liveCount" class="badge text-bg-secondary">—</span>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label">الكلية <span class="text-danger">*</span></label>
+              <select id="collegeSelect" class="form-select">
+                <option value="">— اختر الكلية —</option>
+              </select>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label">العام الجامعي <span class="text-danger">*</span></label>
+              <input id="academicYearInput" type="text" class="form-control" placeholder="2024/2025 أو 2024-2025">
+              <div class="form-text">صيغة: 20xx/20yy أو 20xx-20yy</div>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label">الفصل الدراسي <span class="text-danger">*</span></label>
+              <select id="termSelect" class="form-select" disabled>
+                <option value="">— اختر الفصل —</option>
+              </select>
+              <div class="form-text" id="termHint">اختر العام لعرض الفصول المتاحة</div>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label">اللجنة <span class="text-danger">*</span></label>
+              <select id="committeeSelect" class="form-select" disabled>
+                <option value="">— اختر اللجنة —</option>
+              </select>
+              <div class="form-text" id="committeeHint">اختر الكلية لعرض لجانها</div>
+            </div>
+
+            <hr>
+            <div class="mb-2">
+              <label class="form-label">طريقة فتح الروابط</label>
+              <div class="form-check">
+                <input class="form-check-input" type="radio" name="openMode" id="modePopup" value="popup">
+                <label class="form-check-label" for="modePopup">نافذة منبثقة (Pop-up)</label>
+              </div>
+              <div class="form-check">
+                <input class="form-check-input" type="radio" name="openMode" id="modeTab" value="tab">
+                <label class="form-check-label" for="modeTab">تبويب جديد (New Tab)</label>
+              </div>
+              <div class="form-text">سيتم حفظ التفضيل تلقائيًا لهذا الجهاز.</div>
+            </div>
+
+            <div class="d-grid gap-2 mt-3">
+              <button id="applyBtn" class="btn btn-success disabled-cover"><i class="bi bi-eye"></i> عرض النتائج</button>
+              <button id="resetFiltersBtn" class="btn btn-outline-secondary"><i class="bi bi-arrow-counterclockwise"></i> تفريغ المرشّحات</button>
+            </div>
+          </div>
+        </div>
       </div>
 
-      <!-- manage_committees.html (admin-only) -->
-      <div class="col-12 col-sm-6 col-lg-4" data-admin="true">
-        <a href="/manage_committees.html" class="card-link p-4 bg-white d-block h-100">
-          <div class="icon text-success"><i class="bi bi-gear"></i></div>
-          <h5 class="mt-3">إدارة تقييم اللجان</h5>
-          <p class="mb-0 text-muted">تحرير/حذف التقييمات</p>
-        </a>
+      <!-- Results -->
+      <div class="col-lg-8 col-xl-9">
+        <div class="card">
+          <div class="card-body">
+            <div class="results-header mb-3">
+              <div class="d-flex align-items-center gap-2">
+                <h6 class="mb-0">النتائج</h6>
+                <span id="summaryChip" class="badge bg-light text-dark border">—</span>
+              </div>
+              <div class="d-flex align-items-center gap-2">
+                <input id="quickFilter" type="search" class="form-control form-control-sm" placeholder="تصفية سريعة للعناوين …" style="max-width:260px" disabled>
+                <button id="openAllBtn" class="btn btn-outline-primary btn-sm disabled-cover"><i class="bi bi-box-arrow-up-right"></i> فتح الكل</button>
+              </div>
+            </div>
+
+            <div id="placeholder">
+              <div class="skeleton mb-2" style="height:44px;"></div>
+              <div class="skeleton mb-2" style="height:140px;"></div>
+              <div class="skeleton" style="height:240px;"></div>
+            </div>
+
+            <div id="noData" class="empty-hint d-none">
+              لا توجد بيانات محفوظة لهذا الترشيح. جرّب تغيير المرشّحات.
+            </div>
+
+            <div id="results" class="vstack gap-3 d-none">
+              <!-- Core Docs -->
+              <div class="card section-card">
+                <div class="card-header d-flex align-items-center justify-content-between">
+                  <span><i class="bi bi-file-earmark-text"></i> المستندات الأساسية</span>
+                </div>
+                <div class="card-body vstack gap-2" id="coreSection"></div>
+              </div>
+
+              <!-- Invitations -->
+              <div class="card section-card">
+                <div class="card-header d-flex align-items-center justify-content-between">
+                  <span><i class="bi bi-envelope-paper"></i> دعوات الاجتماع</span>
+                  <span id="badgeInv" class="badge text-bg-secondary">0</span>
+                </div>
+                <div class="card-body vstack gap-2" id="invSection"></div>
+              </div>
+
+              <!-- Minutes -->
+              <div class="card section-card">
+                <div class="card-header d-flex align-items-center justify-content-between">
+                  <span><i class="bi bi-journal-text"></i> محاضر الاجتماع</span>
+                  <span id="badgeMin" class="badge text-bg-secondary">0</span>
+                </div>
+                <div class="card-body vstack gap-2" id="minSection"></div>
+              </div>
+
+              <!-- Coverage -->
+              <div class="card section-card">
+                <div class="card-header d-flex align-items-center justify-content-between">
+                  <span><i class="bi bi-mailbox2"></i> كتب التغطية</span>
+                  <span id="badgeCov" class="badge text-bg-secondary">0</span>
+                </div>
+                <div class="card-body vstack gap-2" id="covSection"></div>
+              </div>
+
+              <!-- Reports & Stats -->
+              <div class="card section-card">
+                <div class="card-header"><i class="bi bi-graph-up"></i> التقارير والتحليل</div>
+                <div class="card-body vstack gap-2" id="repSection"></div>
+              </div>
+            </div>
+
+          </div>
+        </div>
       </div>
+    </div>
 
-      <!-- committees-names-manage.html (admin-only) -->
-      <div class="col-12 col-sm-6 col-lg-4 admin-only" data-admin="true">
-        <a href="/committees-names-manage.html" class="card-link p-4 bg-white d-block h-100">
-          <div class="icon text-info"><i class="bi bi-list-check"></i></div>
-          <h5 class="mt-3">إدارة أسماء اللجان</h5>
-          <p class="mb-0 text-muted">قاموس أسماء اللجان</p>
-        </a>
+    <!-- Toasts -->
+    <div class="toast-container">
+      <div id="toastInfo" class="toast align-items-center text-bg-primary border-0 mb-2" role="alert">
+        <div class="d-flex"><div class="toast-body">ℹ️ تم</div><button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button></div>
       </div>
-
-      <!-- manage_colleges.html (admin-only) -->
-      <div class="col-12 col-sm-6 col-lg-4 admin-only" data-admin="true">
-        <a href="/manage_colleges.html" class="card-link p-4 bg-white d-block h-100">
-          <div class="icon text-warning"><i class="bi bi-building"></i></div>
-          <h5 class="mt-3">إدارة الكليات</h5>
-          <p class="mb-0 text-muted">إضافة/تعديل/حذف</p>
-        </a>
+      <div id="toastSuccess" class="toast align-items-center text-bg-success border-0 mb-2" role="alert">
+        <div class="d-flex"><div class="toast-body">✅ تم</div><button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button></div>
       </div>
-
-      <!-- manage_auditors.html (admin-only) -->
-      <div class="col-12 col-sm-6 col-lg-4 admin-only" data-admin="true">
-        <a href="/manage_auditors.html" class="card-link p-4 bg-white d-block h-100">
-          <div class="icon text-danger"><i class="bi bi-person-badge"></i></div>
-          <h5 class="mt-3">إدارة المدققين</h5>
-          <p class="mb-0 text-muted">إضافة/تعديل/حذف</p>
-        </a>
-      </div>
-
-      <!-- users-manage.html (admin-only) -->
-<div class="col-12 col-sm-6 col-lg-4 admin-only" data-admin="true">
-  <a href="/users-manage.html" class="card-link p-4 bg-white d-block h-100">
-    <div class="icon text-dark"><i class="bi bi-people-fill"></i></div>
-    <h5 class="mt-3">إدارة المستخدمين</h5>
-    <p class="mb-0 text-muted">إضافة/تعديل/تعطيل مستخدم</p>
-  </a>
-</div>
-
-
-      <!-- audit-logs.html (admin-only) -->
-      <div class="col-12 col-sm-6 col-lg-4 admin-only" data-admin="true">
-        <a href="/audit-logs.html" class="card-link p-4 bg-white d-block h-100">
-          <div class="icon text-secondary"><i class="bi bi-clipboard-data"></i></div>
-          <h5 class="mt-3">سجل العمليات</h5>
-          <p class="mb-0 text-muted">من أجرى الإضافة/التعديل/الحذف</p>
-        </a>
-      </div>
-
-      <!-- evaluations_dashboard.html (عام) -->
-      <div class="col-12 col-sm-6 col-lg-4">
-        <a href="/evaluations_dashboard.html" class="card-link p-4 bg-white d-block h-100" target="_blank">
-          <div class="icon text-secondary"><i class="bi bi-bar-chart-line"></i></div>
-          <h5 class="mt-3">عرض تقييم اللجان (عام)</h5>
-          <p class="mb-0 text-muted">يفتح في تبويب جديد</p>
-        </a>
+      <div id="toastError" class="toast align-items-center text-bg-danger border-0 mb-2" role="alert">
+        <div class="d-flex"><div class="toast-body">❌ حدث خطأ</div><button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button></div>
       </div>
     </div>
   </div>
 
-  <!-- Toasts -->
-  <div class="toast-container position-fixed top-0 start-50 translate-middle-x p-3" style="z-index:2000">
-    <div id="toastSuccess" class="toast align-items-center text-bg-success border-0 mb-2" role="alert">
-      <div class="d-flex">
-        <div class="toast-body">✅ تم التنفيذ بنجاح</div>
-        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
-      </div>
-    </div>
-    <div id="toastError" class="toast align-items-center text-bg-danger border-0 mb-2" role="alert">
-      <div class="d-flex">
-        <div class="toast-body">❌ حدث خطأ</div>
-        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
-      </div>
-    </div>
-    <div id="toastInfo" class="toast align-items-center text-bg-primary border-0 mb-2" role="alert">
-      <div class="d-flex">
-        <div class="toast-body">ℹ️ معلومات</div>
-        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
-      </div>
-    </div>
-  </div>
-
+  <!-- Bootstrap JS -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
   <script>
-    const toastSuccess = new bootstrap.Toast(document.getElementById('toastSuccess'));
-    const toastError   = new bootstrap.Toast(document.getElementById('toastError'));
-    const toastInfo    = new bootstrap.Toast(document.getElementById('toastInfo'));
-    function setToast(el, msg){ el._element.querySelector('.toast-body').innerText = msg; }
+    /* ====== بيئة موحدة (مثل صفحتك السابقة) ====== */
+    const RENDER_BASE='https://vdash-qkyv.onrender.com';
+    const host=location.hostname;
+    const isGithub=host.endsWith('github.io');
+    const isLocal=host==='localhost'||host==='127.0.0.1';
+    const API_BASE=isGithub?RENDER_BASE:(isLocal?'http://localhost:3000':'');
+    const go=(path)=>isGithub?(RENDER_BASE+path):path;
 
-    async function fetchMe() {
-      try {
-        const res = await fetch('/auth/committees/me', { credentials: 'include' });
-        if (!res.ok) throw new Error('HTTP ' + res.status);
-        return await res.json();
-      } catch {
-        return { authenticated:false };
+    const apiFetch=(path,opts={})=>fetch(`${API_BASE}${path}`,{credentials:'include',...opts});
+    const toastInfo   = new bootstrap.Toast(document.getElementById('toastInfo'));
+    const toastOk     = new bootstrap.Toast(document.getElementById('toastSuccess'));
+    const toastError  = new bootstrap.Toast(document.getElementById('toastError'));
+
+    /* ====== حالة الصفحة ====== */
+    const state = {
+      user:null,
+      filters:{
+        college:'',
+        academicYear:'',
+        term:'',
+        committee_name:''
+      },
+      openMode: localStorage.getItem('cmts.openMode') || 'tab', // 'popup' | 'tab'
+      currentItem:null, // عنصر CommitteeFiles
+      listsCache: {
+        terms: [],        // الفصول المتاحة حسب (college+year)
+        committees: []    // اللجان المتاحة حسب (college)
+      }
+    };
+
+    /* ====== أدوات ====== */
+    const yearRx = /^(20\\d{2})[\\/\\-](20\\d{2})$/;
+    function validateAcademicYear(s){ const m=String(s||'').trim().match(yearRx); if(!m) return false; return (parseInt(m[2],10)-parseInt(m[1],10))===1; }
+    function setSummaryChip(){
+      const {college,academicYear,term,committee_name}=state.filters;
+      const parts=[college||'—', committee_name||'—', academicYear||'—', term||'—'];
+      document.getElementById('summaryChip').textContent = parts.join(' · ');
+    }
+    function enableApplyIfReady(){
+      const ready = state.filters.college && state.filters.academicYear && state.filters.term && state.filters.committee_name;
+      document.getElementById('applyBtn').classList.toggle('disabled-cover', !ready);
+      document.getElementById('quickFilter').disabled = !state.currentItem;
+      document.getElementById('openAllBtn').classList.toggle('disabled-cover', !state.currentItem);
+    }
+    function updateLiveCount(v){ document.getElementById('liveCount').textContent = (v==null?'—':v); }
+    function showPlaceholder(flag){
+      document.getElementById('placeholder').classList.toggle('d-none', !flag);
+      document.getElementById('results').classList.toggle('d-none', flag);
+      document.getElementById('noData').classList.add('d-none');
+    }
+    function showNoData(){ document.getElementById('placeholder').classList.add('d-none'); document.getElementById('results').classList.add('d-none'); document.getElementById('noData').classList.remove('d-none'); }
+    function showResults(){ document.getElementById('placeholder').classList.add('d-none'); document.getElementById('noData').classList.add('d-none'); document.getElementById('results').classList.remove('d-none'); }
+
+    /* ====== فتح الروابط حسب التفضيل ====== */
+    function openLink(url){
+      if(!url) return;
+      const mode = state.openMode;
+      if(mode==='popup'){
+        const w = window.open(url, 'cmtsPopup', 'width=1100,height=700,noopener,noreferrer');
+        if(!w) alert('يبدو أن المتصفح منع النافذة المنبثقة. الرجاء السماح مؤقتًا.');
+      }else{
+        window.open(url, '_blank', 'noopener,noreferrer');
       }
     }
+    function copyLink(url){
+      navigator.clipboard.writeText(url).then(()=>{
+        document.querySelector('#toastSuccess .toast-body').textContent='🔗 تم نسخ الرابط';
+        toastOk.show();
+      }).catch(()=>{ toastError.show(); });
+    }
 
-    function renderUser(user){
-      const username = user?.username || (user?.email ? user.email.split('@')[0] : '—');
-      document.getElementById('userUsername').textContent = username || '—';
-      document.getElementById('userFullName').textContent = user?.name || '—';
-      document.getElementById('userRole').textContent = user?.role || '—';
+    /* ====== عرض الكروت ====== */
+    function clearSections(){
+      ['coreSection','invSection','minSection','covSection','repSection'].forEach(id=>document.getElementById(id).innerHTML='');
+      ['badgeInv','badgeMin','badgeCov'].forEach(id=>document.getElementById(id).textContent='0');
+    }
 
-      // إذا كان Admin أظهر البطاقات (بإزالة الكلاس الذي يفرض display:none)
-      if ((user?.role || '').toLowerCase() === 'admin') {
-        document.querySelectorAll('.admin-only').forEach(el => {
-          el.classList.remove('admin-only');     // هذا يلغي القاعدة في الـCSS
-          // أو بديل: el.style.display = 'block';
+    function renderUrlRow(container,{title,value}, fallbackTitle){
+      const row=document.createElement('div');
+      row.className='link-row';
+      const safeTitle = (title && title.trim()) ? title.trim() : fallbackTitle;
+      row.innerHTML = `
+        <div class="d-flex align-items-center gap-2 flex-grow-1">
+          <i class="bi bi-link-45deg"></i>
+          <div class="link-title"><b>${safeTitle}</b><div class="small text-muted">${value}</div></div>
+        </div>
+        <div class="d-flex align-items-center gap-1">
+          <button class="btn btn-outline-primary btn-sm" data-act="open"><i class="bi bi-box-arrow-up-right"></i> فتح</button>
+          <button class="btn btn-outline-secondary btn-sm" data-act="copy"><i class="bi bi-clipboard"></i></button>
+        </div>
+      `;
+      row.querySelector('[data-act="open"]').addEventListener('click',()=>openLink(value));
+      row.querySelector('[data-act="copy"]').addEventListener('click',()=>copyLink(value));
+      container.appendChild(row);
+    }
+
+    function applyQuickFilter(){
+      const q = document.getElementById('quickFilter').value.trim();
+      const rx = q ? new RegExp(q.replace(/[.*+?^${}()|[\\]\\\\]/g,'\\\\$&'),'i') : null;
+
+      ['invSection','minSection','covSection','coreSection','repSection'].forEach(id=>{
+        const box = document.getElementById(id);
+        Array.from(box.children).forEach(row=>{
+          if(!rx){ row.style.display=''; return; }
+          const text = row.textContent || '';
+          row.style.display = rx.test(text) ? '' : 'none';
         });
-      }
+      });
     }
 
-    async function ensureAuth(){
-      const me = await fetchMe();
-      if (!me.authenticated) {
-        const next = encodeURIComponent('/committees-home.html');
-        window.location.href = `/committees-login.html?next=${next}`;
-        return;
-      }
-      renderUser(me.user);
+    function renderItem(item){
+      clearSections();
+      if(!item){ showNoData(); return; }
+
+      // Core
+      const coreBox=document.getElementById('coreSection');
+      if(item.formation_decision?.value) renderUrlRow(coreBox, item.formation_decision, 'قرار التشكيل');
+      if(item.work_plan?.value)         renderUrlRow(coreBox, item.work_plan, 'خطة العمل');
+      if(coreBox.children.length===0){ coreBox.innerHTML='<div class="empty-hint">لا توجد مستندات أساسية محفوظة</div>'; }
+
+      // Invitations
+      const invBox=document.getElementById('invSection');
+      (item.invitations||[]).forEach((x,i)=> renderUrlRow(invBox,x,`دعوة #${i+1}`));
+      document.getElementById('badgeInv').textContent = (item.invitations||[]).length;
+      if((item.invitations||[]).length===0){ invBox.innerHTML='<div class="empty-hint">لا توجد دعوات محفوظة</div>'; }
+
+      // Minutes
+      const minBox=document.getElementById('minSection');
+      (item.minutes||[]).forEach((x,i)=> renderUrlRow(minBox,x,`محضر #${i+1}`));
+      document.getElementById('badgeMin').textContent = (item.minutes||[]).length;
+      if((item.minutes||[]).length===0){ minBox.innerHTML='<div class="empty-hint">لا توجد محاضر محفوظة</div>'; }
+
+      // Coverage
+      const covBox=document.getElementById('covSection');
+      (item.coverage_letters||[]).forEach((x,i)=> renderUrlRow(covBox,x,`كتاب تغطية #${i+1}`));
+      document.getElementById('badgeCov').textContent = (item.coverage_letters||[]).length;
+      if((item.coverage_letters||[]).length===0){ covBox.innerHTML='<div class="empty-hint">لا توجد كتب تغطية محفوظة</div>'; }
+
+      // Reports & SA
+      const repBox=document.getElementById('repSection');
+      if(item.report1?.value) renderUrlRow(repBox, item.report1, 'تقرير إنجاز 1');
+      if(item.report2?.value) renderUrlRow(repBox, item.report2, 'تقرير إنجاز 2');
+      if(item.report3?.value) renderUrlRow(repBox, item.report3, 'تقرير إنجاز 3');
+      if(item.statistical_analysis?.value) renderUrlRow(repBox, item.statistical_analysis, 'التحليل الإحصائي');
+      if(repBox.children.length===0){ repBox.innerHTML='<div class="empty-hint">لا توجد تقارير أو تحليل إحصائي محفوظ</div>'; }
+
+      showResults();
+      enableApplyIfReady();
+      applyQuickFilter();
     }
 
-    async function logout(){
-      try {
-        const res = await fetch('/auth/committees/logout', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          credentials: 'include'
+    /* ====== جلب البيانات ====== */
+    function normalizeName(item){ if(typeof item==='string') return item; return item?.name||item?.committee_name||item?.college||''; }
+
+    async function loadColleges(){
+      try{
+        const r=await apiFetch('/api/colleges');
+        const js=await r.json().catch(()=>[]);
+        const sel=document.getElementById('collegeSelect');
+        sel.innerHTML='<option value="">— اختر الكلية —</option>';
+        (js||[]).forEach(c=>{
+          const n=normalizeName(c); if(!n) return;
+          const o=document.createElement('option'); o.value=o.textContent=n; sel.appendChild(o);
         });
-        if (res.ok) {
-          setToast(toastSuccess, '✅ تم تسجيل الخروج');
-          toastSuccess.show();
-          setTimeout(() => { window.location.href = '/committees-login.html'; }, 700);
-        } else {
-          setToast(toastError, '❌ تعذر تسجيل الخروج'); toastError.show();
+      }catch{}
+    }
+
+    // اجلب DISTINCT committees لكلية محددة عبر تمشيط صفحات committees-files
+    async function fetchDistinctCommitteesByCollege(college){
+      const set=new Set();
+      let page=1, limit=50, guard=0;
+      do{
+        const r=await apiFetch(`/api/committees-files?college=${encodeURIComponent(college)}&page=${page}&limit=${limit}`);
+        const j=await r.json().catch(()=>({data:[],meta:{hasMore:false}}));
+        (j.data||[]).forEach(x=>{ if(x.committee_name) set.add(x.committee_name); });
+        page++; guard++; if(guard>50) break; // حد أمان
+        if(!j.meta?.hasMore) break;
+      }while(true);
+      return Array.from(set).sort((a,b)=>a.localeCompare(b,'ar',{sensitivity:'base'}));
+    }
+
+    // اجلب DISTINCT terms لكلية + عام محددين
+    async function fetchDistinctTerms(college, academicYear){
+      const set=new Set();
+      let page=1, limit=50, guard=0;
+      do{
+        const r=await apiFetch(`/api/committees-files?college=${encodeURIComponent(college)}&academicYear=${encodeURIComponent(academicYear)}&page=${page}&limit=${limit}`);
+        const j=await r.json().catch(()=>({data:[],meta:{hasMore:false}}));
+        (j.data||[]).forEach(x=>{ if(x.term) set.add(x.term); });
+        page++; guard++; if(guard>50) break;
+        if(!j.meta?.hasMore) break;
+      }while(true);
+      const arr = Array.from(set);
+      // ترتيب ثابت للفصول إن وُجدت
+      const order = {'الفصل الأول':1,'الفصل الثاني':2,'الفصل الصيفي':3};
+      arr.sort((a,b)=>(order[a]||9)-(order[b]||9));
+      return arr;
+    }
+
+    async function countForFilters(){
+      const {college,academicYear,term,committee_name}=state.filters;
+      // عدّاد تقريبي: نستعلم بنفس الفلاتر لكن نطلب 1 عنصر فقط ونقرأ total
+      const r=await apiFetch(`/api/committees-files?college=${encodeURIComponent(college||'')}&academicYear=${encodeURIComponent(academicYear||'')}&term=${encodeURIComponent(term||'')}&committee_name=${encodeURIComponent(committee_name||'')}&page=1&limit=1`);
+      const j=await r.json().catch(()=>({meta:{total:0}}));
+      updateLiveCount(j.meta?.total ?? 0);
+    }
+
+    async function fetchSingleItem(){
+      const {college,academicYear,term,committee_name}=state.filters;
+      showPlaceholder(true);
+      try{
+        const r=await apiFetch(`/api/committees-files?college=${encodeURIComponent(college)}&committee_name=${encodeURIComponent(committee_name)}&academicYear=${encodeURIComponent(academicYear)}&term=${encodeURIComponent(term)}&page=1&limit=1`);
+        const j=await r.json();
+        const item=(j.data&&j.data[0])||null;
+        state.currentItem=item;
+        renderItem(item);
+        if(!item){ showNoData(); }
+      }catch(e){
+        state.currentItem=null; showNoData(); toastError.show();
+      }
+    }
+
+    /* ====== تهيئة وتحكم المرشّحات ====== */
+    function persistFilters(){
+      localStorage.setItem('cmts.view.filters', JSON.stringify(state.filters));
+      // حدّث العنوان لسهولة المشاركة
+      const p=new URLSearchParams(state.filters).toString();
+      const url=`${location.pathname}?${p}`;
+      history.replaceState({},'',url);
+    }
+    function restoreFilters(){
+      const fromUrl = Object.fromEntries((new URLSearchParams(location.search)).entries());
+      const fromLS = JSON.parse(localStorage.getItem('cmts.view.filters')||'{}');
+      const base = {college:'',academicYear:'',term:'',committee_name:''};
+      state.filters = Object.assign(base, fromLS, fromUrl);
+    }
+    function hydrateFilterControls(){
+      document.getElementById('collegeSelect').value = state.filters.college||'';
+      document.getElementById('academicYearInput').value = state.filters.academicYear||'';
+      // باقي العناصر تُفعّل لاحقًا بعد تحميل القوائم
+    }
+    function setUserInfo(u){
+      const username=u?.username||(u?.email?u.email.split('@')[0]:'—');
+      document.getElementById('userUsername').textContent=username;
+      document.getElementById('userFullName').textContent=u?.name||'—';
+      document.getElementById('userRole').textContent=u?.role||'—';
+    }
+
+    function toggleTermSelect(enabled, options=[]){
+      const sel=document.getElementById('termSelect');
+      sel.disabled=!enabled;
+      sel.innerHTML='<option value="">— اختر الفصل —</option>';
+      options.forEach(t=>{
+        const o=document.createElement('option'); o.value=o.textContent=t; sel.appendChild(o);
+      });
+      document.getElementById('termHint').textContent = enabled ? 'اختر الفصل الدراسي' : 'اختر العام لعرض الفصول المتاحة';
+    }
+
+    function toggleCommitteeSelect(enabled, options=[]){
+      const sel=document.getElementById('committeeSelect');
+      sel.disabled=!enabled;
+      sel.innerHTML='<option value="">— اختر اللجنة —</option>';
+      options.forEach(n=>{
+        const o=document.createElement('option'); o.value=o.textContent=n; sel.appendChild(o);
+      });
+      document.getElementById('committeeHint').textContent = enabled ? 'اختر اللجنة' : 'اختر الكلية لعرض لجانها';
+    }
+
+    /* ====== أحداث الواجهة ====== */
+    document.getElementById('homeBtn').href=go('/committees-home.html');
+    document.getElementById('logoutBtn').addEventListener('click', async ()=>{
+      try{
+        const r=await apiFetch('/auth/committees/logout',{method:'POST',headers:{'Content-Type':'application/json'}});
+        if(r.ok){ toastOk.show(); setTimeout(()=>location.href=go('/committees-login.html'),600); }
+        else toastError.show();
+      }catch{ toastError.show(); }
+    });
+
+    document.getElementById('collegeSelect').addEventListener('change', async (e)=>{
+      state.filters.college=e.target.value;
+      state.filters.committee_name=''; // إعادة ضبط
+      setSummaryChip(); persistFilters(); enableApplyIfReady(); updateLiveCount(null);
+
+      // حمّل لجان الكلية
+      if(state.filters.college){
+        toggleCommitteeSelect(true, []);
+        const committees = await fetchDistinctCommitteesByCollege(state.filters.college);
+        state.listsCache.committees=committees;
+        toggleCommitteeSelect(true, committees);
+        // إن كان عندنا قيمة محفوظة قديمة
+        if(committees.includes(state.filters.committee_name)){
+          document.getElementById('committeeSelect').value = state.filters.committee_name;
         }
-      } catch {
-        setToast(toastError, '❌ خطأ في الاتصال بالخادم'); toastError.show();
+      }else{
+        toggleCommitteeSelect(false, []);
       }
+      await countForFilters();
+    });
+
+    // العام → تمكين الفصل بناءً على المتاح
+    const ayInput=document.getElementById('academicYearInput');
+    let ayDebounce=null;
+    ayInput.addEventListener('input', ()=>{
+      if(ayDebounce) clearTimeout(ayDebounce);
+      ayDebounce=setTimeout(async ()=>{
+        const v=ayInput.value.trim();
+        state.filters.academicYear = validateAcademicYear(v) ? v : '';
+        if(!state.filters.academicYear){ ayInput.classList.add('is-invalid'); }
+        else ayInput.classList.remove('is-invalid');
+
+        state.filters.term=''; setSummaryChip(); persistFilters(); enableApplyIfReady(); updateLiveCount(null);
+
+        if(state.filters.college && state.filters.academicYear){
+          const terms = await fetchDistinctTerms(state.filters.college, state.filters.academicYear);
+          state.listsCache.terms=terms;
+          toggleTermSelect(true, terms);
+        }else{
+          toggleTermSelect(false, []);
+        }
+        await countForFilters();
+      }, 300);
+    });
+
+    document.getElementById('termSelect').addEventListener('change', async (e)=>{
+      state.filters.term=e.target.value;
+      setSummaryChip(); persistFilters(); enableApplyIfReady();
+      await countForFilters();
+    });
+
+    document.getElementById('committeeSelect').addEventListener('change', async (e)=>{
+      state.filters.committee_name=e.target.value;
+      setSummaryChip(); persistFilters(); enableApplyIfReady();
+      await countForFilters();
+    });
+
+    document.getElementById('applyBtn').addEventListener('click', async ()=>{
+      if(!(state.filters.college && state.filters.academicYear && state.filters.term && state.filters.committee_name)){
+        document.querySelector('#toastInfo .toast-body').textContent='أكمل المرشّحات أولًا';
+        toastInfo.show(); return;
+      }
+      await fetchSingleItem();
+    });
+
+    document.getElementById('resetFiltersBtn').addEventListener('click', ()=>{
+      state.filters={college:'',academicYear:'',term:'',committee_name:''};
+      persistFilters();
+      document.getElementById('collegeSelect').value='';
+      document.getElementById('academicYearInput').value='';
+      toggleTermSelect(false, []);
+      toggleCommitteeSelect(false, []);
+      setSummaryChip();
+      enableApplyIfReady();
+      showPlaceholder(true);
+      updateLiveCount(null);
+      state.currentItem=null;
+      document.getElementById('quickFilter').value='';
+    });
+
+    document.getElementById('quickFilter').addEventListener('input', ()=>{
+      applyQuickFilter();
+    });
+
+    document.getElementsByName('openMode').forEach(r=>{
+      r.addEventListener('change', (e)=>{
+        state.openMode=e.target.value;
+        localStorage.setItem('cmts.openMode', state.openMode);
+        document.querySelector('#toastSuccess .toast-body').textContent='تم حفظ تفضيل فتح الروابط';
+        toastOk.show();
+      });
+    });
+
+    document.getElementById('openAllBtn').addEventListener('click', ()=>{
+      if(!state.currentItem) return;
+      const groups = [
+        ...(state.currentItem.invitations||[]),
+        ...(state.currentItem.minutes||[]),
+        ...(state.currentItem.coverage_letters||[])
+      ];
+      const singles = [
+        state.currentItem.formation_decision,
+        state.currentItem.work_plan,
+        state.currentItem.report1,
+        state.currentItem.report2,
+        state.currentItem.report3,
+        state.currentItem.statistical_analysis
+      ].filter(Boolean);
+
+      const all = [
+        ...singles.map(x=>x.value),
+        ...groups.filter(x=>x?.value).map(x=>x.value)
+      ].slice(0,20); // حد معقول لتجنب حظر النوافذ
+
+      if(all.length===0){
+        document.querySelector('#toastInfo .toast-body').textContent='لا توجد روابط لفتحها';
+        toastInfo.show(); return;
+      }
+      // تحذير بسيط
+      if(state.openMode==='popup'){
+        alert('قد يمنع المتصفح فتح عدة نوافذ منبثقة دفعة واحدة. إن لم تُفتح، بدّل إلى "تبويب جديد".');
+      }
+      all.forEach(u=>openLink(u));
+    });
+
+    /* ====== التحقق من الصلاحيات ====== */
+    async function ensureAuth(){
+      const r=await apiFetch('/auth/committees/me');
+      const j=await r.json();
+      if(!j?.authenticated){
+        location.href=go('/committees-login.html?next='+encodeURIComponent('/committees-files-view.html')); throw 0;
+      }
+      // مسموح فقط user و admin
+      const role = j.user?.role;
+      if(role!=='admin' && role!=='user'){
+        alert('🚫 لا تملك صلاحية عرض هذه الصفحة (مسموح فقط: admin و user). سيتم تحويلك للوحة التحكم.');
+        location.href=go('/committees-home.html'); throw 0;
+      }
+      state.user=j.user; setUserInfo(j.user);
     }
 
-    document.getElementById('logoutBtn').addEventListener('click', logout);
-    ensureAuth();
+    /* ====== بدء التشغيل ====== */
+    (async function init(){
+      document.getElementById('homeBtn').href=go('/committees-home.html');
+
+      // وضع التفضيل
+      if(state.openMode==='popup') document.getElementById('modePopup').checked=true;
+      else document.getElementById('modeTab').checked=true;
+
+      try{
+        await ensureAuth();
+        await loadColleges();
+        restoreFilters();
+        hydrateFilterControls();
+        setSummaryChip();
+
+        // حمّل قوائم متقدمة (إن كانت المرشّحات محفوظة)
+        if(state.filters.college){
+          const committees = await fetchDistinctCommitteesByCollege(state.filters.college);
+          state.listsCache.committees=committees;
+          toggleCommitteeSelect(true, committees);
+          if(state.filters.committee_name && committees.includes(state.filters.committee_name)){
+            document.getElementById('committeeSelect').value=state.filters.committee_name;
+          }
+        }else{
+          toggleCommitteeSelect(false, []);
+        }
+
+        if(state.filters.college && state.filters.academicYear && validateAcademicYear(state.filters.academicYear)){
+          document.getElementById('academicYearInput').classList.remove('is-invalid');
+          const terms = await fetchDistinctTerms(state.filters.college, state.filters.academicYear);
+          state.listsCache.terms=terms;
+          toggleTermSelect(true, terms);
+          if(state.filters.term && terms.includes(state.filters.term)){
+            document.getElementById('termSelect').value=state.filters.term;
+          }
+        }else{
+          toggleTermSelect(false, []);
+        }
+
+        enableApplyIfReady();
+        await countForFilters();
+
+        // لو كل المرشّحات مكتملة بعد الاسترجاع، اعرض مباشرة
+        if(state.filters.college && state.filters.academicYear && state.filters.term && state.filters.committee_name){
+          await fetchSingleItem();
+        }else{
+          showPlaceholder(true);
+        }
+      }catch(e){}
+    })();
   </script>
 </body>
 </html>
