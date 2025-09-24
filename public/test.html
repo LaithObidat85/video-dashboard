@@ -251,7 +251,7 @@
   </div>
 
   <!-- Google APIs (Picker + GIS) -->
-  <script src="https://accounts.google.com/gsi/client" async defer></script>
+  <script src="https://accounts.google.com/gsi/client" async defer onload="initGis()"></script>
   <script src="https://apis.google.com/js/api.js" async defer></script>
 
   <!-- Scripts -->
@@ -588,9 +588,7 @@
         await loadDatalists();
         refreshSummary();
         setGDriveState(false);
-        window.addEventListener('load', ()=>{
-          if(window.google && window.google.accounts){ initGis(); }
-        });
+        
       }catch{}
     })();
   </script>
