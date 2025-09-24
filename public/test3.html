@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <title>إدارة روابط ملفات اللجان - نظام اللجان</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <link rel="icon" type="image/png" href="https://www.dropbox.com/scl/fi/f283e4rvv5cf9x12a1cic/my-website-logo.png?rlkey=yia776im7klypy27af32m0scy&e=1&st=vhaprvzh&dl=1">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.rtl.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
+  <style>
+    body { background:#f8f9fa; font-family:'Segoe UI', sans-serif; }
+    .container { margin-top: 30px; max-width: 98vw; }
+    .user-chip{display:inline-flex;align-items:center;gap:.25rem;font-size:1rem!important;padding:.375rem .75rem!important;line-height:1.5!important;border-radius:.375rem;font-weight:700!important}
+    .user-chip.badge #userRole{font-weight:500!important}
+    .sticky-panel{ position: sticky; top: 12px; }
+    .table thead th { position: sticky; top: 0; background:#fff; z-index: 5; }
+    .counter-badge{font-weight:700}
+    .muted{ color:#6c757d }
+    .nowrap{ white-space:nowrap }
+    .link-pill { display:inline-flex; align-items:center; gap:.25rem; padding:.15rem .45rem; border-radius:1rem; border:1px solid #dee2e6; font-size:.85rem }
+    .truncate { max-width: 340px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: inline-block; vertical-align: bottom; }
+    .w-xxs{ width: 54px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Header -->
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
+      <h4 class="mb-0">إدارة روابط ملفات اللجان</h4>
+      <div class="d-flex align-items-center gap-2">
+        <span id="userInfo" class="user-chip badge bg-light text-dark border">
+          <i class="bi bi-person"></i>
+          <span id="userUsername">—</span>
+          <span class="mx-1">—</span>
+          <span id="userFullName">—</span>
+          <span class="ms-2 badge bg-secondary" id="userRole">—</span>
+        </span>
+        <a class="btn btn-outline-primary" id="homeBtn" href="/committees-home.html">
+          <i class="bi bi-grid"></i> لوحة التحكم
+        </a>
+        <a class="btn btn-outline-success" id="addBtn" href="/committees-files-add.html">
+          <i class="bi bi-plus-circle"></i> إضافة سجل جديد
+        </a>
+        <button id="logoutBtn" class="btn btn-danger">
+          <i class="bi bi-box-arrow-right"></i> خروج
+        </button>
+      </div>
+    </div>
+
+    <!-- فلاتر -->
+    <div class="card mb-3">
+      <div class="card-body row g-3 align-items-end">
+        <div class="col-md-3">
+          <label class="form-label">الكلية</label>
+          <select id="collegeFilter" class="form-select">
+            <option value="">— الكل —</option>
+          </select>
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">اسم اللجنة</label>
+          <select id="committeeFilter" class="form-select">
+            <option value="">— الكل —</option>
+          </select>
+        </div>
+        <div class="col-md-2">
+          <label class="form-label">العام الجامعي</label>
+          <input id="yearFilter" type="text" class="form-control" placeholder="2024/2025">
+        </div>
+        <div class="col-md-2">
+          <label class="form-label">الفصل</label>
+          <select id="termFilter" class="form-select">
+            <option value="">— الكل —</option>
+            <option value="الفصل الأول">الفصل الأول</option>
+            <option value="الفصل الثاني">الفصل الثاني</option>
+            <option value="الفصل الصيفي">الفصل الصيفي</option>
+          </select>
+        </div>
+        <div class="col-md-2">
+          <div class="d-flex gap-2">
+            <button id="applyFiltersBtn" class="btn btn-primary flex-fill"><i class="bi bi-funnel"></i> تطبيق</button>
+            <button id="resetFiltersBtn" class="btn btn-outline-secondary"><i class="bi bi-x-lg"></i></button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- الجدول -->
+    <div class="card">
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table align-middle mb-0">
+            <thead>
+              <tr>
+                <th class="nowrap">#</th>
+                <th>الكلية</th>
+                <th>اللجنة</th>
+                <th class="nowrap">العام</th>
+                <th class="nowrap">الفصل</th>
+                <th>أساسية</th>
+                <th class="nowrap">الدعوات</th>
+                <th class="nowrap">المحاضر</th>
+                <th class="nowrap">التغطية</th>
+                <th>التقارير</th>
+                <th class="nowrap">آخر تحديث</th>
+                <th class="text-center">إجراءات</th>
+              </tr>
+            </thead>
+            <tbody id="rows"></tbody>
+          </table>
+        </div>
+        <div class="d-flex justify-content-between align-items-center p-3 border-top flex-wrap gap-2">
+          <div>
+            <span class="muted">الإجمالي: </span><b id="totalSpan">—</b>
+          </div>
+          <div class="d-flex align-items-center gap-2">
+            <label class="muted">لكل صفحة</label>
+            <select id="limitSelect" class="form-select form-select-sm w-auto">
+              <option>10</option>
+              <option selected>20</option>
+              <option>50</option>
+              <option>100</option>
+            </select>
+          </div>
+          <nav>
+            <ul class="pagination m-0" id="pager"></ul>
+          </nav>
+        </div>
+      </div>
+    </div>
+
+    <!-- Toasts -->
+    <div class="toast-container position-fixed top-0 start-50 translate-middle-x p-3" style="z-index:2000">
+      <div id="toastSuccess" class="toast align-items-center text-bg-success border-0 mb-2" role="alert">
+        <div class="d-flex"><div class="toast-body">✅ تمت العملية بنجاح</div><button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button></div>
+      </div>
+      <div id="toastError" class="toast align-items-center text-bg-danger border-0 mb-2" role="alert">
+        <div class="d-flex"><div class="toast-body">❌ حدث خطأ</div><button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: عرض/تعديل الروابط -->
+  <div class="modal fade" id="editModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">عرض/تعديل روابط السجل</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label">قرار التشكيل</label>
+              <input id="m_fd" type="url" class="form-control" placeholder="https://...">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">خطة العمل</label>
+              <input id="m_wp" type="url" class="form-control" placeholder="https://...">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">تقرير 1</label>
+              <input id="m_r1" type="url" class="form-control" placeholder="https://...">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">تقرير 2</label>
+              <input id="m_r2" type="url" class="form-control" placeholder="https://...">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">تقرير 3</label>
+              <input id="m_r3" type="url" class="form-control" placeholder="https://...">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">التحليل الإحصائي</label>
+              <input id="m_sa" type="url" class="form-control" placeholder="https://...">
+            </div>
+          </div>
+
+          <hr class="my-3">
+
+          <div class="row g-3">
+            <div class="col-md-4">
+              <div class="d-flex justify-content-between align-items-center">
+                <label class="form-label mb-0">الدعوات</label>
+                <button class="btn btn-sm btn-outline-primary" id="m_addInv"><i class="bi bi-plus"></i></button>
+              </div>
+              <div id="m_listInv" class="vstack gap-2 mt-1"></div>
+            </div>
+            <div class="col-md-4">
+              <div class="d-flex justify-content-between align-items-center">
+                <label class="form-label mb-0">المحاضر</label>
+                <button class="btn btn-sm btn-outline-primary" id="m_addMin"><i class="bi bi-plus"></i></button>
+              </div>
+              <div id="m_listMin" class="vstack gap-2 mt-1"></div>
+            </div>
+            <div class="col-md-4">
+              <div class="d-flex justify-content-between align-items-center">
+                <label class="form-label mb-0">كتب التغطية</label>
+                <button class="btn btn-sm btn-outline-primary" id="m_addCov"><i class="bi bi-plus"></i></button>
+              </div>
+              <div id="m_listCov" class="vstack gap-2 mt-1"></div>
+            </div>
+          </div>
+
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-danger me-auto d-none" id="deleteBtn"><i class="bi bi-trash"></i> حذف</button>
+          <button class="btn btn-secondary" data-bs-dismiss="modal">إغلاق</button>
+          <button class="btn btn-success" id="saveModalBtn"><i class="bi bi-save"></i> حفظ التعديلات</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    /* ====== بيئة موحدة ====== */
+    const RENDER_BASE='https://vdash-qkyv.onrender.com';
+    const host=location.hostname;
+    const isGithub=host.endsWith('github.io');
+    const isLocal=host==='localhost'||host==='127.0.0.1';
+    const API_BASE=isGithub?RENDER_BASE:(isLocal?'http://localhost:3000':'');
+    const go=(path)=>isGithub?(RENDER_BASE+path):path;
+
+    const toastSuccess=new bootstrap.Toast(document.getElementById('toastSuccess'));
+    const toastError  =new bootstrap.Toast(document.getElementById('toastError'));
+    const apiFetch=(path,opts={})=>fetch(`${API_BASE}${path}`,{credentials:'include',...opts});
+
+    /* ====== الجلسة والأدوار ====== */
+    let CURRENT_USER=null; let IS_ADMIN=false;
+    function renderUser(u){
+      const username=u?.username||(u?.email?u.email.split('@')[0]:'—');
+      document.getElementById('userUsername').textContent=username;
+      document.getElementById('userFullName').textContent=u?.name||'—';
+      document.getElementById('userRole').textContent=u?.role||'—';
+    }
+    async function ensureAuth(){
+      const r=await apiFetch('/auth/committees/me'); const j=await r.json();
+      if(!j?.authenticated){ location.href=go('/committees-login.html?next='+encodeURIComponent('/committees-files-manage.html')); throw 0; }
+      if(j.user?.isActive===false){ alert('🚫 حسابك معطّل.'); location.href=go('/committees-home.html'); throw 0; }
+      CURRENT_USER=j.user; IS_ADMIN = (j.user?.role==='admin'); renderUser(j.user);
+      if(!IS_ADMIN){ document.getElementById('deleteBtn').classList.add('d-none'); }
+    }
+
+    document.getElementById('homeBtn').href=go('/committees-home.html');
+    document.getElementById('addBtn').href=go('/committees-files-add.html');
+    document.getElementById('logoutBtn').addEventListener('click',async()=>{
+      try{
+        const r=await apiFetch('/auth/committees/logout',{method:'POST',headers:{'Content-Type':'application/json'}});
+        if(r.ok){ toastSuccess.show(); setTimeout(()=>location.href=go('/committees-login.html'),700); }
+        else toastError.show();
+      }catch{ toastError.show(); }
+    });
+
+    /* ====== قوائم الكليات/اللجان ====== */
+    function normalizeName(item){ if(typeof item==='string') return item; return item?.name||item?.committee_name||item?.college||''; }
+    async function loadDictionaries(){
+      const [cR,mR]=await Promise.all([
+        apiFetch('/api/colleges'),
+        apiFetch('/api/committee-names?q=').catch(()=>apiFetch('/api/committees-master'))
+      ]);
+      const colleges=await cR.json().catch(()=>[]);
+      const committees=await mR.json().catch(()=>[]);
+      const cSel=document.getElementById('collegeFilter');
+      const mSel=document.getElementById('committeeFilter');
+      (colleges||[]).forEach(c=>{const n=normalizeName(c); if(!n)return; const o=document.createElement('option'); o.value=o.textContent=n; cSel.appendChild(o);});
+      (committees||[]).forEach(c=>{const n=normalizeName(c); if(!n)return; const o=document.createElement('option'); o.value=o.textContent=n; mSel.appendChild(o);});
+    }
+
+    /* ====== الحالة والفلترة ====== */
+    const state={ page:1, limit:20, total:0, items:[], filters:{ college:'', committee_name:'', academicYear:'', term:'' } };
+
+    document.getElementById('limitSelect').addEventListener('change',()=>{ state.limit=parseInt(limitSelect.value||'20',10); state.page=1; loadPage(); });
+    document.getElementById('applyFiltersBtn').addEventListener('click',()=>{
+      state.filters.college=document.getElementById('collegeFilter').value.trim();
+      state.filters.committee_name=document.getElementById('committeeFilter').value.trim();
+      state.filters.academicYear=document.getElementById('yearFilter').value.trim();
+      state.filters.term=document.getElementById('termFilter').value.trim();
+      state.page=1; loadPage();
+    });
+    document.getElementById('resetFiltersBtn').addEventListener('click',()=>{
+      document.getElementById('collegeFilter').value='';
+      document.getElementById('committeeFilter').value='';
+      document.getElementById('yearFilter').value='';
+      document.getElementById('termFilter').value='';
+      state.filters={ college:'', committee_name:'', academicYear:'', term:'' }; state.page=1; loadPage();
+    });
+
+    /* ====== جلب القائمة ====== */
+    async function loadPage(){
+      try{
+        const params = new URLSearchParams({ page:String(state.page), limit:String(state.limit) });
+        const f=state.filters;
+        if(f.college) params.set('college',f.college);
+        if(f.committee_name) params.set('committee_name',f.committee_name);
+        if(f.academicYear) params.set('academicYear',f.academicYear);
+        if(f.term) params.set('term',f.term);
+        const r=await apiFetch(`/api/committees-files?${params.toString()}`);
+        if(!r.ok){ document.getElementById('rows').innerHTML = `<tr><td colspan="12" class="text-center text-danger py-4">تعذر الجلب (${r.status})</td></tr>`; return; }
+        const j=await r.json();
+        state.items = Array.isArray(j?.data)? j.data : []; state.total = j?.meta?.total||0;
+        renderTable(); renderPager();
+      }catch(e){ console.error(e); document.getElementById('rows').innerHTML = `<tr><td colspan="12" class="text-center text-danger py-4">تعذر الجلب</td></tr>`; }
+    }
+
+    function pill(val,label){
+      if(!val) return '<span class="badge text-bg-light">—</span>';
+      return `<span class="link-pill"><i class="bi bi-link-45deg"></i><span class="truncate" title="${val}">${label||'رابط'}</span></span>`;
+    }
+
+    function renderTable(){
+      const tbody=document.getElementById('rows'); tbody.innerHTML='';
+      if(!state.items.length){ tbody.innerHTML = '<tr><td colspan="12" class="text-center py-4">لا توجد نتائج</td></tr>'; }
+      document.getElementById('totalSpan').textContent = state.total;
+
+      state.items.forEach((it,idx)=>{
+        const tr=document.createElement('tr');
+        const coreFD = it?.formation_decision?.value; const coreWP=it?.work_plan?.value;
+        const r1=it?.report1?.value, r2=it?.report2?.value, r3=it?.report3?.value, sa=it?.statistical_analysis?.value;
+        const invCount=Array.isArray(it?.invitations)? it.invitations.length:0;
+        const minCount=Array.isArray(it?.minutes)? it.minutes.length:0;
+        const covCount=Array.isArray(it?.coverage_letters)? it.coverage_letters.length:0;
+
+        tr.innerHTML = `
+          <td class="nowrap">${(state.page-1)*state.limit + idx + 1}</td>
+          <td>${it.college||'—'}</td>
+          <td>${it.committee_name||'—'}</td>
+          <td class="nowrap">${it.academicYear||'—'}</td>
+          <td class="nowrap">${it.term||'—'}</td>
+          <td class="nowrap">${pill(coreFD,'قرار')} ${pill(coreWP,'خطة')}</td>
+          <td class="nowrap"><span class="badge text-bg-secondary">${invCount}</span></td>
+          <td class="nowrap"><span class="badge text-bg-secondary">${minCount}</span></td>
+          <td class="nowrap"><span class="badge text-bg-secondary">${covCount}</span></td>
+          <td class="nowrap">${[r1&&'R1', r2&&'R2', r3&&'R3', sa&&'SA'].filter(Boolean).map(x=>`<span class=\"badge text-bg-light\">${x}</span>`).join(' ')||'<span class="badge text-bg-light">—</span>'}</td>
+          <td class="nowrap">${it.updatedAt? new Date(it.updatedAt).toLocaleString('ar-EG'):'—'}</td>
+          <td class="text-center">
+            <div class="btn-group">
+              <button class="btn btn-sm btn-outline-primary" data-action="view" title="عرض"><i class="bi bi-eye"></i></button>
+              <button class="btn btn-sm btn-outline-success" data-action="edit" title="تعديل"><i class="bi bi-pencil"></i></button>
+              <button class="btn btn-sm btn-outline-danger ${IS_ADMIN?'':'d-none'}" data-action="delete" title="حذف"><i class="bi bi-trash"></i></button>
+            </div>
+          </td>
+        `;
+
+        tr.querySelector('[data-action="view"]').addEventListener('click',()=>openEditModal(it,true));
+        tr.querySelector('[data-action="edit"]').addEventListener('click',()=>openEditModal(it,false));
+        tr.querySelector('[data-action="delete"]').addEventListener('click',()=>confirmDelete(it));
+        tbody.appendChild(tr);
+      });
+    }
+
+    function renderPager(){
+      const ul=document.getElementById('pager'); ul.innerHTML='';
+      const pages = Math.max(1, Math.ceil(state.total/state.limit));
+      const makeLi=(label,page,disabled=false,active=false)=>{
+        const li=document.createElement('li'); li.className=`page-item ${disabled?'disabled':''} ${active?'active':''}`;
+        const a=document.createElement('button'); a.className='page-link'; a.textContent=label; a.type='button';
+        a.addEventListener('click',()=>{ if(disabled) return; state.page=page; loadPage(); });
+        li.appendChild(a); return li;
+      };
+      ul.appendChild(makeLi('الأولى',1,state.page===1));
+      ul.appendChild(makeLi('السابق',Math.max(1,state.page-1),state.page===1));
+      const windowSize=5; const start=Math.max(1, state.page - Math.floor(windowSize/2));
+      const end=Math.min(pages, start + windowSize - 1);
+      for(let p=start;p<=end;p++){ ul.appendChild(makeLi(String(p),p,false,state.page===p)); }
+      ul.appendChild(makeLi('التالي',Math.min(pages,state.page+1),state.page===pages));
+      ul.appendChild(makeLi('الأخيرة',pages,state.page===pages));
+    }
+
+    /* ====== Modal: عرض/تعديل ====== */
+    const editModal = new bootstrap.Modal('#editModal');
+    let CURRENT_EDIT=null;
+
+    function isValidUrl(u){ try{ new URL(u); return true; } catch{ return false; } }
+    function urlOrNull(v){ return (v && isValidUrl(v)) ? { type:'url', value:v, title:'' } : null; }
+
+    function rowFactory(listEl, arrRef){
+      const wrap=document.createElement('div'); wrap.className='input-group';
+      wrap.innerHTML = `
+        <span class="input-group-text w-xxs"><i class="bi bi-link-45deg"></i></span>
+        <input type="url" class="form-control" placeholder="https://...">
+        <button class="btn btn-outline-danger" type="button"><i class="bi bi-trash"></i></button>
+      `;
+      const urlInput = wrap.querySelector('input'); const delBtn=wrap.querySelector('button');
+      const item = { value:'' };
+      arrRef.push(item);
+      urlInput.addEventListener('input',()=>{ const v=urlInput.value.trim(); item.value = isValidUrl(v) ? v : ''; urlInput.classList.toggle('is-invalid', !!v && !isValidUrl(v)); });
+      delBtn.addEventListener('click',()=>{ const i=arrRef.indexOf(item); if(i>=0) arrRef.splice(i,1); wrap.remove(); });
+      listEl.appendChild(wrap); return {wrap, urlInput, item};
+    }
+
+    function openEditModal(it, viewOnly=false){
+      CURRENT_EDIT = JSON.parse(JSON.stringify(it||{}));
+      const fd=document.getElementById('m_fd'); fd.value = it?.formation_decision?.value||'';
+      const wp=document.getElementById('m_wp'); wp.value = it?.work_plan?.value||'';
+      document.getElementById('m_r1').value = it?.report1?.value||'';
+      document.getElementById('m_r2').value = it?.report2?.value||'';
+      document.getElementById('m_r3').value = it?.report3?.value||'';
+      document.getElementById('m_sa').value = it?.statistical_analysis?.value||'';
+
+      const invList=document.getElementById('m_listInv'); invList.innerHTML='';
+      const minList=document.getElementById('m_listMin'); minList.innerHTML='';
+      const covList=document.getElementById('m_listCov'); covList.innerHTML='';
+
+      const invRef = []; const minRef = []; const covRef = [];
+      // املأ القوائم الحالية
+      (Array.isArray(it?.invitations)?it.invitations:[]).forEach(x=>{ const row=rowFactory(invList,invRef); row.urlInput.value=x?.value||''; row.urlInput.dispatchEvent(new Event('input')); });
+      (Array.isArray(it?.minutes)?it.minutes:[]).forEach(x=>{ const row=rowFactory(minList,minRef); row.urlInput.value=x?.value||''; row.urlInput.dispatchEvent(new Event('input')); });
+      (Array.isArray(it?.coverage_letters)?it.coverage_letters:[]).forEach(x=>{ const row=rowFactory(covList,covRef); row.urlInput.value=x?.value||''; row.urlInput.dispatchEvent(new Event('input')); });
+
+      // أزرار الإضافة
+      document.getElementById('m_addInv').onclick=()=>rowFactory(invList,invRef);
+      document.getElementById('m_addMin').onclick=()=>rowFactory(minList,minRef);
+      document.getElementById('m_addCov').onclick=()=>rowFactory(covList,covRef);
+
+      // وضع العرض فقط
+      [...document.querySelectorAll('#editModal input, #editModal button.btn-outline-danger')].forEach(el=>{ el.disabled = viewOnly; });
+      document.getElementById('saveModalBtn').classList.toggle('d-none', viewOnly);
+      document.getElementById('deleteBtn').classList.toggle('d-none', !IS_ADMIN || viewOnly);
+
+      // خزّن المراجع على العنصر العالمي (لنستخدمها عند الحفظ)
+      CURRENT_EDIT.__lists = { invRef, minRef, covRef, fd, wp };
+
+      editModal.show();
+    }
+
+    async function saveEdit(){
+      try{
+        const it = CURRENT_EDIT; if(!it?._id) return;
+        const fd = urlOrNull(CURRENT_EDIT.__lists.fd.value.trim());
+        const wp = urlOrNull(CURRENT_EDIT.__lists.wp.value.trim());
+        const r1 = urlOrNull(document.getElementById('m_r1').value.trim());
+        const r2 = urlOrNull(document.getElementById('m_r2').value.trim());
+        const r3 = urlOrNull(document.getElementById('m_r3').value.trim());
+        const sa = urlOrNull(document.getElementById('m_sa').value.trim());
+
+        const inv = (CURRENT_EDIT.__lists.invRef||[]).filter(x=>x.value).map(v=>({type:'url', value:v.value, title:''}));
+        const min = (CURRENT_EDIT.__lists.minRef||[]).filter(x=>x.value).map(v=>({type:'url', value:v.value, title:''}));
+        const cov = (CURRENT_EDIT.__lists.covRef||[]).filter(x=>x.value).map(v=>({type:'url', value:v.value, title:''}));
+
+        const payload = { formation_decision: fd, work_plan: wp, report1: r1, report2: r2, report3: r3, statistical_analysis: sa, invitations: inv, minutes: min, coverage_letters: cov };
+
+        const r = await apiFetch(`/api/committees-files/${it._id}`, { method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) });
+        if(!r.ok){ const j=await r.json().catch(()=>({})); alert('فشل الحفظ: '+(j.message||r.status)); return; }
+        toastSuccess.show(); editModal.hide(); loadPage();
+      }catch(e){ console.error(e); toastError.show(); }
+    }
+
+    async function confirmDelete(it){
+      if(!IS_ADMIN) return; if(!confirm('هل أنت متأكد من حذف هذا السجل؟')) return;
+      try{
+        const r=await apiFetch(`/api/committees-files/${it._id}`, { method:'DELETE' });
+        if(!r.ok){ const j=await r.json().catch(()=>({})); alert('فشل الحذف: '+(j.message||r.status)); return; }
+        toastSuccess.show(); loadPage();
+      }catch(e){ console.error(e); toastError.show(); }
+    }
+
+    document.getElementById('saveModalBtn').addEventListener('click', saveEdit);
+
+    /* ====== بدء التشغيل ====== */
+    (async function init(){
+      try{
+        await ensureAuth();
+        await loadDictionaries();
+        loadPage();
+      }catch{ /* لا شيء */ }
+    })();
+  </script>
+</body>
+</html>
