@@ -284,14 +284,7 @@
     </div>
 
     <!-- Toasts -->
-    <div class="toast-container">
-      <div id="toastSuccess" class="toast align-items-center text-bg-success border-0 mb-2" role="alert">
-        <div class="d-flex"><div class="toast-body">✅ تم الحفظ بنجاح</div><button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button></div>
-      </div>
-      <div id="toastError" class="toast align-items-center text-bg-danger border-0 mb-2" role="alert">
-        <div class="d-flex"><div class="toast-body">❌ حدث خطأ</div><button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button></div>
-      </div>
-    </div>
+    <div class="toast-container" id="toasts"></div>
   </div>
 
   <!-- Modal: تعييناتي -->
@@ -355,11 +348,36 @@
     const API_BASE=isGithub?RENDER_BASE:(isLocal?'http://localhost:3000':'');
     const go=(path)=>isGithub?(RENDER_BASE+path):path;
 
-    const toastSuccess=new bootstrap.Toast(document.getElementById('toastSuccess'));
-    const toastError  =new bootstrap.Toast(document.getElementById('toastError'));
     const apiFetch=(path,opts={})=>fetch(`${API_BASE}${path}`,{credentials:'include',...opts});
     document.getElementById('homeBtn').href=go('/committees-home.html');
     document.getElementById('backBtn').href=go('/committees-home.html');
+
+    /* ====== نظام Toast موحّد ====== */
+    function pushToast({type='info', title='', body='', autohide=true, delay=4000}={}){
+      const container=document.getElementById('toasts');
+      const id='t'+Math.random().toString(36).slice(2);
+      const color=(
+        type==='success' ? 'success' :
+        type==='error'   ? 'danger'  :
+        type==='warn'    ? 'warning' : 'info'
+      );
+      const html=`
+        <div id="${id}" class="toast align-items-center text-bg-${color} border-0 mb-2" role="alert" aria-live="assertive" aria-atomic="true">
+          <div class="d-flex">
+            <div class="toast-body">
+              ${title?`<div class="fw-bold mb-1">${title}</div>`:''}
+              ${body}
+            </div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+          </div>
+        </div>`;
+      container.insertAdjacentHTML('beforeend', html);
+      const el=document.getElementById(id);
+      const t=new bootstrap.Toast(el, {delay, autohide});
+      t.show();
+      el.addEventListener('hidden.bs.toast', ()=>el.remove());
+      return t;
+    }
 
     /* ====== جلسة المستخدم ====== */
     let CURRENT_USER=null;
@@ -376,16 +394,17 @@
         location.href=go('/committees-login.html?next='+encodeURIComponent('/committees-files-add.html'));throw 0;
       }
       if(j.user?.isActive===false){
-        alert('🚫 حسابك معطّل.'); location.href=go('/committees-home.html'); throw 0;
+        pushToast({type:'warn', title:'حساب معطّل', body:'🚫 حسابك معطّل. سيتم تحويلك للوحة التحكم.'});
+        location.href=go('/committees-home.html'); throw 0;
       }
       CURRENT_USER=j.user; renderUser(j.user);
     }
     document.getElementById('logoutBtn').addEventListener('click',async()=>{
       try{
         const r=await apiFetch('/auth/committees/logout',{method:'POST',headers:{'Content-Type':'application/json'}});
-        if(r.ok){ toastSuccess.show(); setTimeout(()=>location.href=go('/committees-login.html'),700); }
-        else toastError.show();
-      }catch{ toastError.show(); }
+        if(r.ok){ pushToast({type:'success', body:'تم تسجيل الخروج'}); setTimeout(()=>location.href=go('/committees-login.html'),700); }
+        else pushToast({type:'error', body:'تعذّر تسجيل الخروج'});
+      }catch{ pushToast({type:'error', body:'تعذّر تسجيل الخروج'}); }
     });
 
     /* ====== نموذج الحالة العامة ====== */
@@ -397,11 +416,11 @@
       report1:null, report2:null, report3:null, statistical_analysis:null
     };
 
-    /* ====== تحقق العام الجامعي (regex + فرق سنة) ====== */
+    /* ====== تحقق العام الجامعي ====== */
     const yearRx = /^(20\d{2})[\/-](20\d{2})$/;
     function validateAcademicYear(s){
       const m = String(s||'').trim().match(yearRx);
-      if(!m) return { ok:false, msg:'صيغة غير صحيحة' };
+      if(!m) return { ok:false, msg:'صيغة العام الجامعي غير صحيحة' };
       const y1 = parseInt(m[1],10), y2 = parseInt(m[2],10);
       if (y2 - y1 !== 1) return { ok:false, msg:'يجب أن يكون الفرق سنة واحدة' };
       return { ok:true, msg:'' };
@@ -432,12 +451,10 @@
       document.getElementById('saveBtn').classList.toggle('disabled-cover',disabled);
     }
 
-    /* ====== تغييرات رأس الصفحة ====== */
+    /* ====== تغييرات الرأس ====== */
     document.getElementById('collegeSelect').addEventListener('change',e=>{
       state.college=e.target.value;
-      if (ASSIGNMENT_LOCK.enabled) {
-        populateCommitteeSelectRestricted(state.college);
-      }
+      if (ASSIGNMENT_LOCK.enabled) populateCommitteeSelectRestricted(state.college);
       refreshSummary();schedulePrefillCheck();
     });
     document.getElementById('committeeSelect').addEventListener('change',e=>{
@@ -449,12 +466,11 @@
     const ayInput = document.getElementById('academicYearInput');
     ayInput.addEventListener('input',()=>{
       const v = ayInput.value.trim();
-      const {ok} = validateAcademicYear(v);
+      const {ok,msg} = validateAcademicYear(v);
       if (!v){ ayInput.classList.remove('is-invalid'); state.academicYear=''; refreshSummary(); return; }
-      if (ok){ ayInput.classList.remove('is-invalid'); state.academicYear=v; }
-      else   { ayInput.classList.add('is-invalid'); state.academicYear=''; }
+      if (ok){ ayInput.classList.remove('is-invalid'); state.academicYear=v; schedulePrefillCheck(); }
+      else   { ayInput.classList.add('is-invalid'); state.academicYear=''; pushToast({type:'warn', body:msg}); }
       refreshSummary();
-      if(ok) schedulePrefillCheck();
     });
 
     /* ====== تحقق الروابط ====== */
@@ -476,7 +492,7 @@
     wireSingleUrl('r3Url', (x)=>state.report3=x);
     wireSingleUrl('saUrl', (x)=>state.statistical_analysis=x);
 
-    /* ====== Google Drive: GIS + Picker ====== */
+    /* ====== Google Drive ====== */
     let pickerApiLoaded=false;
     function setGDriveState(connected, emailText=''){
       const badge=document.getElementById('gdriveState');
@@ -516,7 +532,7 @@
     }
     async function openDrivePicker(onPicked){
       const ok = await ensureDriveToken();
-      if(!ok){ alert('تعذر الاتصال بـ Google Drive'); return; }
+      if(!ok){ pushToast({type:'error', body:'تعذر الاتصال بـ Google Drive'}); return; }
       await loadPickerApi();
       const viewDocs = new google.picker.DocsView().setIncludeFolders(true).setSelectFolderEnabled(false);
       const picker = new google.picker.PickerBuilder()
@@ -533,7 +549,7 @@
               const link = await fetchWebViewLink(file.id);
               onPicked(link, file);
             }catch(e){
-              console.error(e); alert('تعذر جلب رابط العرض للملف');
+              console.error(e); pushToast({type:'error', body:'تعذر جلب رابط العرض للملف'});
             }
           }
         }).build();
@@ -578,10 +594,7 @@
       const delBtn=row.querySelector('.actions .btn');
       const driveBtn=row.querySelector('.btn-drive-row');
 
-      const item={
-        value: (initialItem && initialItem.value) ? initialItem.value : '',
-        title: (initialItem && initialItem.title) ? initialItem.title : ''
-      };
+      const item={ value:(initialItem&&initialItem.value)?initialItem.value:'', title:(initialItem&&initialItem.title)?initialItem.title:'' };
       arrRef.push(item);
 
       function refreshIndex(){ idxSpan.textContent = (Array.from(listEl.children).indexOf(row)+1); }
@@ -624,8 +637,6 @@
         el.value = urlObj.value;
         el.classList.remove('is-invalid');
         state[stateKey] = { type:'url', value:urlObj.value, title: urlObj.title || '' };
-      }else{
-        // لا نغيّر state هنا، التفريغ تتم إدارته في clearAllFormInputs()
       }
       el.dispatchEvent(new Event('input'));
     }
@@ -646,24 +657,21 @@
       collegesSet: new Set(),
       byCollege: new Map(),
       singleLocked: false,
-      fetchError: null // {status, message}
+      fetchError: null
     };
 
-    // جلب تعيينات المستخدم الحالي بمحاولات متعددة
+    // جلب تعيينات المستخدم بمحاولات متعددة
     async function fetchMyAssignments(){
-      // 1) المسار الخاص
       try{
         const r = await apiFetch('/api/committee-assignments/mine');
         if (r.ok) return await r.json();
         if (r.status !== 404 && r.status !== 403) return [];
       }catch{}
-      // 2) الاستعلام على المسار العام مع userId=me
       try{
         const r = await apiFetch('/api/committee-assignments?userId=me');
         if (r.ok) return await r.json();
         if (r.status !== 404 && r.status !== 403) return [];
       }catch{}
-      // 3) الاستعلام بالمعرف الصريح (إن توفر)
       try{
         const myId = CURRENT_USER?.id || CURRENT_USER?._id;
         if (myId){
@@ -713,13 +721,12 @@
         Object.keys(grouped).sort().forEach(c=>{
           const card=document.createElement('div');
           card.className='card';
-          const ul = grouped[c].map((x,i)=>`<li><b>${x.n}</b>${x.note?` <span class="text-muted">— ${x.note}</span>`:''}</li>`).join('');
+          const ul = grouped[c].map((x)=>`<li><b>${x.n}</b>${x.note?` <span class="text-muted">— ${x.note}</span>`:''}</li>`).join('');
           card.innerHTML = `
             <div class="card-body">
               <div class="fw-bold mb-1">${c}</div>
               <ul class="mb-0 small">${ul}</ul>
-            </div>
-          `;
+            </div>`;
           list.appendChild(card);
         });
       }
@@ -758,13 +765,9 @@
       const current = sel.value;
       sel.innerHTML = `<option value="">${placeholder}</option>`;
       (items||[]).forEach(v=>{
-        const o=document.createElement('option');
-        o.value=v; o.textContent=v;
-        sel.appendChild(o);
+        const o=document.createElement('option'); o.value=v; o.textContent=v; sel.appendChild(o);
       });
-      if (items.includes(current)) {
-        sel.value = current;
-      }
+      if (items.includes(current)) sel.value = current;
     }
 
     async function loadDatalists(){
@@ -801,7 +804,7 @@
       }
     }
 
-    /* ====== تحميل إعدادات افتراضية للعام/الفصل ====== */
+    /* ====== إعدادات افتراضية للعام/الفصل ====== */
     async function loadDefaultsFromSettings(){
       try{
         const r=await apiFetch('/api/settings');
@@ -820,9 +823,8 @@
       schedulePrefillCheck();
     }
 
-    /* ====== تفريغ شامل (يُستخدم لـ user/admin عند عدم وجود سجل) ====== */
+    /* ====== تفريغ شامل ====== */
     function clearAllFormInputs(){
-      // المفردات
       ['fdUrl','wpUrl','r1Url','r2Url','r3Url','saUrl'].forEach(id=>{
         const el=document.getElementById(id);
         el.value=''; el.classList.remove('is-invalid');
@@ -832,22 +834,15 @@
       state.report1=null; state.report2=null; state.report3=null;
       state.statistical_analysis=null;
 
-      // القوائم المتعددة
-      const lists = [
-        {elId:'invitationsList', arr:state.invitations},
-        {elId:'minutesList', arr:state.minutes},
-        {elId:'coverageList', arr:state.coverage_letters}
-      ];
+      const lists=[{elId:'invitationsList', arr:state.invitations},{elId:'minutesList', arr:state.minutes},{elId:'coverageList', arr:state.coverage_letters}];
       lists.forEach(({elId,arr})=>{
-        arr.length = 0;
-        const el = document.getElementById(elId);
-        el.innerHTML = '';
+        arr.length=0; document.getElementById(elId).innerHTML='';
       });
 
       refreshSummary();
     }
 
-    /* ====== التهيئة التلقائية من قاعدة البيانات ====== */
+    /* ====== التهيئة من قاعدة البيانات ====== */
     let prefillReqCounter = 0;
     async function tryPrefillFromDB(){
       const ayOk = state.academicYear && validateAcademicYear(state.academicYear).ok;
@@ -861,7 +856,6 @@
       }
 
       const myReq = ++prefillReqCounter;
-
       const badge = document.getElementById('gdriveState');
       const oldBadgeText = badge.textContent;
       badge.textContent = 'جارِ التحقق...';
@@ -897,30 +891,31 @@
           rebuildMultiList('minutesList', state.minutes, doc.minutes || []);
           rebuildMultiList('coverageList', state.coverage_letters, doc.coverage_letters || []);
 
-          toastSuccess.show();
+          pushToast({type:'success', body:'تم تحميل بيانات اللجنة.'});
         }else{
-          // 🔁 المطلوب: إن كان الدور user/admin ولا يوجد سجل → نفرّغ الحقول
           if (!ASSIGNMENT_LOCK.enabled){
             clearAllFormInputs();
+            pushToast({type:'info', body:'لا توجد بيانات لهذه المجموعة – تم تفريغ الحقول.'});
           }
         }
 
       }catch(e){
         console.error('Prefill error:', e);
+        pushToast({type:'error', body:'تعذر جلب بيانات اللجنة.'});
       }finally{
         badge.textContent = oldBadgeText;
         refreshSummary();
       }
     }
 
-    /* ====== Debounce لاستدعاء التهيئة ====== */
+    /* ====== Debounce ====== */
     let prefillTimer = null;
     function schedulePrefillCheck(){
       clearTimeout(prefillTimer);
       prefillTimer = setTimeout(tryPrefillFromDB, 300);
     }
 
-    /* ====== حفظ/تفريغ ====== */
+    /* ====== حفظ ====== */
     function buildPayload(){
       return {
         college: state.college,
@@ -948,33 +943,27 @@
     document.getElementById('saveBtn').addEventListener('click', async ()=>{
       try{
         if(!state.college || !state.committee_name){
-          alert('الرجاء اختيار الكلية واسم اللجنة'); return;
+          pushToast({type:'warn', body:'الرجاء اختيار الكلية واسم اللجنة'}); return;
         }
         if(!state.academicYear){
-          alert('الرجاء إدخال العام الجامعي'); return;
+          pushToast({type:'warn', body:'الرجاء إدخال العام الجامعي'}); return;
         }
         const chk = validateAcademicYear(state.academicYear);
-        if(!chk.ok){ ayInput.classList.add('is-invalid'); alert('العام الجامعي غير صحيح: '+chk.msg); return; }
-
-        if(!state.term){
-          alert('الرجاء اختيار الفصل الدراسي'); return;
-        }
-
+        if(!chk.ok){ ayInput.classList.add('is-invalid'); pushToast({type:'warn', body:chk.msg}); return; }
+        if(!state.term){ pushToast({type:'warn', body:'الرجاء اختيار الفصل الدراسي'}); return; }
         if (!validateWithinAssignments()){
-          alert('❌ لا تملك صلاحية الحفظ لهذه الكلية/اللجنة وفق التعيينات الممنوحة لحسابك.');
-          return;
+          pushToast({type:'error', body:'لا تملك صلاحية الحفظ لهذه الكلية/اللجنة وفق التعيينات.'}); return;
         }
 
         const singles=['formation_decision','work_plan','report1','report2','report3','statistical_analysis'];
         for(const k of singles){
           const v=state[k];
           if(v && (!v.value || !isValidUrl(v.value))){
-            alert('هناك رابط غير صالح في: '+k); return;
+            pushToast({type:'warn', body:'هناك رابط غير صالح في: '+k}); return;
           }
         }
 
         const payload=buildPayload();
-
         const r = await fetch(`${API_BASE}/api/committees-files`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -984,11 +973,11 @@
 
         if(!r.ok){
           const j=await r.json().catch(()=>({}));
-          alert('فشل الحفظ: ' + (j.message || r.status)); return;
+          pushToast({type:'error', body:'فشل الحفظ: ' + (j.message || r.status)}); return;
         }
 
-        toastSuccess.show();
-      }catch(e){ console.error(e); toastError.show(); }
+        pushToast({type:'success', body:'✅ تم الحفظ بنجاح'});
+      }catch(e){ console.error(e); pushToast({type:'error', body:'حدث خطأ غير متوقع أثناء الحفظ'}); }
     });
 
     document.getElementById('resetBtn').addEventListener('click',()=>location.reload());
@@ -1009,11 +998,13 @@
           buildAssignmentIndex();
 
           if (ASSIGNMENT_LOCK.fetchError && !ASSIGNMENT_LOCK.pairs.length){
-            alert('تعذر جلب تعيينات هذا الحساب: ' + (ASSIGNMENT_LOCK.fetchError.message || '') +
-                  (ASSIGNMENT_LOCK.fetchError.status ? ` [${ASSIGNMENT_LOCK.fetchError.status}]` : '') + 
-                  '\nتحقق من وجود المسار /api/committee-assignments/mine أو السماح بالاستعلام المقيّد.');
+            pushToast({
+              type:'error',
+              title:'تعذر جلب تعيينات هذا الحساب',
+              body:`(${ASSIGNMENT_LOCK.fetchError.status||'—'}) ${ASSIGNMENT_LOCK.fetchError.message || ''}<br>تحقق من وجود المسار <code>/api/committee-assignments/mine</code> أو السماح بالاستعلام المقيَّد.`
+            });
           } else if (!ASSIGNMENT_LOCK.pairs.length){
-            alert('لا توجد تعيينات لهذا الحساب. تواصل مع المشرف.');
+            pushToast({type:'warn', body:'لا توجد تعيينات لهذا الحساب. تواصل مع المشرف.'});
           }
         }
 
@@ -1023,7 +1014,10 @@
         await loadDefaultsFromSettings();
         refreshSummary();
         setGDriveState(false);
-      }catch{}
+      }catch(e){
+        console.error(e);
+        pushToast({type:'error', body:'تعذر تهيئة الصفحة.'});
+      }
     })();
   </script>
 </body>
