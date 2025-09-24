@@ -1,11 +1,10 @@
-
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
   <meta charset="UTF-8" />
   <title>إضافة روابط ملفات اللجان - نظام اللجان</title>
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <link rel="icon" type="image/png" href="https://www.dropbox.com/scl/fi/f283e4rvv5cf9x12a1cic/my-website-logo.png?rlkey=yia776im7klypy27af32m0scy&e=1&st=vhaprvzh&dl=1">
+  <link rel="icon" type="image/png" href="https://www.dropbox.com/scl/fi/f283e4rvv5cf9x12a1cic/my-website-logo.png?rlkey=yia776im7klypy27af32m0scy&e=1&dl=1">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.rtl.min.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
   <style>
@@ -26,12 +25,14 @@
     .counter-badge{font-weight:700}
     .gdrive-status{display:flex;align-items:center;gap:.5rem}
     .gdrive-status .badge{font-size:.85rem}
+    .hint-restricted{display:flex;align-items:center;gap:.5rem}
+    .small-badge{font-size:.8rem}
   </style>
 </head>
 <body>
   <div class="container">
     <!-- Header -->
-    <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-2">
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-2 gap-2">
       <h4 class="mb-0">إضافة روابط ملفات اللجان</h4>
       <div class="d-flex align-items-center gap-2">
         <span id="userInfo" class="user-chip badge bg-light text-dark border">
@@ -47,6 +48,25 @@
         <button id="logoutBtn" class="btn btn-danger">
           <i class="bi bi-box-arrow-right"></i> خروج
         </button>
+      </div>
+    </div>
+
+    <!-- شريط حالة التعيين -->
+    <div id="assignmentBanner" class="alert alert-info py-2 px-3 d-none" role="alert">
+      <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
+        <div class="hint-restricted">
+          <i class="bi bi-shield-lock"></i>
+          <div>
+            <div class="fw-bold">الوصول مقيَّد حسب التعيينات</div>
+            <div class="small text-muted">لا يمكنك الاختيار إلا من الكليات واللجان المعينة لك.</div>
+          </div>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+          <button id="showAssignmentsBtn" class="btn btn-sm btn-outline-dark">
+            <i class="bi bi-card-list"></i> عرض تعييناتي
+          </button>
+          <span id="assignCountBadge" class="badge text-bg-secondary small-badge">0</span>
+        </div>
       </div>
     </div>
 
@@ -274,6 +294,26 @@
     </div>
   </div>
 
+  <!-- Modal: تعييناتي -->
+  <div class="modal fade" id="assignmentsModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-scrollable">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title"><i class="bi bi-card-list me-1"></i> تعييناتي المتاحة</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="إغلاق"></button>
+        </div>
+        <div class="modal-body">
+          <div id="assignmentsList" class="vstack gap-2">
+            <div class="text-muted small">— لا توجد بيانات —</div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" data-bs-dismiss="modal">إغلاق</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- ====== Google: مفاتيح + GIS ====== -->
   <script>
     window.GOOGLE_CLIENT_ID = '656975767411-lu47r57vrfmhrplrd11rdgbm34cqofsn.apps.googleusercontent.com';
@@ -318,6 +358,8 @@
     const toastSuccess=new bootstrap.Toast(document.getElementById('toastSuccess'));
     const toastError  =new bootstrap.Toast(document.getElementById('toastError'));
     const apiFetch=(path,opts={})=>fetch(`${API_BASE}${path}`,{credentials:'include',...opts});
+    document.getElementById('homeBtn').href=go('/committees-home.html');
+    document.getElementById('backBtn').href=go('/committees-home.html');
 
     /* ====== جلسة المستخدم ====== */
     let CURRENT_USER=null;
@@ -338,7 +380,6 @@
       }
       CURRENT_USER=j.user; renderUser(j.user);
     }
-    document.getElementById('homeBtn').href=go('/committees-home.html');
     document.getElementById('logoutBtn').addEventListener('click',async()=>{
       try{
         const r=await apiFetch('/auth/committees/logout',{method:'POST',headers:{'Content-Type':'application/json'}});
@@ -346,44 +387,8 @@
         else toastError.show();
       }catch{ toastError.show(); }
     });
-    document.getElementById('backBtn').href=go('/committees-home.html');
 
-    /* ====== القوائم (كلية/لجنة) ====== */
-    function normalizeName(item){ if(typeof item==='string') return item; return item?.name||item?.committee_name||item?.college||''; }
-    async function loadDatalists(){
-      const [cR,mR]=await Promise.all([
-        apiFetch('/api/colleges'),
-        apiFetch('/api/committee-names?q=').catch(()=>apiFetch('/api/committees-master'))
-      ]);
-      const colleges=await cR.json().catch(()=>[]);
-      const committees=await mR.json().catch(()=>[]);
-      const collegeSel=document.getElementById('collegeSelect');
-      const committeeSel=document.getElementById('committeeSelect');
-      (colleges||[]).forEach(c=>{const n=normalizeName(c);if(!n)return;const o=document.createElement('option');o.value=o.textContent=n;collegeSel.appendChild(o);});
-      (committees||[]).forEach(c=>{const n=normalizeName(c);if(!n)return;const o=document.createElement('option');o.value=o.textContent=n;committeeSel.appendChild(o);});
-    }
-
-    /* ====== تحميل إعدادات افتراضية للعام/الفصل ====== */
-    async function loadDefaultsFromSettings(){
-      try{
-        const r=await apiFetch('/api/settings');
-        const s=await r.json();
-        if (s?.academicYear) {
-          document.getElementById('academicYearInput').value=s.academicYear;
-          state.academicYear=s.academicYear.trim();
-        }
-        if (s?.term) {
-          document.getElementById('termSelect').value=s.term;
-          state.term=s.term;
-        }
-      }catch{}
-      refreshSummary();
-      // محاولة تعبئة أولية إذا كانت القيم كاملة
-      await new Promise(r=>setTimeout(r,0));
-      schedulePrefillCheck();
-    }
-
-    /* ====== الحالة العامة ====== */
+    /* ====== نموذج الحالة العامة ====== */
     const state={
       college:'', committee_name:'',
       academicYear:'', term:'',
@@ -427,9 +432,14 @@
       document.getElementById('saveBtn').classList.toggle('disabled-cover',disabled);
     }
 
-    /* ربط تغييرات رأس الصفحة */
+    /* ====== تغييرات رأس الصفحة ====== */
     document.getElementById('collegeSelect').addEventListener('change',e=>{
-      state.college=e.target.value;refreshSummary();schedulePrefillCheck();
+      state.college=e.target.value;
+      // عند التقييد: أعِد تحميل قائمة اللجان المسموح بها لهذه الكلية فقط
+      if (ASSIGNMENT_LOCK.enabled) {
+        populateCommitteeSelectRestricted(state.college);
+      }
+      refreshSummary();schedulePrefillCheck();
     });
     document.getElementById('committeeSelect').addEventListener('change',e=>{
       state.committee_name=e.target.value;refreshSummary();schedulePrefillCheck();
@@ -545,7 +555,6 @@
     });
 
     /* ====== القوائم المتعددة ====== */
-    // 🔁 نسخة مطوّرة: تدعم عنصرًا تمهيديًا initialItem للتهيئة من قاعدة البيانات
     function addMultiUrlRow(listEl, arrRef, initialItem = null){
       const row=document.createElement('div');
       row.className='list-row';
@@ -578,7 +587,6 @@
 
       function refreshIndex(){ idxSpan.textContent = (Array.from(listEl.children).indexOf(row)+1); }
 
-      // تعبئة أولية في الـDOM إن وُجدت
       if(item.value){ urlInput.value=item.value; }
       if(item.title){ titleInput.value=item.title; }
 
@@ -617,16 +625,11 @@
         el.value = urlObj.value;
         el.classList.remove('is-invalid');
         state[stateKey] = { type:'url', value:urlObj.value, title: urlObj.title || '' };
-      }else{
-        // لا نُفرّغ شيئًا تلقائيًا إذا لم يوجد سجل — نحافظ على إدخالات المستخدم
-        // (بالتالي لا تغيير هنا على الإطلاق)
       }
-      // إطلاق input حتى لو لم نغيّر، لضمان التحقق/التلخيص
       el.dispatchEvent(new Event('input'));
     }
     function rebuildMultiList(listElId, arrRef, items){
       const listEl = document.getElementById(listElId);
-      // نملأ القائمة بالعناصر القادمة من DB فقط إن كانت موجودة
       if (Array.isArray(items) && items.length){
         listEl.innerHTML = '';
         arrRef.length = 0;
@@ -635,16 +638,207 @@
       refreshSummary();
     }
 
+    /* ====== تقييد الصفحة بحسب تعيينات المستخدم ====== */
+    const ASSIGNMENT_LOCK = {
+      enabled: false,               // true فقط للمستخدم subuser-member
+      pairs: [],                    // [{college, committee_name, note, _id}, ...]
+      collegesSet: new Set(),       // مجموعة الكليات المسموح بها
+      byCollege: new Map(),         // خريطة: كلية -> Set(لجان)
+      singleLocked: false           // إذا كان لديه زوج واحد فقط (نقفل القائمتين)
+    };
+
+    // جلب تعيينات المستخدم الحالي
+    async function fetchMyAssignments(){
+      // نحاول المسار المخصص أولاً
+      let arr=null;
+      try{
+        const r1 = await apiFetch('/api/committee-assignments/mine');
+        if (r1.ok) {
+          arr = await r1.json();
+        }
+      }catch{}
+      // إن فشل المسار الخاص، جرّب العام ثم رشّح محليًا
+      if (!Array.isArray(arr)) {
+        try{
+          const r2 = await apiFetch('/api/committee-assignments');
+          if (r2.ok){
+            const all = await r2.json();
+            arr = Array.isArray(all) ? all.filter(x => {
+              const uid = (x.userId && (x.userId._id || x.userId.id)) || x.userId || x.user_id || x.user;
+              return uid && (String(uid) === String(CURRENT_USER.id));
+            }) : [];
+          }
+        }catch{
+          arr = [];
+        }
+      }
+      return Array.isArray(arr) ? arr : [];
+    }
+
+    function buildAssignmentIndex(){
+      ASSIGNMENT_LOCK.collegesSet.clear();
+      ASSIGNMENT_LOCK.byCollege.clear();
+      (ASSIGNMENT_LOCK.pairs||[]).forEach(a=>{
+        const c=(a.college||'').trim();
+        const n=(a.committee_name||'').trim();
+        if(!c||!n) return;
+        ASSIGNMENT_LOCK.collegesSet.add(c);
+        if(!ASSIGNMENT_LOCK.byCollege.has(c)) ASSIGNMENT_LOCK.byCollege.set(c,new Set());
+        ASSIGNMENT_LOCK.byCollege.get(c).add(n);
+      });
+      ASSIGNMENT_LOCK.singleLocked = (ASSIGNMENT_LOCK.pairs.length === 1);
+      // واجهة الاستخدام
+      const banner = document.getElementById('assignmentBanner');
+      const badge  = document.getElementById('assignCountBadge');
+      if (ASSIGNMENT_LOCK.enabled){
+        banner.classList.remove('d-none');
+        badge.textContent = String(ASSIGNMENT_LOCK.pairs.length||0);
+      }else{
+        banner.classList.add('d-none');
+      }
+      // بناء قائمة المودال
+      const list = document.getElementById('assignmentsList');
+      list.innerHTML = '';
+      if (!ASSIGNMENT_LOCK.pairs.length){
+        list.innerHTML = '<div class="small text-muted">— لا توجد تعيينات لهذا الحساب —</div>';
+      }else{
+        const grouped = {};
+        ASSIGNMENT_LOCK.pairs.forEach(a=>{
+          const c=a.college||'—'; const n=a.committee_name||'—';
+          if(!grouped[c]) grouped[c]=[];
+          grouped[c].push({n, note:(a.note||'')});
+        });
+        Object.keys(grouped).sort().forEach(c=>{
+          const card=document.createElement('div');
+          card.className='card';
+          const ul = grouped[c].map((x,i)=>`<li><b>${x.n}</b>${x.note?` <span class="text-muted">— ${x.note}</span>`:''}</li>`).join('');
+          card.innerHTML = `
+            <div class="card-body">
+              <div class="fw-bold mb-1">${c}</div>
+              <ul class="mb-0 small">${ul}</ul>
+            </div>
+          `;
+          list.appendChild(card);
+        });
+      }
+    }
+
+    function lockOrUnlockSelectors(){
+      const collegeSel = document.getElementById('collegeSelect');
+      const committeeSel = document.getElementById('committeeSelect');
+
+      if (!ASSIGNMENT_LOCK.enabled){
+        collegeSel.disabled = false;
+        committeeSel.disabled = false;
+        return;
+      }
+      // لو زوج واحد فقط -> قفل
+      if (ASSIGNMENT_LOCK.singleLocked && ASSIGNMENT_LOCK.pairs.length === 1){
+        const only = ASSIGNMENT_LOCK.pairs[0];
+        state.college = only.college;
+        state.committee_name = only.committee_name;
+        fillSelectOptions(collegeSel, [only.college], '— اختر الكلية —');
+        fillSelectOptions(committeeSel, [only.committee_name], '— اختر اللجنة —');
+        collegeSel.value = only.college;
+        committeeSel.value = only.committee_name;
+        collegeSel.disabled = true;
+        committeeSel.disabled = true;
+        refreshSummary();
+        return;
+      }
+      // خلاف ذلك: تركهما قابلتين للتعديل ولكن مُرشّحتين
+      collegeSel.disabled = false;
+      committeeSel.disabled = false;
+    }
+
+    /* ====== تحميل القوائم (كلية/لجنة) ====== */
+    function normalizeName(item){ if(typeof item==='string') return item; return item?.name||item?.committee_name||item?.college||''; }
+
+    function fillSelectOptions(sel, items, placeholder){
+      const current = sel.value;
+      sel.innerHTML = `<option value="">${placeholder}</option>`;
+      (items||[]).forEach(v=>{
+        const o=document.createElement('option');
+        o.value=v; o.textContent=v;
+        sel.appendChild(o);
+      });
+      if (items.includes(current)) {
+        sel.value = current;
+      }
+    }
+
+    async function loadDatalists(){
+      const [cR,mR]=await Promise.all([
+        apiFetch('/api/colleges'),
+        apiFetch('/api/committee-names?q=').catch(()=>apiFetch('/api/committees-master'))
+      ]);
+      const colleges=(await cR.json().catch(()=>[]))||[];
+      const committees=(await mR.json().catch(()=>[]))||[];
+      const allCollegeNames = (colleges||[]).map(normalizeName).filter(Boolean);
+      const allCommitteeNames = (committees||[]).map(normalizeName).filter(Boolean);
+
+      if (!ASSIGNMENT_LOCK.enabled){
+        fillSelectOptions(document.getElementById('collegeSelect'), allCollegeNames, '— اختر الكلية —');
+        fillSelectOptions(document.getElementById('committeeSelect'), allCommitteeNames, '— اختر اللجنة —');
+        return;
+      }
+      // وضع مقيّد: عرض الكليات المسموح بها فقط
+      const allowedColleges = Array.from(ASSIGNMENT_LOCK.collegesSet);
+      fillSelectOptions(document.getElementById('collegeSelect'), allowedColleges, '— اختر الكلية —');
+      // تعبئة اللجان بناء على الكلية المختارة (إن وجدت) وإلا ضعّ خيـارات فارغة
+      populateCommitteeSelectRestricted(document.getElementById('collegeSelect').value);
+    }
+
+    function populateCommitteeSelectRestricted(selectedCollege){
+      const committeeSel=document.getElementById('committeeSelect');
+      let committeesAllowed = [];
+      if (selectedCollege && ASSIGNMENT_LOCK.byCollege.has(selectedCollege)){
+        committeesAllowed = Array.from(ASSIGNMENT_LOCK.byCollege.get(selectedCollege));
+      }
+      fillSelectOptions(committeeSel, committeesAllowed, '— اختر اللجنة —');
+      // إن كانت اللجنة الحالية لم تعد ضمن المسموح، صفّرها
+      if (!committeesAllowed.includes(state.committee_name)){
+        state.committee_name = '';
+        committeeSel.value = '';
+        refreshSummary();
+      }
+    }
+
+    /* ====== تحميل إعدادات افتراضية للعام/الفصل ====== */
+    async function loadDefaultsFromSettings(){
+      try{
+        const r=await apiFetch('/api/settings');
+        const s=await r.json();
+        if (s?.academicYear) {
+          document.getElementById('academicYearInput').value=s.academicYear;
+          state.academicYear=s.academicYear.trim();
+        }
+        if (s?.term) {
+          document.getElementById('termSelect').value=s.term;
+          state.term=s.term;
+        }
+      }catch{}
+      refreshSummary();
+      await new Promise(r=>setTimeout(r,0));
+      schedulePrefillCheck();
+    }
+
     /* ====== التهيئة التلقائية من قاعدة البيانات ====== */
     let prefillReqCounter = 0;
     async function tryPrefillFromDB(){
-      // يجب اكتمال الأربع قيم وصحة العام الجامعي
       const ayOk = state.academicYear && validateAcademicYear(state.academicYear).ok;
       if(!(state.college && state.committee_name && state.term && ayOk)) return;
 
+      // في الوضع المقيّد: التحقق أن الاختيارات ضمن المسموح
+      if (ASSIGNMENT_LOCK.enabled) {
+        if (!ASSIGNMENT_LOCK.collegesSet.has(state.college) ||
+            !ASSIGNMENT_LOCK.byCollege.get(state.college)?.has(state.committee_name)) {
+          return; // خارج المسموح — لا نستدعي التهيئة
+        }
+      }
+
       const myReq = ++prefillReqCounter;
 
-      // مؤشر بصري خفيف: لا يغيّر حالة الاتصال الفعلية
       const badge = document.getElementById('gdriveState');
       const oldBadgeText = badge.textContent;
       badge.textContent = 'جارِ التحقق...';
@@ -659,7 +853,6 @@
         });
         const r = await apiFetch(`/api/committees-files?${params.toString()}`, { method:'GET' });
 
-        // لو جاء طلب أحدث، تجاهل الرد القديم
         if (myReq !== prefillReqCounter) return;
 
         if(!r.ok){
@@ -670,7 +863,6 @@
         const doc = j && Array.isArray(j.data) && j.data.length ? j.data[0] : null;
 
         if(doc){
-          // تعبئة المفرد
           setSingleInputAndState('fdUrl', 'formation_decision', doc.formation_decision || null);
           setSingleInputAndState('wpUrl', 'work_plan', doc.work_plan || null);
           setSingleInputAndState('r1Url', 'report1', doc.report1 || null);
@@ -678,14 +870,11 @@
           setSingleInputAndState('r3Url', 'report3', doc.report3 || null);
           setSingleInputAndState('saUrl', 'statistical_analysis', doc.statistical_analysis || null);
 
-          // تعبئة القوائم المتعددة (لن نُفرغها إن لم توجد عناصر)
           rebuildMultiList('invitationsList', state.invitations, doc.invitations || []);
           rebuildMultiList('minutesList', state.minutes, doc.minutes || []);
           rebuildMultiList('coverageList', state.coverage_letters, doc.coverage_letters || []);
 
-          toastSuccess.show(); // تلميح نجاح بسيط
-        }else{
-          // لا يوجد سجل — لا نلمس إدخالات المستخدم (لا تفريغ تلقائي)
+          toastSuccess.show();
         }
 
       }catch(e){
@@ -720,6 +909,15 @@
       };
     }
 
+    // تحقق أن الاختيار ضمن التعيينات
+    function validateWithinAssignments(){
+      if (!ASSIGNMENT_LOCK.enabled) return true;
+      if (!ASSIGNMENT_LOCK.collegesSet.has(state.college)) return false;
+      const set = ASSIGNMENT_LOCK.byCollege.get(state.college);
+      if (!set || !set.has(state.committee_name)) return false;
+      return true;
+    }
+
     document.getElementById('saveBtn').addEventListener('click', async ()=>{
       try{
         if(!state.college || !state.committee_name){
@@ -733,6 +931,12 @@
 
         if(!state.term){
           alert('الرجاء اختيار الفصل الدراسي'); return;
+        }
+
+        // التحقق ضمن التعيينات للمستخدم المقيّد
+        if (!validateWithinAssignments()){
+          alert('❌ لا تملك صلاحية الحفظ لهذه الكلية/اللجنة وفق التعيينات الممنوحة لحسابك.');
+          return;
         }
 
         const singles=['formation_decision','work_plan','report1','report2','report3','statistical_analysis'];
@@ -764,11 +968,35 @@
     // تفريغ عند النقر فقط (لا تفريغ تلقائي إطلاقًا)
     document.getElementById('resetBtn').addEventListener('click',()=>location.reload());
 
+    // زر عرض التعيينات
+    const assignmentsModal = new bootstrap.Modal('#assignmentsModal');
+    document.getElementById('showAssignmentsBtn')?.addEventListener('click', ()=>assignmentsModal.show());
+
     /* ====== بدء التشغيل ====== */
     (async function init(){
       try{
         await ensureAuth();
+
+        // تحديد ما إذا كان المستخدم مقيّدًا
+        ASSIGNMENT_LOCK.enabled = (CURRENT_USER?.role === 'subuser-member');
+
+        if (ASSIGNMENT_LOCK.enabled) {
+          // جلب تعيينات المستخدم وبناء الفهرس
+          ASSIGNMENT_LOCK.pairs = await fetchMyAssignments();
+          buildAssignmentIndex();
+
+          if (!ASSIGNMENT_LOCK.pairs.length){
+            // لا تعيينات -> لا يستطيع استخدام الصفحة
+            document.getElementById('assignmentBanner').classList.remove('d-none');
+            alert('لا توجد تعيينات لهذا الحساب. تواصل مع المشرف.');
+            // يمكنك إعادة التوجيه إن رغبت:
+            // location.href = go('/committees-home.html');
+          }
+        }
+
         await loadDatalists();
+        lockOrUnlockSelectors();     // قفل/فتح القوائم إن لزم
+
         await loadDefaultsFromSettings(); // تعبئة العام/الفصل إن كانا محفوظين + محاولة تهيئة
         refreshSummary();
         setGDriveState(false);
