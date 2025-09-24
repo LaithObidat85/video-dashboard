@@ -151,27 +151,51 @@
           <div class="row g-3">
             <div class="col-md-6">
               <label class="form-label">قرار التشكيل</label>
-              <input id="m_fd" type="url" class="form-control" placeholder="https://...">
+              <div class="input-group">
+                <input id="m_fd" type="url" class="form-control" placeholder="https://...">
+                <button class="btn btn-outline-secondary" type="button" data-open="m_fd" title="فتح في تبويب جديد"><i class="bi bi-box-arrow-up-right"></i></button>
+                <span id="m_fd_title" class="input-group-text bg-light text-muted"></span>
+              </div>
             </div>
             <div class="col-md-6">
               <label class="form-label">خطة العمل</label>
-              <input id="m_wp" type="url" class="form-control" placeholder="https://...">
+              <div class="input-group">
+                <input id="m_wp" type="url" class="form-control" placeholder="https://...">
+                <button class="btn btn-outline-secondary" type="button" data-open="m_wp" title="فتح في تبويب جديد"><i class="bi bi-box-arrow-up-right"></i></button>
+                <span id="m_wp_title" class="input-group-text bg-light text-muted"></span>
+              </div>
             </div>
             <div class="col-md-6">
-              <label class="form-label">تقرير 1</label>
-              <input id="m_r1" type="url" class="form-control" placeholder="https://...">
+              <label class="form-label">تقرير إنجاز 1</label>
+              <div class="input-group">
+                <input id="m_r1" type="url" class="form-control" placeholder="https://...">
+                <button class="btn btn-outline-secondary" type="button" data-open="m_r1" title="فتح في تبويب جديد"><i class="bi bi-box-arrow-up-right"></i></button>
+                <span id="m_r1_title" class="input-group-text bg-light text-muted"></span>
+              </div>
             </div>
             <div class="col-md-6">
-              <label class="form-label">تقرير 2</label>
-              <input id="m_r2" type="url" class="form-control" placeholder="https://...">
+              <label class="form-label">تقرير إنجاز 2</label>
+              <div class="input-group">
+                <input id="m_r2" type="url" class="form-control" placeholder="https://...">
+                <button class="btn btn-outline-secondary" type="button" data-open="m_r2" title="فتح في تبويب جديد"><i class="bi bi-box-arrow-up-right"></i></button>
+                <span id="m_r2_title" class="input-group-text bg-light text-muted"></span>
+              </div>
             </div>
             <div class="col-md-6">
-              <label class="form-label">تقرير 3</label>
-              <input id="m_r3" type="url" class="form-control" placeholder="https://...">
+              <label class="form-label">تقرير إنجاز 3</label>
+              <div class="input-group">
+                <input id="m_r3" type="url" class="form-control" placeholder="https://...">
+                <button class="btn btn-outline-secondary" type="button" data-open="m_r3" title="فتح في تبويب جديد"><i class="bi bi-box-arrow-up-right"></i></button>
+                <span id="m_r3_title" class="input-group-text bg-light text-muted"></span>
+              </div>
             </div>
             <div class="col-md-6">
               <label class="form-label">التحليل الإحصائي</label>
-              <input id="m_sa" type="url" class="form-control" placeholder="https://...">
+              <div class="input-group">
+                <input id="m_sa" type="url" class="form-control" placeholder="https://...">
+                <button class="btn btn-outline-secondary" type="button" data-open="m_sa" title="فتح في تبويب جديد"><i class="bi bi-box-arrow-up-right"></i></button>
+                <span id="m_sa_title" class="input-group-text bg-light text-muted"></span>
+              </div>
             </div>
           </div>
 
@@ -203,6 +227,10 @@
 
         </div>
         <div class="modal-footer">
+          <button class="btn btn-danger me-auto d-none" id="deleteBtn"><i class="bi bi-trash"></i> حذف</button>
+          <button class="btn btn-secondary" data-bs-dismiss="modal">إغلاق</button>
+          <button class="btn btn-success" id="saveModalBtn"><i class="bi bi-save"></i> حفظ التعديلات</button>
+        </div>
           <button class="btn btn-danger me-auto d-none" id="deleteBtn"><i class="bi bi-trash"></i> حذف</button>
           <button class="btn btn-secondary" data-bs-dismiss="modal">إغلاق</button>
           <button class="btn btn-success" id="saveModalBtn"><i class="bi bi-save"></i> حفظ التعديلات</button>
@@ -304,7 +332,8 @@
 
     function pill(val,label){
       if(!val) return '<span class="badge text-bg-light">—</span>';
-      return `<span class="link-pill"><i class="bi bi-link-45deg"></i><span class="truncate" title="${val}">${label||'رابط'}</span></span>`;
+      return `<span class="link-pill"><i class="bi bi-link-45deg"></i><a href="${val}" target="_blank" rel="noopener" class="truncate" title="${label||val}">${label||'رابط'}</a></span>`;
+    }">${label||'رابط'}</span></span>`;
     }
 
     function renderTable(){
@@ -330,7 +359,7 @@
           <td class="nowrap"><span class="badge text-bg-secondary">${invCount}</span></td>
           <td class="nowrap"><span class="badge text-bg-secondary">${minCount}</span></td>
           <td class="nowrap"><span class="badge text-bg-secondary">${covCount}</span></td>
-          <td class="nowrap">${[r1&&'R1', r2&&'R2', r3&&'R3', sa&&'SA'].filter(Boolean).map(x=>`<span class=\"badge text-bg-light\">${x}</span>`).join(' ')||'<span class="badge text-bg-light">—</span>'}</td>
+          <td class="nowrap">${[r1&&'إنجاز 1', r2&&'إنجاز 2', r3&&'إنجاز 3', sa&&'إحصائي'].filter(Boolean).map(x=>`<span class=\"badge text-bg-light\">${x}</span>`).join(' ')||'<span class="badge text-bg-light">—</span>'}</td>
           <td class="nowrap">${it.updatedAt? new Date(it.updatedAt).toLocaleString('ar-EG'):'—'}</td>
           <td class="text-center">
             <div class="btn-group">
@@ -373,15 +402,50 @@
     function isValidUrl(u){ try{ new URL(u); return true; } catch{ return false; } }
     function urlOrNull(v){ return (v && isValidUrl(v)) ? { type:'url', value:v, title:'' } : null; }
 
-    function rowFactory(listEl, arrRef){
+    function rowFactory(listEl, arrRef, section, existing){
       const wrap=document.createElement('div'); wrap.className='input-group';
       wrap.innerHTML = `
         <span class="input-group-text w-xxs"><i class="bi bi-link-45deg"></i></span>
         <input type="url" class="form-control" placeholder="https://...">
-        <button class="btn btn-outline-danger" type="button"><i class="bi bi-trash"></i></button>
+        <button class="btn btn-outline-secondary" type="button" title="فتح في تبويب جديد"><i class="bi bi-box-arrow-up-right"></i></button>
+        <span class="input-group-text bg-light text-muted file-title"></span>
+        <button class="btn btn-outline-danger" type="button" title="حذف"><i class="bi bi-trash"></i></button>
       `;
-      const urlInput = wrap.querySelector('input'); const delBtn=wrap.querySelector('button');
-      const item = { value:'' };
+      const urlInput = wrap.querySelector('input');
+      const openBtn = wrap.querySelector('.btn-outline-secondary');
+      const delBtn = wrap.querySelector('.btn-outline-danger');
+      const titleEl = wrap.querySelector('.file-title');
+
+      const item = { value: existing?.value||'', title: existing?.title||'', section };
+      arrRef.push(item);
+
+      function computeDefaultTitle(){
+        const idx = Array.from(listEl.children).indexOf(wrap) + 1;
+        if(section==='inv') return `دعوة محضر ${idx}`;
+        if(section==='min') return `محضر ${idx}`;
+        if(section==='cov') return `كتاب تغطية ${idx}`;
+        return `ملف ${idx}`;
+      }
+      function refreshTitle(){
+        titleEl.textContent = (item.title && item.title.trim()) ? item.title.trim() : computeDefaultTitle();
+      }
+      function isValidUrl(u){ try{ new URL(u); return true; } catch{ return false; } }
+
+      urlInput.addEventListener('input',()=>{
+        const v=urlInput.value.trim();
+        item.value = isValidUrl(v) ? v : '';
+        urlInput.classList.toggle('is-invalid', !!v && !isValidUrl(v));
+      });
+      openBtn.addEventListener('click',()=>{ if(item.value) window.open(item.value,'_blank','noopener'); });
+      delBtn.addEventListener('click',()=>{ const i=arrRef.indexOf(item); if(i>=0) arrRef.splice(i,1); wrap.remove(); Array.from(listEl.children).forEach(()=>{}); });
+
+      // initial fill
+      if(item.value){ urlInput.value=item.value; }
+      refreshTitle();
+
+      listEl.appendChild(wrap);
+      return {wrap, urlInput, item, refreshTitle};
+    };
       arrRef.push(item);
       urlInput.addEventListener('input',()=>{ const v=urlInput.value.trim(); item.value = isValidUrl(v) ? v : ''; urlInput.classList.toggle('is-invalid', !!v && !isValidUrl(v)); });
       delBtn.addEventListener('click',()=>{ const i=arrRef.indexOf(item); if(i>=0) arrRef.splice(i,1); wrap.remove(); });
@@ -390,12 +454,12 @@
 
     function openEditModal(it, viewOnly=false){
       CURRENT_EDIT = JSON.parse(JSON.stringify(it||{}));
-      const fd=document.getElementById('m_fd'); fd.value = it?.formation_decision?.value||'';
-      const wp=document.getElementById('m_wp'); wp.value = it?.work_plan?.value||'';
-      document.getElementById('m_r1').value = it?.report1?.value||'';
-      document.getElementById('m_r2').value = it?.report2?.value||'';
-      document.getElementById('m_r3').value = it?.report3?.value||'';
-      document.getElementById('m_sa').value = it?.statistical_analysis?.value||'';
+      const fd=document.getElementById('m_fd'); fd.value = it?.formation_decision?.value||''; document.getElementById('m_fd_title').textContent = (it?.formation_decision?.title||'') || 'قرار التشكيل';
+      const wp=document.getElementById('m_wp'); wp.value = it?.work_plan?.value||''; document.getElementById('m_wp_title').textContent = (it?.work_plan?.title||'') || 'خطة العمل';
+      document.getElementById('m_r1').value = it?.report1?.value||''; document.getElementById('m_r1_title').textContent = (it?.report1?.title||'') || 'تقرير إنجاز 1';
+      document.getElementById('m_r2').value = it?.report2?.value||''; document.getElementById('m_r2_title').textContent = (it?.report2?.title||'') || 'تقرير إنجاز 2';
+      document.getElementById('m_r3').value = it?.report3?.value||''; document.getElementById('m_r3_title').textContent = (it?.report3?.title||'') || 'تقرير إنجاز 3';
+      document.getElementById('m_sa').value = it?.statistical_analysis?.value||''; document.getElementById('m_sa_title').textContent = (it?.statistical_analysis?.title||'') || 'التحليل الإحصائي';
 
       const invList=document.getElementById('m_listInv'); invList.innerHTML='';
       const minList=document.getElementById('m_listMin'); minList.innerHTML='';
@@ -403,14 +467,14 @@
 
       const invRef = []; const minRef = []; const covRef = [];
       // املأ القوائم الحالية
-      (Array.isArray(it?.invitations)?it.invitations:[]).forEach(x=>{ const row=rowFactory(invList,invRef); row.urlInput.value=x?.value||''; row.urlInput.dispatchEvent(new Event('input')); });
-      (Array.isArray(it?.minutes)?it.minutes:[]).forEach(x=>{ const row=rowFactory(minList,minRef); row.urlInput.value=x?.value||''; row.urlInput.dispatchEvent(new Event('input')); });
-      (Array.isArray(it?.coverage_letters)?it.coverage_letters:[]).forEach(x=>{ const row=rowFactory(covList,covRef); row.urlInput.value=x?.value||''; row.urlInput.dispatchEvent(new Event('input')); });
+      (Array.isArray(it?.invitations)?it.invitations:[]).forEach(x=>{ const row=rowFactory(invList,invRef,'inv',x); row.urlInput.dispatchEvent(new Event('input')); });
+      (Array.isArray(it?.minutes)?it.minutes:[]).forEach(x=>{ const row=rowFactory(minList,minRef,'min',x); row.urlInput.dispatchEvent(new Event('input')); });
+      (Array.isArray(it?.coverage_letters)?it.coverage_letters:[]).forEach(x=>{ const row=rowFactory(covList,covRef,'cov',x); row.urlInput.dispatchEvent(new Event('input')); });
 
       // أزرار الإضافة
-      document.getElementById('m_addInv').onclick=()=>rowFactory(invList,invRef);
-      document.getElementById('m_addMin').onclick=()=>rowFactory(minList,minRef);
-      document.getElementById('m_addCov').onclick=()=>rowFactory(covList,covRef);
+      document.getElementById('m_addInv').onclick=()=>rowFactory(invList,invRef,'inv');
+      document.getElementById('m_addMin').onclick=()=>rowFactory(minList,minRef,'min');
+      document.getElementById('m_addCov').onclick=()=>rowFactory(covList,covRef,'cov');
 
       // وضع العرض فقط
       [...document.querySelectorAll('#editModal input, #editModal button.btn-outline-danger')].forEach(el=>{ el.disabled = viewOnly; });
@@ -432,10 +496,17 @@
         const r2 = urlOrNull(document.getElementById('m_r2').value.trim());
         const r3 = urlOrNull(document.getElementById('m_r3').value.trim());
         const sa = urlOrNull(document.getElementById('m_sa').value.trim());
+        // عناوين افتراضية للحقول المفردة
+        if(fd) fd.title = 'قرار التشكيل';
+        if(wp) wp.title = 'خطة العمل';
+        if(r1) r1.title = 'تقرير إنجاز 1';
+        if(r2) r2.title = 'تقرير إنجاز 2';
+        if(r3) r3.title = 'تقرير إنجاز 3';
+        if(sa) sa.title = 'التحليل الإحصائي';
 
-        const inv = (CURRENT_EDIT.__lists.invRef||[]).filter(x=>x.value).map(v=>({type:'url', value:v.value, title:''}));
-        const min = (CURRENT_EDIT.__lists.minRef||[]).filter(x=>x.value).map(v=>({type:'url', value:v.value, title:''}));
-        const cov = (CURRENT_EDIT.__lists.covRef||[]).filter(x=>x.value).map(v=>({type:'url', value:v.value, title:''}));
+        const inv = (CURRENT_EDIT.__lists.invRef||[]).filter(x=>x.value).map((v,i)=>({type:'url', value:v.value, title: (v.title && v.title.trim()) ? v.title.trim() : `دعوة محضر ${i+1}`}));
+        const min = (CURRENT_EDIT.__lists.minRef||[]).filter(x=>x.value).map((v,i)=>({type:'url', value:v.value, title: (v.title && v.title.trim()) ? v.title.trim() : `محضر ${i+1}`}));
+        const cov = (CURRENT_EDIT.__lists.covRef||[]).filter(x=>x.value).map((v,i)=>({type:'url', value:v.value, title: (v.title && v.title.trim()) ? v.title.trim() : `كتاب تغطية ${i+1}`}));
 
         const payload = { formation_decision: fd, work_plan: wp, report1: r1, report2: r2, report3: r3, statistical_analysis: sa, invitations: inv, minutes: min, coverage_letters: cov };
 
@@ -455,6 +526,15 @@
     }
 
     document.getElementById('saveModalBtn').addEventListener('click', saveEdit);
+
+    // أزرار فتح الروابط للحقول المفردة
+    document.addEventListener('click', (e)=>{
+      const btn = e.target.closest('[data-open]');
+      if(!btn) return;
+      const targetId = btn.getAttribute('data-open');
+      const el = document.getElementById(targetId);
+      if(el && el.value && /^https?:\/\//.test(el.value)) window.open(el.value,'_blank','noopener');
+    });
 
     /* ====== بدء التشغيل ====== */
     (async function init(){
