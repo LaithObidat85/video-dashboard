@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <title>إدارة تعيينات اللجان — نظام اللجان</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <link rel="icon" type="image/png" href="https://www.dropbox.com/scl/fi/f283e4rvv5cf9x12a1cic/my-website-logo.png?rlkey=yia776im7klypy27af32m0scy&e=1&dl=1">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.rtl.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
+  <style>
+    body{background:#f8f9fa;font-family:'Segoe UI',sans-serif}
+    .container{margin-top:30px;max-width:1100px}
+    .user-chip{display:inline-flex;align-items:center;gap:.25rem;font-size:1rem!important;padding:.375rem .75rem!important;line-height:1.5!important;border-radius:.375rem;font-weight:700!important}
+    .user-chip.badge #userRole{font-weight:500!important}
+    .table thead th{position:sticky;top:0;background:#fff;z-index:5}
+    .badge-role{font-size:.85rem}
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Header -->
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
+      <h4 class="mb-0">إدارة تعيينات اللجان</h4>
+      <div class="d-flex align-items-center gap-2">
+        <span id="userInfo" class="user-chip badge bg-light text-dark border">
+          <i class="bi bi-person"></i>
+          <span id="userUsername">—</span>
+          <span class="mx-1">—</span>
+          <span id="userFullName">—</span>
+          <span class="ms-2 badge bg-secondary" id="userRole">—</span>
+        </span>
+        <a class="btn btn-outline-primary" id="homeBtn" href="/committees-home.html"><i class="bi bi-grid"></i> لوحة التحكم</a>
+        <button id="logoutBtn" class="btn btn-danger"><i class="bi bi-box-arrow-right"></i> خروج</button>
+      </div>
+    </div>
+
+    <!-- Actions -->
+    <div class="card mb-3">
+      <div class="card-body d-flex flex-wrap gap-2">
+        <button id="addBtn" class="btn btn-success"><i class="bi bi-plus-circle"></i> إضافة تعيين</button>
+        <button id="refreshBtn" class="btn btn-outline-secondary"><i class="bi bi-arrow-clockwise"></i> تحديث</button>
+        <span class="ms-auto small text-muted">هذه الصفحة للمشرف فقط (admin)</span>
+      </div>
+    </div>
+
+    <!-- Table -->
+    <div class="card">
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table align-middle mb-0">
+            <thead>
+              <tr>
+                <th class="text-nowrap">المستخدم</th>
+                <th>البريد</th>
+                <th class="text-nowrap">الدور</th>
+                <th>الكلية</th>
+                <th>اللجنة</th>
+                <th class="text-center">إجراءات</th>
+              </tr>
+            </thead>
+            <tbody id="rows"><tr><td colspan="6" class="text-center py-4">—</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Toasts -->
+    <div class="toast-container position-fixed top-0 start-50 translate-middle-x p-3" style="z-index:2000">
+      <div id="toastSuccess" class="toast align-items-center text-bg-success border-0 mb-2" role="alert">
+        <div class="d-flex"><div class="toast-body">✅ تمت العملية بنجاح</div><button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button></div>
+      </div>
+      <div id="toastError" class="toast align-items-center text-bg-danger border-0 mb-2" role="alert">
+        <div class="d-flex"><div class="toast-body">❌ حدث خطأ</div><button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: add -->
+  <div class="modal fade" id="addModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">إضافة تعيين</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div class="vstack gap-3">
+            <div>
+              <label class="form-label">المستخدم (subuser-member)</label>
+              <select id="userSelect" class="form-select"></select>
+            </div>
+            <div>
+              <label class="form-label">الكلية</label>
+              <select id="collegeSelect" class="form-select"><option value="">— اختر —</option></select>
+            </div>
+            <div>
+              <label class="form-label">اسم اللجنة</label>
+              <select id="committeeSelect" class="form-select"><option value="">— اختر —</option></select>
+            </div>
+            <div>
+              <label class="form-label">ملاحظة (اختياري)</label>
+              <input id="noteInput" class="form-control" placeholder="اختياري">
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+          <button id="saveAddBtn" class="btn btn-success"><i class="bi bi-save"></i> حفظ</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    /* ====== بيئة موحدة ====== */
+    const RENDER_BASE='https://vdash-qkyv.onrender.com';
+    const host=location.hostname;
+    const isGithub=host.endsWith('github.io');
+    const isLocal=host==='localhost'||host==='127.0.0.1';
+    const API_BASE=isGithub?RENDER_BASE:(isLocal?'http://localhost:3000':'');
+    const go=(path)=>isGithub?(RENDER_BASE+path):path;
+
+    const toastSuccess=new bootstrap.Toast(document.getElementById('toastSuccess'));
+    const toastError  =new bootstrap.Toast(document.getElementById('toastError'));
+    const apiFetch=(path,opts={})=>fetch(`${API_BASE}${path}`,{credentials:'include',...opts});
+    document.getElementById('homeBtn').href=go('/committees-home.html');
+
+    /* ====== جلسة المستخدم ====== */
+    let CURRENT_USER=null;
+    async function ensureAuth(){
+      const r=await apiFetch('/auth/committees/me'); const j=await r.json();
+      if(!j?.authenticated){ location.href=go('/committees-login.html?next='+encodeURIComponent('/committees-assignments.html')); throw 0; }
+      CURRENT_USER=j.user;
+      document.getElementById('userUsername').textContent=j.user.username || (j.user.email? j.user.email.split('@')[0]:'—');
+      document.getElementById('userFullName').textContent=j.user.name||'—';
+      document.getElementById('userRole').textContent=j.user.role||'—';
+      if(j.user.role!=='admin'){ alert('هذه الصفحة للمشرف فقط'); location.href=go('/committees-home.html'); throw 0; }
+    }
+    document.getElementById('logoutBtn').addEventListener('click',async()=>{
+      try{
+        const r=await apiFetch('/auth/committees/logout',{method:'POST',headers:{'Content-Type':'application/json'}});
+        if(r.ok){ toastSuccess.show(); setTimeout(()=>location.href=go('/committees-login.html'),700); } else toastError.show();
+      }catch{ toastError.show(); }
+    });
+
+    /* ====== تحميل البيانات المساعدة ====== */
+    async function loadSubusers(){
+      const r = await apiFetch('/api/users?role=subuser-member&limit=200');
+      const j = await r.json();
+      const users = j?.data || [];
+      const sel = document.getElementById('userSelect'); sel.innerHTML='';
+      users.forEach(u=>{
+        const o=document.createElement('option'); o.value=u._id||u.id; o.textContent=`${u.name} (${u.username})`;
+        sel.appendChild(o);
+      });
+    }
+    async function loadColleges(){
+      const r=await apiFetch('/api/colleges'); const arr=await r.json().catch(()=>[]);
+      const sel=document.getElementById('collegeSelect'); sel.innerHTML='<option value="">— اختر —</option>';
+      (arr||[]).forEach(c=>{ const n=(typeof c==='string'?c:(c.name||c.college||'')); if(!n) return; const o=document.createElement('option'); o.value=n; o.textContent=n; sel.appendChild(o); });
+    }
+    async function loadCommittees(){
+      // نستخدم endpoint الأسماء
+      const r=await apiFetch('/api/committee-names?q='); const arr=await r.json().catch(()=>[]);
+      const sel=document.getElementById('committeeSelect'); sel.innerHTML='<option value="">— اختر —</option>';
+      (arr||[]).forEach(c=>{ const n=(typeof c==='string'?c:(c.name||c.committee_name||'')); if(!n) return; const o=document.createElement('option'); o.value=n; o.textContent=n; sel.appendChild(o); });
+    }
+
+    /* ====== جدول التعيينات ====== */
+    async function loadAssignments(){
+      const tbody=document.getElementById('rows'); tbody.innerHTML='<tr><td colspan="6" class="text-center py-4">جارِ التحميل…</td></tr>';
+      try{
+        const r=await apiFetch('/api/committee-assignments');
+        const arr=await r.json();
+        tbody.innerHTML='';
+        if(!Array.isArray(arr) || !arr.length){ tbody.innerHTML='<tr><td colspan="6" class="text-center py-4">لا توجد تعيينات</td></tr>'; return; }
+        arr.forEach(a=>{
+          const tr=document.createElement('tr');
+          tr.innerHTML=`
+            <td class="text-nowrap">${a.userId?.name||'—'} <span class="text-muted">(${a.userId?.username||'—'})</span></td>
+            <td>${a.userId?.email||'—'}</td>
+            <td><span class="badge text-bg-secondary badge-role">${a.userId?.role||'—'}</span></td>
+            <td>${a.college}</td>
+            <td>${a.committee_name}</td>
+            <td class="text-center">
+              <button class="btn btn-sm btn-outline-danger" data-del="${a._id}"><i class="bi bi-trash"></i></button>
+            </td>
+          `;
+          tbody.appendChild(tr);
+        });
+      }catch{ document.getElementById('rows').innerHTML='<tr><td colspan="6" class="text-center py-4 text-danger">تعذر الجلب</td></tr>'; }
+    }
+
+    /* ====== إضافة تعيين ====== */
+    const addModal = new bootstrap.Modal('#addModal');
+    document.getElementById('addBtn').addEventListener('click', async ()=>{
+      await Promise.all([loadSubusers(), loadColleges(), loadCommittees()]);
+      addModal.show();
+    });
+    document.getElementById('saveAddBtn').addEventListener('click', async ()=>{
+      const userId=document.getElementById('userSelect').value.trim();
+      const college=document.getElementById('collegeSelect').value.trim();
+      const committee_name=document.getElementById('committeeSelect').value.trim();
+      const note=document.getElementById('noteInput').value.trim();
+      if(!userId||!college||!committee_name){ alert('الرجاء اختيار المستخدم والكلية واللجنة'); return; }
+      try{
+        const r=await apiFetch('/api/committee-assignments',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({ userId, college, committee_name, note })});
+        if(!r.ok){
+          const j=await r.json().catch(()=>({}));
+          alert('فشل الحفظ: '+(j.message||r.status)); return;
+        }
+        addModal.hide(); document.getElementById('noteInput').value='';
+        toastSuccess.show(); loadAssignments();
+      }catch{ toastError.show(); }
+    });
+
+    /* ====== حذف ====== */
+    document.addEventListener('click', async (e)=>{
+      const btn=e.target.closest('[data-del]');
+      if(!btn) return;
+      if(!confirm('حذف هذا التعيين؟')) return;
+      const id=btn.getAttribute('data-del');
+      try{
+        const r=await apiFetch(`/api/committee-assignments/${id}`,{method:'DELETE'});
+        if(!r.ok){ const j=await r.json().catch(()=>({})); alert('فشل الحذف: '+(j.message||r.status)); return; }
+        toastSuccess.show(); loadAssignments();
+      }catch{ toastError.show(); }
+    });
+
+    document.getElementById('refreshBtn').addEventListener('click', loadAssignments);
+
+    /* ====== بدء التشغيل ====== */
+    (async function init(){
+      try{
+        await ensureAuth();
+        await loadAssignments();
+      }catch{}
+    })();
+  </script>
+</body>
+</html>
