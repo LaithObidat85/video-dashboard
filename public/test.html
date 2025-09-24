@@ -250,6 +250,23 @@
     </div>
   </div>
 
+
+  <!-- ضيف هذا السطر قبل: <script src="https://accounts.google.com/gsi/client"...> -->
+<script>
+  window.initGis = function() {
+    gisTokenClient = google.accounts.oauth2.initTokenClient({
+      client_id: GOOGLE_CLIENT_ID,
+      scope: DRIVE_SCOPE,
+      callback: (resp) => {
+        console.log('GIS token response:', resp);
+        if (resp && resp.access_token) {
+          googleAccessToken = resp.access_token;
+          setGDriveState(true);
+        }
+      }
+    });
+  };
+</script>
   <!-- Google APIs (Picker + GIS) -->
   <script src="https://accounts.google.com/gsi/client" async defer onload="initGis()"></script>
   <script src="https://apis.google.com/js/api.js" async defer></script>
