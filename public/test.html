@@ -49,33 +49,54 @@
       </div>
     </div>
 
-    <!-- اختيار الكلية واللجنة + اتصال Google Drive -->
+    <!-- اختيار الكلية/اللجنة + إعدادات العام/الفصل + اتصال Drive -->
     <div class="card mb-3">
       <div class="card-body row g-3">
-        <div class="col-md-4">
+        <div class="col-md-3">
           <label class="form-label">الكلية <span class="required-asterisk">*</span></label>
           <select id="collegeSelect" class="form-select">
             <option value="">— اختر الكلية —</option>
           </select>
         </div>
-        <div class="col-md-4">
+        <div class="col-md-3">
           <label class="form-label">اسم اللجنة <span class="required-asterisk">*</span></label>
           <select id="committeeSelect" class="form-select">
             <option value="">— اختر اللجنة —</option>
           </select>
         </div>
-        <div class="col-md-4">
+
+        <!-- العام الجامعي (مربع نص) -->
+        <div class="col-md-3">
+          <label class="form-label">
+            العام الجامعي <span class="required-asterisk">*</span>
+          </label>
+          <input id="academicYearInput" type="text" class="form-control" placeholder="2024/2025 أو 2024-2025" />
+          <div class="form-text">صيغة مقبولة: 20xx/20yy أو 20xx-20yy (ويُفضّل أن يكون الفرق سنة واحدة).</div>
+        </div>
+
+        <!-- الفصل (قائمة منسدلة) -->
+        <div class="col-md-3">
+          <label class="form-label">
+            الفصل الدراسي <span class="required-asterisk">*</span>
+          </label>
+          <select id="termSelect" class="form-select">
+            <option value="">— اختر الفصل —</option>
+            <option value="الفصل الأول">الفصل الأول</option>
+            <option value="الفصل الثاني">الفصل الثاني</option>
+            <option value="الفصل الصيفي">الفصل الصيفي</option>
+          </select>
+        </div>
+
+        <div class="col-12">
           <label class="form-label">Google Drive</label>
           <div class="d-flex gap-2 gdrive-status">
             <button id="gdriveConnectBtn" class="btn btn-outline-success">
               <i class="bi bi-google"></i> اتصال Google Drive
             </button>
             <span id="gdriveState" class="badge text-bg-secondary">غير متصل</span>
-            <button id="gdriveDisconnectBtn" class="btn btn-outline-secondary btn-sm d-none">
-              فصل
-            </button>
+            <button id="gdriveDisconnectBtn" class="btn btn-outline-secondary btn-sm d-none">فصل</button>
           </div>
-          <div class="form-text">الاتصال يتم بحساب المستخدم الشخصي ويمنح صلاحية <code>drive.readonly</code> فقط (اختيار ملفات موجودة دون رفع).</div>
+          <div class="form-text">الاتصال يمنح صلاحية <code>drive.readonly</code> لاختيار ملفات موجودة دون رفع.</div>
         </div>
       </div>
     </div>
@@ -219,7 +240,9 @@
             <div class="card-body">
               <h6 class="mb-3">ملخص سريع</h6>
               <div class="small mb-2">الكلية: <b id="sumCollege">—</b></div>
-              <div class="small mb-3">اللجنة: <b id="sumCommittee">—</b></div>
+              <div class="small mb-2">اللجنة: <b id="sumCommittee">—</b></div>
+              <div class="small mb-2">العام الجامعي: <b id="sumAcademicYear">—</b></div>
+              <div class="small mb-3">الفصل: <b id="sumTerm">—</b></div>
               <ul class="list-unstyled small vstack gap-2">
                 <li>قرار التشكيل: <span id="sumFD" class="counter-badge">—</span></li>
                 <li>خطة العمل: <span id="sumWP" class="counter-badge">—</span></li>
@@ -232,7 +255,7 @@
                 <li>التحليل الإحصائي: <span id="sumSA" class="counter-badge">—</span></li>
               </ul>
               <hr>
-              <div class="small muted">سيتم ربط الحفظ بنهايات السيرفر لاحقًا.</div>
+              <div class="small muted">سيتم ربط الحفظ بنهايات السيرفر.</div>
             </div>
           </div>
         </div>
@@ -242,7 +265,7 @@
     <!-- Toasts -->
     <div class="toast-container">
       <div id="toastSuccess" class="toast align-items-center text-bg-success border-0 mb-2" role="alert">
-        <div class="d-flex"><div class="toast-body">✅ تم تجهيز البيانات للإرسال</div><button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button></div>
+        <div class="d-flex"><div class="toast-body">✅ تم الحفظ بنجاح</div><button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button></div>
       </div>
       <div id="toastError" class="toast align-items-center text-bg-danger border-0 mb-2" role="alert">
         <div class="d-flex"><div class="toast-body">❌ حدث خطأ</div><button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button></div>
@@ -250,29 +273,21 @@
     </div>
   </div>
 
-  <!-- ====== Google: ثوابت ومتغيّرات Global + initGis (مرّة واحدة) ====== -->
+  <!-- ====== Google: مفاتيح + GIS ====== -->
   <script>
-    // مفاتيح Google
     window.GOOGLE_CLIENT_ID = '656975767411-lu47r57vrfmhrplrd11rdgbm34cqofsn.apps.googleusercontent.com';
     window.GOOGLE_API_KEY   = 'AIzaSyAaUEq7_7nbhj7Ch-7X0OWKyREUK8bH_EY';
-
-    // نطاق القراءة فقط (اختيار ملفات موجودة)
     window.DRIVE_SCOPE = 'https://www.googleapis.com/auth/drive.readonly';
-    // إن أردت الرفع أيضًا: استبدل السطر أعلاه بهذه القيمة
-    // window.DRIVE_SCOPE = 'https://www.googleapis.com/auth/drive.file';
 
-    // حالة الجلسة مع Google
     window.googleAccessToken = null;
     window.gisTokenClient    = null;
 
-    // تُستدعى تلقائيًا بعد تحميل سكربت GSI (انظر onload بالأسفل)
     window.initGis = function () {
       if (!window.google || !google.accounts || !google.accounts.oauth2) return;
       window.gisTokenClient = google.accounts.oauth2.initTokenClient({
         client_id: window.GOOGLE_CLIENT_ID,
         scope: window.DRIVE_SCOPE,
         callback: (resp) => {
-          console.log('GIS token response:', resp);
           if (resp && resp.access_token) {
             window.googleAccessToken = resp.access_token;
             if (typeof window.setGDriveState === 'function') window.setGDriveState(true);
@@ -291,7 +306,7 @@
 
   <!-- ====== تطبيق الصفحة ====== -->
   <script>
-    /* ====== بيئة موحّدة ====== */
+    /* ====== بيئة موحدة ====== */
     const RENDER_BASE='https://vdash-qkyv.onrender.com';
     const host=location.hostname;
     const isGithub=host.endsWith('github.io');
@@ -303,7 +318,7 @@
     const toastError  =new bootstrap.Toast(document.getElementById('toastError'));
     const apiFetch=(path,opts={})=>fetch(`${API_BASE}${path}`,{credentials:'include',...opts});
 
-    /* ====== صلاحيات/جلسة نظامك ====== */
+    /* ====== جلسة المستخدم ====== */
     let CURRENT_USER=null;
     function renderUser(u){
       const username=u?.username||(u?.email?u.email.split('@')[0]:'—');
@@ -312,26 +327,23 @@
       document.getElementById('userRole').textContent=u?.role||'—';
     }
     async function ensureAuth(){
-      try{
-        const r=await apiFetch('/auth/committees/me');
-        const j=await r.json();
-        if(!j?.authenticated){
-          location.href=go('/committees-login.html?next='+encodeURIComponent('/committees-files-add.html'));throw 0;
-        }
-        if(j.user?.isActive===false){
-          alert('🚫 حسابك معطّل. الرجاء التواصل مع المشرف.');
-          location.href=go('/committees-home.html');throw 0;
-        }
-        CURRENT_USER=j.user;renderUser(j.user);
-      }catch{throw 0;}
+      const r=await apiFetch('/auth/committees/me');
+      const j=await r.json();
+      if(!j?.authenticated){
+        location.href=go('/committees-login.html?next='+encodeURIComponent('/committees-files-add.html'));throw 0;
+      }
+      if(j.user?.isActive===false){
+        alert('🚫 حسابك معطّل.'); location.href=go('/committees-home.html'); throw 0;
+      }
+      CURRENT_USER=j.user; renderUser(j.user);
     }
     document.getElementById('homeBtn').href=go('/committees-home.html');
     document.getElementById('logoutBtn').addEventListener('click',async()=>{
       try{
         const r=await apiFetch('/auth/committees/logout',{method:'POST',headers:{'Content-Type':'application/json'}});
-        if(r.ok){toastSuccess.show();setTimeout(()=>location.href=go('/committees-login.html'),700)}
-        else{toastError.show()}
-      }catch{toastError.show()}
+        if(r.ok){ toastSuccess.show(); setTimeout(()=>location.href=go('/committees-login.html'),700); }
+        else toastError.show();
+      }catch{ toastError.show(); }
     });
     document.getElementById('backBtn').href=go('/committees-home.html');
 
@@ -350,16 +362,48 @@
       (committees||[]).forEach(c=>{const n=normalizeName(c);if(!n)return;const o=document.createElement('option');o.value=o.textContent=n;committeeSel.appendChild(o);});
     }
 
+    /* ====== تحميل إعدادات افتراضية للعام/الفصل ====== */
+    async function loadDefaultsFromSettings(){
+      try{
+        const r=await apiFetch('/api/settings');
+        const s=await r.json();
+        if (s?.academicYear) {
+          document.getElementById('academicYearInput').value=s.academicYear;
+          state.academicYear=s.academicYear.trim();
+        }
+        if (s?.term) {
+          document.getElementById('termSelect').value=s.term;
+          state.term=s.term;
+        }
+      }catch{}
+      refreshSummary();
+    }
+
     /* ====== الحالة العامة ====== */
     const state={
       college:'', committee_name:'',
+      academicYear:'', term:'',
       formation_decision:null, work_plan:null,
       invitations:[], minutes:[], coverage_letters:[],
       report1:null, report2:null, report3:null, statistical_analysis:null
     };
+
+    /* ====== تحقق العام الجامعي (regex + فرق سنة) ====== */
+    const yearRx = /^(20\d{2})[\/-](20\d{2})$/;
+    function validateAcademicYear(s){
+      const m = String(s||'').trim().match(yearRx);
+      if(!m) return { ok:false, msg:'صيغة غير صحيحة' };
+      const y1 = parseInt(m[1],10), y2 = parseInt(m[2],10);
+      if (y2 - y1 !== 1) return { ok:false, msg:'يجب أن يكون الفرق سنة واحدة' };
+      return { ok:true, msg:'' };
+    }
+
     function refreshSummary(){
       document.getElementById('sumCollege').textContent=state.college||'—';
       document.getElementById('sumCommittee').textContent=state.committee_name||'—';
+      document.getElementById('sumAcademicYear').textContent=state.academicYear||'—';
+      document.getElementById('sumTerm').textContent=state.term||'—';
+
       document.getElementById('sumFD').textContent=state.formation_decision? 'رابط' : '—';
       document.getElementById('sumWP').textContent=state.work_plan? 'رابط' : '—';
       document.getElementById('sumInv').textContent=state.invitations.length;
@@ -375,13 +419,25 @@
       toggleActions();
     }
     function toggleActions(){
-      const disabled = !(state.college && state.committee_name);
+      const disabled = !(state.college && state.committee_name && state.academicYear && state.term);
       document.getElementById('saveBtn').classList.toggle('disabled-cover',disabled);
     }
+
+    /* ربط تغييرات رأس الصفحة */
     document.getElementById('collegeSelect').addEventListener('change',e=>{state.college=e.target.value;refreshSummary();});
     document.getElementById('committeeSelect').addEventListener('change',e=>{state.committee_name=e.target.value;refreshSummary();});
+    document.getElementById('termSelect').addEventListener('change',e=>{state.term=e.target.value;refreshSummary();});
+    const ayInput = document.getElementById('academicYearInput');
+    ayInput.addEventListener('input',()=>{
+      const v = ayInput.value.trim();
+      const {ok} = validateAcademicYear(v);
+      if (!v){ ayInput.classList.remove('is-invalid'); state.academicYear=''; refreshSummary(); return; }
+      if (ok){ ayInput.classList.remove('is-invalid'); state.academicYear=v; }
+      else   { ayInput.classList.add('is-invalid'); state.academicYear=''; }
+      refreshSummary();
+    });
 
-    /* ====== التحقق من الروابط ====== */
+    /* ====== تحقق الروابط ====== */
     function isValidUrl(u){ try{ new URL(u); return true; } catch{ return false; } }
     function wireSingleUrl(inputId, setter){
       const el=document.getElementById(inputId);
@@ -400,7 +456,7 @@
     wireSingleUrl('r3Url', (x)=>state.report3=x);
     wireSingleUrl('saUrl', (x)=>state.statistical_analysis=x);
 
-    /* ====== Google Drive: GIS + Picker (اختيار فقط) ====== */
+    /* ====== Google Drive: GIS + Picker ====== */
     let pickerApiLoaded=false;
     function setGDriveState(connected, emailText=''){
       const badge=document.getElementById('gdriveState');
@@ -416,24 +472,21 @@
       }
       document.querySelectorAll('[data-pick]').forEach(b=>{ b.disabled = !connected; });
     }
-
     function loadPickerApi(){
       return new Promise(res=>{
         if(pickerApiLoaded) return res();
         gapi.load('picker', ()=>{ pickerApiLoaded=true; res(); });
       });
     }
-
     async function ensureDriveToken(){
       if (window.googleAccessToken) return true;
       if (!window.gisTokenClient) window.initGis();
       return new Promise(resolve=>{
         window.gisTokenClient.requestAccessToken({ prompt: 'consent' });
-        const wait = setInterval(()=>{ if(window.googleAccessToken){ clearInterval(wait); resolve(true); } }, 200);
-        setTimeout(()=>{ clearInterval(wait); resolve(!!window.googleAccessToken); }, 10000);
+        const t=setInterval(()=>{ if(window.googleAccessToken){ clearInterval(t); resolve(true); } },200);
+        setTimeout(()=>{ clearInterval(t); resolve(!!window.googleAccessToken); },10000);
       });
     }
-
     async function fetchWebViewLink(fileId){
       const r = await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}?fields=webViewLink`, {
         headers: { Authorization: 'Bearer ' + window.googleAccessToken }
@@ -441,63 +494,46 @@
       const j = await r.json();
       return j.webViewLink || `https://drive.google.com/file/d/${fileId}/view`;
     }
-
     async function openDrivePicker(onPicked){
       const ok = await ensureDriveToken();
       if(!ok){ alert('تعذر الاتصال بـ Google Drive'); return; }
       await loadPickerApi();
-
-      const viewDocs = new google.picker.DocsView()
-        .setIncludeFolders(true)
-        .setSelectFolderEnabled(false);
-
+      const viewDocs = new google.picker.DocsView().setIncludeFolders(true).setSelectFolderEnabled(false);
       const picker = new google.picker.PickerBuilder()
         .setOAuthToken(window.googleAccessToken)
         .setDeveloperKey(window.GOOGLE_API_KEY)
         .addView(viewDocs)
-        // للسماح بالرفع أيضًا (يتطلّب drive.file):
-        // .addView(new google.picker.DocsUploadView())
         .setOrigin(window.location.origin)
         .setLocale('ar')
-        .setSize(880, 520)
+        .setSize(880,520)
         .setCallback(async (data)=>{
           if(data.action === google.picker.Action.PICKED && data.docs && data.docs.length){
             const file = data.docs[0];
-            const fileId = file.id;
             try{
-              const link = await fetchWebViewLink(fileId);
+              const link = await fetchWebViewLink(file.id);
               onPicked(link, file);
             }catch(e){
-              console.error(e);
-              alert('تعذر جلب رابط العرض للملف');
+              console.error(e); alert('تعذر جلب رابط العرض للملف');
             }
           }
-        })
-        .build();
+        }).build();
       picker.setVisible(true);
     }
-
     document.getElementById('gdriveConnectBtn').addEventListener('click', async ()=>{
-      const ok = await ensureDriveToken();
-      setGDriveState(ok);
+      const ok = await ensureDriveToken(); setGDriveState(ok);
     });
     document.getElementById('gdriveDisconnectBtn').addEventListener('click', ()=>{
-      window.googleAccessToken = null;
-      setGDriveState(false);
+      window.googleAccessToken = null; setGDriveState(false);
     });
-
     document.querySelectorAll('[data-pick]').forEach(btn=>{
       btn.addEventListener('click', ()=>{
         const targetId = btn.getAttribute('data-pick');
         const inputEl = document.getElementById(targetId);
-        openDrivePicker((link)=>{
-          inputEl.value = link;
-          inputEl.dispatchEvent(new Event('input'));
-        });
+        openDrivePicker((link)=>{ inputEl.value = link; inputEl.dispatchEvent(new Event('input')); });
       });
     });
 
-    /* ====== القوائم المتعددة (روابط فقط) + زر Drive لكل صف ====== */
+    /* ====== القوائم المتعددة ====== */
     function addMultiUrlRow(listEl, arrRef){
       const row=document.createElement('div');
       row.className='list-row';
@@ -509,8 +545,8 @@
             <input type="url" class="form-control url-input" placeholder="https://drive.google.com/...">
             <button class="btn btn-outline-primary btn-drive-row" type="button"><i class="bi bi-folder2-open"></i></button>
           </div>
-          <div class="form-text">يمكنك أيضًا كتابة عنوان مختصر في الحقل التالي (اختياري).</div>
-          <input type="text" class="form-control form-control-sm mt-1 title-input" placeholder="عنوان اختياري (مثال: دعوة اجتماع 1)">
+          <div class="form-text">اكتب عنوانًا اختياريًا في الحقل التالي.</div>
+          <input type="text" class="form-control form-control-sm mt-1 title-input" placeholder="عنوان اختياري">
         </div>
         <div class="actions ms-2">
           <button class="btn btn-outline-danger" type="button"><i class="bi bi-trash"></i></button>
@@ -544,17 +580,13 @@
       });
 
       driveBtn.addEventListener('click', ()=>{
-        openDrivePicker((link)=>{
-          urlInput.value = link;
-          urlInput.dispatchEvent(new Event('input'));
-        });
+        openDrivePicker((link)=>{ urlInput.value = link; urlInput.dispatchEvent(new Event('input')); });
       });
 
       listEl.appendChild(row);
       Array.from(listEl.children).forEach(refreshIndex);
       refreshSummary();
     }
-
     document.getElementById('addInvitationBtn').addEventListener('click',()=>addMultiUrlRow(document.getElementById('invitationsList'), state.invitations));
     document.getElementById('addMinuteBtn').addEventListener('click',()=>addMultiUrlRow(document.getElementById('minutesList'), state.minutes));
     document.getElementById('addCoverageBtn').addEventListener('click',()=>addMultiUrlRow(document.getElementById('coverageList'), state.coverage_letters));
@@ -564,6 +596,8 @@
       return {
         college: state.college,
         committee_name: state.committee_name,
+        academicYear: state.academicYear,
+        term: state.term,
         formation_decision: state.formation_decision,
         work_plan: state.work_plan,
         invitations: state.invitations.filter(x=>x.value).map(x=>({ type:'url', value:x.value, title:x.title||'' })),
@@ -574,23 +608,42 @@
       };
     }
 
-    document.getElementById('saveBtn').addEventListener('click',async()=>{
+    document.getElementById('saveBtn').addEventListener('click', async ()=>{
       try{
         if(!state.college || !state.committee_name){
           alert('الرجاء اختيار الكلية واسم اللجنة'); return;
         }
+        if(!state.academicYear){
+          alert('الرجاء إدخال العام الجامعي'); return;
+        }
+        const chk = validateAcademicYear(state.academicYear);
+        if(!chk.ok){ ayInput.classList.add('is-invalid'); alert('العام الجامعي غير صحيح: '+chk.msg); return; }
+
+        if(!state.term){
+          alert('الرجاء اختيار الفصل الدراسي'); return;
+        }
+
         const singles=['formation_decision','work_plan','report1','report2','report3','statistical_analysis'];
         for(const k of singles){
-          const v=state[k]; if(v && (!v.value || !isValidUrl(v.value))){ alert('هناك رابط غير صالح في: '+k); return; }
+          const v=state[k];
+          if(v && (!v.value || !isValidUrl(v.value))){
+            alert('هناك رابط غير صالح في: '+k); return;
+          }
         }
+
         const payload=buildPayload();
-        console.log('Prepared payload (preview only):', payload);
-       await fetch(`${API_BASE}/api/committees-files`, {
-  method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
-  credentials: 'include',
-  body: JSON.stringify(payload)
-});
+
+        const r = await fetch(`${API_BASE}/api/committees-files`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify(payload)
+        });
+
+        if(!r.ok){
+          const j=await r.json().catch(()=>({}));
+          alert('فشل الحفظ: ' + (j.message || r.status)); return;
+        }
 
         toastSuccess.show();
       }catch(e){ console.error(e); toastError.show(); }
@@ -603,6 +656,7 @@
       try{
         await ensureAuth();
         await loadDatalists();
+        await loadDefaultsFromSettings(); // تعبئة العام/الفصل إن كانا محفوظين
         refreshSummary();
         setGDriveState(false);
       }catch{}
