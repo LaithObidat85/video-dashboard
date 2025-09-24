@@ -273,7 +273,7 @@
     const GOOGLE_CLIENT_ID = '656975767411-lu47r57vrfmhrplrd11rdgbm34cqofsn.apps.googleusercontent.com';
     const GOOGLE_API_KEY   = 'AIzaSyAaUEq7_7nbhj7Ch-7X0OWKyREUK8bH_EY';
     // ▼ تم التبديل إلى قراءة فقط
-    const DRIVE_SCOPE      = 'https://www.googleapis.com/auth/drive.readonly';
+    const DRIVE_SCOPE = 'https://www.googleapis.com/auth/drive.file';
     let googleAccessToken  = null;
 
     /* ====== صلاحيات/جلسة نظامك ====== */
@@ -439,10 +439,12 @@
 
       // لا يوجد DocsUploadView في وضع readonly (اختيار فقط)
 
+      const uploadView = new google.picker.DocsUploadView();
       const picker = new google.picker.PickerBuilder()
         .setOAuthToken(googleAccessToken)
         .setDeveloperKey(GOOGLE_API_KEY)
         .addView(viewDocs)
+        .addView(uploadView)   // رجّع الرفع
         .setLocale('ar')
         .setSize(880, 520)
         .setCallback(async (data)=>{
