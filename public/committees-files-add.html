@@ -27,6 +27,10 @@
     .gdrive-status .badge{font-size:.85rem}
     .hint-restricted{display:flex;align-items:center;gap:.5rem}
     .small-badge{font-size:.8rem}
+
+    /* تفعيل أيقونة الرابط دون تغيير شكلها */
+    .input-group-text.link-opener{cursor:default; opacity:.5; transition:opacity .15s}
+    .input-group-text.link-opener.active{cursor:pointer; opacity:1}
   </style>
 </head>
 <body>
@@ -161,7 +165,7 @@
               <div class="col-md-6">
                 <label class="form-label">رابط قرار التشكيل</label>
                 <div class="input-group">
-                  <span class="input-group-text"><i class="bi bi-link-45deg"></i></span>
+                  <span class="input-group-text link-opener" title="افتح الرابط"><i class="bi bi-link-45deg"></i></span>
                   <input id="fdUrl" type="url" class="form-control" placeholder="https://drive.google.com/...">
                   <button class="btn btn-outline-primary" data-pick="fdUrl"><i class="bi bi-folder2-open"></i> من Drive</button>
                 </div>
@@ -170,7 +174,7 @@
               <div class="col-md-6">
                 <label class="form-label">رابط خطة العمل</label>
                 <div class="input-group">
-                  <span class="input-group-text"><i class="bi bi-link-45deg"></i></span>
+                  <span class="input-group-text link-opener" title="افتح الرابط"><i class="bi bi-link-45deg"></i></span>
                   <input id="wpUrl" type="url" class="form-control" placeholder="https://drive.google.com/...">
                   <button class="btn btn-outline-primary" data-pick="wpUrl"><i class="bi bi-folder2-open"></i> من Drive</button>
                 </div>
@@ -211,7 +215,7 @@
               <div class="col-md-6">
                 <label class="form-label">رابط تقرير إنجاز 1</label>
                 <div class="input-group">
-                  <span class="input-group-text"><i class="bi bi-link-45deg"></i></span>
+                  <span class="input-group-text link-opener" title="افتح الرابط"><i class="bi bi-link-45deg"></i></span>
                   <input id="r1Url" type="url" class="form-control" placeholder="https://drive.google.com/...">
                   <button class="btn btn-outline-primary" data-pick="r1Url"><i class="bi bi-folder2-open"></i> من Drive</button>
                 </div>
@@ -219,7 +223,7 @@
               <div class="col-md-6">
                 <label class="form-label">رابط تقرير إنجاز 2</label>
                 <div class="input-group">
-                  <span class="input-group-text"><i class="bi bi-link-45deg"></i></span>
+                  <span class="input-group-text link-opener" title="افتح الرابط"><i class="bi bi-link-45deg"></i></span>
                   <input id="r2Url" type="url" class="form-control" placeholder="https://drive.google.com/...">
                   <button class="btn btn-outline-primary" data-pick="r2Url"><i class="bi bi-folder2-open"></i> من Drive</button>
                 </div>
@@ -227,7 +231,7 @@
               <div class="col-md-6">
                 <label class="form-label">رابط تقرير إنجاز 3</label>
                 <div class="input-group">
-                  <span class="input-group-text"><i class="bi bi-link-45deg"></i></span>
+                  <span class="input-group-text link-opener" title="افتح الرابط"><i class="bi bi-link-45deg"></i></span>
                   <input id="r3Url" type="url" class="form-control" placeholder="https://drive.google.com/...">
                   <button class="btn btn-outline-primary" data-pick="r3Url"><i class="bi bi-folder2-open"></i> من Drive</button>
                 </div>
@@ -235,7 +239,7 @@
               <div class="col-md-6">
                 <label class="form-label">رابط التحليل الإحصائي</label>
                 <div class="input-group">
-                  <span class="input-group-text"><i class="bi bi-link-45deg"></i></span>
+                  <span class="input-group-text link-opener" title="افتح الرابط"><i class="bi bi-link-45deg"></i></span>
                   <input id="saUrl" type="url" class="form-control" placeholder="https://drive.google.com/...">
                   <button class="btn btn-outline-primary" data-pick="saUrl"><i class="bi bi-folder2-open"></i> من Drive</button>
                 </div>
@@ -473,15 +477,45 @@
       refreshSummary();
     });
 
-    /* ====== تحقق الروابط ====== */
+    /* ====== فتح الروابط من أيقونة السلسلة (للحقول الفردية والقوائم) ====== */
     function isValidUrl(u){ try{ new URL(u); return true; } catch{ return false; } }
+
+    function activateLinkOpener(iconEl, getUrlFn){
+      // ضبط الحالة الأولية
+      function refreshIcon(){
+        const href = getUrlFn();
+        const ok = !!href && isValidUrl(href);
+        iconEl.classList.toggle('active', ok);
+        if (ok){
+          iconEl.setAttribute('title','افتح الرابط في تبويب جديد');
+        }else{
+          iconEl.setAttribute('title','لا يوجد رابط صالح');
+        }
+      }
+      refreshIcon();
+
+      // النقر لفتح الرابط
+      iconEl.addEventListener('click', ()=>{
+        const href = getUrlFn();
+        if (href && isValidUrl(href)){
+          window.open(href, '_blank', 'noopener');
+        }
+      });
+
+      return { refreshIcon };
+    }
+
     function wireSingleUrl(inputId, setter){
       const el=document.getElementById(inputId);
+      const iconEl = el.parentElement.querySelector('.input-group-text.link-opener');
+      const opener = activateLinkOpener(iconEl, ()=>el.value.trim());
+
       el.addEventListener('input',()=>{
         const v=el.value.trim();
-        if(!v){ setter(null); el.classList.remove('is-invalid'); refreshSummary(); return; }
+        if(!v){ setter(null); el.classList.remove('is-invalid'); opener.refreshIcon(); refreshSummary(); return; }
         if(isValidUrl(v)){ setter({type:'url', value:v}); el.classList.remove('is-invalid'); }
         else{ setter(null); el.classList.add('is-invalid'); }
+        opener.refreshIcon();
         refreshSummary();
       });
     }
@@ -508,6 +542,8 @@
       }
       document.querySelectorAll('[data-pick]').forEach(b=>{ b.disabled = !connected; });
     }
+    window.setGDriveState = setGDriveState;
+
     function loadPickerApi(){
       return new Promise(res=>{
         if(pickerApiLoaded) return res();
@@ -570,14 +606,15 @@
     });
 
     /* ====== القوائم المتعددة ====== */
-    function addMultiUrlRow(listEl, arrRef, initialItem = null){
+    function addMultiUrlRow(listEl, arrRef, initialItem = null, options = {}){
+      // options.baseTitle: نص الأساس للعناوين الافتراضية (دعوة/محضر/كتاب تغطية)
       const row=document.createElement('div');
       row.className='list-row';
       row.innerHTML=`
         <span class="index">#</span>
         <div class="flex-grow-1">
           <div class="input-group">
-            <span class="input-group-text"><i class="bi bi-link-45deg"></i></span>
+            <span class="input-group-text link-opener" title="افتح الرابط"><i class="bi bi-link-45deg"></i></span>
             <input type="url" class="form-control url-input" placeholder="https://drive.google.com/...">
             <button class="btn btn-outline-primary btn-drive-row" type="button"><i class="bi bi-folder2-open"></i></button>
           </div>
@@ -593,19 +630,32 @@
       const titleInput=row.querySelector('.title-input');
       const delBtn=row.querySelector('.actions .btn');
       const driveBtn=row.querySelector('.btn-drive-row');
+      const iconEl = row.querySelector('.input-group-text.link-opener');
 
       const item={ value:(initialItem&&initialItem.value)?initialItem.value:'', title:(initialItem&&initialItem.title)?initialItem.title:'' };
       arrRef.push(item);
 
       function refreshIndex(){ idxSpan.textContent = (Array.from(listEl.children).indexOf(row)+1); }
 
+      // العنوان الافتراضي المرقّم عند الإضافة اليدوية فقط (ليس عند التحميل من القاعدة)
+      if (!initialItem && options.baseTitle){
+        const nextIndex = (listEl.children.length || 0) + 1;
+        titleInput.value = `${options.baseTitle} ${nextIndex}`;
+        item.title = titleInput.value;
+      } else {
+        if(item.title){ titleInput.value=item.title; }
+      }
+
       if(item.value){ urlInput.value=item.value; }
-      if(item.title){ titleInput.value=item.title; }
+
+      // مفعّل فتح الرابط على الأيقونة
+      const opener = activateLinkOpener(iconEl, ()=>urlInput.value.trim());
 
       urlInput.addEventListener('input',()=>{
         const v=urlInput.value.trim();
         if(isValidUrl(v)){ item.value=v; urlInput.classList.remove('is-invalid'); }
         else{ item.value=''; if(v) urlInput.classList.add('is-invalid'); else urlInput.classList.remove('is-invalid'); }
+        opener.refreshIcon();
         refreshSummary();
       });
       titleInput.addEventListener('input',()=>{ item.title=titleInput.value.trim(); });
@@ -626,9 +676,9 @@
       Array.from(listEl.children).forEach(refreshIndex);
       refreshSummary();
     }
-    document.getElementById('addInvitationBtn').addEventListener('click',()=>addMultiUrlRow(document.getElementById('invitationsList'), state.invitations));
-    document.getElementById('addMinuteBtn').addEventListener('click',()=>addMultiUrlRow(document.getElementById('minutesList'), state.minutes));
-    document.getElementById('addCoverageBtn').addEventListener('click',()=>addMultiUrlRow(document.getElementById('coverageList'), state.coverage_letters));
+    document.getElementById('addInvitationBtn').addEventListener('click',()=>addMultiUrlRow(document.getElementById('invitationsList'), state.invitations, null, { baseTitle: 'دعوة' }));
+    document.getElementById('addMinuteBtn').addEventListener('click',()=>addMultiUrlRow(document.getElementById('minutesList'), state.minutes, null, { baseTitle: 'محضر' }));
+    document.getElementById('addCoverageBtn').addEventListener('click',()=>addMultiUrlRow(document.getElementById('coverageList'), state.coverage_letters, null, { baseTitle: 'كتاب تغطية' }));
 
     /* ====== Helpers للتهيئة من قاعدة البيانات ====== */
     function setSingleInputAndState(inputId, stateKey, urlObj){
@@ -637,15 +687,18 @@
         el.value = urlObj.value;
         el.classList.remove('is-invalid');
         state[stateKey] = { type:'url', value:urlObj.value, title: urlObj.title || '' };
+      } else {
+        el.value = '';
+        state[stateKey] = null;
       }
       el.dispatchEvent(new Event('input'));
     }
     function rebuildMultiList(listElId, arrRef, items){
       const listEl = document.getElementById(listElId);
+      listEl.innerHTML = '';
+      arrRef.length = 0;
       if (Array.isArray(items) && items.length){
-        listEl.innerHTML = '';
-        arrRef.length = 0;
-        items.forEach(it => addMultiUrlRow(listEl, arrRef, it));
+        items.forEach(it => addMultiUrlRow(listEl, arrRef, it)); // لا نمرّر baseTitle عند التهيئة من القاعدة
       }
       refreshSummary();
     }
@@ -660,7 +713,6 @@
       fetchError: null
     };
 
-    // جلب تعيينات المستخدم بمحاولات متعددة
     async function fetchMyAssignments(){
       try{
         const r = await apiFetch('/api/committee-assignments/mine');
@@ -828,6 +880,7 @@
       ['fdUrl','wpUrl','r1Url','r2Url','r3Url','saUrl'].forEach(id=>{
         const el=document.getElementById(id);
         el.value=''; el.classList.remove('is-invalid');
+        el.dispatchEvent(new Event('input')); // لتحديث حالة أيقونة الرابط
       });
       state.formation_decision=null;
       state.work_plan=null;
@@ -843,90 +896,79 @@
     }
 
     /* ====== التهيئة من قاعدة البيانات ====== */
-   // ... ابحث عن السطر الذي فيه:
-let prefillReqCounter = 0;
-// أضِف بعده هذا المتغير لتتبع المجموعة الحالية:
-let LAST_PREFILL_KEY = '';
+    let prefillReqCounter = 0;
+    let LAST_PREFILL_KEY = '';
 
-// ثم استبدل الدالة tryPrefillFromDB كلها بهذا الإصدار:
-async function tryPrefillFromDB(){
-  // نتحقق من اكتمال المفاتيح
-  const ayOk = state.academicYear && validateAcademicYear(state.academicYear).ok;
-  if(!(state.college && state.committee_name && state.term && ayOk)) return;
+    async function tryPrefillFromDB(){
+      const ayOk = state.academicYear && validateAcademicYear(state.academicYear).ok;
+      if(!(state.college && state.committee_name && state.term && ayOk)) return;
 
-  // منع القراءة خارج التعيينات عند تفعيل القفل
-  if (ASSIGNMENT_LOCK.enabled) {
-    const okCollege = ASSIGNMENT_LOCK.collegesSet.has(state.college);
-    const okComm    = ASSIGNMENT_LOCK.byCollege.get(state.college)?.has(state.committee_name);
-    if (!okCollege || !okComm) {
-      // إن كانت المجموعة غير مسموح بها، نفرّغ كل شيء حتى لا تبقى بيانات قديمة
-      clearAllFormInputs();
-      refreshSummary();
-      return;
+      if (ASSIGNMENT_LOCK.enabled) {
+        const okCollege = ASSIGNMENT_LOCK.collegesSet.has(state.college);
+        const okComm    = ASSIGNMENT_LOCK.byCollege.get(state.college)?.has(state.committee_name);
+        if (!okCollege || !okComm) {
+          clearAllFormInputs();
+          refreshSummary();
+          return;
+        }
+      }
+
+      const CURRENT_KEY = [state.college, state.committee_name, state.academicYear, state.term].join('||');
+
+      if (CURRENT_KEY !== LAST_PREFILL_KEY) {
+        clearAllFormInputs();
+        refreshSummary();
+        LAST_PREFILL_KEY = CURRENT_KEY;
+      }
+
+      const myReq = ++prefillReqCounter;
+      const badge = document.getElementById('gdriveState');
+      const oldBadgeText = badge.textContent;
+      badge.textContent = 'جارِ التحقق...';
+
+      try{
+        const params = new URLSearchParams({
+          college: state.college,
+          committee_name: state.committee_name,
+          academicYear: state.academicYear,
+          term: state.term,
+          limit: '1'
+        });
+        const r = await apiFetch(`/api/committees-files?${params.toString()}`, { method:'GET' });
+
+        if (myReq !== prefillReqCounter) return;
+
+        if (!r.ok) { badge.textContent = oldBadgeText; return; }
+
+        const j = await r.json().catch(()=>null);
+        const doc = j && Array.isArray(j.data) && j.data.length ? j.data[0] : null;
+
+        if (doc){
+          setSingleInputAndState('fdUrl', 'formation_decision', doc.formation_decision || null);
+          setSingleInputAndState('wpUrl', 'work_plan', doc.work_plan || null);
+          setSingleInputAndState('r1Url', 'report1', doc.report1 || null);
+          setSingleInputAndState('r2Url', 'report2', doc.report2 || null);
+          setSingleInputAndState('r3Url', 'report3', doc.report3 || null);
+          setSingleInputAndState('saUrl', 'statistical_analysis', doc.statistical_analysis || null);
+
+          rebuildMultiList('invitationsList', state.invitations, doc.invitations || []);
+          rebuildMultiList('minutesList', state.minutes, doc.minutes || []);
+          rebuildMultiList('coverageList', state.coverage_letters, doc.coverage_letters || []);
+
+          pushToast({type:'success', body:'تم تحميل بيانات اللجنة.'});
+        } else {
+          clearAllFormInputs();
+          pushToast({type:'info', body:'لا توجد بيانات لهذه المجموعة – تم تفريغ الحقول.'});
+        }
+
+      }catch(e){
+        console.error('Prefill error:', e);
+        pushToast({type:'error', body:'تعذر جلب بيانات اللجنة.'});
+      }finally{
+        badge.textContent = oldBadgeText;
+        refreshSummary();
+      }
     }
-  }
-
-  // مفتاح المجموعة الحالية (لمنع بقاء بيانات مجموعة سابقة)
-  const CURRENT_KEY = [state.college, state.committee_name, state.academicYear, state.term].join('||');
-
-  // إذا تغيّرت المجموعة عن السابقة، نفرّغ فوراً قبل محاولة الجلب
-  if (CURRENT_KEY !== LAST_PREFILL_KEY) {
-    clearAllFormInputs();
-    refreshSummary();
-    LAST_PREFILL_KEY = CURRENT_KEY;
-  }
-
-  const myReq = ++prefillReqCounter;
-  const badge = document.getElementById('gdriveState');
-  const oldBadgeText = badge.textContent;
-  badge.textContent = 'جارِ التحقق...';
-
-  try{
-    const params = new URLSearchParams({
-      college: state.college,
-      committee_name: state.committee_name,
-      academicYear: state.academicYear,
-      term: state.term,
-      limit: '1'
-    });
-    const r = await apiFetch(`/api/committees-files?${params.toString()}`, { method:'GET' });
-
-    // إن تبدلت المجموعة أثناء الجلب نتجاهل هذه النتيجة
-    if (myReq !== prefillReqCounter) return;
-
-    if (!r.ok) { badge.textContent = oldBadgeText; return; }
-
-    const j = await r.json().catch(()=>null);
-    const doc = j && Array.isArray(j.data) && j.data.length ? j.data[0] : null;
-
-    if (doc){
-      // تعبئة القيم
-      setSingleInputAndState('fdUrl', 'formation_decision', doc.formation_decision || null);
-      setSingleInputAndState('wpUrl', 'work_plan', doc.work_plan || null);
-      setSingleInputAndState('r1Url', 'report1', doc.report1 || null);
-      setSingleInputAndState('r2Url', 'report2', doc.report2 || null);
-      setSingleInputAndState('r3Url', 'report3', doc.report3 || null);
-      setSingleInputAndState('saUrl', 'statistical_analysis', doc.statistical_analysis || null);
-
-      rebuildMultiList('invitationsList', state.invitations, doc.invitations || []);
-      rebuildMultiList('minutesList', state.minutes, doc.minutes || []);
-      rebuildMultiList('coverageList', state.coverage_letters, doc.coverage_letters || []);
-
-      pushToast({type:'success', body:'تم تحميل بيانات اللجنة.'});
-    } else {
-      // ✅ هنا التعديل: دائماً نفرّغ عند عدم وجود بيانات (بغض النظر عن الدور)
-      clearAllFormInputs();
-      pushToast({type:'info', body:'لا توجد بيانات لهذه المجموعة – تم تفريغ الحقول.'});
-    }
-
-  }catch(e){
-    console.error('Prefill error:', e);
-    pushToast({type:'error', body:'تعذر جلب بيانات اللجنة.'});
-  }finally{
-    badge.textContent = oldBadgeText;
-    refreshSummary();
-  }
-}
 
     /* ====== Debounce ====== */
     let prefillTimer = null;
