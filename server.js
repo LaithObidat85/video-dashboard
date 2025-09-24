@@ -35,35 +35,47 @@ app.use(helmet({
     useDefaults: true,
     directives: {
       "default-src": ["'self'"],
+
+      // السكربتات: Bootstrap + Google (GIS + gapi + picker)
+      "script-src": [
+        "'self'", "'unsafe-inline'",
+        "https://cdn.jsdelivr.net",
+        "https://accounts.google.com",
+        "https://apis.google.com",
+        "https://ssl.gstatic.com"
+      ],
+
+      // الاتصالات الخارجة: واجهات OAuth/Drive/Picker + واجهتك على Render + GitHub Pages
       "connect-src": [
         "'self'",
         "https://vdash-qkyv.onrender.com",
         "https://laithobidat85.github.io",
         "https://www.googleapis.com",
+        "https://oauth2.googleapis.com",
         "https://accounts.google.com",
-        "https://apis.google.com",
-        "https://content.googleapis.com"
+        "https://picker.googleapis.com"
       ],
-      "script-src": [
-        "'self'",
-        "'unsafe-inline'",
-        "https://cdn.jsdelivr.net",
-        "https://accounts.google.com",
-        "https://apis.google.com"
-      ],
-      "style-src": ["'self'","'unsafe-inline'","https://cdn.jsdelivr.net","https://fonts.googleapis.com"],
-      "font-src": ["'self'","https://cdn.jsdelivr.net","https://fonts.gstatic.com","data:"],
-      "img-src": [
-        "'self'","data:","blob:",
-        "https://www.dropbox.com","https://dl.dropboxusercontent.com","https://*.dropboxusercontent.com","https://*.dropbox.com",
-        "https://lh3.googleusercontent.com","https://*.googleusercontent.com"
-      ],
+
+      // إذاrames (نوافذ الموافقة ونافذة Google Picker)
       "frame-src": [
         "'self'",
         "https://accounts.google.com",
-        "https://apis.google.com",
-        "https://drive.google.com"
+        "https://docs.google.com",
+        "https://drive.google.com",
+        "https://picker.googleapis.com"
       ],
+
+      // الأنماط والخطوط كما هي + gstatic
+      "style-src": ["'self'", "'unsafe-inline'", "https://cdn.jsdelivr.net", "https://fonts.googleapis.com"],
+      "font-src": ["'self'", "https://cdn.jsdelivr.net", "https://fonts.gstatic.com", "https://ssl.gstatic.com", "data:"],
+
+      // الصور: أضِف googleusercontent لصور الحساب
+      "img-src": [
+        "'self'", "data:", "blob:",
+        "https://www.dropbox.com", "https://dl.dropboxusercontent.com", "https://*.dropboxusercontent.com", "https://*.dropbox.com",
+        "https://lh3.googleusercontent.com", "https://ssl.gstatic.com"
+      ],
+
       "object-src": ["'none'"],
       "base-uri": ["'self'"],
       "form-action": ["'self'"],
@@ -71,7 +83,6 @@ app.use(helmet({
     }
   }
 }));
-
 
 
 
