@@ -585,8 +585,13 @@
         }
         const payload=buildPayload();
         console.log('Prepared payload (preview only):', payload);
-        // لاحقًا: POST إلى خادمك
-        // await fetch(`${API_BASE}/api/committees-files`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload), credentials:'include' });
+       await fetch(`${API_BASE}/api/committees-files`, {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  credentials: 'include',
+  body: JSON.stringify(payload)
+});
+
         toastSuccess.show();
       }catch(e){ console.error(e); toastError.show(); }
     });
