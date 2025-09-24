@@ -267,6 +267,37 @@
     });
   };
 </script>
+
+<script>
+  // ⬅️ ثوابت/متغيّرات يجب أن تكون Global قبل onload
+  window.GOOGLE_CLIENT_ID = '656975767411-lu47r57vrfmhrplrd11rdgbm34cqofsn.apps.googleusercontent.com';
+  window.GOOGLE_API_KEY   = 'AIzaSyAaUEq7_7nbhj7Ch-7X0OWKyREUK8bH_EY';
+  // اختر أحد النطاقين:
+  window.DRIVE_SCOPE      = 'https://www.googleapis.com/auth/drive.readonly'; // اختيار فقط
+  // window.DRIVE_SCOPE   = 'https://www.googleapis.com/auth/drive.file';     // اختيار + رفع
+
+  window.googleAccessToken = null;
+  window.gisTokenClient    = null;
+
+  // مهم: اجعلها على window ليشوفها onload
+  window.initGis = function () {
+    if (!window.google || !google.accounts || !google.accounts.oauth2) return;
+    window.gisTokenClient = google.accounts.oauth2.initTokenClient({
+      client_id: window.GOOGLE_CLIENT_ID,
+      scope: window.DRIVE_SCOPE,
+      callback: (resp) => {
+        console.log('GIS token response:', resp);
+        if (resp && resp.access_token) {
+          window.googleAccessToken = resp.access_token;
+          // إذا كانت setGDriveState معرّفة في سكربتك الرئيسي
+          if (typeof window.setGDriveState === 'function') window.setGDriveState(true);
+        }
+      }
+    });
+  };
+</script>
+
+  
   <!-- Google APIs (Picker + GIS) -->
   <script src="https://accounts.google.com/gsi/client" async defer onload="initGis()"></script>
   <script src="https://apis.google.com/js/api.js" async defer></script>
@@ -287,8 +318,7 @@
     const apiFetch=(path,opts={})=>fetch(`${API_BASE}${path}`,{credentials:'include',...opts});
 
     /* ====== بيانات Google ====== */
-    const GOOGLE_CLIENT_ID = '656975767411-lu47r57vrfmhrplrd11rdgbm34cqofsn.apps.googleusercontent.com';
-    const GOOGLE_API_KEY   = 'AIzaSyAaUEq7_7nbhj7Ch-7X0OWKyREUK8bH_EY';
+    
     // ▼ تم التبديل إلى قراءة فقط
     const DRIVE_SCOPE = 'https://www.googleapis.com/auth/drive.file';
     let googleAccessToken  = null;
