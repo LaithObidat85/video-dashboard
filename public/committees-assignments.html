@@ -155,16 +155,17 @@
         sel.appendChild(o);
       });
     }
+    function normalizeName(item){ if(typeof item==='string') return item; return item?.name||item?.committee_name||item?.college||''; }
     async function loadColleges(){
       const r=await apiFetch('/api/colleges'); const arr=await r.json().catch(()=>[]);
       const sel=document.getElementById('collegeSelect'); sel.innerHTML='<option value="">— اختر —</option>';
-      (arr||[]).forEach(c=>{ const n=(typeof c==='string'?c:(c.name||c.college||'')); if(!n) return; const o=document.createElement('option'); o.value=n; o.textContent=n; sel.appendChild(o); });
+      (arr||[]).forEach(c=>{ const n=normalizeName(c); if(!n) return; const o=document.createElement('option'); o.value=n; o.textContent=n; sel.appendChild(o); });
     }
     async function loadCommittees(){
-      // نستخدم endpoint الأسماء
-      const r=await apiFetch('/api/committee-names?q='); const arr=await r.json().catch(()=>[]);
+      const r=await apiFetch('/api/committee-names?q=').catch(()=>apiFetch('/api/committees-master'));
+      const arr=await r.json().catch(()=>[]);
       const sel=document.getElementById('committeeSelect'); sel.innerHTML='<option value="">— اختر —</option>';
-      (arr||[]).forEach(c=>{ const n=(typeof c==='string'?c:(c.name||c.committee_name||'')); if(!n) return; const o=document.createElement('option'); o.value=n; o.textContent=n; sel.appendChild(o); });
+      (arr||[]).forEach(c=>{ const n=normalizeName(c); if(!n) return; const o=document.createElement('option'); o.value=n; o.textContent=n; sel.appendChild(o); });
     }
 
     /* ====== جدول التعيينات ====== */
