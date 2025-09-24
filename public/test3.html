@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <title>إدارة روابط ملفات اللجان - نظام اللجان</title>
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <link rel="icon" type="image/png" href="https://www.dropbox.com/scl/fi/f283e4rvv5cf9x12a1cic/my-website-logo.png?rlkey=yia776im7klypy27af32m0scy&e=1&st=vhaprvzh&dl=1">
+  <link rel="icon" type="image/png" href="https://www.dropbox.com/scl/fi/f283e4rvv5cf9x12a1cic/my-website-logo.png?rlkey=yia776im7klypy27af32m0scy&e=1&dl=1">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.rtl.min.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
   <style>
@@ -20,6 +20,8 @@
     .link-pill { display:inline-flex; align-items:center; gap:.25rem; padding:.15rem .45rem; border-radius:1rem; border:1px solid #dee2e6; font-size:.85rem }
     .truncate { max-width: 340px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: inline-block; vertical-align: bottom; }
     .w-xxs{ width: 54px; }
+    .w-title{ width: 40%; min-width: 140px; }
+    .input-group .input-group-text.file-title { max-width: 50%; overflow:hidden; text-overflow:ellipsis; }
   </style>
 </head>
 <body>
@@ -154,7 +156,7 @@
               <div class="input-group">
                 <input id="m_fd" type="url" class="form-control" placeholder="https://...">
                 <button class="btn btn-outline-secondary" type="button" data-open="m_fd" title="فتح في تبويب جديد"><i class="bi bi-box-arrow-up-right"></i></button>
-                <span id="m_fd_title" class="input-group-text bg-light text-muted"></span>
+                <span id="m_fd_title" class="input-group-text file-title bg-light text-muted"></span>
               </div>
             </div>
             <div class="col-md-6">
@@ -162,15 +164,16 @@
               <div class="input-group">
                 <input id="m_wp" type="url" class="form-control" placeholder="https://...">
                 <button class="btn btn-outline-secondary" type="button" data-open="m_wp" title="فتح في تبويب جديد"><i class="bi bi-box-arrow-up-right"></i></button>
-                <span id="m_wp_title" class="input-group-text bg-light text-muted"></span>
+                <span id="m_wp_title" class="input-group-text file-title bg-light text-muted"></span>
               </div>
             </div>
+
             <div class="col-md-6">
               <label class="form-label">تقرير إنجاز 1</label>
               <div class="input-group">
                 <input id="m_r1" type="url" class="form-control" placeholder="https://...">
                 <button class="btn btn-outline-secondary" type="button" data-open="m_r1" title="فتح في تبويب جديد"><i class="bi bi-box-arrow-up-right"></i></button>
-                <span id="m_r1_title" class="input-group-text bg-light text-muted"></span>
+                <span id="m_r1_title" class="input-group-text file-title bg-light text-muted"></span>
               </div>
             </div>
             <div class="col-md-6">
@@ -178,7 +181,7 @@
               <div class="input-group">
                 <input id="m_r2" type="url" class="form-control" placeholder="https://...">
                 <button class="btn btn-outline-secondary" type="button" data-open="m_r2" title="فتح في تبويب جديد"><i class="bi bi-box-arrow-up-right"></i></button>
-                <span id="m_r2_title" class="input-group-text bg-light text-muted"></span>
+                <span id="m_r2_title" class="input-group-text file-title bg-light text-muted"></span>
               </div>
             </div>
             <div class="col-md-6">
@@ -186,7 +189,7 @@
               <div class="input-group">
                 <input id="m_r3" type="url" class="form-control" placeholder="https://...">
                 <button class="btn btn-outline-secondary" type="button" data-open="m_r3" title="فتح في تبويب جديد"><i class="bi bi-box-arrow-up-right"></i></button>
-                <span id="m_r3_title" class="input-group-text bg-light text-muted"></span>
+                <span id="m_r3_title" class="input-group-text file-title bg-light text-muted"></span>
               </div>
             </div>
             <div class="col-md-6">
@@ -194,7 +197,7 @@
               <div class="input-group">
                 <input id="m_sa" type="url" class="form-control" placeholder="https://...">
                 <button class="btn btn-outline-secondary" type="button" data-open="m_sa" title="فتح في تبويب جديد"><i class="bi bi-box-arrow-up-right"></i></button>
-                <span id="m_sa_title" class="input-group-text bg-light text-muted"></span>
+                <span id="m_sa_title" class="input-group-text file-title bg-light text-muted"></span>
               </div>
             </div>
           </div>
@@ -202,6 +205,7 @@
           <hr class="my-3">
 
           <div class="row g-3">
+            <!-- الدعوات -->
             <div class="col-md-4">
               <div class="d-flex justify-content-between align-items-center">
                 <label class="form-label mb-0">الدعوات</label>
@@ -209,6 +213,7 @@
               </div>
               <div id="m_listInv" class="vstack gap-2 mt-1"></div>
             </div>
+            <!-- المحاضر -->
             <div class="col-md-4">
               <div class="d-flex justify-content-between align-items-center">
                 <label class="form-label mb-0">المحاضر</label>
@@ -216,6 +221,7 @@
               </div>
               <div id="m_listMin" class="vstack gap-2 mt-1"></div>
             </div>
+            <!-- كتب التغطية -->
             <div class="col-md-4">
               <div class="d-flex justify-content-between align-items-center">
                 <label class="form-label mb-0">كتب التغطية</label>
@@ -227,10 +233,6 @@
 
         </div>
         <div class="modal-footer">
-          <button class="btn btn-danger me-auto d-none" id="deleteBtn"><i class="bi bi-trash"></i> حذف</button>
-          <button class="btn btn-secondary" data-bs-dismiss="modal">إغلاق</button>
-          <button class="btn btn-success" id="saveModalBtn"><i class="bi bi-save"></i> حفظ التعديلات</button>
-        </div>
           <button class="btn btn-danger me-auto d-none" id="deleteBtn"><i class="bi bi-trash"></i> حذف</button>
           <button class="btn btn-secondary" data-bs-dismiss="modal">إغلاق</button>
           <button class="btn btn-success" id="saveModalBtn"><i class="bi bi-save"></i> حفظ التعديلات</button>
@@ -333,7 +335,6 @@
     function pill(val,label){
       if(!val) return '<span class="badge text-bg-light">—</span>';
       return `<span class="link-pill"><i class="bi bi-link-45deg"></i><a href="${val}" target="_blank" rel="noopener" class="truncate" title="${label||val}">${label||'رابط'}</a></span>`;
-    }">${label||'رابط'}</span></span>`;
     }
 
     function renderTable(){
@@ -359,7 +360,7 @@
           <td class="nowrap"><span class="badge text-bg-secondary">${invCount}</span></td>
           <td class="nowrap"><span class="badge text-bg-secondary">${minCount}</span></td>
           <td class="nowrap"><span class="badge text-bg-secondary">${covCount}</span></td>
-          <td class="nowrap">${[r1&&'إنجاز 1', r2&&'إنجاز 2', r3&&'إنجاز 3', sa&&'إحصائي'].filter(Boolean).map(x=>`<span class=\"badge text-bg-light\">${x}</span>`).join(' ')||'<span class="badge text-bg-light">—</span>'}</td>
+          <td class="nowrap">${[r1&&'إنجاز 1', r2&&'إنجاز 2', r3&&'إنجاز 3', sa&&'إحصائي'].filter(Boolean).map(x=>`<span class="badge text-bg-light">${x}</span>`).join(' ')||'<span class="badge text-bg-light">—</span>'}</td>
           <td class="nowrap">${it.updatedAt? new Date(it.updatedAt).toLocaleString('ar-EG'):'—'}</td>
           <td class="text-center">
             <div class="btn-group">
@@ -399,22 +400,23 @@
     const editModal = new bootstrap.Modal('#editModal');
     let CURRENT_EDIT=null;
 
-    function isValidUrl(u){ try{ new URL(u); return true; } catch{ return false; } }
-    function urlOrNull(v){ return (v && isValidUrl(v)) ? { type:'url', value:v, title:'' } : null; }
+    function isValidHttp(v){ return /^https?:\/\//.test(v); }
+    function urlOrNull(v){ return (v && isValidHttp(v)) ? { type:'url', value:v, title:'' } : null; }
 
+    // صف واحد داخل قوائم (دعوات/محاضر/تغطية): URL + عنوان + فتح + حذف
     function rowFactory(listEl, arrRef, section, existing){
       const wrap=document.createElement('div'); wrap.className='input-group';
       wrap.innerHTML = `
         <span class="input-group-text w-xxs"><i class="bi bi-link-45deg"></i></span>
         <input type="url" class="form-control" placeholder="https://...">
+        <input type="text" class="form-control w-title" placeholder="عنوان اختياري">
         <button class="btn btn-outline-secondary" type="button" title="فتح في تبويب جديد"><i class="bi bi-box-arrow-up-right"></i></button>
-        <span class="input-group-text bg-light text-muted file-title"></span>
         <button class="btn btn-outline-danger" type="button" title="حذف"><i class="bi bi-trash"></i></button>
       `;
-      const urlInput = wrap.querySelector('input');
+      const urlInput = wrap.querySelector('input[type="url"]');
+      const titleInput = wrap.querySelector('input[type="text"]');
       const openBtn = wrap.querySelector('.btn-outline-secondary');
       const delBtn = wrap.querySelector('.btn-outline-danger');
-      const titleEl = wrap.querySelector('.file-title');
 
       const item = { value: existing?.value||'', title: existing?.title||'', section };
       arrRef.push(item);
@@ -426,34 +428,32 @@
         if(section==='cov') return `كتاب تغطية ${idx}`;
         return `ملف ${idx}`;
       }
-      function refreshTitle(){
-        titleEl.textContent = (item.title && item.title.trim()) ? item.title.trim() : computeDefaultTitle();
-      }
-      function isValidUrl(u){ try{ new URL(u); return true; } catch{ return false; } }
 
       urlInput.addEventListener('input',()=>{
         const v=urlInput.value.trim();
-        item.value = isValidUrl(v) ? v : '';
-        urlInput.classList.toggle('is-invalid', !!v && !isValidUrl(v));
+        item.value = isValidHttp(v) ? v : '';
+        urlInput.classList.toggle('is-invalid', !!v && !isValidHttp(v));
       });
-      openBtn.addEventListener('click',()=>{ if(item.value) window.open(item.value,'_blank','noopener'); });
-      delBtn.addEventListener('click',()=>{ const i=arrRef.indexOf(item); if(i>=0) arrRef.splice(i,1); wrap.remove(); Array.from(listEl.children).forEach(()=>{}); });
+      titleInput.addEventListener('input',()=>{ item.title = titleInput.value.trim(); });
 
-      // initial fill
+      openBtn.addEventListener('click',()=>{ if(item.value) window.open(item.value,'_blank','noopener'); });
+      delBtn.addEventListener('click',()=>{
+        const i=arrRef.indexOf(item); if(i>=0) arrRef.splice(i,1);
+        wrap.remove();
+      });
+
+      // تعبئة أولية
       if(item.value){ urlInput.value=item.value; }
-      refreshTitle();
+      if(item.title){ titleInput.value=item.title; } else { titleInput.placeholder = computeDefaultTitle(); }
 
       listEl.appendChild(wrap);
-      return {wrap, urlInput, item, refreshTitle};
-    };
-      arrRef.push(item);
-      urlInput.addEventListener('input',()=>{ const v=urlInput.value.trim(); item.value = isValidUrl(v) ? v : ''; urlInput.classList.toggle('is-invalid', !!v && !isValidUrl(v)); });
-      delBtn.addEventListener('click',()=>{ const i=arrRef.indexOf(item); if(i>=0) arrRef.splice(i,1); wrap.remove(); });
-      listEl.appendChild(wrap); return {wrap, urlInput, item};
+      return {wrap, urlInput, titleInput, item};
     }
 
     function openEditModal(it, viewOnly=false){
       CURRENT_EDIT = JSON.parse(JSON.stringify(it||{}));
+
+      // المفردة + عرض العنوان المحفوظ أو الافتراضي
       const fd=document.getElementById('m_fd'); fd.value = it?.formation_decision?.value||''; document.getElementById('m_fd_title').textContent = (it?.formation_decision?.title||'') || 'قرار التشكيل';
       const wp=document.getElementById('m_wp'); wp.value = it?.work_plan?.value||''; document.getElementById('m_wp_title').textContent = (it?.work_plan?.title||'') || 'خطة العمل';
       document.getElementById('m_r1').value = it?.report1?.value||''; document.getElementById('m_r1_title').textContent = (it?.report1?.title||'') || 'تقرير إنجاز 1';
@@ -461,15 +461,15 @@
       document.getElementById('m_r3').value = it?.report3?.value||''; document.getElementById('m_r3_title').textContent = (it?.report3?.title||'') || 'تقرير إنجاز 3';
       document.getElementById('m_sa').value = it?.statistical_analysis?.value||''; document.getElementById('m_sa_title').textContent = (it?.statistical_analysis?.title||'') || 'التحليل الإحصائي';
 
+      // القوائم
       const invList=document.getElementById('m_listInv'); invList.innerHTML='';
       const minList=document.getElementById('m_listMin'); minList.innerHTML='';
       const covList=document.getElementById('m_listCov'); covList.innerHTML='';
 
       const invRef = []; const minRef = []; const covRef = [];
-      // املأ القوائم الحالية
-      (Array.isArray(it?.invitations)?it.invitations:[]).forEach(x=>{ const row=rowFactory(invList,invRef,'inv',x); row.urlInput.dispatchEvent(new Event('input')); });
-      (Array.isArray(it?.minutes)?it.minutes:[]).forEach(x=>{ const row=rowFactory(minList,minRef,'min',x); row.urlInput.dispatchEvent(new Event('input')); });
-      (Array.isArray(it?.coverage_letters)?it.coverage_letters:[]).forEach(x=>{ const row=rowFactory(covList,covRef,'cov',x); row.urlInput.dispatchEvent(new Event('input')); });
+      (Array.isArray(it?.invitations)?it.invitations:[]).forEach(x=>{ rowFactory(invList,invRef,'inv',x); });
+      (Array.isArray(it?.minutes)?it.minutes:[]).forEach(x=>{ rowFactory(minList,minRef,'min',x); });
+      (Array.isArray(it?.coverage_letters)?it.coverage_letters:[]).forEach(x=>{ rowFactory(covList,covRef,'cov',x); });
 
       // أزرار الإضافة
       document.getElementById('m_addInv').onclick=()=>rowFactory(invList,invRef,'inv');
@@ -481,7 +481,7 @@
       document.getElementById('saveModalBtn').classList.toggle('d-none', viewOnly);
       document.getElementById('deleteBtn').classList.toggle('d-none', !IS_ADMIN || viewOnly);
 
-      // خزّن المراجع على العنصر العالمي (لنستخدمها عند الحفظ)
+      // خزّن المراجع
       CURRENT_EDIT.__lists = { invRef, minRef, covRef, fd, wp };
 
       editModal.show();
@@ -490,13 +490,16 @@
     async function saveEdit(){
       try{
         const it = CURRENT_EDIT; if(!it?._id) return;
+
+        // مفردة
         const fd = urlOrNull(CURRENT_EDIT.__lists.fd.value.trim());
         const wp = urlOrNull(CURRENT_EDIT.__lists.wp.value.trim());
         const r1 = urlOrNull(document.getElementById('m_r1').value.trim());
         const r2 = urlOrNull(document.getElementById('m_r2').value.trim());
         const r3 = urlOrNull(document.getElementById('m_r3').value.trim());
         const sa = urlOrNull(document.getElementById('m_sa').value.trim());
-        // عناوين افتراضية للحقول المفردة
+
+        // عناوين افتراضية للمفردة
         if(fd) fd.title = 'قرار التشكيل';
         if(wp) wp.title = 'خطة العمل';
         if(r1) r1.title = 'تقرير إنجاز 1';
@@ -504,14 +507,27 @@
         if(r3) r3.title = 'تقرير إنجاز 3';
         if(sa) sa.title = 'التحليل الإحصائي';
 
+        // القوائم + عناوين افتراضية حسب الترتيب
         const inv = (CURRENT_EDIT.__lists.invRef||[]).filter(x=>x.value).map((v,i)=>({type:'url', value:v.value, title: (v.title && v.title.trim()) ? v.title.trim() : `دعوة محضر ${i+1}`}));
         const min = (CURRENT_EDIT.__lists.minRef||[]).filter(x=>x.value).map((v,i)=>({type:'url', value:v.value, title: (v.title && v.title.trim()) ? v.title.trim() : `محضر ${i+1}`}));
         const cov = (CURRENT_EDIT.__lists.covRef||[]).filter(x=>x.value).map((v,i)=>({type:'url', value:v.value, title: (v.title && v.title.trim()) ? v.title.trim() : `كتاب تغطية ${i+1}`}));
 
-        const payload = { formation_decision: fd, work_plan: wp, report1: r1, report2: r2, report3: r3, statistical_analysis: sa, invitations: inv, minutes: min, coverage_letters: cov };
+        const payload = {
+          formation_decision: fd, work_plan: wp,
+          report1: r1, report2: r2, report3: r3, statistical_analysis: sa,
+          invitations: inv, minutes: min, coverage_letters: cov
+        };
 
-        const r = await apiFetch(`/api/committees-files/${it._id}`, { method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) });
-        if(!r.ok){ const j=await r.json().catch(()=>({})); alert('فشل الحفظ: '+(j.message||r.status)); return; }
+        const r = await apiFetch(`/api/committees-files/${it._id}`, {
+          method:'PUT',
+          headers:{'Content-Type':'application/json'},
+          body: JSON.stringify(payload)
+        });
+        if(!r.ok){
+          const j=await r.json().catch(()=>({}));
+          alert('فشل الحفظ: '+(j.message||r.status));
+          return;
+        }
         toastSuccess.show(); editModal.hide(); loadPage();
       }catch(e){ console.error(e); toastError.show(); }
     }
@@ -529,11 +545,10 @@
 
     // أزرار فتح الروابط للحقول المفردة
     document.addEventListener('click', (e)=>{
-      const btn = e.target.closest('[data-open]');
-      if(!btn) return;
+      const btn = e.target.closest('[data-open]'); if(!btn) return;
       const targetId = btn.getAttribute('data-open');
       const el = document.getElementById(targetId);
-      if(el && el.value && /^https?:\/\//.test(el.value)) window.open(el.value,'_blank','noopener');
+      if(el && el.value && isValidHttp(el.value)) window.open(el.value,'_blank','noopener');
     });
 
     /* ====== بدء التشغيل ====== */
