@@ -402,12 +402,13 @@
       gisTokenClient = google.accounts.oauth2.initTokenClient({
         client_id: GOOGLE_CLIENT_ID,
         scope: DRIVE_SCOPE, // readonly
-        callback: (resp)=>{
-          if(resp && resp.access_token){
-            googleAccessToken = resp.access_token;
-            setGDriveState(true);
-          }
-        }
+        callback: (resp) => {
+  console.log('GIS token response:', resp);
+  if (resp && resp.access_token) {
+    googleAccessToken = resp.access_token;
+    setGDriveState(true);
+  }
+}
       });
     }
     async function ensureDriveToken(){
