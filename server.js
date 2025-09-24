@@ -36,7 +36,6 @@ app.use(helmet({
     directives: {
       "default-src": ["'self'"],
 
-      // السكربتات: Bootstrap + Google (GIS + gapi + picker)
       "script-src": [
         "'self'", "'unsafe-inline'",
         "https://cdn.jsdelivr.net",
@@ -45,35 +44,47 @@ app.use(helmet({
         "https://ssl.gstatic.com"
       ],
 
-      // الاتصالات الخارجة: واجهات OAuth/Drive/Picker + واجهتك على Render + GitHub Pages
+      // 🔧 مهم: أضف content.googleapis.com و *.googleusercontent.com
       "connect-src": [
         "'self'",
         "https://vdash-qkyv.onrender.com",
         "https://laithobidat85.github.io",
         "https://www.googleapis.com",
+        "https://content.googleapis.com",
         "https://oauth2.googleapis.com",
         "https://accounts.google.com",
         "https://picker.googleapis.com"
       ],
 
-      // إذاrames (نوافذ الموافقة ونافذة Google Picker)
+      // 🔧 مهم: اسمح لأي فريمات Google (GIS consent + Google Picker)
       "frame-src": [
         "'self'",
         "https://accounts.google.com",
+        "https://accounts.google.com/gsi/",
+        "https://*.google.com",
+        "https://*.googleusercontent.com",
         "https://docs.google.com",
         "https://drive.google.com",
         "https://picker.googleapis.com"
       ],
+      // بعض المتصفحات القديمة ترجع child-src، فنعطيها نفس القيم
+      "child-src": [
+        "'self'",
+        "https://accounts.google.com",
+        "https://*.google.com",
+        "https://*.googleusercontent.com",
+        "https://docs.google.com",
+        "https://drive.google.com"
+      ],
 
-      // الأنماط والخطوط كما هي + gstatic
       "style-src": ["'self'", "'unsafe-inline'", "https://cdn.jsdelivr.net", "https://fonts.googleapis.com"],
       "font-src": ["'self'", "https://cdn.jsdelivr.net", "https://fonts.gstatic.com", "https://ssl.gstatic.com", "data:"],
 
-      // الصور: أضِف googleusercontent لصور الحساب
+      // 🔧 أضف كل googleusercontent لصور الحساب/البيكر
       "img-src": [
         "'self'", "data:", "blob:",
         "https://www.dropbox.com", "https://dl.dropboxusercontent.com", "https://*.dropboxusercontent.com", "https://*.dropbox.com",
-        "https://lh3.googleusercontent.com", "https://ssl.gstatic.com"
+        "https://*.googleusercontent.com", "https://*.gstatic.com", "https://*.google.com"
       ],
 
       "object-src": ["'none'"],
@@ -83,8 +94,6 @@ app.use(helmet({
     }
   }
 }));
-
-
 
 /****************************************************
  * CORS + الجلسة عبر النطاقات (GitHub Pages ↔ Render)
