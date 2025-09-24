@@ -843,70 +843,90 @@
     }
 
     /* ====== التهيئة من قاعدة البيانات ====== */
-    let prefillReqCounter = 0;
-    async function tryPrefillFromDB(){
-      const ayOk = state.academicYear && validateAcademicYear(state.academicYear).ok;
-      if(!(state.college && state.committee_name && state.term && ayOk)) return;
+   // ... ابحث عن السطر الذي فيه:
+let prefillReqCounter = 0;
+// أضِف بعده هذا المتغير لتتبع المجموعة الحالية:
+let LAST_PREFILL_KEY = '';
 
-      if (ASSIGNMENT_LOCK.enabled) {
-        if (!ASSIGNMENT_LOCK.collegesSet.has(state.college) ||
-            !ASSIGNMENT_LOCK.byCollege.get(state.college)?.has(state.committee_name)) {
-          return;
-        }
-      }
+// ثم استبدل الدالة tryPrefillFromDB كلها بهذا الإصدار:
+async function tryPrefillFromDB(){
+  // نتحقق من اكتمال المفاتيح
+  const ayOk = state.academicYear && validateAcademicYear(state.academicYear).ok;
+  if(!(state.college && state.committee_name && state.term && ayOk)) return;
 
-      const myReq = ++prefillReqCounter;
-      const badge = document.getElementById('gdriveState');
-      const oldBadgeText = badge.textContent;
-      badge.textContent = 'جارِ التحقق...';
-
-      try{
-        const params = new URLSearchParams({
-          college: state.college,
-          committee_name: state.committee_name,
-          academicYear: state.academicYear,
-          term: state.term,
-          limit: '1'
-        });
-        const r = await apiFetch(`/api/committees-files?${params.toString()}`, { method:'GET' });
-
-        if (myReq !== prefillReqCounter) return;
-
-        if(!r.ok){
-          badge.textContent = oldBadgeText;
-          return;
-        }
-        const j = await r.json().catch(()=>null);
-        const doc = j && Array.isArray(j.data) && j.data.length ? j.data[0] : null;
-
-        if(doc){
-          setSingleInputAndState('fdUrl', 'formation_decision', doc.formation_decision || null);
-          setSingleInputAndState('wpUrl', 'work_plan', doc.work_plan || null);
-          setSingleInputAndState('r1Url', 'report1', doc.report1 || null);
-          setSingleInputAndState('r2Url', 'report2', doc.report2 || null);
-          setSingleInputAndState('r3Url', 'report3', doc.report3 || null);
-          setSingleInputAndState('saUrl', 'statistical_analysis', doc.statistical_analysis || null);
-
-          rebuildMultiList('invitationsList', state.invitations, doc.invitations || []);
-          rebuildMultiList('minutesList', state.minutes, doc.minutes || []);
-          rebuildMultiList('coverageList', state.coverage_letters, doc.coverage_letters || []);
-
-          pushToast({type:'success', body:'تم تحميل بيانات اللجنة.'});
-        }else{
-          if (!ASSIGNMENT_LOCK.enabled){
-            clearAllFormInputs();
-            pushToast({type:'info', body:'لا توجد بيانات لهذه المجموعة – تم تفريغ الحقول.'});
-          }
-        }
-
-      }catch(e){
-        console.error('Prefill error:', e);
-        pushToast({type:'error', body:'تعذر جلب بيانات اللجنة.'});
-      }finally{
-        badge.textContent = oldBadgeText;
-        refreshSummary();
-      }
+  // منع القراءة خارج التعيينات عند تفعيل القفل
+  if (ASSIGNMENT_LOCK.enabled) {
+    const okCollege = ASSIGNMENT_LOCK.collegesSet.has(state.college);
+    const okComm    = ASSIGNMENT_LOCK.byCollege.get(state.college)?.has(state.committee_name);
+    if (!okCollege || !okComm) {
+      // إن كانت المجموعة غير مسموح بها، نفرّغ كل شيء حتى لا تبقى بيانات قديمة
+      clearAllFormInputs();
+      refreshSummary();
+      return;
     }
+  }
+
+  // مفتاح المجموعة الحالية (لمنع بقاء بيانات مجموعة سابقة)
+  const CURRENT_KEY = [state.college, state.committee_name, state.academicYear, state.term].join('||');
+
+  // إذا تغيّرت المجموعة عن السابقة، نفرّغ فوراً قبل محاولة الجلب
+  if (CURRENT_KEY !== LAST_PREFILL_KEY) {
+    clearAllFormInputs();
+    refreshSummary();
+    LAST_PREFILL_KEY = CURRENT_KEY;
+  }
+
+  const myReq = ++prefillReqCounter;
+  const badge = document.getElementById('gdriveState');
+  const oldBadgeText = badge.textContent;
+  badge.textContent = 'جارِ التحقق...';
+
+  try{
+    const params = new URLSearchParams({
+      college: state.college,
+      committee_name: state.committee_name,
+      academicYear: state.academicYear,
+      term: state.term,
+      limit: '1'
+    });
+    const r = await apiFetch(`/api/committees-files?${params.toString()}`, { method:'GET' });
+
+    // إن تبدلت المجموعة أثناء الجلب نتجاهل هذه النتيجة
+    if (myReq !== prefillReqCounter) return;
+
+    if (!r.ok) { badge.textContent = oldBadgeText; return; }
+
+    const j = await r.json().catch(()=>null);
+    const doc = j && Array.isArray(j.data) && j.data.length ? j.data[0] : null;
+
+    if (doc){
+      // تعبئة القيم
+      setSingleInputAndState('fdUrl', 'formation_decision', doc.formation_decision || null);
+      setSingleInputAndState('wpUrl', 'work_plan', doc.work_plan || null);
+      setSingleInputAndState('r1Url', 'report1', doc.report1 || null);
+      setSingleInputAndState('r2Url', 'report2', doc.report2 || null);
+      setSingleInputAndState('r3Url', 'report3', doc.report3 || null);
+      setSingleInputAndState('saUrl', 'statistical_analysis', doc.statistical_analysis || null);
+
+      rebuildMultiList('invitationsList', state.invitations, doc.invitations || []);
+      rebuildMultiList('minutesList', state.minutes, doc.minutes || []);
+      rebuildMultiList('coverageList', state.coverage_letters, doc.coverage_letters || []);
+
+      pushToast({type:'success', body:'تم تحميل بيانات اللجنة.'});
+    } else {
+      // ✅ هنا التعديل: دائماً نفرّغ عند عدم وجود بيانات (بغض النظر عن الدور)
+      clearAllFormInputs();
+      pushToast({type:'info', body:'لا توجد بيانات لهذه المجموعة – تم تفريغ الحقول.'});
+    }
+
+  }catch(e){
+    console.error('Prefill error:', e);
+    pushToast({type:'error', body:'تعذر جلب بيانات اللجنة.'});
+  }finally{
+    badge.textContent = oldBadgeText;
+    refreshSummary();
+  }
+}
 
     /* ====== Debounce ====== */
     let prefillTimer = null;
