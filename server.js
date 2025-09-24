@@ -19,7 +19,7 @@ require('dotenv').config();
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-/* ========== Helpers ========== */
+/* ========== Helpers مشترك ========== */
 const academicYearRegex = /^(20\d{2})[\/-](20\d{2})$/;
 function isValidISODate(s) {
   return /^\d{4}-\d{2}-\d{2}$/.test(s);
@@ -44,7 +44,7 @@ function normalizeUrlArray(arr) {
 }
 
 /****************************************************
- * أمان أساسي
+ * أمان أساسي (مشترك)
  ****************************************************/
 app.use(helmet({
   crossOriginResourcePolicy: false,
@@ -119,7 +119,7 @@ app.use(helmet({
 }));
 
 /****************************************************
- * CORS + الجلسة عبر النطاقات (GitHub Pages ↔ Render)
+ * CORS + الجلسة عبر النطاقات (مشترك)
  ****************************************************/
 app.set('trust proxy', 1);
 const ALLOWED_ORIGINS = [
@@ -162,7 +162,7 @@ app.use(
 );
 
 /****************************************************
- * الاتصال بقاعدة البيانات
+ * الاتصال بقاعدة البيانات (مشترك)
  ****************************************************/
 mongoose
   .connect(MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true })
@@ -170,7 +170,7 @@ mongoose
   .catch((err) => console.error('❌ MongoDB connection error:', err));
 
 /****************************************************
- * مخططات نظام الفيديوهات
+ * تابع لنظام الفيديوهات: مخططات نظام الفيديوهات
  ****************************************************/
 const videoSchema = new mongoose.Schema({
   title: { type: String, required: true },
@@ -181,6 +181,9 @@ const videoSchema = new mongoose.Schema({
 });
 const Video = mongoose.model('Video', videoSchema);
 
+/****************************************************
+ * تابع لنظام الفيديوهات: مخطط الروابط
+ ****************************************************/
 const linkSchema = new mongoose.Schema({
   name: { type: String },
   description: String,
@@ -192,6 +195,9 @@ const linkSchema = new mongoose.Schema({
 });
 const Link = mongoose.model('Link', linkSchema);
 
+/****************************************************
+ * تابع لنظام الفيديوهات: مخطط كلمات مرور الأقسام
+ ****************************************************/
 const passwordSchema = new mongoose.Schema({
   section: { type: String, required: true, unique: true },
   password: { type: String, required: true },
@@ -199,13 +205,16 @@ const passwordSchema = new mongoose.Schema({
 });
 const Password = mongoose.model('Password', passwordSchema);
 
+/****************************************************
+ * تابع لنظام الفيديوهات: مخطط الأقسام (Departments)
+ ****************************************************/
 const departmentSchema = new mongoose.Schema({
   name: { type: String, required: true, unique: true }
 });
 const Department = mongoose.model('Department', departmentSchema);
 
 /****************************************************
- * قاموس أسماء اللجان
+ * تابع لنظام اللجان: قاموس أسماء اللجان (Committee dictionary)
  ****************************************************/
 const committeeSchema = new mongoose.Schema({
   name: { type: String, required: true, unique: true }
@@ -213,7 +222,7 @@ const committeeSchema = new mongoose.Schema({
 const Committee = mongoose.model('Committee', committeeSchema);
 
 /****************************************************
- * النسخ الاحتياطية لنظام الفيديو
+ * تابع لنظام الفيديوهات: النسخ الاحتياطية لنظام الفيديو
  ****************************************************/
 const backupSchema = new mongoose.Schema({
   date: { type: Date, default: Date.now },
@@ -226,14 +235,14 @@ const backupSchema = new mongoose.Schema({
 const Backup = mongoose.model('Backup', backupSchema);
 
 /****************************************************
- * إعدادات عامة
+ * إعدادات عامة (مشترك)
  ****************************************************/
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, 'public')));
 
 /****************************************************
- * نماذج نظام اللجان
+ * تابع لنظام اللجان: نماذج نظام اللجان
  ****************************************************/
 const Evaluation = require('./models/evaluationSchema');
 const College = require('./models/collegeSchema');
@@ -249,7 +258,7 @@ const settingsSchema = new mongoose.Schema({
 const Settings = mongoose.model('Settings', settingsSchema);
 
 /****************************************************
- * Committees Files
+ * تابع لنظام اللجان: Committees Files (روابط ملفات اللجان)
  ****************************************************/
 const urlObjSchema = new mongoose.Schema(
   {
@@ -286,7 +295,7 @@ committeeFilesSchema.index(
 const CommitteeFiles = mongoose.model('CommitteeFiles', committeeFilesSchema);
 
 /****************************************************
- * سجلات التدقيق
+ * سجلات التدقيق (مشترك)
  ****************************************************/
 const auditLogSchema = new mongoose.Schema({
   model: { type: String, required: true },
@@ -299,12 +308,12 @@ const auditLogSchema = new mongoose.Schema({
 const AuditLog = mongoose.model('AuditLog', auditLogSchema);
 
 /****************************************************
- * Multer
+ * Multer (مشترك)
  ****************************************************/
 const upload = multer({ dest: 'uploads/' });
 
 /****************************************************
- * أدوات المصادقة/الصلاحيات
+ * أدوات المصادقة/الصلاحيات (مشترك)
  ****************************************************/
 function currentUser(req) {
   return req.session && req.session.user ? req.session.user : null;
@@ -339,8 +348,12 @@ async function logAudit(req, { model, action, docId, payload }) {
   }
 }
 
+/* -------------------------------------------------
+ *                مسارات نظام الفيديوهات
+ * -------------------------------------------------*/
+
 /****************************************************
- * نظام كلمات مرور الأقسام (خاص بالفيديو)
+ * تابع لنظام الفيديوهات: نظام كلمات مرور الأقسام (تحقق الجلسة)
  ****************************************************/
 app.post('/api/verify-password', async (req, res) => {
   const { section, password } = req.body;
@@ -357,12 +370,18 @@ app.post('/api/verify-password', async (req, res) => {
   }
 });
 
+/****************************************************
+ * تابع لنظام الفيديوهات: فحص جلسة القسم
+ ****************************************************/
 app.get('/api/check-session/:section', (req, res) => {
   const { section } = req.params;
   if (req.session && req.session[`${section}Auth`]) return res.json({ authenticated: true });
   return res.json({ authenticated: false });
 });
 
+/****************************************************
+ * تابع لنظام الفيديوهات: تسجيل خروج قسم
+ ****************************************************/
 app.post('/api/logout/:section', (req, res) => {
   const { section } = req.params;
   if (req.session) req.session[`${section}Auth`] = false;
@@ -370,7 +389,7 @@ app.post('/api/logout/:section', (req, res) => {
 });
 
 /****************************************************
- * حماية صفحات ثابتة (خاص بالفيديو)
+ * تابع لنظام الفيديوهات: حماية صفحات ثابتة
  ****************************************************/
 function requireSectionAuth(section, page) {
   return (req, res) => {
@@ -391,7 +410,7 @@ app.get('/committees-manage.html', requireSectionAuth('dashboard', 'committees-n
 app.get('/index.html', requireSectionAuth('index', 'index.html'));
 
 /****************************************************
- * CRUD كلمات المرور (الفيديو)
+ * تابع لنظام الفيديوهات: CRUD كلمات المرور
  ****************************************************/
 app.get('/api/passwords', async (req, res) => {
   try {
@@ -413,7 +432,7 @@ app.post('/api/passwords', async (req, res) => {
 app.put('/api/passwords/:id', async (req, res) => {
   try {
     const updated = await Password.findByIdAndUpdate(req.params.id, req.body, { new: true });
-  res.json(updated);
+    res.json(updated);
   } catch (err) {
     res.status(400).json({ error: err.message });
   }
@@ -426,6 +445,10 @@ app.delete('/api/passwords/:id', async (req, res) => {
     res.status(400).json({ error: err.message });
   }
 });
+
+/****************************************************
+ * تابع لنظام الفيديوهات: تحقق كلمة مرور قسم (قديم)
+ ****************************************************/
 app.post('/api/check-section-password', async (req, res) => {
   const { section, password } = req.body;
   try {
@@ -439,7 +462,7 @@ app.post('/api/check-section-password', async (req, res) => {
 });
 
 /****************************************************
- * الأقسام (الفيديو)
+ * تابع لنظام الفيديوهات: الأقسام (Departments)
  ****************************************************/
 app.get('/api/departments', async (req, res) => {
   try {
@@ -460,11 +483,7 @@ app.post('/api/departments', authRequired, requireRole('admin'), async (req, res
 });
 app.put('/api/departments/:id', authRequired, requireRole('admin'), async (req, res) => {
   try {
-    const updated = await Department.findByIdAndUpdate(
-      req.params.id,
-      { name: req.body.name },
-      { new: true }
-    );
+    const updated = await Department.findByIdAndUpdate(req.params.id, { name: req.body.name }, { new: true });
     if (!updated) return res.status(404).json({ message: '❌ القسم غير موجود' });
     res.json(updated);
   } catch (err) {
@@ -481,7 +500,7 @@ app.delete('/api/departments/:id', authRequired, requireRole('admin'), async (re
 });
 
 /****************************************************
- * الفيديوهات (الفيديو)
+ * تابع لنظام الفيديوهات: الفيديوهات
  ****************************************************/
 app.get('/api/videos', async (req, res) => {
   try {
@@ -520,7 +539,7 @@ app.delete('/api/videos/:id', authRequired, async (req, res) => {
 });
 
 /****************************************************
- * الروابط (الفيديو)
+ * تابع لنظام الفيديوهات: الروابط (Links)
  ****************************************************/
 app.get('/api/links', async (req, res) => {
   try {
@@ -553,6 +572,7 @@ app.delete('/api/links/:id', authRequired, async (req, res) => {
   try {
     const deleted = await Link.findByIdAndDelete(req.params.id);
     if (!deleted) return res.status(404).json({ message: '❌ الرابط غير موجود' });
+    // إعادة ترقيم order
     const links = await Link.find().sort({ order: 1 });
     for (let i = 0; i < links.length; i++) {
       links[i].order = i;
@@ -563,6 +583,10 @@ app.delete('/api/links/:id', authRequired, async (req, res) => {
     res.status(400).json({ message: '❌ خطأ في الحذف', error: err.message });
   }
 });
+
+/****************************************************
+ * تابع لنظام الفيديوهات: تحريك ترتيب الروابط
+ ****************************************************/
 app.post('/api/links/:id/move', authRequired, async (req, res) => {
   const { direction } = req.body;
   try {
@@ -589,7 +613,7 @@ app.post('/api/links/:id/move', authRequired, async (req, res) => {
 });
 
 /****************************************************
- * النسخ الاحتياطية (الفيديو) + رفع ملف
+ * تابع لنظام الفيديوهات: النسخ الاحتياطية + رفع ملف
  ****************************************************/
 app.post('/api/backups/create', authRequired, async (req, res) => {
   try {
@@ -668,8 +692,12 @@ app.post('/api/backups/upload', authRequired, upload.single('backupFile'), async
   }
 });
 
+/* -------------------------------------------------
+ *                مسارات نظام اللجان
+ * -------------------------------------------------*/
+
 /****************************************************
- * أسماء اللجان (Autocomplete) - عامة (GET فقط)
+ * تابع لنظام اللجان: أسماء اللجان (Autocomplete) - عامة
  ****************************************************/
 app.get('/api/committee-names', async (req, res) => {
   try {
@@ -687,7 +715,7 @@ app.get('/api/committee-names', async (req, res) => {
 });
 
 /****************************************************
- * مصادقة خاصة بنظام اللجان
+ * تابع لنظام اللجان: مصادقة خاصة بنظام اللجان
  ****************************************************/
 app.post('/auth/committees/init-admin', async (req, res) => {
   try {
@@ -781,6 +809,9 @@ app.post('/auth/committees/register', authRequired, requireRole('admin'), async 
   }
 });
 
+/****************************************************
+ * تابع لنظام اللجان: إدارة المستخدمين (قائمة/تعديل... للأدمن)
+ ****************************************************/
 app.get('/api/users', authRequired, requireRole('admin'), async (req, res) => {
   try {
     let { search = '', role = '', active = '', page = 1, limit = 20, sort = '-createdAt' } = req.query;
@@ -846,7 +877,6 @@ app.get('/api/users', authRequired, requireRole('admin'), async (req, res) => {
     res.status(500).json({ message: '❌ خطأ في جلب المستخدمين', error: err.message });
   }
 });
-
 app.put('/api/users/:id', authRequired, requireRole('admin'), async (req, res) => {
   try {
     const { name, username, role, isActive, email } = req.body || {};
@@ -904,7 +934,6 @@ app.put('/api/users/:id', authRequired, requireRole('admin'), async (req, res) =
     res.status(500).json({ message: '❌ خطأ في تعديل المستخدم', error: err.message });
   }
 });
-
 app.put('/api/users/:id/password', authRequired, requireRole('admin'), async (req, res) => {
   try {
     const { newPassword } = req.body || {};
@@ -931,7 +960,6 @@ app.put('/api/users/:id/password', authRequired, requireRole('admin'), async (re
     res.status(500).json({ message: '❌ خطأ في تغيير كلمة المرور', error: err.message });
   }
 });
-
 app.delete('/api/users/:id', authRequired, requireRole('admin'), async (req, res) => {
   try {
     await User.findByIdAndDelete(req.params.id);
@@ -940,7 +968,6 @@ app.delete('/api/users/:id', authRequired, requireRole('admin'), async (req, res
     res.status(500).json({ message: '❌ خطأ في حذف المستخدم', error: err.message });
   }
 });
-
 app.post('/api/users/bulk', authRequired, requireRole('admin'), async (req, res) => {
   try {
     const ids = Array.isArray(req.body?.ids) ? req.body.ids.filter(Boolean) : [];
@@ -951,23 +978,19 @@ app.post('/api/users/bulk', authRequired, requireRole('admin'), async (req, res)
       await User.updateMany({ _id: { $in: ids } }, { $set: { isActive: true } });
       return res.json({ message: '✅ تم تفعيل المستخدمين' });
     }
-
     if (action === 'deactivate') {
       await User.updateMany({ _id: { $in: ids } }, { $set: { isActive: false } });
       return res.json({ message: '✅ تم تعطيل المستخدمين' });
     }
-
     if (action === 'set-role') {
       const role = ['admin', 'user', 'subuser-member'].includes(req.body?.role) ? req.body.role : 'user';
       await User.updateMany({ _id: { $in: ids } }, { $set: { role } });
       return res.json({ message: '✅ تم تغيير الأدوار' });
     }
-
     if (action === 'delete') {
       await User.deleteMany({ _id: { $in: ids } });
       return res.json({ message: '🗑️ تم حذف المستخدمين' });
     }
-
     return res.status(400).json({ message: 'نوع الإجراء غير مدعوم' });
   } catch (err) {
     return res.status(500).json({ message: '❌ فشل في تنفيذ الإجراء الجماعي', error: err.message });
@@ -975,7 +998,7 @@ app.post('/api/users/bulk', authRequired, requireRole('admin'), async (req, res)
 });
 
 /****************************************************
- * الخروج/المستخدم الحالي (اللجان)
+ * تابع لنظام اللجان: الخروج/المستخدم الحالي
  ****************************************************/
 app.post('/auth/committees/logout', (req, res) => {
   if (req.session) delete req.session.user;
@@ -987,7 +1010,7 @@ app.get('/auth/committees/me', (req, res) => {
 });
 
 /****************************************************
- * تقييمات اللجان
+ * تابع لنظام اللجان: تقييمات اللجان (CRUD)
  ****************************************************/
 app.post('/api/committees', authRequired, async (req, res) => {
   try {
@@ -1099,7 +1122,7 @@ app.delete('/api/committees/:id', authRequired, requireRole('admin'), async (req
 });
 
 /****************************************************
- * الكليات / قاموس اللجان / المدققون / الإعدادات
+ * تابع لنظام اللجان: الكليات / قاموس اللجان / المدققون / الإعدادات
  ****************************************************/
 app.get('/api/colleges', async (req, res) => {
   try {
@@ -1137,7 +1160,6 @@ app.delete('/api/colleges/:id', authRequired, requireRole('admin'), async (req, 
 });
 
 app.get('/api/committees-master', async (req, res) => {
-  57
   try {
     const items = await Committee.find().sort({ name: 1 });
     res.json(items);
@@ -1208,7 +1230,7 @@ app.delete('/api/auditors/:id', authRequired, requireRole('admin'), async (req, 
 });
 
 /****************************************************
- * إعدادات عرض اللجان + سجلات التدقيق
+ * تابع لنظام اللجان: إعدادات عرض اللجان + سجلات التدقيق
  ****************************************************/
 app.get('/api/settings', async (req, res) => {
   try {
@@ -1259,6 +1281,9 @@ app.put('/api/settings', authRequired, requireRole('admin'), async (req, res) =>
   }
 });
 
+/****************************************************
+ * تابع لنظام اللجان: سجلات التدقيق (قائمة/حذف)
+ ****************************************************/
 app.get('/api/audit-logs', authRequired, requireRole('admin'), async (req, res) => {
   try {
     let { model, action, q, from, to, page = 1, limit = 20 } = req.query;
@@ -1318,7 +1343,7 @@ app.delete('/api/audit-logs/by-ids', authRequired, requireRole('admin'), async (
 });
 
 /****************************************************
- * API: Committees Files (روابط ملفات اللجان)
+ * تابع لنظام اللجان: API: Committees Files (روابط ملفات اللجان)
  ****************************************************/
 app.post('/api/committees-files', authRequired, async (req, res) => {
   try {
@@ -1469,7 +1494,7 @@ app.delete('/api/committees-files/:id', authRequired, requireRole('admin'), asyn
 });
 
 /****************************************************
- * نظام تعيينات اللجان
+ * تابع لنظام اللجان: نظام تعيينات اللجان (Schema + Endpoints)
  ****************************************************/
 const committeeAssignmentSchema = new mongoose.Schema(
   {
@@ -1483,7 +1508,7 @@ const committeeAssignmentSchema = new mongoose.Schema(
 committeeAssignmentSchema.index({ userId: 1, college: 1, committee_name: 1 }, { unique: true });
 const CommitteeAssignment = mongoose.model('CommitteeAssignment', committeeAssignmentSchema);
 
-/* NEW: يقرأ تعيينات المستخدم الحالي */
+/* تابع لنظام اللجان: يقرأ تعيينات المستخدم الحالي */
 app.get('/api/committee-assignments/mine', authRequired, async (req, res) => {
   try {
     const uid = String(currentUser(req).id);
@@ -1497,36 +1522,133 @@ app.get('/api/committee-assignments/mine', authRequired, async (req, res) => {
   }
 });
 
-/* محسّن: يسمح للأدمن بكل شيء، ويسمح لغير الأدمن بقراءة تعيينه فقط عبر userId=me أو userId=<id> */
+/* تابع لنظام اللجان: قراءة التعيينات (Aggregation مع فلترة q/role دقيقة) 
+   يدعم: q, college, committee_name, role, userId, page, limit, sort
+   يُعيد: { data, meta }، مع userId ككائن (مثل populate) يحوي name/username/email/role */
 app.get('/api/committee-assignments', authRequired, async (req, res) => {
   try {
     const u = currentUser(req);
-    const qUid = (req.query.userId || '').trim();
-    let filter = {};
+    let {
+      q = '',
+      college = '',
+      committee_name = '',
+      role = '',
+      userId = '',
+      page = 1,
+      limit = 20,
+      sort = '-createdAt'
+    } = req.query;
 
-    if (!qUid) {
+    page = Math.max(1, parseInt(page, 10) || 1);
+    limit = Math.min(200, Math.max(1, parseInt(limit, 10) || 20));
+    const skip = (page - 1) * limit;
+
+    // صلاحيات
+    const match = {};
+    if (!userId) {
       if (u.role !== 'admin') {
         return res.status(403).json({ message: 'غير مصرح: Admin فقط عند عدم تحديد userId' });
       }
-      // admin بدون userId => جميع التعيينات
     } else {
-      const targetId = qUid === 'me' ? String(u.id) : String(qUid);
+      const targetId = userId === 'me' ? String(u.id) : String(userId);
       if (u.role !== 'admin' && targetId !== String(u.id)) {
         return res.status(403).json({ message: 'غير مصرح: لا يمكنك قراءة تعيينات مستخدم آخر' });
       }
-      filter.userId = targetId;
+      match.userId = new mongoose.Types.ObjectId(targetId);
+    }
+    if (college) match.college = college;
+    if (committee_name) match.committee_name = committee_name;
+
+    // تحويل sort إلى كائن
+    const sortObj = {};
+    String(sort)
+      .split(',')
+      .map(s => s.trim())
+      .filter(Boolean)
+      .forEach(s => {
+        if (s.startsWith('-')) sortObj[s.slice(1)] = -1; else sortObj[s] = 1;
+      });
+    if (!Object.keys(sortObj).length) sortObj.createdAt = -1;
+
+    // regex آمن للبحث الحر
+    const rx = q ? new RegExp(q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i') : null;
+
+    // Aggregation Pipeline
+    const pipeline = [
+      { $match: match },
+      { $lookup: { from: 'users', localField: 'userId', foreignField: '_id', as: 'user' } },
+      { $unwind: '$user' }
+    ];
+
+    if (role) {
+      pipeline.push({ $match: { 'user.role': role } });
     }
 
-    const items = await CommitteeAssignment.find(filter)
-      .populate('userId', 'name username email role')
-      .sort({ createdAt: -1 })
-      .lean();
-    res.json(items);
+    if (rx) {
+      pipeline.push({
+        $match: {
+          $or: [
+            { 'user.name': rx },
+            { 'user.username': rx },
+            { 'user.email': rx },
+            { college: rx },
+            { committee_name: rx },
+            { note: rx }
+          ]
+        }
+      });
+    }
+
+    pipeline.push(
+      { $sort: sortObj },
+      {
+        $facet: {
+          data: [
+            { $skip: skip },
+            { $limit: limit },
+            {
+              $project: {
+                _id: 1,
+                college: 1,
+                committee_name: 1,
+                note: 1,
+                createdAt: 1,
+                updatedAt: 1,
+                // نعيد userId ككائن مختصر يحوي خصائص العرض
+                userId: {
+                  name: '$user.name',
+                  username: '$user.username',
+                  email: '$user.email',
+                  role: '$user.role'
+                }
+              }
+            }
+          ],
+          meta: [{ $count: 'total' }]
+        }
+      }
+    );
+
+    const result = await CommitteeAssignment.aggregate(pipeline);
+    const data = result?.[0]?.data || [];
+    const total = result?.[0]?.meta?.[0]?.total || 0;
+
+    res.json({
+      data,
+      meta: {
+        page,
+        limit,
+        total,
+        returned: data.length,
+        hasMore: skip + data.length < total
+      }
+    });
   } catch (err) {
     res.status(500).json({ message: '❌ فشل في الجلب', error: err.message });
   }
 });
 
+/* تابع لنظام اللجان: إضافة تعيين */
 app.post('/api/committee-assignments', authRequired, requireRole('admin'), async (req, res) => {
   try {
     const { userId, college, committee_name, note } = req.body || {};
@@ -1562,6 +1684,106 @@ app.post('/api/committee-assignments', authRequired, requireRole('admin'), async
   }
 });
 
+/* تابع لنظام اللجان: تعديل مفرد */
+app.put('/api/committee-assignments/:id', authRequired, requireRole('admin'), async (req, res) => {
+  try {
+    const { userId, college, committee_name, note } = req.body || {};
+    const before = await CommitteeAssignment.findById(req.params.id);
+    if (!before) return res.status(404).json({ message: '❌ التعيين غير موجود' });
+
+    const update = {};
+    if (typeof college === 'string') update.college = college.trim();
+    if (typeof committee_name === 'string') update.committee_name = committee_name.trim();
+    if (typeof note === 'string') update.note = note.trim();
+    if (userId) {
+      const user = await User.findById(userId);
+      if (!user) return res.status(404).json({ message: 'المستخدم غير موجود' });
+      if (user.role !== 'subuser-member') {
+        return res.status(400).json({ message: 'المستخدم يجب أن يكون subuser-member' });
+      }
+      update.userId = userId;
+    }
+
+    const after = await CommitteeAssignment.findByIdAndUpdate(
+      req.params.id,
+      { $set: update },
+      { new: true, runValidators: true }
+    );
+
+    await logAudit(req, {
+      model: 'CommitteeAssignment',
+      action: 'update',
+      docId: after._id,
+      payload: { before: before.toObject(), after: after.toObject() }
+    });
+
+    res.json({ message: '✅ تم التعديل', item: after });
+  } catch (err) {
+    if (err && err.code === 11000) {
+      return res.status(409).json({ message: 'تعيين مكرر لنفس المستخدم/الكلية/اللجنة' });
+    }
+    res.status(500).json({ message: '❌ خطأ في التعديل', error: err.message });
+  }
+});
+
+/* تابع لنظام اللجان: حفظ جماعي (تحديثات + حذف) */
+app.post('/api/committee-assignments/bulk', authRequired, requireRole('admin'), async (req, res) => {
+  try {
+    const updates = Array.isArray(req.body?.updates) ? req.body.updates : [];
+    const deletes = Array.isArray(req.body?.deletes) ? req.body.deletes : [];
+
+    // تنفيذ الحذف
+    let deletedCount = 0;
+    if (deletes.length) {
+      const delRes = await CommitteeAssignment.deleteMany({ _id: { $in: deletes } });
+      deletedCount = delRes.deletedCount || 0;
+      for (const id of deletes) {
+        await logAudit(req, { model: 'CommitteeAssignment', action: 'delete', docId: id, payload: { id } });
+      }
+    }
+
+    // تنفيذ التحديثات
+    const results = [];
+    for (const u of updates) {
+      const { id, userId, college, committee_name, note } = u || {};
+      if (!id) continue;
+      const before = await CommitteeAssignment.findById(id);
+      if (!before) continue;
+
+      const patch = {};
+      if (typeof college === 'string') patch.college = college.trim();
+      if (typeof committee_name === 'string') patch.committee_name = committee_name.trim();
+      if (typeof note === 'string') patch.note = note.trim();
+      if (userId) {
+        const user = await User.findById(userId);
+        if (!user) throw new Error('مستخدم غير موجود');
+        if (user.role !== 'subuser-member') throw new Error('المستخدم يجب أن يكون subuser-member');
+        patch.userId = userId;
+      }
+      const after = await CommitteeAssignment.findByIdAndUpdate(
+        id,
+        { $set: patch },
+        { new: true, runValidators: true }
+      );
+      results.push({ id, ok: true });
+      await logAudit(req, {
+        model: 'CommitteeAssignment',
+        action: 'update',
+        docId: id,
+        payload: { before: before.toObject(), after: after.toObject() }
+      });
+    }
+
+    res.json({ message: '✅ تم الحفظ الجماعي', deletedCount, updatedCount: results.length });
+  } catch (err) {
+    if (err && err.code === 11000) {
+      return res.status(409).json({ message: 'تعارض: يوجد تعيين مكرر بعد التعديل' });
+    }
+    res.status(500).json({ message: '❌ خطأ في الحفظ الجماعي', error: err.message });
+  }
+});
+
+/* تابع لنظام اللجان: حذف تعيين */
 app.delete('/api/committee-assignments/:id', authRequired, requireRole('admin'), async (req, res) => {
   try {
     const before = await CommitteeAssignment.findById(req.params.id).lean();
@@ -1579,9 +1801,9 @@ app.delete('/api/committee-assignments/:id', authRequired, requireRole('admin'),
   }
 });
 
-/****************************************************
- * نظام المصادقة القديم للفيديو
- ****************************************************/
+/* -------------------------------------------------
+ *        تابع لنظام الفيديوهات: مصادقة قديمة
+ * -------------------------------------------------*/
 app.get('/api/redirect/:id', async (req, res) => {
   try {
     const link = await Link.findById(req.params.id);
@@ -1602,7 +1824,7 @@ app.post('/auth/login', (req, res) => {
     req.session.videoUser = { email };
     return res.redirect(`/protected?id=${id}`);
   } else {
-    return res.send('❌ يجب إدخال بريد ينتهي بـ @iu.edu.jo');
+    return res.send('❌ يجب إدخال بريد ينتهي بـ @iu.edu.jو');
   }
 });
 
@@ -1627,7 +1849,7 @@ app.get('/protected', async (req, res) => {
 });
 
 /****************************************************
- * تشغيل الخادم
+ * تشغيل الخادم (مشترك)
  ****************************************************/
 app.listen(PORT, () => {
   console.log(`🚀 الخادم يعمل على: http://localhost:${PORT}`);
