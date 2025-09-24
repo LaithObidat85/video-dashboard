@@ -26,6 +26,35 @@ function isValidISODate(s) {
   return /^\d{4}-\d{2}-\d{2}$/.test(s);
 }
 
+
+// ✅ فاحص URL بسيط (خادم)
+function isValidHttpUrl(u) {
+  try {
+    const x = new URL(u);
+    return x.protocol === 'http:' || x.protocol === 'https:';
+  } catch {
+    return false;
+  }
+}
+
+function normalizeUrlObj(x) {
+  if (!x || typeof x !== 'object') return null;
+  const v = (x.value || '').trim();
+  if (!v || !isValidHttpUrl(v)) return null;
+  return {
+    type: 'url',
+    value: v,
+    title: typeof x.title === 'string' ? x.title.trim() : ''
+  };
+}
+
+function normalizeUrlArray(arr) {
+  return Array.isArray(arr)
+    ? arr.map(normalizeUrlObj).filter(Boolean)
+    : [];
+}
+
+
 /****************************************************
  * أمان أساسي
  ****************************************************/
@@ -236,6 +265,53 @@ const settingsSchema = new mongoose.Schema({
   updatedAt: { type: Date, default: Date.now }
 });
 const Settings = mongoose.model('Settings', settingsSchema);
+
+
+/****************************************************
+ * Committees Files (روابط ملفات اللجان)
+ ****************************************************/
+const urlObjSchema = new mongoose.Schema(
+  {
+    type: { type: String, enum: ['url'], default: 'url' },
+    value: { type: String, trim: true },
+    title: { type: String, trim: true, default: '' }
+  },
+  { _id: false }
+);
+
+const committeeFilesSchema = new mongoose.Schema(
+  {
+    college: { type: String, required: true, trim: true },
+    committee_name: { type: String, required: true, trim: true },
+
+    formation_decision: urlObjSchema,
+    work_plan: urlObjSchema,
+
+    invitations: [urlObjSchema],
+    minutes: [urlObjSchema],
+    coverage_letters: [urlObjSchema],
+
+    report1: urlObjSchema,
+    report2: urlObjSchema,
+    report3: urlObjSchema,
+    statistical_analysis: urlObjSchema,
+
+    createdBy: {
+      id: String,
+      name: String,
+      email: String,
+      username: String,
+      role: String
+    }
+  },
+  { timestamps: true }
+);
+
+// توثيق واحد لكل (كلية + لجنة)
+committeeFilesSchema.index({ college: 1, committee_name: 1 }, { unique: true });
+
+const CommitteeFiles = mongoose.model('CommitteeFiles', committeeFilesSchema);
+
 
 
 /****************************************************
@@ -1347,6 +1423,181 @@ app.delete('/api/audit-logs/by-ids', authRequired, requireRole('admin'), async (
     res.status(500).json({ message: '❌ فشل في حذف السجلات المحددة', error: err.message });
   }
 });
+
+
+/****************************************************
+ * API: Committees Files (روابط ملفات اللجان)
+ * يتوافق مع واجهتك الأمامية: POST /api/committees-files
+ ****************************************************/
+
+// إنشاء/تحديث عبر مفتاح (college+committee_name) ـ upsert
+app.post('/api/committees-files', authRequired, async (req, res) => {
+  try {
+    const body = req.body || {};
+    const college = (body.college || '').trim();
+    const committee_name = (body.committee_name || '').trim();
+
+    if (!college || !committee_name) {
+      return res.status(400).json({ message: 'الكلية واسم اللجنة مطلوبة' });
+    }
+
+    // طَبِّع الحقول القادمة من الواجهة
+    const payload = {
+      college,
+      committee_name,
+      formation_decision: normalizeUrlObj(body.formation_decision),
+      work_plan: normalizeUrlObj(body.work_plan),
+
+      invitations: normalizeUrlArray(body.invitations),
+      minutes: normalizeUrlArray(body.minutes),
+      coverage_letters: normalizeUrlArray(body.coverage_letters),
+
+      report1: normalizeUrlObj(body.report1),
+      report2: normalizeUrlObj(body.report2),
+      report3: normalizeUrlObj(body.report3),
+      statistical_analysis: normalizeUrlObj(body.statistical_analysis),
+
+      createdBy: currentUser(req)
+        ? {
+            id: String(currentUser(req).id || ''),
+            name: currentUser(req).name,
+            email: currentUser(req).email,
+            username: currentUser(req).username,
+            role: currentUser(req).role
+          }
+        : undefined
+    };
+
+    // تحديث قاموس أسماء اللجان ليستفيد منه الـautocomplete
+    if (committee_name) {
+      await Committee.updateOne(
+        { name: committee_name },
+        { $setOnInsert: { name: committee_name } },
+        { upsert: true }
+      );
+    }
+
+    // Upsert حسب (college + committee_name)
+    const doc = await CommitteeFiles.findOneAndUpdate(
+      { college, committee_name },
+      { $set: payload },
+      { new: true, upsert: true }
+    );
+
+    await logAudit(req, {
+      model: 'CommitteeFiles',
+      action: 'upsert',
+      docId: doc._id,
+      payload
+    });
+
+    return res.status(201).json({ message: '✅ تم الحفظ', item: doc });
+  } catch (err) {
+    // معالجة تعارض الفهرس الفريد
+    if (err && err.code === 11000) {
+      return res.status(409).json({ message: 'تعارض في (الكلية + اللجنة)' });
+    }
+    console.error(err);
+    return res.status(500).json({ message: '❌ خطأ في الحفظ', error: err.message });
+  }
+});
+
+// قراءة: قائمة أو عنصر واحد عبر الفلاتر
+app.get('/api/committees-files', authRequired, async (req, res) => {
+  try {
+    const { college, committee_name, page = 1, limit = 20 } = req.query;
+    const filter = {};
+    if (college) filter.college = college;
+    if (committee_name) filter.committee_name = committee_name;
+
+    const p = Math.max(1, parseInt(page, 10) || 1);
+    const l = Math.min(100, Math.max(1, parseInt(limit, 10) || 20));
+    const skip = (p - 1) * l;
+
+    const [items, total] = await Promise.all([
+      CommitteeFiles.find(filter).sort({ updatedAt: -1 }).skip(skip).limit(l).lean(),
+      CommitteeFiles.countDocuments(filter)
+    ]);
+
+    res.json({ data: items, meta: { page: p, limit: l, total, hasMore: skip + items.length < total } });
+  } catch (err) {
+    res.status(500).json({ message: '❌ خطأ في الجلب', error: err.message });
+  }
+});
+
+// قراءة عنصر واحد بالـID
+app.get('/api/committees-files/:id', authRequired, async (req, res) => {
+  try {
+    const item = await CommitteeFiles.findById(req.params.id);
+    if (!item) return res.status(404).json({ message: 'غير موجود' });
+    res.json(item);
+  } catch (err) {
+    res.status(500).json({ message: '❌ خطأ في الجلب', error: err.message });
+  }
+});
+
+// تعديل بالـID
+app.put('/api/committees-files/:id', authRequired, async (req, res) => {
+  try {
+    const before = await CommitteeFiles.findById(req.params.id).lean();
+    if (!before) return res.status(404).json({ message: 'غير موجود' });
+
+    const b = req.body || {};
+    const update = {
+      // لا نسمح بتغيير المفتاحين عبر PUT، لكن إن أردتها أضف تحققًا هنا
+      formation_decision: normalizeUrlObj(b.formation_decision),
+      work_plan: normalizeUrlObj(b.work_plan),
+      invitations: normalizeUrlArray(b.invitations),
+      minutes: normalizeUrlArray(b.minutes),
+      coverage_letters: normalizeUrlArray(b.coverage_letters),
+      report1: normalizeUrlObj(b.report1),
+      report2: normalizeUrlObj(b.report2),
+      report3: normalizeUrlObj(b.report3),
+      statistical_analysis: normalizeUrlObj(b.statistical_analysis)
+    };
+
+    const updated = await CommitteeFiles.findByIdAndUpdate(
+      req.params.id,
+      { $set: update },
+      { new: true }
+    );
+
+    await logAudit(req, {
+      model: 'CommitteeFiles',
+      action: 'update',
+      docId: req.params.id,
+      payload: { before, after: updated.toObject() }
+    });
+
+    res.json({ message: '✅ تم التعديل', item: updated });
+  } catch (err) {
+    res.status(500).json({ message: '❌ خطأ في التعديل', error: err.message });
+  }
+});
+
+// حذف بالـID (مقترح جعله Admin فقط)
+app.delete('/api/committees-files/:id', authRequired, requireRole('admin'), async (req, res) => {
+  try {
+    const before = await CommitteeFiles.findById(req.params.id);
+    const deleted = await CommitteeFiles.findByIdAndDelete(req.params.id);
+    if (!deleted) return res.status(404).json({ message: 'غير موجود' });
+
+    await logAudit(req, {
+      model: 'CommitteeFiles',
+      action: 'delete',
+      docId: req.params.id,
+      payload: before ? before.toObject() : null
+    });
+
+    res.json({ message: '🗑️ تم الحذف' });
+  } catch (err) {
+    res.status(500).json({ message: '❌ خطأ في الحذف', error: err.message });
+  }
+});
+
+
+
+
 
 /****************************************************
  * نظام المصادقة القديم للفيديو — فصل الجلسة عن نظام اللجان
