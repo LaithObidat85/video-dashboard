@@ -24,6 +24,10 @@
     .icon{font-size:38px}
     .admin-only{display:none}
     .user-chip{font-size:.9rem}
+
+    /* منع وميض البطاقات قبل معرفة الدور */
+    .cards-stealth{opacity:0; visibility:hidden; transition:opacity .15s ease}
+    .cards-stealth.cards-ready{opacity:1; visibility:visible}
   </style>
 </head>
 <body>
@@ -44,7 +48,12 @@
       </div>
     </div>
 
-    <div class="row g-4">
+    <!-- لودر يظهر إلى أن نتأكد من الدور -->
+    <div id="pageLoader" class="d-flex justify-content-center align-items-center py-5">
+      <div class="spinner-border" role="status" aria-label="Loading"></div>
+    </div>
+
+    <div id="cardsGrid" class="row g-4 cards-stealth">
       <!-- إدخال تقييم لجنة (user/admin) -->
       <div class="col-12 col-sm-6 col-lg-4">
         <a href="/add_evaluation.html" class="card-link p-4 bg-white d-block h-100">
@@ -195,7 +204,7 @@
       const roleShown = roleRaw === 'user' ? 'member' : (user?.role || '—');
       document.getElementById('userRole').textContent = roleShown;
 
-      const cols = document.querySelectorAll('.row.g-4 > [class^="col-"]');
+      const cols = document.querySelectorAll('#cardsGrid > [class^="col-"]');
 
       // helper لإظهار العناصر حسب دالة مطابقة
       function showBy(fn){
@@ -217,7 +226,7 @@
       // user: يرى إدخال التقييم + العرض العام + إدارة تقييم اللجان
       //      + إضافة روابط اللجان + عرض روابط اللجان
       if (roleRaw === 'user') {
-        showBy((href, col) =>
+        showBy((href) =>
           /\/add_evaluation\.html\b/.test(href) ||
           /\/evaluations_dashboard\.html\b/.test(href) ||
           /manage_committees\.html\b/.test(href) ||
@@ -229,7 +238,7 @@
 
       // subuser-member: يرى العرض العام + إضافة روابط اللجان فقط
       if (roleRaw === 'subuser-member') {
-        showBy((href, col) =>
+        showBy((href) =>
           /\/evaluations_dashboard\.html\b/.test(href) ||
           /\/committees-files-add\.html\b/.test(href)
         );
@@ -250,6 +259,10 @@
         return;
       }
       renderUser(me.user);
+
+      // ✅ بعد تطبيق صلاحيات الدور: أخفِ اللودر وأظهر الشبكة بسلاسة
+      document.getElementById('pageLoader')?.classList.add('d-none');
+      document.getElementById('cardsGrid')?.classList.add('cards-ready');
     }
 
     async function logout(){
