@@ -15,8 +15,9 @@
     .table thead th{position:sticky;top:0;background:#fff;z-index:5;cursor:pointer}
     .table td, .table th{vertical-align:middle}
     .badge-role{font-size:.85rem}
-    .dirty-row{background: #fff9e6}
+    .dirty-row{background:#fff9e6}
     .toolbar .form-control, .toolbar .form-select{min-width:160px}
+    .spinner-overlay{position:fixed;inset:0;background:rgba(255,255,255,.6);display:none;align-items:center;justify-content:center;z-index:3000}
   </style>
 </head>
 <body>
@@ -79,9 +80,9 @@
           <table class="table align-middle mb-0 w-100">
             <thead>
               <tr>
-                <th data-sort="user">المستخدم</th>
-                <th data-sort="email">البريد</th>
-                <th data-sort="role">الدور</th>
+                <th>المستخدم</th>
+                <th>البريد</th>
+                <th>الدور</th>
                 <th data-sort="college" class="text-nowrap">الكلية</th>
                 <th data-sort="committee_name" class="text-nowrap">اللجنة</th>
                 <th data-sort="note">الملاحظة</th>
@@ -113,6 +114,11 @@
         <div class="d-flex"><div class="toast-body" id="toastInfoBody">ℹ️</div><button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button></div>
       </div>
     </div>
+  </div>
+
+  <!-- Spinner -->
+  <div class="spinner-overlay" id="spinner">
+    <div class="spinner-border" role="status"><span class="visually-hidden">Loading...</span></div>
   </div>
 
   <!-- Modal: add -->
@@ -166,6 +172,10 @@
     const toastInfo   =new bootstrap.Toast(document.getElementById('toastInfo'));
     const setInfo=(t)=>{ document.getElementById('toastInfoBody').textContent=t; toastInfo.show(); };
     const apiFetch=(path,opts={})=>fetch(`${API_BASE}${path}`,{credentials:'include',...opts});
+    const spinner = document.getElementById('spinner');
+    const showSpinner=()=>spinner.style.display='flex';
+    const hideSpinner=()=>spinner.style.display='none';
+
     document.getElementById('homeBtn').href=go('/committees-home.html');
 
     /* ====== جلسة المستخدم ====== */
@@ -194,7 +204,8 @@
       const users = j?.data || [];
       userSelect.innerHTML='';
       users.forEach(u=>{
-        const o=document.createElement('option'); o.value=u._id||u.id; o.textContent=`${u.name} (${u.username})`;
+        const o=document.createElement('option');
+        o.value=u._id||u.id; o.textContent=`${u.name} (${u.username})`;
         userSelect.appendChild(o);
       });
     }
@@ -214,7 +225,7 @@
     let state = {
       page: 1,
       limit: 20,
-      sort: '-createdAt',
+      sort: '-createdAt', // الخادم يدعم: createdAt, college, committee_name, note
       q: '',
       role: '',
       college: '',
@@ -225,8 +236,9 @@
       dirty: new Set()
     };
 
-    function resetDirty(){
-      state.original = {};
+    // لا تمسح الأصل بعد التحميل — نعطي خيار الإبقاء على الأصل
+    function resetDirty(keepOriginal=false){
+      if(!keepOriginal) state.original = {};
       state.dirty.clear();
       saveAllBtn.disabled = true;
       cancelAllBtn.disabled = true;
@@ -235,10 +247,28 @@
 
     function markDirty(id, tr){
       state.dirty.add(id);
-      state.rows.find(r=>r._id===id)._dirty = true;
+      const row = state.rows.find(r=>r._id===id);
+      if(row) row._dirty = true;
       tr.classList.add('dirty-row');
       saveAllBtn.disabled = false;
       cancelAllBtn.disabled = false;
+    }
+
+    function unmarkIfClean(id, tr){
+      // إن لم يعد هناك اختلافات لكل الحقول، ازل الوسم
+      const a = state.rows.find(x=>x._id===id);
+      const o = state.original[id] || {};
+      if(a && o){
+        const isClean =
+          (a.college||'')=== (o.college||'') &&
+          (a.committee_name||'')=== (o.committee_name||'') &&
+          (a.note||'')=== (o.note||'');
+        if(isClean){
+          state.dirty.delete(id);
+          if(tr) tr.classList.remove('dirty-row');
+          if(!state.dirty.size){ saveAllBtn.disabled = true; cancelAllBtn.disabled = true; }
+        }
+      }
     }
 
     function captureOriginal(rows){
@@ -247,23 +277,22 @@
         state.original[r._id] = {
           college: r.college || '',
           committee_name: r.committee_name || '',
-          note: r.note || '',
-          userId: String(r.userId?._id || r.userId || '')
+          note: r.note || ''
         };
       });
     }
 
     function getSortFor(th){
       const key = th.getAttribute('data-sort'); if(!key) return null;
-      // تبديل بين key و -key
       if (state.sort === key) return '-' + key;
       if (state.sort === '-' + key) return key;
-      return key; // أول مرة
+      return key;
     }
 
     /* ====== تحميل التعيينات ====== */
     async function loadAssignments(){
       const tbody=rows; tbody.innerHTML='<tr><td colspan="7" class="text-center py-4">جارِ التحميل…</td></tr>';
+      showSpinner();
       try{
         const params = new URLSearchParams({
           page: state.page,
@@ -280,20 +309,26 @@
         state.total = j?.meta?.total || arr.length;
 
         tbody.innerHTML='';
-        if(!arr.length){ tbody.innerHTML='<tr><td colspan="7" class="text-center py-4">لا توجد تعيينات</td></tr>'; metaText.textContent='—'; resetDirty(); return; }
+        if(!arr.length){
+          tbody.innerHTML='<tr><td colspan="7" class="text-center py-4">لا توجد تعيينات</td></tr>';
+          metaText.textContent='—';
+          resetDirty(true); // إبقِ الأصل كما هو (فارغ هنا) واغلق الأزرار
+          hideSpinner();
+          return;
+        }
 
         state.rows = arr.map(a=>({ ...a, _dirty:false }));
-        captureOriginal(state.rows);
+        captureOriginal(state.rows); // سجل الأصل قبل التعديلات
 
         for(const a of state.rows){
           const tr=document.createElement('tr'); tr.setAttribute('data-id', a._id);
 
-          // مستخدم
+          // مستخدم/بريد/دور
           const userCell = `<div class="text-nowrap">${a.userId?.name||'—'} <span class="text-muted">(${a.userId?.username||'—'})</span></div>`;
           const emailCell = `${a.userId?.email||'—'}`;
           const roleCell  = `<span class="badge text-bg-secondary badge-role">${a.userId?.role||'—'}</span>`;
 
-          // كلية/لجنة قابلة للتعديل + ملاحظة
+          // عناصر قابلة للتعديل
           const collegeSel = document.createElement('select');
           collegeSel.className='form-select form-select-sm';
           collegeSel.innerHTML = collegeFilter.innerHTML.replace('كل الكليات','— اختر —');
@@ -308,10 +343,22 @@
           noteInp.type='text'; noteInp.className='form-control form-control-sm';
           noteInp.placeholder='ملاحظة'; noteInp.value = a.note || '';
 
-          // أحداث التعديل
-          collegeSel.addEventListener('change', ()=>{ if(collegeSel.value !== state.original[a._id].college) markDirty(a._id, tr); else { tr.classList.remove('dirty-row'); a._dirty=false; state.dirty.delete(a._id);} a.college = collegeSel.value; });
-          commSel.addEventListener('change',   ()=>{ if(commSel.value !== state.original[a._id].committee_name) markDirty(a._id, tr); else { tr.classList.remove('dirty-row'); a._dirty=false; state.dirty.delete(a._id);} a.committee_name = commSel.value; });
-          noteInp.addEventListener('input',    ()=>{ if(noteInp.value !== state.original[a._id].note) markDirty(a._id, tr); else { tr.classList.remove('dirty-row'); a._dirty=false; state.dirty.delete(a._id);} a.note = noteInp.value; });
+          // أحداث التعديل (مع مقارنة بالأصل المخزّن)
+          collegeSel.addEventListener('change', ()=>{
+            a.college = collegeSel.value;
+            const o = state.original[a._id] || {};
+            if(collegeSel.value !== (o.college||'')) markDirty(a._id, tr); else unmarkIfClean(a._id, tr);
+          });
+          commSel.addEventListener('change', ()=>{
+            a.committee_name = commSel.value;
+            const o = state.original[a._id] || {};
+            if(commSel.value !== (o.committee_name||'')) markDirty(a._id, tr); else unmarkIfClean(a._id, tr);
+          });
+          noteInp.addEventListener('input', ()=>{
+            a.note = noteInp.value;
+            const o = state.original[a._id] || {};
+            if(noteInp.value !== (o.note||'')) markDirty(a._id, tr); else unmarkIfClean(a._id, tr);
+          });
 
           tr.innerHTML = `
             <td>${userCell}</td>
@@ -337,50 +384,74 @@
         const start = (state.page - 1) * state.limit + 1;
         const end   = start + state.rows.length - 1;
         metaText.textContent = `العناصر ${start}–${end} من ${state.total}`;
-        resetDirty();
-      }catch{
+
+        // بعد التحميل: نظّف حالة "قيد التعديل" فقط دون المساس بالأصل
+        resetDirty(true);
+      }catch(e){
         rows.innerHTML='<tr><td colspan="7" class="text-center py-4 text-danger">تعذر الجلب</td></tr>';
+      }finally{
+        hideSpinner();
       }
     }
 
-    /* ====== حذف مع تأكيد لطيف ====== */
+    /* ====== حذف مع تأكيد ====== */
     async function confirmDelete(id){
-      // تأكيد بسيط عبر Toast Info (يمكن تحويله لـ Modal صغير)
-      const ok = confirm('🗑️ حذف هذا التعيين؟'); // لو رغبت لاحقًا، استبدله بمودال
+      const ok = confirm('🗑️ حذف هذا التعيين؟');
       if(!ok) return;
       try{
+        showSpinner();
         const r=await apiFetch(`/api/committee-assignments/${id}`,{method:'DELETE'});
-        if(!r.ok){ const j=await r.json().catch(()=>({})); setInfo('فشل الحذف: '+(j.message||r.status)); return; }
+        hideSpinner();
+        if(!r.ok){
+          const j=await r.json().catch(()=>({}));
+          setInfo('فشل الحذف: '+(j.message||r.status)); return;
+        }
         toastSuccess.show(); loadAssignments();
-      }catch{ toastError.show(); }
+      }catch{
+        hideSpinner(); toastError.show();
+      }
     }
 
-    /* ====== حفظ جماعي (يستخدم /bulk إن وُجد، وإلا يسقط للـ PUT واحد-بواحد) ====== */
+    /* ====== حفظ جماعي ====== */
     async function saveAll(){
       if(!state.dirty.size) return;
       const updates = [];
       for (const id of state.dirty){
         const r = state.rows.find(x=>x._id===id);
+        if(!r) continue;
         const { college, committee_name, note } = r;
         updates.push({ id, college, committee_name, note });
       }
       try{
-        // جرّب الحفظ الجماعي
+        showSpinner();
         const r=await apiFetch('/api/committee-assignments/bulk',{
           method:'POST',
           headers:{'Content-Type':'application/json'},
           body: JSON.stringify({ updates, deletes: [] })
         });
-        if(r.ok){ toastSuccess.show(); loadAssignments(); return; }
-        // fallback لكل صف
+        if(r.ok){
+          hideSpinner();
+          toastSuccess.show();
+          await loadAssignments();
+          return;
+        }
+        //Fallback لكل صف (إن لم يدعم السيرفر bulk لأي سبب)
         for(const u of updates){
           const pr = await apiFetch(`/api/committee-assignments/${u.id}`,{
             method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify(u)
           });
-          if(!pr.ok){ const j=await pr.json().catch(()=>({})); setInfo('فشل تعديل صف: '+(j.message||pr.status)); }
+          if(!pr.ok){
+            const j=await pr.json().catch(()=>({}));
+            setInfo('فشل تعديل صف: '+(j.message||pr.status));
+          }
         }
-        toastSuccess.show(); loadAssignments();
-      }catch{ toastError.show(); }
+        hideSpinner();
+        toastSuccess.show();
+        await loadAssignments();
+      }catch{
+        hideSpinner();
+        toastError.show();
+      }
     }
 
     /* ====== أحداث الشريط ====== */
@@ -416,19 +487,26 @@
       addModal.show();
     });
     saveAddBtn.addEventListener('click', async ()=>{
-      const userId=userSelect.value.trim();
-      const college=collegeSelect.value.trim();
-      const committee_name=committeeSelect.value.trim();
-      const note=noteInput.value.trim();
+      const userId=(userSelect.value||'').trim();
+      const college=(collegeSelect.value||'').trim();
+      const committee_name=(committeeSelect.value||'').trim();
+      const note=(noteInput.value||'').trim();
       if(!userId||!college||!committee_name){ setInfo('الرجاء اختيار المستخدم والكلية واللجنة'); return; }
       try{
-        const r=await apiFetch('/api/committee-assignments',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({ userId, college, committee_name, note })});
+        showSpinner();
+        const r=await apiFetch('/api/committee-assignments',{
+          method:'POST',
+          headers:{'Content-Type':'application/json'},
+          body:JSON.stringify({ userId, college, committee_name, note })
+        });
+        hideSpinner();
         if(!r.ok){
-          const j=await r.json().catch(()=>({})); setInfo('فشل الحفظ: '+(j.message||r.status)); return;
+          const j=await r.json().catch(()=>({}));
+          setInfo('فشل الحفظ: '+(j.message||r.status)); return;
         }
         addModal.hide(); noteInput.value='';
         toastSuccess.show(); loadAssignments();
-      }catch{ toastError.show(); }
+      }catch{ hideSpinner(); toastError.show(); }
     });
 
     /* ====== بدء التشغيل ====== */
@@ -436,6 +514,7 @@
       try{
         await ensureAuth();
         await Promise.all([loadCollegesTo(collegeFilter), loadCommitteesTo(committeeFilter)]);
+        pageSize.value = String(state.limit);
         await loadAssignments();
       }catch{}
     })();
