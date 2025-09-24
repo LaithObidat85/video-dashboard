@@ -231,7 +231,7 @@
     };
 
     /* ====== أدوات ====== */
-    const yearRx = /^(20\\d{2})[\\/\\-](20\\d{2})$/;
+    const yearRx = /^(20\d{2})[\/-](20\d{2})$/;
     function validateAcademicYear(s){ const m=String(s||'').trim().match(yearRx); if(!m) return false; return (parseInt(m[2],10)-parseInt(m[1],10))===1; }
     function setSummaryChip(){
       const {college,academicYear,term,committee_name}=state.filters;
