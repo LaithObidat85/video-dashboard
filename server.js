@@ -35,25 +35,35 @@ app.use(helmet({
     useDefaults: true,
     directives: {
       "default-src": ["'self'"],
-      // لو واجهتك مكالمات من واجهة GitHub Pages ضف الدومين التالي أيضًا:
-      // "connect-src": ["'self'", "https://vdash-qkyv.onrender.com", "https://laithobidat85.github.io"],
-     "connect-src": ["'self'", "https://vdash-qkyv.onrender.com", "https://laithobidat85.github.io"],
-
-      "script-src": ["'self'", "'unsafe-inline'", "https://cdn.jsdelivr.net"],
-      "style-src": ["'self'", "'unsafe-inline'", "https://cdn.jsdelivr.net", "https://fonts.googleapis.com"],
-      "font-src": ["'self'", "https://cdn.jsdelivr.net", "https://fonts.gstatic.com", "data:"],
-
-      // ✅ السماح بالصور من نفس الأصل + البيانات + blob + Dropbox
-      "img-src": [
+      "connect-src": [
         "'self'",
-        "data:",
-        "blob:",
-        "https://www.dropbox.com",
-        "https://dl.dropboxusercontent.com",
-        "https://*.dropboxusercontent.com",
-        "https://*.dropbox.com"
+        "https://vdash-qkyv.onrender.com",
+        "https://laithobidat85.github.io",
+        "https://www.googleapis.com",
+        "https://accounts.google.com",
+        "https://apis.google.com",
+        "https://content.googleapis.com"
       ],
-
+      "script-src": [
+        "'self'",
+        "'unsafe-inline'",
+        "https://cdn.jsdelivr.net",
+        "https://accounts.google.com",
+        "https://apis.google.com"
+      ],
+      "style-src": ["'self'","'unsafe-inline'","https://cdn.jsdelivr.net","https://fonts.googleapis.com"],
+      "font-src": ["'self'","https://cdn.jsdelivr.net","https://fonts.gstatic.com","data:"],
+      "img-src": [
+        "'self'","data:","blob:",
+        "https://www.dropbox.com","https://dl.dropboxusercontent.com","https://*.dropboxusercontent.com","https://*.dropbox.com",
+        "https://lh3.googleusercontent.com","https://*.googleusercontent.com"
+      ],
+      "frame-src": [
+        "'self'",
+        "https://accounts.google.com",
+        "https://apis.google.com",
+        "https://drive.google.com"
+      ],
       "object-src": ["'none'"],
       "base-uri": ["'self'"],
       "form-action": ["'self'"],
@@ -61,6 +71,7 @@ app.use(helmet({
     }
   }
 }));
+
 
 
 
