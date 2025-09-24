@@ -1,8 +1,9 @@
+
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
   <meta charset="UTF-8" />
-  <title>إضافة ملفات/روابط اللجان - نظام اللجان</title>
+  <title>إضافة روابط ملفات اللجان - نظام اللجان</title>
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <link rel="icon" type="image/png" href="https://www.dropbox.com/scl/fi/f283e4rvv5cf9x12a1cic/my-website-logo.png?rlkey=yia776im7klypy27af32m0scy&e=1&st=vhaprvzh&dl=1">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.rtl.min.css">
@@ -12,30 +13,26 @@
     .container{margin-top:40px;max-width:98vw}
     .user-chip{display:inline-flex;align-items:center;gap:.25rem;font-size:1rem!important;padding:.375rem .75rem!important;line-height:1.5!important;border-radius:.375rem;font-weight:700!important}
     .user-chip.badge #userRole{font-weight:500!important}
-
-    .section-card{border-radius:12px}
-    .section-head{display:flex;align-items:center;justify-content:space-between;gap:.5rem}
     .muted{color:#6c757d}
-    .pill-toggle .btn{border-radius:20px}
-    .dropzone{border:2px dashed #ced4da;border-radius:.5rem;padding:18px;background:#fff;text-align:center;cursor:pointer}
-    .dropzone.dragover{background:#eef7ff;border-color:#86b7fe}
-    .file-chip{display:inline-flex;align-items:center;gap:.4rem;background:#eef7ff;border:1px solid #bee3f8;color:#0b5ed7;border-radius:999px;padding:.25rem .5rem}
-    .file-chip .remove{cursor:pointer}
-    .list-row{display:flex;gap:.5rem;align-items:center;background:#fff;border:1px solid #e9ecef;border-radius:.5rem;padding:.5rem}
-    .list-row .index{width:2rem;text-align:center;color:#6c757d}
-    .list-row .actions .btn{padding:.25rem .5rem}
-    .counter-badge{font-weight:700}
-    .sticky-panel{position:sticky;top:12px}
     .toast-container{position:fixed;top:20px;left:50%;transform:translateX(-50%);z-index:2000}
     .required-asterisk{color:#dc3545;margin-inline-start:.25rem}
     .disabled-cover{pointer-events:none;opacity:.65}
+    .nav-tabs .nav-link{border-radius:.5rem .5rem 0 0}
+    .tab-pane{background:#fff;border:1px solid #dee2e6;border-top:0;border-radius:0 0 .5rem .5rem;padding:1rem}
+    .list-row{display:flex;gap:.5rem;align-items:center;background:#fff;border:1px solid #e9ecef;border-radius:.5rem;padding:.5rem}
+    .list-row .index{width:2rem;text-align:center;color:#6c757d}
+    .list-row .actions .btn{padding:.25rem .5rem}
+    .sticky-panel{position:sticky;top:12px}
+    .counter-badge{font-weight:700}
+    .gdrive-status{display:flex;align-items:center;gap:.5rem}
+    .gdrive-status .badge{font-size:.85rem}
   </style>
 </head>
 <body>
   <div class="container">
     <!-- Header -->
     <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-2">
-      <h4 class="mb-0">إضافة ملفات/روابط اللجان</h4>
+      <h4 class="mb-0">إضافة روابط ملفات اللجان</h4>
       <div class="d-flex align-items-center gap-2">
         <span id="userInfo" class="user-chip badge bg-light text-dark border">
           <i class="bi bi-person"></i>
@@ -53,229 +50,182 @@
       </div>
     </div>
 
-    <!-- Filters: College / Committee -->
+    <!-- اختيار الكلية/اللجنة + إعدادات العام/الفصل + اتصال Drive -->
     <div class="card mb-3">
       <div class="card-body row g-3">
-        <div class="col-md-4">
+        <div class="col-md-3">
           <label class="form-label">الكلية <span class="required-asterisk">*</span></label>
           <select id="collegeSelect" class="form-select">
             <option value="">— اختر الكلية —</option>
           </select>
         </div>
-        <div class="col-md-4">
+        <div class="col-md-3">
           <label class="form-label">اسم اللجنة <span class="required-asterisk">*</span></label>
           <select id="committeeSelect" class="form-select">
             <option value="">— اختر اللجنة —</option>
           </select>
         </div>
-        <div class="col-md-4 d-flex align-items-end">
-          <div class="alert alert-info w-100 mb-0 py-2">
-            هذه الصفحة متاحة لكل الأدوار: <b>admin</b>، <b>user</b>، <b>subuser-member</b>
+
+        <!-- العام الجامعي (مربع نص) -->
+        <div class="col-md-3">
+          <label class="form-label">
+            العام الجامعي <span class="required-asterisk">*</span>
+          </label>
+          <input id="academicYearInput" type="text" class="form-control" placeholder="2024/2025 أو 2024-2025" />
+          <div class="form-text">صيغة مقبولة: 20xx/20yy أو 20xx-20yy (ويُفضّل أن يكون الفرق سنة واحدة).</div>
+        </div>
+
+        <!-- الفصل (قائمة منسدلة) -->
+        <div class="col-md-3">
+          <label class="form-label">
+            الفصل الدراسي <span class="required-asterisk">*</span>
+          </label>
+          <select id="termSelect" class="form-select">
+            <option value="">— اختر الفصل —</option>
+            <option value="الفصل الأول">الفصل الأول</option>
+            <option value="الفصل الثاني">الفصل الثاني</option>
+            <option value="الفصل الصيفي">الفصل الصيفي</option>
+          </select>
+        </div>
+
+        <div class="col-12">
+          <label class="form-label">Google Drive</label>
+          <div class="d-flex gap-2 gdrive-status">
+            <button id="gdriveConnectBtn" class="btn btn-outline-success">
+              <i class="bi bi-google"></i> اتصال Google Drive
+            </button>
+            <span id="gdriveState" class="badge text-bg-secondary">غير متصل</span>
+            <button id="gdriveDisconnectBtn" class="btn btn-outline-secondary btn-sm d-none">فصل</button>
           </div>
+          <div class="form-text">الاتصال يمنح صلاحية <code>drive.readonly</code> لاختيار ملفات موجودة دون رفع.</div>
         </div>
       </div>
     </div>
 
-    <div class="row g-3">
-      <!-- Left: Forms -->
+    <div class="row g-4">
+      <!-- اليسار: التبويبات -->
       <div class="col-lg-9">
-        <!-- Single attachments -->
-        <div class="card section-card mb-3">
-          <div class="card-body">
-            <div class="section-head mb-3">
-              <h6 class="mb-0">قرار التشكيل</h6>
-              <div class="pill-toggle btn-group" role="group">
-                <input type="radio" class="btn-check" name="fdType" id="fdTypeFile" autocomplete="off" checked>
-                <label class="btn btn-outline-primary btn-sm" for="fdTypeFile"><i class="bi bi-file-earmark-arrow-up"></i> ملف</label>
-                <input type="radio" class="btn-check" name="fdType" id="fdTypeUrl" autocomplete="off">
-                <label class="btn btn-outline-primary btn-sm" for="fdTypeUrl"><i class="bi bi-link-45deg"></i> رابط</label>
-              </div>
-            </div>
-            <div id="fdFileZone" class="dropzone mb-2">
-              اسحب وأفلت الملف هنا أو انقر للاختيار
-              <input id="fdFileInput" type="file" hidden />
-            </div>
-            <div id="fdUrlBox" class="input-group mb-2" style="display:none">
-              <span class="input-group-text"><i class="bi bi-link-45deg"></i></span>
-              <input id="fdUrlInput" type="url" class="form-control" placeholder="https://example.com/file.pdf">
-            </div>
-            <div id="fdPreview" class="small muted"></div>
-          </div>
-        </div>
+        <!-- Tabs -->
+        <ul class="nav nav-tabs mb-0" id="filesTabs" role="tablist">
+          <li class="nav-item" role="presentation">
+            <button class="nav-link active" id="core-tab" data-bs-toggle="tab" data-bs-target="#core" type="button" role="tab" aria-controls="core" aria-selected="true">
+              المستندات الأساسية
+            </button>
+          </li>
+          <li class="nav-item" role="presentation">
+            <button class="nav-link" id="inv-tab" data-bs-toggle="tab" data-bs-target="#inv" type="button" role="tab" aria-controls="inv" aria-selected="false">
+              دعوات الاجتماع <span class="badge bg-secondary ms-1" id="badgeInv">0</span>
+            </button>
+          </li>
+          <li class="nav-item" role="presentation">
+            <button class="nav-link" id="min-tab" data-bs-toggle="tab" data-bs-target="#min" type="button" role="tab" aria-controls="min" aria-selected="false">
+              محاضر الاجتماع <span class="badge bg-secondary ms-1" id="badgeMin">0</span>
+            </button>
+          </li>
+          <li class="nav-item" role="presentation">
+            <button class="nav-link" id="cov-tab" data-bs-toggle="tab" data-bs-target="#cov" type="button" role="tab" aria-controls="cov" aria-selected="false">
+              كتب التغطية <span class="badge bg-secondary ms-1" id="badgeCov">0</span>
+            </button>
+          </li>
+          <li class="nav-item" role="presentation">
+            <button class="nav-link" id="rep-tab" data-bs-toggle="tab" data-bs-target="#rep" type="button" role="tab" aria-controls="rep" aria-selected="false">
+              التقارير والتحليل
+            </button>
+          </li>
+        </ul>
 
-        <div class="card section-card mb-3">
-          <div class="card-body">
-            <div class="section-head mb-3">
-              <h6 class="mb-0">خطة العمل</h6>
-              <div class="pill-toggle btn-group" role="group">
-                <input type="radio" class="btn-check" name="wpType" id="wpTypeFile" autocomplete="off" checked>
-                <label class="btn btn-outline-primary btn-sm" for="wpTypeFile"><i class="bi bi-file-earmark-arrow-up"></i> ملف</label>
-                <input type="radio" class="btn-check" name="wpType" id="wpTypeUrl" autocomplete="off">
-                <label class="btn btn-outline-primary btn-sm" for="wpTypeUrl"><i class="bi bi-link-45deg"></i> رابط</label>
+        <div class="tab-content">
+          <!-- المستندات الأساسية -->
+          <div class="tab-pane fade show active" id="core" role="tabpanel" aria-labelledby="core-tab" tabindex="0">
+            <div class="row g-3">
+              <div class="col-md-6">
+                <label class="form-label">رابط قرار التشكيل</label>
+                <div class="input-group">
+                  <span class="input-group-text"><i class="bi bi-link-45deg"></i></span>
+                  <input id="fdUrl" type="url" class="form-control" placeholder="https://drive.google.com/...">
+                  <button class="btn btn-outline-primary" data-pick="fdUrl"><i class="bi bi-folder2-open"></i> من Drive</button>
+                </div>
+                <div id="fdHint" class="form-text">اختر ملفًا موجودًا من Google Drive أو ألصق الرابط يدويًا.</div>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">رابط خطة العمل</label>
+                <div class="input-group">
+                  <span class="input-group-text"><i class="bi bi-link-45deg"></i></span>
+                  <input id="wpUrl" type="url" class="form-control" placeholder="https://drive.google.com/...">
+                  <button class="btn btn-outline-primary" data-pick="wpUrl"><i class="bi bi-folder2-open"></i> من Drive</button>
+                </div>
               </div>
             </div>
-            <div id="wpFileZone" class="dropzone mb-2">
-              اسحب وأفلت الملف هنا أو انقر للاختيار
-              <input id="wpFileInput" type="file" hidden />
-            </div>
-            <div id="wpUrlBox" class="input-group mb-2" style="display:none">
-              <span class="input-group-text"><i class="bi bi-link-45deg"></i></span>
-              <input id="wpUrlInput" type="url" class="form-control" placeholder="https://example.com/file.pdf">
-            </div>
-            <div id="wpPreview" class="small muted"></div>
           </div>
-        </div>
 
-        <!-- Multi: Invitations -->
-        <div class="card section-card mb-3">
-          <div class="card-body">
-            <div class="section-head mb-3">
-              <h6 class="mb-0">دعوات الاجتماع (عدد مفتوح)</h6>
-              <div>
-                <button id="addInvitationBtn" class="btn btn-sm btn-primary">
-                  <i class="bi bi-plus-circle"></i> إضافة دعوة
-                </button>
-              </div>
+          <!-- الدعوات (متعدد) -->
+          <div class="tab-pane fade" id="inv" role="tabpanel" aria-labelledby="inv-tab" tabindex="0">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+              <h6 class="mb-0">روابط دعوات الاجتماع</h6>
+              <button id="addInvitationBtn" class="btn btn-sm btn-primary"><i class="bi bi-plus-circle"></i> إضافة دعوة</button>
             </div>
             <div id="invitationsList" class="vstack gap-2"></div>
           </div>
-        </div>
 
-        <!-- Multi: Minutes -->
-        <div class="card section-card mb-3">
-          <div class="card-body">
-            <div class="section-head mb-3">
-              <h6 class="mb-0">محاضر الاجتماع (عدد مفتوح)</h6>
-              <div>
-                <button id="addMinuteBtn" class="btn btn-sm btn-primary">
-                  <i class="bi bi-plus-circle"></i> إضافة محضر
-                </button>
-              </div>
+          <!-- المحاضر (متعدد) -->
+          <div class="tab-pane fade" id="min" role="tabpanel" aria-labelledby="min-tab" tabindex="0">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+              <h6 class="mb-0">روابط محاضر الاجتماع</h6>
+              <button id="addMinuteBtn" class="btn btn-sm btn-primary"><i class="bi bi-plus-circle"></i> إضافة محضر</button>
             </div>
             <div id="minutesList" class="vstack gap-2"></div>
           </div>
-        </div>
 
-        <!-- Multi: Coverage Letters -->
-        <div class="card section-card mb-3">
-          <div class="card-body">
-            <div class="section-head mb-3">
-              <h6 class="mb-0">كتب التغطية (عدد مفتوح)</h6>
-              <div>
-                <button id="addCoverageBtn" class="btn btn-sm btn-primary">
-                  <i class="bi bi-plus-circle"></i> إضافة كتاب تغطية
-                </button>
-              </div>
+          <!-- كتب التغطية (متعدد) -->
+          <div class="tab-pane fade" id="cov" role="tabpanel" aria-labelledby="cov-tab" tabindex="0">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+              <h6 class="mb-0">روابط كتب التغطية</h6>
+              <button id="addCoverageBtn" class="btn btn-sm btn-primary"><i class="bi bi-plus-circle"></i> إضافة كتاب تغطية</button>
             </div>
             <div id="coverageList" class="vstack gap-2"></div>
           </div>
-        </div>
 
-        <!-- Single: Reports & Statistical Analysis -->
-        <div class="row g-3">
-          <div class="col-md-6">
-            <div class="card section-card mb-3">
-              <div class="card-body">
-                <div class="section-head mb-3">
-                  <h6 class="mb-0">تقرير إنجاز 1</h6>
-                  <div class="pill-toggle btn-group" role="group">
-                    <input type="radio" class="btn-check" name="r1Type" id="r1TypeFile" autocomplete="off" checked>
-                    <label class="btn btn-outline-primary btn-sm" for="r1TypeFile">ملف</label>
-                    <input type="radio" class="btn-check" name="r1Type" id="r1TypeUrl" autocomplete="off">
-                    <label class="btn btn-outline-primary btn-sm" for="r1TypeUrl">رابط</label>
-                  </div>
-                </div>
-                <div id="r1FileZone" class="dropzone mb-2">
-                  اسحب وأفلت الملف هنا أو انقر للاختيار
-                  <input id="r1FileInput" type="file" hidden />
-                </div>
-                <div id="r1UrlBox" class="input-group mb-2" style="display:none">
+          <!-- التقارير والتحليل (مفردة) -->
+          <div class="tab-pane fade" id="rep" role="tabpanel" aria-labelledby="rep-tab" tabindex="0">
+            <div class="row g-3">
+              <div class="col-md-6">
+                <label class="form-label">رابط تقرير إنجاز 1</label>
+                <div class="input-group">
                   <span class="input-group-text"><i class="bi bi-link-45deg"></i></span>
-                  <input id="r1UrlInput" type="url" class="form-control" placeholder="https://example.com/file.pdf">
+                  <input id="r1Url" type="url" class="form-control" placeholder="https://drive.google.com/...">
+                  <button class="btn btn-outline-primary" data-pick="r1Url"><i class="bi bi-folder2-open"></i> من Drive</button>
                 </div>
-                <div id="r1Preview" class="small muted"></div>
               </div>
-            </div>
-          </div>
-
-          <div class="col-md-6">
-            <div class="card section-card mb-3">
-              <div class="card-body">
-                <div class="section-head mb-3">
-                  <h6 class="mb-0">تقرير إنجاز 2</h6>
-                  <div class="pill-toggle btn-group" role="group">
-                    <input type="radio" class="btn-check" name="r2Type" id="r2TypeFile" autocomplete="off" checked>
-                    <label class="btn btn-outline-primary btn-sm" for="r2TypeFile">ملف</label>
-                    <input type="radio" class="btn-check" name="r2Type" id="r2TypeUrl" autocomplete="off">
-                    <label class="btn btn-outline-primary btn-sm" for="r2TypeUrl">رابط</label>
-                  </div>
-                </div>
-                <div id="r2FileZone" class="dropzone mb-2">
-                  اسحب وأفلت الملف هنا أو انقر للاختيار
-                  <input id="r2FileInput" type="file" hidden />
-                </div>
-                <div id="r2UrlBox" class="input-group mb-2" style="display:none">
+              <div class="col-md-6">
+                <label class="form-label">رابط تقرير إنجاز 2</label>
+                <div class="input-group">
                   <span class="input-group-text"><i class="bi bi-link-45deg"></i></span>
-                  <input id="r2UrlInput" type="url" class="form-control" placeholder="https://example.com/file.pdf">
+                  <input id="r2Url" type="url" class="form-control" placeholder="https://drive.google.com/...">
+                  <button class="btn btn-outline-primary" data-pick="r2Url"><i class="bi bi-folder2-open"></i> من Drive</button>
                 </div>
-                <div id="r2Preview" class="small muted"></div>
               </div>
-            </div>
-          </div>
-
-          <div class="col-md-6">
-            <div class="card section-card mb-3">
-              <div class="card-body">
-                <div class="section-head mb-3">
-                  <h6 class="mb-0">تقرير إنجاز 3</h6>
-                  <div class="pill-toggle btn-group" role="group">
-                    <input type="radio" class="btn-check" name="r3Type" id="r3TypeFile" autocomplete="off" checked>
-                    <label class="btn btn-outline-primary btn-sm" for="r3TypeFile">ملف</label>
-                    <input type="radio" class="btn-check" name="r3Type" id="r3TypeUrl" autocomplete="off">
-                    <label class="btn btn-outline-primary btn-sm" for="r3TypeUrl">رابط</label>
-                  </div>
-                </div>
-                <div id="r3FileZone" class="dropzone mb-2">
-                  اسحب وأفلت الملف هنا أو انقر للاختيار
-                  <input id="r3FileInput" type="file" hidden />
-                </div>
-                <div id="r3UrlBox" class="input-group mb-2" style="display:none">
+              <div class="col-md-6">
+                <label class="form-label">رابط تقرير إنجاز 3</label>
+                <div class="input-group">
                   <span class="input-group-text"><i class="bi bi-link-45deg"></i></span>
-                  <input id="r3UrlInput" type="url" class="form-control" placeholder="https://example.com/file.pdf">
+                  <input id="r3Url" type="url" class="form-control" placeholder="https://drive.google.com/...">
+                  <button class="btn btn-outline-primary" data-pick="r3Url"><i class="bi bi-folder2-open"></i> من Drive</button>
                 </div>
-                <div id="r3Preview" class="small muted"></div>
               </div>
-            </div>
-          </div>
-
-          <div class="col-md-6">
-            <div class="card section-card mb-3">
-              <div class="card-body">
-                <div class="section-head mb-3">
-                  <h6 class="mb-0">التحليل الإحصائي</h6>
-                  <div class="pill-toggle btn-group" role="group">
-                    <input type="radio" class="btn-check" name="saType" id="saTypeFile" autocomplete="off" checked>
-                    <label class="btn btn-outline-primary btn-sm" for="saTypeFile">ملف</label>
-                    <input type="radio" class="btn-check" name="saType" id="saTypeUrl" autocomplete="off">
-                    <label class="btn btn-outline-primary btn-sm" for="saTypeUrl">رابط</label>
-                  </div>
-                </div>
-                <div id="saFileZone" class="dropzone mb-2">
-                  اسحب وأفلت الملف هنا أو انقر للاختيار
-                  <input id="saFileInput" type="file" hidden />
-                </div>
-                <div id="saUrlBox" class="input-group mb-2" style="display:none">
+              <div class="col-md-6">
+                <label class="form-label">رابط التحليل الإحصائي</label>
+                <div class="input-group">
                   <span class="input-group-text"><i class="bi bi-link-45deg"></i></span>
-                  <input id="saUrlInput" type="url" class="form-control" placeholder="https://example.com/file.pdf">
+                  <input id="saUrl" type="url" class="form-control" placeholder="https://drive.google.com/...">
+                  <button class="btn btn-outline-primary" data-pick="saUrl"><i class="bi bi-folder2-open"></i> من Drive</button>
                 </div>
-                <div id="saPreview" class="small muted"></div>
               </div>
             </div>
           </div>
         </div>
 
-        <!-- Actions -->
-        <div class="card mb-5">
+        <!-- إجراءات -->
+        <div class="card mt-3 mb-5">
           <div class="card-body d-flex flex-wrap gap-2">
             <button id="saveBtn" class="btn btn-success"><i class="bi bi-save"></i> حفظ</button>
             <button id="resetBtn" class="btn btn-outline-secondary"><i class="bi bi-arrow-counterclockwise"></i> تفريغ</button>
@@ -284,15 +234,16 @@
         </div>
       </div>
 
-      <!-- Right: Summary -->
+      <!-- اليمين: ملخص -->
       <div class="col-lg-3">
         <div class="sticky-panel">
           <div class="card">
             <div class="card-body">
               <h6 class="mb-3">ملخص سريع</h6>
               <div class="small mb-2">الكلية: <b id="sumCollege">—</b></div>
-              <div class="small mb-3">اللجنة: <b id="sumCommittee">—</b></div>
-
+              <div class="small mb-2">اللجنة: <b id="sumCommittee">—</b></div>
+              <div class="small mb-2">العام الجامعي: <b id="sumAcademicYear">—</b></div>
+              <div class="small mb-3">الفصل: <b id="sumTerm">—</b></div>
               <ul class="list-unstyled small vstack gap-2">
                 <li>قرار التشكيل: <span id="sumFD" class="counter-badge">—</span></li>
                 <li>خطة العمل: <span id="sumWP" class="counter-badge">—</span></li>
@@ -304,9 +255,8 @@
                 <li>تقرير 3: <span id="sumR3" class="counter-badge">—</span></li>
                 <li>التحليل الإحصائي: <span id="sumSA" class="counter-badge">—</span></li>
               </ul>
-
               <hr>
-              <div class="small muted">سيتم لاحقًا رفع الملفات/تثبيت الروابط عند ربط الصفحة مع نهايات السيرفر.</div>
+              <div class="small muted">سيتم ربط الحفظ بنهايات السيرفر.</div>
             </div>
           </div>
         </div>
@@ -316,7 +266,7 @@
     <!-- Toasts -->
     <div class="toast-container">
       <div id="toastSuccess" class="toast align-items-center text-bg-success border-0 mb-2" role="alert">
-        <div class="d-flex"><div class="toast-body">✅ تم تجهيز البيانات للإرسال</div><button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button></div>
+        <div class="d-flex"><div class="toast-body">✅ تم الحفظ بنجاح</div><button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button></div>
       </div>
       <div id="toastError" class="toast align-items-center text-bg-danger border-0 mb-2" role="alert">
         <div class="d-flex"><div class="toast-body">❌ حدث خطأ</div><button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button></div>
@@ -324,11 +274,40 @@
     </div>
   </div>
 
-  <!-- Scripts -->
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+  <!-- ====== Google: مفاتيح + GIS ====== -->
   <script>
-    /* ====== بيئة موحّدة ====== */
+    window.GOOGLE_CLIENT_ID = '656975767411-lu47r57vrfmhrplrd11rdgbm34cqofsn.apps.googleusercontent.com';
+    window.GOOGLE_API_KEY   = 'AIzaSyAaUEq7_7nbhj7Ch-7X0OWKyREUK8bH_EY';
+    window.DRIVE_SCOPE = 'https://www.googleapis.com/auth/drive.readonly';
+
+    window.googleAccessToken = null;
+    window.gisTokenClient    = null;
+
+    window.initGis = function () {
+      if (!window.google || !google.accounts || !google.accounts.oauth2) return;
+      window.gisTokenClient = google.accounts.oauth2.initTokenClient({
+        client_id: window.GOOGLE_CLIENT_ID,
+        scope: window.DRIVE_SCOPE,
+        callback: (resp) => {
+          if (resp && resp.access_token) {
+            window.googleAccessToken = resp.access_token;
+            if (typeof window.setGDriveState === 'function') window.setGDriveState(true);
+          }
+        }
+      });
+    };
+  </script>
+
+  <!-- Google APIs (Picker + GIS) -->
+  <script src="https://accounts.google.com/gsi/client" async defer onload="initGis()"></script>
+  <script src="https://apis.google.com/js/api.js" async defer></script>
+
+  <!-- Bootstrap JS -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+  <!-- ====== تطبيق الصفحة ====== -->
+  <script>
+    /* ====== بيئة موحدة ====== */
     const RENDER_BASE='https://vdash-qkyv.onrender.com';
     const host=location.hostname;
     const isGithub=host.endsWith('github.io');
@@ -340,7 +319,7 @@
     const toastError  =new bootstrap.Toast(document.getElementById('toastError'));
     const apiFetch=(path,opts={})=>fetch(`${API_BASE}${path}`,{credentials:'include',...opts});
 
-    /* ====== صلاحيات/جلسة ====== */
+    /* ====== جلسة المستخدم ====== */
     let CURRENT_USER=null;
     function renderUser(u){
       const username=u?.username||(u?.email?u.email.split('@')[0]:'—');
@@ -349,26 +328,23 @@
       document.getElementById('userRole').textContent=u?.role||'—';
     }
     async function ensureAuth(){
-      try{
-        const r=await apiFetch('/auth/committees/me');
-        const j=await r.json();
-        if(!j?.authenticated){
-          location.href=go('/committees-login.html?next='+encodeURIComponent('/committees-files-add.html'));throw 0;
-        }
-        if(j.user?.isActive===false){
-          alert('🚫 حسابك معطّل. الرجاء التواصل مع المشرف.');
-          location.href=go('/committees-home.html');throw 0;
-        }
-        CURRENT_USER=j.user;renderUser(j.user);
-      }catch{throw 0;}
+      const r=await apiFetch('/auth/committees/me');
+      const j=await r.json();
+      if(!j?.authenticated){
+        location.href=go('/committees-login.html?next='+encodeURIComponent('/committees-files-add.html'));throw 0;
+      }
+      if(j.user?.isActive===false){
+        alert('🚫 حسابك معطّل.'); location.href=go('/committees-home.html'); throw 0;
+      }
+      CURRENT_USER=j.user; renderUser(j.user);
     }
     document.getElementById('homeBtn').href=go('/committees-home.html');
     document.getElementById('logoutBtn').addEventListener('click',async()=>{
       try{
         const r=await apiFetch('/auth/committees/logout',{method:'POST',headers:{'Content-Type':'application/json'}});
-        if(r.ok){toastSuccess.show();setTimeout(()=>location.href=go('/committees-login.html'),700)}
-        else{toastError.show()}
-      }catch{toastError.show()}
+        if(r.ok){ toastSuccess.show(); setTimeout(()=>location.href=go('/committees-login.html'),700); }
+        else toastError.show();
+      }catch{ toastError.show(); }
     });
     document.getElementById('backBtn').href=go('/committees-home.html');
 
@@ -386,237 +362,416 @@
       (colleges||[]).forEach(c=>{const n=normalizeName(c);if(!n)return;const o=document.createElement('option');o.value=o.textContent=n;collegeSel.appendChild(o);});
       (committees||[]).forEach(c=>{const n=normalizeName(c);if(!n)return;const o=document.createElement('option');o.value=o.textContent=n;committeeSel.appendChild(o);});
     }
+
+    /* ====== تحميل إعدادات افتراضية للعام/الفصل ====== */
+    async function loadDefaultsFromSettings(){
+      try{
+        const r=await apiFetch('/api/settings');
+        const s=await r.json();
+        if (s?.academicYear) {
+          document.getElementById('academicYearInput').value=s.academicYear;
+          state.academicYear=s.academicYear.trim();
+        }
+        if (s?.term) {
+          document.getElementById('termSelect').value=s.term;
+          state.term=s.term;
+        }
+      }catch{}
+      refreshSummary();
+      // محاولة تعبئة أولية إذا كانت القيم كاملة
+      await new Promise(r=>setTimeout(r,0));
+      schedulePrefillCheck();
+    }
+
+    /* ====== الحالة العامة ====== */
+    const state={
+      college:'', committee_name:'',
+      academicYear:'', term:'',
+      formation_decision:null, work_plan:null,
+      invitations:[], minutes:[], coverage_letters:[],
+      report1:null, report2:null, report3:null, statistical_analysis:null
+    };
+
+    /* ====== تحقق العام الجامعي (regex + فرق سنة) ====== */
+    const yearRx = /^(20\d{2})[\/-](20\d{2})$/;
+    function validateAcademicYear(s){
+      const m = String(s||'').trim().match(yearRx);
+      if(!m) return { ok:false, msg:'صيغة غير صحيحة' };
+      const y1 = parseInt(m[1],10), y2 = parseInt(m[2],10);
+      if (y2 - y1 !== 1) return { ok:false, msg:'يجب أن يكون الفرق سنة واحدة' };
+      return { ok:true, msg:'' };
+    }
+
     function refreshSummary(){
       document.getElementById('sumCollege').textContent=state.college||'—';
       document.getElementById('sumCommittee').textContent=state.committee_name||'—';
-      document.getElementById('sumFD').textContent=state.formation_decision? (state.formation_decision.type==='url'?'رابط':'ملف'): '—';
-      document.getElementById('sumWP').textContent=state.work_plan? (state.work_plan.type==='url'?'رابط':'ملف'): '—';
+      document.getElementById('sumAcademicYear').textContent=state.academicYear||'—';
+      document.getElementById('sumTerm').textContent=state.term||'—';
+
+      document.getElementById('sumFD').textContent=state.formation_decision? 'رابط' : '—';
+      document.getElementById('sumWP').textContent=state.work_plan? 'رابط' : '—';
       document.getElementById('sumInv').textContent=state.invitations.length;
       document.getElementById('sumMin').textContent=state.minutes.length;
       document.getElementById('sumCov').textContent=state.coverage_letters.length;
-      document.getElementById('sumR1').textContent=state.report1? (state.report1.type==='url'?'رابط':'ملف'): '—';
-      document.getElementById('sumR2').textContent=state.report2? (state.report2.type==='url'?'رابط':'ملف'): '—';
-      document.getElementById('sumR3').textContent=state.report3? (state.report3.type==='url'?'رابط':'ملف'): '—';
-      document.getElementById('sumSA').textContent=state.statistical_analysis? (state.statistical_analysis.type==='url'?'رابط':'ملف'): '—';
+      document.getElementById('sumR1').textContent=state.report1? 'رابط' : '—';
+      document.getElementById('sumR2').textContent=state.report2? 'رابط' : '—';
+      document.getElementById('sumR3').textContent=state.report3? 'رابط' : '—';
+      document.getElementById('sumSA').textContent=state.statistical_analysis? 'رابط' : '—';
+      document.getElementById('badgeInv').textContent=state.invitations.length;
+      document.getElementById('badgeMin').textContent=state.minutes.length;
+      document.getElementById('badgeCov').textContent=state.coverage_letters.length;
       toggleActions();
     }
     function toggleActions(){
-      const disabled = !(state.college && state.committee_name);
+      const disabled = !(state.college && state.committee_name && state.academicYear && state.term);
       document.getElementById('saveBtn').classList.toggle('disabled-cover',disabled);
     }
 
-    document.getElementById('collegeSelect').addEventListener('change',e=>{state.college=e.target.value;refreshSummary();});
-    document.getElementById('committeeSelect').addEventListener('change',e=>{state.committee_name=e.target.value;refreshSummary();});
+    /* ربط تغييرات رأس الصفحة */
+    document.getElementById('collegeSelect').addEventListener('change',e=>{
+      state.college=e.target.value;refreshSummary();schedulePrefillCheck();
+    });
+    document.getElementById('committeeSelect').addEventListener('change',e=>{
+      state.committee_name=e.target.value;refreshSummary();schedulePrefillCheck();
+    });
+    document.getElementById('termSelect').addEventListener('change',e=>{
+      state.term=e.target.value;refreshSummary();schedulePrefillCheck();
+    });
+    const ayInput = document.getElementById('academicYearInput');
+    ayInput.addEventListener('input',()=>{
+      const v = ayInput.value.trim();
+      const {ok} = validateAcademicYear(v);
+      if (!v){ ayInput.classList.remove('is-invalid'); state.academicYear=''; refreshSummary(); return; }
+      if (ok){ ayInput.classList.remove('is-invalid'); state.academicYear=v; }
+      else   { ayInput.classList.add('is-invalid'); state.academicYear=''; }
+      refreshSummary();
+      if(ok) schedulePrefillCheck();
+    });
 
-    /* ====== State ====== */
-    const state={
-      college:'',
-      committee_name:'',
-      formation_decision:null,
-      work_plan:null,
-      invitations:[],
-      minutes:[],
-      coverage_letters:[],
-      report1:null, report2:null, report3:null,
-      statistical_analysis:null
-    };
-
-    /* ====== أدوات مشتركة ====== */
-    function humanFile(f){ return `${f.name} — ${(f.size/1024).toFixed(1)} KB`; }
+    /* ====== تحقق الروابط ====== */
     function isValidUrl(u){ try{ new URL(u); return true; } catch{ return false; } }
-
-    function wireSingle(sectionKey, typeRadios, fileZoneId, fileInputId, urlBoxId, urlInputId, previewId){
-      const [radioFile, radioUrl]=typeRadios;
-      const zone=document.getElementById(fileZoneId);
-      const fileInput=document.getElementById(fileInputId);
-      const urlBox=document.getElementById(urlBoxId);
-      const urlInput=document.getElementById(urlInputId);
-      const preview=document.getElementById(previewId);
-
-      function setMode(){
-        const isFile=radioFile.checked;
-        zone.style.display=isFile?'block':'none';
-        urlBox.style.display=isFile?'none':'flex';
-        if(!isFile){ state[sectionKey]=null; preview.innerHTML=''; }
-        refreshSummary();
-      }
-      radioFile.addEventListener('change',setMode);
-      radioUrl.addEventListener('change',setMode);
-      setMode();
-
-      zone.addEventListener('click',()=>fileInput.click());
-      ['dragenter','dragover'].forEach(ev=>zone.addEventListener(ev,e=>{e.preventDefault();e.stopPropagation();zone.classList.add('dragover');}));
-      ;['dragleave','drop'].forEach(ev=>zone.addEventListener(ev,e=>{e.preventDefault();e.stopPropagation();zone.classList.remove('dragover');}));
-      zone.addEventListener('drop',e=>{
-        const f=e.dataTransfer.files?.[0]; if(!f) return;
-        state[sectionKey]={type:'file',file:f,name:f.name}; preview.innerHTML=`<span class="file-chip"><i class="bi bi-paperclip"></i>${humanFile(f)}<i class="bi bi-x-circle remove"></i></span>`;
-        preview.querySelector('.remove').addEventListener('click',()=>{state[sectionKey]=null;preview.innerHTML='';refreshSummary();});
-        refreshSummary();
-      });
-      fileInput.addEventListener('change',e=>{
-        const f=e.target.files?.[0]; if(!f) return;
-        state[sectionKey]={type:'file',file:f,name:f.name}; preview.innerHTML=`<span class="file-chip"><i class="bi bi-paperclip"></i>${humanFile(f)}<i class="bi bi-x-circle remove"></i></span>`;
-        preview.querySelector('.remove').addEventListener('click',()=>{state[sectionKey]=null;preview.innerHTML='';fileInput.value='';refreshSummary();});
-        refreshSummary();
-      });
-      urlInput.addEventListener('input',()=>{
-        const v=urlInput.value.trim();
-        if(!v){ state[sectionKey]=null; preview.textContent=''; refreshSummary(); return; }
-        if(isValidUrl(v)){
-          state[sectionKey]={type:'url',value:v,name:''};
-          preview.innerHTML=`<span class="text-success"><i class="bi bi-check2-circle"></i> رابط صالح</span>`;
-        }else{
-          state[sectionKey]=null;
-          preview.innerHTML=`<span class="text-danger"><i class="bi bi-exclamation-triangle"></i> رابط غير صالح</span>`;
-        }
+    function wireSingleUrl(inputId, setter){
+      const el=document.getElementById(inputId);
+      el.addEventListener('input',()=>{
+        const v=el.value.trim();
+        if(!v){ setter(null); el.classList.remove('is-invalid'); refreshSummary(); return; }
+        if(isValidUrl(v)){ setter({type:'url', value:v}); el.classList.remove('is-invalid'); }
+        else{ setter(null); el.classList.add('is-invalid'); }
         refreshSummary();
       });
     }
+    wireSingleUrl('fdUrl', (x)=>state.formation_decision=x);
+    wireSingleUrl('wpUrl', (x)=>state.work_plan=x);
+    wireSingleUrl('r1Url', (x)=>state.report1=x);
+    wireSingleUrl('r2Url', (x)=>state.report2=x);
+    wireSingleUrl('r3Url', (x)=>state.report3=x);
+    wireSingleUrl('saUrl', (x)=>state.statistical_analysis=x);
 
-    function addMultiRow(listEl, arrRef){
+    /* ====== Google Drive: GIS + Picker ====== */
+    let pickerApiLoaded=false;
+    function setGDriveState(connected, emailText=''){
+      const badge=document.getElementById('gdriveState');
+      const btnDisc=document.getElementById('gdriveDisconnectBtn');
+      if(connected){
+        badge.className='badge text-bg-success';
+        badge.textContent= emailText ? ('متصل: ' + emailText) : 'متصل';
+        btnDisc.classList.remove('d-none');
+      }else{
+        badge.className='badge text-bg-secondary';
+        badge.textContent='غير متصل';
+        btnDisc.classList.add('d-none');
+      }
+      document.querySelectorAll('[data-pick]').forEach(b=>{ b.disabled = !connected; });
+    }
+    function loadPickerApi(){
+      return new Promise(res=>{
+        if(pickerApiLoaded) return res();
+        gapi.load('picker', ()=>{ pickerApiLoaded=true; res(); });
+      });
+    }
+    async function ensureDriveToken(){
+      if (window.googleAccessToken) return true;
+      if (!window.gisTokenClient) window.initGis();
+      return new Promise(resolve=>{
+        window.gisTokenClient.requestAccessToken({ prompt: 'consent' });
+        const t=setInterval(()=>{ if(window.googleAccessToken){ clearInterval(t); resolve(true); } },200);
+        setTimeout(()=>{ clearInterval(t); resolve(!!window.googleAccessToken); },10000);
+      });
+    }
+    async function fetchWebViewLink(fileId){
+      const r = await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}?fields=webViewLink`, {
+        headers: { Authorization: 'Bearer ' + window.googleAccessToken }
+      });
+      const j = await r.json();
+      return j.webViewLink || `https://drive.google.com/file/d/${fileId}/view`;
+    }
+    async function openDrivePicker(onPicked){
+      const ok = await ensureDriveToken();
+      if(!ok){ alert('تعذر الاتصال بـ Google Drive'); return; }
+      await loadPickerApi();
+      const viewDocs = new google.picker.DocsView().setIncludeFolders(true).setSelectFolderEnabled(false);
+      const picker = new google.picker.PickerBuilder()
+        .setOAuthToken(window.googleAccessToken)
+        .setDeveloperKey(window.GOOGLE_API_KEY)
+        .addView(viewDocs)
+        .setOrigin(window.location.origin)
+        .setLocale('ar')
+        .setSize(880,520)
+        .setCallback(async (data)=>{
+          if(data.action === google.picker.Action.PICKED && data.docs && data.docs.length){
+            const file = data.docs[0];
+            try{
+              const link = await fetchWebViewLink(file.id);
+              onPicked(link, file);
+            }catch(e){
+              console.error(e); alert('تعذر جلب رابط العرض للملف');
+            }
+          }
+        }).build();
+      picker.setVisible(true);
+    }
+    document.getElementById('gdriveConnectBtn').addEventListener('click', async ()=>{
+      const ok = await ensureDriveToken(); setGDriveState(ok);
+    });
+    document.getElementById('gdriveDisconnectBtn').addEventListener('click', ()=>{
+      window.googleAccessToken = null; setGDriveState(false);
+    });
+    document.querySelectorAll('[data-pick]').forEach(btn=>{
+      btn.addEventListener('click', ()=>{
+        const targetId = btn.getAttribute('data-pick');
+        const inputEl = document.getElementById(targetId);
+        openDrivePicker((link)=>{ inputEl.value = link; inputEl.dispatchEvent(new Event('input')); });
+      });
+    });
+
+    /* ====== القوائم المتعددة ====== */
+    // 🔁 نسخة مطوّرة: تدعم عنصرًا تمهيديًا initialItem للتهيئة من قاعدة البيانات
+    function addMultiUrlRow(listEl, arrRef, initialItem = null){
       const row=document.createElement('div');
       row.className='list-row';
       row.innerHTML=`
         <span class="index">#</span>
-        <div class="btn-group btn-group-sm" role="group" aria-label="type">
-          <input type="radio" class="btn-check" name="t-${crypto.randomUUID()}" id="f-${crypto.randomUUID()}" checked>
-          <label class="btn btn-outline-primary">ملف</label>
-          <input type="radio" class="btn-check" id="u-${crypto.randomUUID()}">
-          <label class="btn btn-outline-primary">رابط</label>
-        </div>
-        <div class="flex-grow-1 file-area">
-          <div class="dropzone mb-0">انقر لاختيار ملف<input type="file" hidden /></div>
-        </div>
-        <div class="flex-grow-1 url-area" style="display:none">
+        <div class="flex-grow-1">
           <div class="input-group">
             <span class="input-group-text"><i class="bi bi-link-45deg"></i></span>
-            <input type="url" class="form-control" placeholder="https://example.com/file.pdf">
+            <input type="url" class="form-control url-input" placeholder="https://drive.google.com/...">
+            <button class="btn btn-outline-primary btn-drive-row" type="button"><i class="bi bi-folder2-open"></i></button>
           </div>
+          <div class="form-text">اكتب عنوانًا اختياريًا في الحقل التالي.</div>
+          <input type="text" class="form-control form-control-sm mt-1 title-input" placeholder="عنوان اختياري">
         </div>
         <div class="actions ms-2">
-          <button class="btn btn-outline-danger"><i class="bi bi-trash"></i></button>
+          <button class="btn btn-outline-danger" type="button"><i class="bi bi-trash"></i></button>
         </div>
       `;
       const idxSpan=row.querySelector('.index');
-      const drop=row.querySelector('.file-area .dropzone');
-      const fileInput=row.querySelector('.file-area input[type="file"]');
-      const urlArea=row.querySelector('.url-area');
-      const urlInput=row.querySelector('.url-area input[type="url"]');
+      const urlInput=row.querySelector('.url-input');
+      const titleInput=row.querySelector('.title-input');
       const delBtn=row.querySelector('.actions .btn');
+      const driveBtn=row.querySelector('.btn-drive-row');
 
-      const radios=row.querySelectorAll('.btn-check');
-      const [fileRadio,urlRadio]=radios;
-
-      const item={type:'file',file:null,value:'',name:''};
+      const item={
+        value: (initialItem && initialItem.value) ? initialItem.value : '',
+        title: (initialItem && initialItem.title) ? initialItem.title : ''
+      };
       arrRef.push(item);
 
       function refreshIndex(){ idxSpan.textContent = (Array.from(listEl.children).indexOf(row)+1); }
-      function switchMode(){
-        const isFile=fileRadio.checked;
-        row.querySelector('.file-area').style.display=isFile?'block':'none';
-        row.querySelector('.url-area').style.display=isFile?'none':'block';
-        item.type=isFile?'file':'url';
-        item.file=null; item.value=''; item.name='';
-        drop.innerHTML='انقر لاختيار ملف<input type="file" hidden />';
-        refreshSummary();
-      }
-      radios.forEach(r=>r.addEventListener('change',switchMode));
-      switchMode();
 
-      drop.addEventListener('click',()=>fileInput.click());
-      fileInput.addEventListener('change',e=>{
-        const f=e.target.files?.[0]; if(!f) return;
-        item.file=f; item.name=f.name;
-        drop.innerHTML=`<span class="file-chip"><i class="bi bi-paperclip"></i>${humanFile(f)}<i class="bi bi-x-circle remove"></i></span>`;
-        drop.querySelector('.remove').addEventListener('click',()=>{item.file=null;item.name='';fileInput.value='';drop.innerHTML='انقر لاختيار ملف<input type="file" hidden />';refreshSummary();});
-        refreshSummary();
-      });
+      // تعبئة أولية في الـDOM إن وُجدت
+      if(item.value){ urlInput.value=item.value; }
+      if(item.title){ titleInput.value=item.title; }
+
       urlInput.addEventListener('input',()=>{
         const v=urlInput.value.trim();
         if(isValidUrl(v)){ item.value=v; urlInput.classList.remove('is-invalid'); }
         else{ item.value=''; if(v) urlInput.classList.add('is-invalid'); else urlInput.classList.remove('is-invalid'); }
         refreshSummary();
       });
+      titleInput.addEventListener('input',()=>{ item.title=titleInput.value.trim(); });
+
       delBtn.addEventListener('click',()=>{
         const i=arrRef.indexOf(item);
         if(i>=0) arrRef.splice(i,1);
-        row.remove(); Array.from(listEl.children).forEach(()=>{}); 
-        Array.from(listEl.children).forEach(()=>{}); 
+        row.remove();
         Array.from(listEl.children).forEach(refreshIndex);
         refreshSummary();
+      });
+
+      driveBtn.addEventListener('click', ()=>{
+        openDrivePicker((link)=>{ urlInput.value = link; urlInput.dispatchEvent(new Event('input')); });
       });
 
       listEl.appendChild(row);
       Array.from(listEl.children).forEach(refreshIndex);
       refreshSummary();
     }
+    document.getElementById('addInvitationBtn').addEventListener('click',()=>addMultiUrlRow(document.getElementById('invitationsList'), state.invitations));
+    document.getElementById('addMinuteBtn').addEventListener('click',()=>addMultiUrlRow(document.getElementById('minutesList'), state.minutes));
+    document.getElementById('addCoverageBtn').addEventListener('click',()=>addMultiUrlRow(document.getElementById('coverageList'), state.coverage_letters));
 
-    /* ====== ربط الأقسام ====== */
-    wireSingle('formation_decision', [document.getElementById('fdTypeFile'),document.getElementById('fdTypeUrl')], 'fdFileZone','fdFileInput','fdUrlBox','fdUrlInput','fdPreview');
-    wireSingle('work_plan', [document.getElementById('wpTypeFile'),document.getElementById('wpTypeUrl')], 'wpFileZone','wpFileInput','wpUrlBox','wpUrlInput','wpPreview');
+    /* ====== Helpers للتهيئة من قاعدة البيانات ====== */
+    function setSingleInputAndState(inputId, stateKey, urlObj){
+      const el=document.getElementById(inputId);
+      if(urlObj && urlObj.value){
+        el.value = urlObj.value;
+        el.classList.remove('is-invalid');
+        state[stateKey] = { type:'url', value:urlObj.value, title: urlObj.title || '' };
+      }else{
+        // لا نُفرّغ شيئًا تلقائيًا إذا لم يوجد سجل — نحافظ على إدخالات المستخدم
+        // (بالتالي لا تغيير هنا على الإطلاق)
+      }
+      // إطلاق input حتى لو لم نغيّر، لضمان التحقق/التلخيص
+      el.dispatchEvent(new Event('input'));
+    }
+    function rebuildMultiList(listElId, arrRef, items){
+      const listEl = document.getElementById(listElId);
+      // نملأ القائمة بالعناصر القادمة من DB فقط إن كانت موجودة
+      if (Array.isArray(items) && items.length){
+        listEl.innerHTML = '';
+        arrRef.length = 0;
+        items.forEach(it => addMultiUrlRow(listEl, arrRef, it));
+      }
+      refreshSummary();
+    }
 
-    wireSingle('report1', [document.getElementById('r1TypeFile'),document.getElementById('r1TypeUrl')], 'r1FileZone','r1FileInput','r1UrlBox','r1UrlInput','r1Preview');
-    wireSingle('report2', [document.getElementById('r2TypeFile'),document.getElementById('r2TypeUrl')], 'r2FileZone','r2FileInput','r2UrlBox','r2UrlInput','r2Preview');
-    wireSingle('report3', [document.getElementById('r3TypeFile'),document.getElementById('r3TypeUrl')], 'r3FileZone','r3FileInput','r3UrlBox','r3UrlInput','r3Preview');
-    wireSingle('statistical_analysis', [document.getElementById('saTypeFile'),document.getElementById('saTypeUrl')], 'saFileZone','saFileInput','saUrlBox','saUrlInput','saPreview');
+    /* ====== التهيئة التلقائية من قاعدة البيانات ====== */
+    let prefillReqCounter = 0;
+    async function tryPrefillFromDB(){
+      // يجب اكتمال الأربع قيم وصحة العام الجامعي
+      const ayOk = state.academicYear && validateAcademicYear(state.academicYear).ok;
+      if(!(state.college && state.committee_name && state.term && ayOk)) return;
 
-    document.getElementById('addInvitationBtn').addEventListener('click',()=>addMultiRow(document.getElementById('invitationsList'), state.invitations));
-    document.getElementById('addMinuteBtn').addEventListener('click',()=>addMultiRow(document.getElementById('minutesList'), state.minutes));
-    document.getElementById('addCoverageBtn').addEventListener('click',()=>addMultiRow(document.getElementById('coverageList'), state.coverage_letters));
+      const myReq = ++prefillReqCounter;
+
+      // مؤشر بصري خفيف: لا يغيّر حالة الاتصال الفعلية
+      const badge = document.getElementById('gdriveState');
+      const oldBadgeText = badge.textContent;
+      badge.textContent = 'جارِ التحقق...';
+
+      try{
+        const params = new URLSearchParams({
+          college: state.college,
+          committee_name: state.committee_name,
+          academicYear: state.academicYear,
+          term: state.term,
+          limit: '1'
+        });
+        const r = await apiFetch(`/api/committees-files?${params.toString()}`, { method:'GET' });
+
+        // لو جاء طلب أحدث، تجاهل الرد القديم
+        if (myReq !== prefillReqCounter) return;
+
+        if(!r.ok){
+          badge.textContent = oldBadgeText;
+          return;
+        }
+        const j = await r.json().catch(()=>null);
+        const doc = j && Array.isArray(j.data) && j.data.length ? j.data[0] : null;
+
+        if(doc){
+          // تعبئة المفرد
+          setSingleInputAndState('fdUrl', 'formation_decision', doc.formation_decision || null);
+          setSingleInputAndState('wpUrl', 'work_plan', doc.work_plan || null);
+          setSingleInputAndState('r1Url', 'report1', doc.report1 || null);
+          setSingleInputAndState('r2Url', 'report2', doc.report2 || null);
+          setSingleInputAndState('r3Url', 'report3', doc.report3 || null);
+          setSingleInputAndState('saUrl', 'statistical_analysis', doc.statistical_analysis || null);
+
+          // تعبئة القوائم المتعددة (لن نُفرغها إن لم توجد عناصر)
+          rebuildMultiList('invitationsList', state.invitations, doc.invitations || []);
+          rebuildMultiList('minutesList', state.minutes, doc.minutes || []);
+          rebuildMultiList('coverageList', state.coverage_letters, doc.coverage_letters || []);
+
+          toastSuccess.show(); // تلميح نجاح بسيط
+        }else{
+          // لا يوجد سجل — لا نلمس إدخالات المستخدم (لا تفريغ تلقائي)
+        }
+
+      }catch(e){
+        console.error('Prefill error:', e);
+      }finally{
+        badge.textContent = oldBadgeText;
+        refreshSummary();
+      }
+    }
+
+    /* ====== Debounce لاستدعاء التهيئة ====== */
+    let prefillTimer = null;
+    function schedulePrefillCheck(){
+      clearTimeout(prefillTimer);
+      prefillTimer = setTimeout(tryPrefillFromDB, 300);
+    }
 
     /* ====== حفظ/تفريغ ====== */
-    function buildPayloadPreview(){
-      // ملاحظة: للملفات سنضع قيمة تمهيدية "FILE:<name>" حتى نربط الرفع لاحقًا
-      function mapSingle(x){
-        if(!x) return null;
-        if(x.type==='url') return { type:'url', value:x.value, name:x.name||'' };
-        if(x.type==='file' && x.file) return { type:'file', value:`FILE:${x.file.name}`, name:x.file.name };
-        return null;
-      }
-      function mapMany(arr){
-        return arr.map(it=> it.type==='url'
-          ? { type:'url', value: it.value, name: it.name||'' }
-          : (it.file ? { type:'file', value:`FILE:${it.file.name}`, name: it.file.name } : null)
-        ).filter(Boolean);
-      }
+    function buildPayload(){
       return {
         college: state.college,
         committee_name: state.committee_name,
-        formation_decision: mapSingle(state.formation_decision),
-        work_plan: mapSingle(state.work_plan),
-        invitations: mapMany(state.invitations),
-        minutes: mapMany(state.minutes),
-        coverage_letters: mapMany(state.coverage_letters),
-        report1: mapSingle(state.report1),
-        report2: mapSingle(state.report2),
-        report3: mapSingle(state.report3),
-        statistical_analysis: mapSingle(state.statistical_analysis)
+        academicYear: state.academicYear,
+        term: state.term,
+        formation_decision: state.formation_decision,
+        work_plan: state.work_plan,
+        invitations: state.invitations.filter(x=>x.value).map(x=>({ type:'url', value:x.value, title:x.title||'' })),
+        minutes: state.minutes.filter(x=>x.value).map(x=>({ type:'url', value:x.value, title:x.title||'' })),
+        coverage_letters: state.coverage_letters.filter(x=>x.value).map(x=>({ type:'url', value:x.value, title:x.title||'' })),
+        report1: state.report1, report2: state.report2, report3: state.report3,
+        statistical_analysis: state.statistical_analysis
       };
     }
 
-    document.getElementById('saveBtn').addEventListener('click',async()=>{
+    document.getElementById('saveBtn').addEventListener('click', async ()=>{
       try{
         if(!state.college || !state.committee_name){
           alert('الرجاء اختيار الكلية واسم اللجنة'); return;
         }
-        const payload=buildPayloadPreview();
-        console.log('Prepared payload (preview only):', payload);
-        // لاحقًا: سنستبدل بما يناسب (FormData للملفات + JSON للروابط) إلى endpoint تحدده
+        if(!state.academicYear){
+          alert('الرجاء إدخال العام الجامعي'); return;
+        }
+        const chk = validateAcademicYear(state.academicYear);
+        if(!chk.ok){ ayInput.classList.add('is-invalid'); alert('العام الجامعي غير صحيح: '+chk.msg); return; }
+
+        if(!state.term){
+          alert('الرجاء اختيار الفصل الدراسي'); return;
+        }
+
+        const singles=['formation_decision','work_plan','report1','report2','report3','statistical_analysis'];
+        for(const k of singles){
+          const v=state[k];
+          if(v && (!v.value || !isValidUrl(v.value))){
+            alert('هناك رابط غير صالح في: '+k); return;
+          }
+        }
+
+        const payload=buildPayload();
+
+        const r = await fetch(`${API_BASE}/api/committees-files`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify(payload)
+        });
+
+        if(!r.ok){
+          const j=await r.json().catch(()=>({}));
+          alert('فشل الحفظ: ' + (j.message || r.status)); return;
+        }
+
         toastSuccess.show();
       }catch(e){ console.error(e); toastError.show(); }
     });
 
-    document.getElementById('resetBtn').addEventListener('click',()=>{
-      // تفريغ سريع
-      location.reload();
-    });
+    // تفريغ عند النقر فقط (لا تفريغ تلقائي إطلاقًا)
+    document.getElementById('resetBtn').addEventListener('click',()=>location.reload());
 
     /* ====== بدء التشغيل ====== */
     (async function init(){
       try{
         await ensureAuth();
         await loadDatalists();
+        await loadDefaultsFromSettings(); // تعبئة العام/الفصل إن كانا محفوظين + محاولة تهيئة
         refreshSummary();
+        setGDriveState(false);
       }catch{}
     })();
   </script>
