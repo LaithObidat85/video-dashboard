@@ -435,7 +435,6 @@
     /* ====== تغييرات رأس الصفحة ====== */
     document.getElementById('collegeSelect').addEventListener('change',e=>{
       state.college=e.target.value;
-      // عند التقييد: أعِد تحميل قائمة اللجان المسموح بها لهذه الكلية فقط
       if (ASSIGNMENT_LOCK.enabled) {
         populateCommitteeSelectRestricted(state.college);
       }
@@ -625,6 +624,8 @@
         el.value = urlObj.value;
         el.classList.remove('is-invalid');
         state[stateKey] = { type:'url', value:urlObj.value, title: urlObj.title || '' };
+      }else{
+        // لا نغيّر state هنا، التفريغ تتم إدارته في clearAllFormInputs()
       }
       el.dispatchEvent(new Event('input'));
     }
@@ -640,39 +641,42 @@
 
     /* ====== تقييد الصفحة بحسب تعيينات المستخدم ====== */
     const ASSIGNMENT_LOCK = {
-      enabled: false,               // true فقط للمستخدم subuser-member
-      pairs: [],                    // [{college, committee_name, note, _id}, ...]
-      collegesSet: new Set(),       // مجموعة الكليات المسموح بها
-      byCollege: new Map(),         // خريطة: كلية -> Set(لجان)
-      singleLocked: false           // إذا كان لديه زوج واحد فقط (نقفل القائمتين)
+      enabled: false,
+      pairs: [],
+      collegesSet: new Set(),
+      byCollege: new Map(),
+      singleLocked: false,
+      fetchError: null // {status, message}
     };
 
-    // جلب تعيينات المستخدم الحالي
+    // جلب تعيينات المستخدم الحالي بمحاولات متعددة
     async function fetchMyAssignments(){
-      // نحاول المسار المخصص أولاً
-      let arr=null;
+      // 1) المسار الخاص
       try{
-        const r1 = await apiFetch('/api/committee-assignments/mine');
-        if (r1.ok) {
-          arr = await r1.json();
-        }
+        const r = await apiFetch('/api/committee-assignments/mine');
+        if (r.ok) return await r.json();
+        if (r.status !== 404 && r.status !== 403) return [];
       }catch{}
-      // إن فشل المسار الخاص، جرّب العام ثم رشّح محليًا
-      if (!Array.isArray(arr)) {
-        try{
-          const r2 = await apiFetch('/api/committee-assignments');
-          if (r2.ok){
-            const all = await r2.json();
-            arr = Array.isArray(all) ? all.filter(x => {
-              const uid = (x.userId && (x.userId._id || x.userId.id)) || x.userId || x.user_id || x.user;
-              return uid && (String(uid) === String(CURRENT_USER.id));
-            }) : [];
-          }
-        }catch{
-          arr = [];
+      // 2) الاستعلام على المسار العام مع userId=me
+      try{
+        const r = await apiFetch('/api/committee-assignments?userId=me');
+        if (r.ok) return await r.json();
+        if (r.status !== 404 && r.status !== 403) return [];
+      }catch{}
+      // 3) الاستعلام بالمعرف الصريح (إن توفر)
+      try{
+        const myId = CURRENT_USER?.id || CURRENT_USER?._id;
+        if (myId){
+          const r = await apiFetch(`/api/committee-assignments?userId=${encodeURIComponent(myId)}`);
+          if (r.ok) return await r.json();
+          ASSIGNMENT_LOCK.fetchError = { status:r.status, message:'لا يمكن قراءة تعيينات المستخدم (403/404)' };
+        }else{
+          ASSIGNMENT_LOCK.fetchError = { status:0, message:'لا يتوفر معرف المستخدم في جلسة الدخول' };
         }
+      }catch(e){
+        ASSIGNMENT_LOCK.fetchError = { status:0, message:'فشل الاتصال بجلب التعيينات' };
       }
-      return Array.isArray(arr) ? arr : [];
+      return [];
     }
 
     function buildAssignmentIndex(){
@@ -687,7 +691,6 @@
         ASSIGNMENT_LOCK.byCollege.get(c).add(n);
       });
       ASSIGNMENT_LOCK.singleLocked = (ASSIGNMENT_LOCK.pairs.length === 1);
-      // واجهة الاستخدام
       const banner = document.getElementById('assignmentBanner');
       const badge  = document.getElementById('assignCountBadge');
       if (ASSIGNMENT_LOCK.enabled){
@@ -696,7 +699,6 @@
       }else{
         banner.classList.add('d-none');
       }
-      // بناء قائمة المودال
       const list = document.getElementById('assignmentsList');
       list.innerHTML = '';
       if (!ASSIGNMENT_LOCK.pairs.length){
@@ -732,7 +734,6 @@
         committeeSel.disabled = false;
         return;
       }
-      // لو زوج واحد فقط -> قفل
       if (ASSIGNMENT_LOCK.singleLocked && ASSIGNMENT_LOCK.pairs.length === 1){
         const only = ASSIGNMENT_LOCK.pairs[0];
         state.college = only.college;
@@ -746,7 +747,6 @@
         refreshSummary();
         return;
       }
-      // خلاف ذلك: تركهما قابلتين للتعديل ولكن مُرشّحتين
       collegeSel.disabled = false;
       committeeSel.disabled = false;
     }
@@ -782,10 +782,8 @@
         fillSelectOptions(document.getElementById('committeeSelect'), allCommitteeNames, '— اختر اللجنة —');
         return;
       }
-      // وضع مقيّد: عرض الكليات المسموح بها فقط
       const allowedColleges = Array.from(ASSIGNMENT_LOCK.collegesSet);
       fillSelectOptions(document.getElementById('collegeSelect'), allowedColleges, '— اختر الكلية —');
-      // تعبئة اللجان بناء على الكلية المختارة (إن وجدت) وإلا ضعّ خيـارات فارغة
       populateCommitteeSelectRestricted(document.getElementById('collegeSelect').value);
     }
 
@@ -796,7 +794,6 @@
         committeesAllowed = Array.from(ASSIGNMENT_LOCK.byCollege.get(selectedCollege));
       }
       fillSelectOptions(committeeSel, committeesAllowed, '— اختر اللجنة —');
-      // إن كانت اللجنة الحالية لم تعد ضمن المسموح، صفّرها
       if (!committeesAllowed.includes(state.committee_name)){
         state.committee_name = '';
         committeeSel.value = '';
@@ -823,17 +820,43 @@
       schedulePrefillCheck();
     }
 
+    /* ====== تفريغ شامل (يُستخدم لـ user/admin عند عدم وجود سجل) ====== */
+    function clearAllFormInputs(){
+      // المفردات
+      ['fdUrl','wpUrl','r1Url','r2Url','r3Url','saUrl'].forEach(id=>{
+        const el=document.getElementById(id);
+        el.value=''; el.classList.remove('is-invalid');
+      });
+      state.formation_decision=null;
+      state.work_plan=null;
+      state.report1=null; state.report2=null; state.report3=null;
+      state.statistical_analysis=null;
+
+      // القوائم المتعددة
+      const lists = [
+        {elId:'invitationsList', arr:state.invitations},
+        {elId:'minutesList', arr:state.minutes},
+        {elId:'coverageList', arr:state.coverage_letters}
+      ];
+      lists.forEach(({elId,arr})=>{
+        arr.length = 0;
+        const el = document.getElementById(elId);
+        el.innerHTML = '';
+      });
+
+      refreshSummary();
+    }
+
     /* ====== التهيئة التلقائية من قاعدة البيانات ====== */
     let prefillReqCounter = 0;
     async function tryPrefillFromDB(){
       const ayOk = state.academicYear && validateAcademicYear(state.academicYear).ok;
       if(!(state.college && state.committee_name && state.term && ayOk)) return;
 
-      // في الوضع المقيّد: التحقق أن الاختيارات ضمن المسموح
       if (ASSIGNMENT_LOCK.enabled) {
         if (!ASSIGNMENT_LOCK.collegesSet.has(state.college) ||
             !ASSIGNMENT_LOCK.byCollege.get(state.college)?.has(state.committee_name)) {
-          return; // خارج المسموح — لا نستدعي التهيئة
+          return;
         }
       }
 
@@ -875,6 +898,11 @@
           rebuildMultiList('coverageList', state.coverage_letters, doc.coverage_letters || []);
 
           toastSuccess.show();
+        }else{
+          // 🔁 المطلوب: إن كان الدور user/admin ولا يوجد سجل → نفرّغ الحقول
+          if (!ASSIGNMENT_LOCK.enabled){
+            clearAllFormInputs();
+          }
         }
 
       }catch(e){
@@ -909,7 +937,6 @@
       };
     }
 
-    // تحقق أن الاختيار ضمن التعيينات
     function validateWithinAssignments(){
       if (!ASSIGNMENT_LOCK.enabled) return true;
       if (!ASSIGNMENT_LOCK.collegesSet.has(state.college)) return false;
@@ -933,7 +960,6 @@
           alert('الرجاء اختيار الفصل الدراسي'); return;
         }
 
-        // التحقق ضمن التعيينات للمستخدم المقيّد
         if (!validateWithinAssignments()){
           alert('❌ لا تملك صلاحية الحفظ لهذه الكلية/اللجنة وفق التعيينات الممنوحة لحسابك.');
           return;
@@ -965,7 +991,6 @@
       }catch(e){ console.error(e); toastError.show(); }
     });
 
-    // تفريغ عند النقر فقط (لا تفريغ تلقائي إطلاقًا)
     document.getElementById('resetBtn').addEventListener('click',()=>location.reload());
 
     // زر عرض التعيينات
@@ -977,27 +1002,25 @@
       try{
         await ensureAuth();
 
-        // تحديد ما إذا كان المستخدم مقيّدًا
         ASSIGNMENT_LOCK.enabled = (CURRENT_USER?.role === 'subuser-member');
 
         if (ASSIGNMENT_LOCK.enabled) {
-          // جلب تعيينات المستخدم وبناء الفهرس
           ASSIGNMENT_LOCK.pairs = await fetchMyAssignments();
           buildAssignmentIndex();
 
-          if (!ASSIGNMENT_LOCK.pairs.length){
-            // لا تعيينات -> لا يستطيع استخدام الصفحة
-            document.getElementById('assignmentBanner').classList.remove('d-none');
+          if (ASSIGNMENT_LOCK.fetchError && !ASSIGNMENT_LOCK.pairs.length){
+            alert('تعذر جلب تعيينات هذا الحساب: ' + (ASSIGNMENT_LOCK.fetchError.message || '') +
+                  (ASSIGNMENT_LOCK.fetchError.status ? ` [${ASSIGNMENT_LOCK.fetchError.status}]` : '') + 
+                  '\nتحقق من وجود المسار /api/committee-assignments/mine أو السماح بالاستعلام المقيّد.');
+          } else if (!ASSIGNMENT_LOCK.pairs.length){
             alert('لا توجد تعيينات لهذا الحساب. تواصل مع المشرف.');
-            // يمكنك إعادة التوجيه إن رغبت:
-            // location.href = go('/committees-home.html');
           }
         }
 
         await loadDatalists();
-        lockOrUnlockSelectors();     // قفل/فتح القوائم إن لزم
+        lockOrUnlockSelectors();
 
-        await loadDefaultsFromSettings(); // تعبئة العام/الفصل إن كانا محفوظين + محاولة تهيئة
+        await loadDefaultsFromSettings();
         refreshSummary();
         setGDriveState(false);
       }catch{}
