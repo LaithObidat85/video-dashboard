@@ -1,473 +1,942 @@
-
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
   <meta charset="UTF-8">
-  <title>نتائج تقييم اللجان</title>
+  <title>إدارة تقييم اللجان - نظام اللجان</title>
   <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <link rel="icon" type="image/png" href="https://www.dropbox.com/scl/fi/f283e4rvv5cf9x12a1cic/my-website-logo.png?rlkey=yia776im7klypy27af32m0scy&e=1&st=vhaprvzh&dl=1">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.rtl.min.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
   <style>
     body{background:#f8f9fa;font-family:'Segoe UI',sans-serif}
-    .container-fluid{margin-top:30px}
-    table{background:#fff;border-radius:10px;overflow:hidden;font-size:14px;width:100%;margin:auto}
-    th{text-align:center;vertical-align:middle;background:#f8f9fa;color:#000}
-    td{text-align:center;vertical-align:middle}
+
+    /* اجعل جميع الحاويات بعرض كامل دائمًا */
+    .container,
+    .container-sm,
+    .container-md,
+    .container-lg,
+    .container-xl,
+    .container-xxl,
+    .container-fluid{
+      max-width:100% !important;
+      width:100% !important;
+      padding-left:var(--bs-gutter-x,.75rem) !important;
+      padding-right:var(--bs-gutter-x,.75rem) !important;
+    }
+
+    /* نزّل الهيدر */
+    .page-wrap{margin-top:40px}
+
+    .user-chip{display:inline-flex;align-items:center;gap:.25rem;font-size:1rem!important;padding:.375rem .75rem!important;line-height:1.5!important;border-radius:.375rem;font-weight:700!important}
+    .user-chip.badge #userRole{font-weight:500!important}
+
+    table{
+      background:#fff;
+      border-radius:12px;
+      /* لا تستخدم overflow:hidden حتى لا تلغي sticky */
+      font-size:14px;
+      width:100%;
+      margin:auto
+    }
+    th,td{text-align:center;vertical-align:middle}
+    th{background:#f8f9fa;color:#000}
+    td.invalid{background:#fde2e1!important}
     .highlight{background:#d4edda!important;transition:background-color 1s ease}
     .hidden-col{display:none!important}
-    .filters{margin-bottom:20px;text-align:center}
+
+    /* شريط الإعدادات لم يعد sticky */
     .sticky-header{background:#f8f9fa;padding-top:10px}
-    #evaluationsTableWrapper thead th{position:sticky;top:0;z-index:99;background:#f8f9fa;color:#000}
 
-    /* أعمدة التاريخ (اتجاه يسار لليمين) */
-    #evaluationsTableWrapper th.date-col,
-    #evaluationsTableWrapper td.date-col{
-      direction:ltr;text-align:center;width:110px;max-width:110px
+    /* ========= تحسينات تثبيت الترويسة (Sticky) ========= */
+    :root{ --table-header-bg:#f8f9fa; }
+    /* اجعل تمرير الصفحة رأسيًا فقط — لا تُنشئ حاوية تمرير عمودية حول الجدول */
+    .table-responsive{ overflow-y: visible !important; }
+    /* فعّل sticky على thead وعلى th لضمان التوافق عبر المتصفحات */
+    #evaluationsTableWrapper thead{
+      position: sticky;
+      top: 0;
+      z-index: 100;                 /* أقل بقليل من th */
+      background: var(--table-header-bg);
+    }
+    #evaluationsTableWrapper thead th{
+      position: sticky;
+      top: 0;
+      z-index: 101;                 /* فوق باقي خلايا الجدول */
+      background: var(--table-header-bg);
+      color:#000;
+      /* حدود ظل خفيفة أسفل الترويسة عند الالتصاق */
+      box-shadow: 0 1px 0 rgba(0,0,0,.06);
     }
 
-    /* مساحات معلومات أعلى الجدول (بالأسود كما طُلب) */
-    #completionRateContainer,#selectedVisitsContainer{font-weight:bold;margin:5px 0;font-size:18px;color:#000;min-height:24px}
-    #infoContainer{font-weight:bold;margin:15px 0;font-size:18px;color:#000;text-align:center}
+    #evaluationsTableWrapper th.date-col,#evaluationsTableWrapper td.date-col{direction:ltr;text-align:center;width:140px;max-width:140px}
 
-    /* ملاحظات: ما يظهر على الشاشة/الطباعة */
-    .notes-screen{display:inline-block}
-    .print-notes{display:none;text-align:start}
+    /* أحجام الأعمدة  */
+    th.w-wide, td.w-wide{min-width:200px}
+    th.w-narrow, td.w-narrow{min-width:70px;max-width:90px}
+    td.w-narrow input{padding:.125rem .25rem}
 
-    /* تأثير Hover على صفوف الجدول — استهداف الخلايا */
-    #evaluationsTableWrapper tbody tr > * {
-      transition: background-color .2s ease, box-shadow .2s ease;
-    }
-    #evaluationsTableWrapper tbody tr:hover > * {
-      background-color:#f1f7ff !important;
-      box-shadow: inset 0 0 0 9999px rgba(13,110,253,.06);
-    }
+    /* ✅ توسيع عمود الإجراءات */
+    th.actions-col, td.actions-col{min-width:160px}
 
-    /* عناصر لا تُطبع */
-    .no-print{}
-    @media print{
-      body{background:#fff}
-      .no-print,.toast-container,.modal{display:none!important}
-      .container-fluid{max-width:none;width:100%}
-      .print-header{display:block;margin-bottom:10px}
-      .notes-screen{display:none!important}
-      .print-notes{display:block!important;white-space:normal}
-      thead{display:table-header-group}
-      button,select,input{display:none!important}
-    }
+    .toast-container{position:fixed;top:20px;left:50%;transform:translateX(-50%);z-index:2000}
+    #completionRateContainer,#selectedVisitsContainer,#termBadge{text-align:center;font-weight:bold;margin:5px 0;font-size:16px;min-height:24px}
+    #termBadge .badge{font-size:.95rem}
+    .muted{color:#6c757d}
 
-    /* حالة "غير متوفر" */
-    #notAvailable{
-      min-height:60vh;
-      align-items:center; justify-content:center; text-align:center;
+    /* Mini editor */
+    .mini-toolbar{display:flex;gap:.25rem;margin-bottom:.5rem;flex-wrap:wrap}
+    .mini-toolbar button{border:1px solid #ced4da;background:#f8f9fa;padding:.25rem .5rem;border-radius:.375rem}
+    .mini-editor{border:1px solid #ced4da;border-radius:.5rem;padding:.5rem;min-height:180px;background:#fff}
+
+    /* شريط الإجراءات */
+    .bulk-bar{display:flex;gap:.5rem;flex-wrap:wrap;align-items:center;justify-content:flex-start}
+    .bulk-title{font-weight:700;margin-inline-end:.25rem}
+
+    /* تمييز الصف الجديد مؤقتًا */
+    tr.is-new{background:#e9f7ff}
+
+    /* الفلاتر – توزيع عبر العرض */
+    .filters .form-label{font-weight:600}
+
+    /* ========= تأثير تمرير (Hover) على صفوف الجدول ========= */
+    /* اجعل اللون واضحًا ويتغلب على ألوان striped من Bootstrap */
+    #committeesTable tr:hover > td,
+    #committeesTable tr:hover > th{
+      background-color:#fff6db !important; /* أصفر فاتح */
+      transition: background-color .15s ease-in-out;
     }
   </style>
 </head>
 <body>
-  <!-- رسالة النتائج غير متوفرة -->
-  <div id="notAvailable" class="container d-none">
-    <div class="mx-auto">
-      <div class="display-6 mb-2">نتائج تقييم لجان الكليات غير متوفرة حاليًا</div>
-      <p class="text-muted mb-0">يرجى العودة لاحقًا.</p>
+  <div class="container-fluid page-wrap">
+    <!-- Header -->
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-2">
+      <h4 class="mb-0">إدارة تقييم اللجان</h4>
+      <div class="d-flex align-items-center gap-2">
+        <span id="userInfo" class="user-chip badge bg-light text-dark border">
+          <i class="bi bi-person"></i>
+          <span id="userUsername">—</span>
+          <span class="mx-1">—</span>
+          <span id="userFullName">—</span>
+          <span class="ms-2 badge bg-secondary" id="userRole">—</span>
+        </span>
+        <a class="btn btn-outline-primary" id="homeBtn" href="/committees-home.html">
+          <i class="bi bi-grid"></i> لوحة التحكم
+        </a>
+        <button id="logoutBtn" class="btn btn-danger">
+          <i class="bi bi-box-arrow-right"></i> خروج
+        </button>
+      </div>
     </div>
-  </div>
 
-  <!-- محتوى الصفحة الحقيقي -->
-  <div id="pageContent" class="container-fluid d-none">
     <div class="sticky-header">
-      <h3 class="text-center mb-4">نتائج تقييم اللجان</h3>
-
-      <!-- الفلاتر -->
-      <div class="filters row justify-content-center no-print">
-        <div class="col-md-3 mb-2 text-center">
-          <label class="form-label د-block">الكلية</label>
+      <!-- الفلاتر: ثلاث قوائم منسدلة موزّعة على عرض الصفحة -->
+      <div class="filters row g-3 mb-3">
+        <div class="col-12 col-sm-6 col-lg-4">
+          <label class="form-label">الكلية</label>
           <select id="collegeFilter" class="form-select">
             <option value="">جميع الكليات</option>
           </select>
         </div>
-        <div class="col-md-3 mb-2 text-center">
-          <label class="form-label d-block">البحث بإسم اللجنة</label>
-          <input type="text" id="committeeSearch" class="form-control" placeholder="اكتب للبحث...">
+        <div class="col-12 col-sm-6 col-lg-4">
+          <label class="form-label">اسم المدقق</label>
+          <select id="auditorFilter" class="form-select">
+            <option value="">جميع المدققين</option>
+          </select>
+        </div>
+        <div class="col-12 col-sm-6 col-lg-4">
+          <label class="form-label">اسم اللجنة</label>
+          <select id="committeeFilter" class="form-select">
+            <option value="">جميع اللجان</option>
+          </select>
         </div>
       </div>
 
-      <!-- أدوات بسيطة + طباعة/تحديث -->
-      <div class="row mb-3 justify-content-center no-print">
-        <div class="col-md-8 d-flex align-items-center justify-content-center gap-4">
-          <div class="form-check">
-            <input class="form-check-input simple-toggle" type="checkbox" id="toggle_college" checked>
-            <label class="form-check-label" for="toggle_college">إظهار الكلية</label>
+      <!-- بطاقة إعدادات موحّدة (تظهر للأدمن فقط) -->
+      <div class="card mb-3 d-none" id="settingsCard">
+        <div class="card-header fw-bold">
+          ⚙️ إعدادات
+        </div>
+        <div class="card-body">
+          <div class="row g-3 align-items-end">
+            <!-- مجموعة الزيارات -->
+            <div class="col-12">
+              <div class="d-flex flex-wrap gap-3 align-items-center">
+                <div class="form-check"><input class="form-check-input visit-toggle" type="checkbox" id="visit1" value="الزيارة الأولى"><label class="form-check-label" for="visit1">الزيارة الأولى</label></div>
+                <div class="form-check"><input class="form-check-input visit-toggle" type="checkbox" id="visit2" value="الزيارة الثانية"><label class="form-check-label" for="visit2">الزيارة الثانية</label></div>
+                <div class="form-check"><input class="form-check-input visit-toggle" type="checkbox" id="visit3" value="الزيارة الثالثة"><label class="form-check-label" for="visit3">الزيارة الثالثة</label></div>
+                <div class="form-check"><input class="form-check-input visit-toggle" type="checkbox" id="visit4" value="الزيارة الرابعة"><label class="form-check-label" for="visit4">الزيارة الرابعة</label></div>
+                <div class="form-check"><input class="form-check-input visit-toggle" type="checkbox" id="visit5" value="الزيارة النهائية"><label class="form-check-label" for="visit5">الزيارة النهائية</label></div>
+
+                <!-- نشر النتائج في صفحة "نتائج تقييم اللجان" -->
+                <div class="form-check ms-lg-3">
+                  <input class="form-check-input" type="checkbox" id="publishResults">
+                  <label class="form-check-label" for="publishResults">عرض البيانات في صفحة «نتائج تقييم اللجان»</label>
+                </div>
+              </div>
+            </div>
+
+            <!-- الفصل والعام -->
+            <div class="col-12 col-md-4">
+              <label class="form-label">الفصل الدراسي</label>
+              <select id="termSelect" class="form-select">
+                <option value="">— اختر الفصل —</option>
+                <option value="الفصل الأول">الفصل الأول</option>
+                <option value="الفصل الثاني">الفصل الثاني</option>
+                <option value="الفصل الصيفي">الفصل الصيفي</option>
+              </select>
+            </div>
+            <div class="col-12 col-md-4">
+              <label class="form-label">العام الجامعي</label>
+              <input type="text" id="academicYearInput" class="form-control" placeholder="مثال: 2024-2025 أو 2024/2025">
+            </div>
+
+            <!-- خيارات الأعمدة -->
+            <div class="col-12">
+              <div class="d-flex flex-wrap align-items-center gap-3 mb-2">
+                <div class="fw-semibold">إظهار/إخفاء الأعمدة</div>
+                <!-- ✅ زر إخفاء جميع الأعمدة -->
+                <div class="form-check">
+                  <input class="form-check-input" type="checkbox" id="hideAllColumns">
+                  <label class="form-check-label" for="hideAllColumns">إخفاء جميع الأعمدة</label>
+                </div>
+                <!-- ✅ زر إظهار جميع الأعمدة -->
+                <div class="form-check">
+                  <input class="form-check-input" type="checkbox" id="showAllColumns">
+                  <label class="form-check-label" for="showAllColumns">إظهار جميع الأعمدة</label>
+                </div>
+              </div>
+
+              <div class="d-flex flex-wrap justify-content-start gap-3 align-items-center" id="columnToggles">
+                <div class="form-check"><input class="form-check-input col-toggle" type="checkbox" data-field="formation_decision" checked><label class="form-check-label">قرار التشكيل</label></div>
+                <div class="form-check"><input class="form-check-input col-toggle" type="checkbox" data-field="work_plan" checked><label class="form-check-label">خطة العمل</label></div>
+                <div class="form-check"><input class="form-check-input col-toggle" type="checkbox" data-field="performance_indicators" checked><label class="form-check-label">مؤشرات الأداء</label></div>
+                <div class="form-check"><input class="form-check-input col-toggle" type="checkbox" data-field="meetings" checked><label class="form-check-label">عدد الاجتماعات</label></div>
+                <div class="form-check"><input class="form-check-input col-toggle" type="checkbox" data-field="consistency" checked><label class="form-check-label">التوافق بين الدعوات والاجتماعات</label></div>
+                <div class="form-check"><input class="form-check-input col-toggle" type="checkbox" data-field="coverage_books" checked><label class="form-check-label">كتب التغطية</label></div>
+                <div class="form-check"><input class="form-check-input col-toggle" type="checkbox" data-field="report1" checked><label class="form-check-label">تقرير إنجاز 1</label></div>
+                <div class="form-check"><input class="form-check-input col-toggle" type="checkbox" data-field="report2" checked><label class="form-check-label">تقرير إنجاز 2</label></div>
+                <div class="form-check"><input class="form-check-input col-toggle" type="checkbox" data-field="report3" checked><label class="form-check-label">تقرير إنجاز 3</label></div>
+                <div class="form-check"><input class="form-check-input col-toggle" type="checkbox" data-field="statistical_analysis" checked><label class="form-check-label">التحليل الإحصائي</label></div>
+              </div>
+            </div>
+
+            <!-- زر حفظ واحد -->
+            <div class="col-12">
+              <button class="btn btn-primary" id="saveAllSettingsBtn">💾 حفظ الإعدادات</button>
+            </div>
           </div>
-          <div class="form-check">
-            <input class="form-check-input simple-toggle" type="checkbox" id="toggle_date">
-            <label class="form-check-label" for="toggle_date">إظهار تاريخ التدقيق</label>
-          </div>
-          <button class="btn btn-secondary" id="printBtn" title="طباعة"><i class="bi bi-printer"></i></button>
-          <button class="btn btn-info" id="reloadBtn" title="إعادة تحميل الإعدادات والجدول"><i class="bi bi-arrow-repeat"></i></button>
         </div>
       </div>
 
-      <!-- رأس الطباعة (سُيملأ ديناميكيًا) -->
-      <div id="infoContainer" class="print-header">
-        <div id="semesterInfo">—</div>
-        <div id="selectedVisitsContainer">—</div>
-        <div id="completionRateContainer">—</div>
-        <div id="committeesCountContainer">—</div>
+      <!-- شارة الفصل/العام + الزيارات المختارة + نسبة الاكتمال -->
+      <div id="termBadge"></div>
+      <div id="selectedVisitsContainer"></div>
+      <div id="completionRateContainer"></div>
+
+      <!-- شريط الإجراءات -->
+      <div class="card p-2 mb-2">
+        <div class="bulk-bar">
+          <span class="bulk-title">إجراءات سريعة</span>
+          <button class="btn btn-sm btn-primary" id="addRowBtn" title="إضافة سجل جديد">➕ إضافة سجل</button>
+          <button class="btn btn-sm btn-success" id="saveAllBtn" title="حفظ جميع الصفوف المعدلة">💾 حفظ الكل</button>
+          <button class="btn btn-sm btn-outline-secondary" id="reloadBtn">تحديث</button>
+        </div>
       </div>
     </div>
 
-    <table class="table table-bordered table-striped table-responsive" id="evaluationsTableWrapper">
-      <thead>
-        <tr>
-          <th>#</th>
-          <th class="col-college">الكلية</th>
-          <th>اسم اللجنة</th>
-          <th class="date-col hidden-col">تاريخ التدقيق</th>
-          <th class="col-formation_decision">قرار التشكيل</th>
-          <th class="col-work_plan">خطة العمل</th>
-          <th class="col-performance_indicators">مؤشرات الأداء</th>
-          <th class="col-meetings">عدد الاجتماعات</th>
-          <th class="col-consistency">التوافق بين الدعوات والاجتماعات</th>
-          <th class="col-coverage_books">كتب التغطية</th>
-          <th class="col-report1">تقرير إنجاز 1</th>
-          <th class="col-report2">تقرير إنجاز 2</th>
-          <th class="col-report3">تقرير إنجاز 3</th>
-          <th class="col-statistical_analysis">التحليل الإحصائي</th>
-          <th id="availabilityHeader">درجة التوفر من (9)</th>
-          <!-- ✅ تمييز رأس عمود الملاحظات -->
-          <th class="col-notes">الملاحظات</th>
-        </tr>
-      </thead>
-      <tbody id="committeesTable">
-        <tr><td colspan="16" class="text-center">جاري التحميل...</td></tr>
-      </tbody>
-    </table>
+    <!-- جدول -->
+    <div class="table-responsive">
+      <table class="table table-bordered table-striped" id="evaluationsTableWrapper">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th class="w-wide">الكلية</th>
+            <th class="w-wide">اسم اللجنة</th>
+            <th class="w-wide">اسم المدقق</th>
+            <th class="date-col">تاريخ التدقيق</th>
+
+            <th class="col-formation_decision w-narrow">قرار التشكيل</th>
+            <th class="col-work_plan w-narrow">خطة العمل</th>
+            <th class="col-performance_indicators w-narrow">مؤشرات الأداء</th>
+            <th class="col-meetings w-narrow">عدد الاجتماعات</th>
+            <th class="col-consistency w-narrow">التوافق بين الدعوات والاجتماعات</th>
+            <th class="col-coverage_books w-narrow">كتب التغطية</th>
+            <th class="col-report1 w-narrow">تقرير إنجاز 1</th>
+            <th class="col-report2 w-narrow">تقرير إنجاز 2</th>
+            <th class="col-report3 w-narrow">تقرير إنجاز 3</th>
+            <th class="col-statistical_analysis w-narrow">التحليل الإحصائي</th>
+
+            <th id="availabilityHeader" class="w-narrow">درجة التوفر من (9)</th>
+            <th class="w-wide">الملاحظات</th>
+            <th class="w-narrow actions-col">إجراءات</th>
+          </tr>
+        </thead>
+        <tbody id="committeesTable">
+          <tr><td colspan="18" class="text-center">جاري التحميل...</td></tr>
+        </tbody>
+      </table>
+    </div>
   </div>
 
-  <!-- Modal الملاحظات للشاشة فقط -->
-  <div class="modal fade no-print" id="notesModal" tabindex="-1">
-    <div class="modal-dialog modal-lg"><div class="modal-content">
+  <!-- datalist/مصادر -->
+  <datalist id="dl_colleges"></datalist>
+  <datalist id="dl_committees"></datalist>
+  <datalist id="dl_auditors"></datalist>
+
+  <!-- مودال موحّد: تفاصيل + ملاحظات -->
+  <div class="modal fade" id="editUnifiedModal" tabindex="-1">
+    <div class="modal-dialog modal-xl"><div class="modal-content">
       <div class="modal-header">
-        <h5 class="modal-title">📝 الملاحظات</h5>
+        <h5 class="modal-title">تعديل التقييم والملاحظات</h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
-      <div class="modal-body" id="notesContent"></div>
+      <div class="modal-body">
+        <!-- قسم تفاصيل التقييم -->
+        <div class="row g-3 mb-3">
+          <div class="col-md-4">
+            <label class="form-label">الكلية</label>
+            <select id="er_college" class="form-select"></select>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">اسم اللجنة</label>
+            <select id="er_committee" class="form-select"></select>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">اسم المدقق</label>
+            <select id="er_auditor" class="form-select"></select>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">تاريخ التدقيق</label>
+            <input type="date" id="er_date" class="form-control">
+          </div>
+        </div>
+
+        <hr class="my-2">
+
+        <!-- قسم الملاحظات -->
+        <h6 class="mb-2">📝 الملاحظات</h6>
+        <div id="viewNotes" class="mb-2"></div>
+        <div class="mini-toolbar">
+          <button type="button" data-cmd="bold"><b>B</b></button>
+          <button type="button" data-cmd="italic"><i>I</i></button>
+          <button type="button" data-cmd="underline"><u>U</u></button>
+          <button type="button" data-cmd="insertUnorderedList">• قائمة</button>
+        </div>
+        <div id="er_editor" class="mini-editor" contenteditable="true"></div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-primary" id="saveUnifiedBtn">💾 حفظ</button>
+        <button class="btn btn-secondary" data-bs-dismiss="modal">إغلاق</button>
+      </div>
     </div></div>
   </div>
 
   <!-- Toasts -->
-  <div class="toast-container position-fixed top-0 start-50 translate-middle-x p-3 no-print">
+  <div class="toast-container">
     <div id="toastSuccess" class="toast align-items-center text-bg-success border-0 mb-2" role="alert">
-      <div class="d-flex"><div class="toast-body">✅ العملية نجحت</div>
-        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+      <div class="d-flex"><div class="toast-body">✅ العملية نجحت</div><button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button></div>
       </div>
-    </div>
     <div id="toastError" class="toast align-items-center text-bg-danger border-0 mb-2" role="alert">
-      <div class="d-flex"><div class="toast-body">❌ حدث خطأ</div>
-        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+      <div class="d-flex"><div class="toast-body">❌ حدث خطأ</div><button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button></div>
+    </div>
+    <div id="toastConfirm" class="toast align-items-center text-bg-warning border-0 mb-2" role="alert">
+      <div class="d-flex">
+        <div class="toast-body" id="toastConfirmMsg">⚠️ هل أنت متأكد؟</div>
+        <div class="me-2 m-auto">
+          <button type="button" class="btn btn-sm btn-danger" id="confirmYes">نعم</button>
+          <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="toast">إلغاء</button>
+        </div>
       </div>
     </div>
   </div>
 
+  <!-- Scripts (بدون تغيير في المنطق) -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
   <script>
-    /* ===== توستات ===== */
-    const toastSuccess = new bootstrap.Toast(document.getElementById('toastSuccess'));
-    const toastError   = new bootstrap.Toast(document.getElementById('toastError'));
-    const showSuccess  = (m='✅ العملية نجحت')=>{ document.querySelector('#toastSuccess .toast-body').innerText=m; toastSuccess.show(); };
-    const showError    = (m='❌ حدث خطأ')     =>{ document.querySelector('#toastError .toast-body').innerText=m; toastError.show();   };
+    /* ====== إعداد أساس الربط مع الـAPI (إصلاح شامل) ====== */
+    const RENDER_BASE = 'https://vdash-qkyv.onrender.com';
+    const { protocol, hostname, origin } = location;
+    const isGitHub = hostname.endsWith('github.io');
+    const isLocal  = hostname === 'localhost' || hostname === '127.0.0.1';
+    const isRender = hostname.endsWith('onrender.com');
+    const isFile   = protocol === 'file:';
 
-    /* ===== أعلام الحالة ===== */
-    let savedVisibleColumns = [];  // من الإعدادات
-    let lastCollege = '';          // من الفلتر الحالي
-    let settingsCache = null;      // نخزن الإعدادات للطباعة
-    let PUBLISH_RESULTS = false;   // الحقل الذي نتحكم به من /api/settings
+    const API_BASE = (isGitHub || isFile) ? RENDER_BASE
+                    : isRender           ? origin
+                    : isLocal            ? 'http://localhost:3000'
+                    : RENDER_BASE;
 
-    const availabilityFields = ["formation_decision","work_plan","performance_indicators","meetings","consistency","coverage_books","report1","report2","report3","statistical_analysis"];
+    const go = (path) => (isGitHub || isFile) ? (RENDER_BASE + path) : path;
 
-    /* ===== تحميل القوائم ===== */
-    async function loadOptions(){
+    const apiFetch = (path, opts={}) =>
+      fetch(`${API_BASE}${path}`, { credentials: 'include', ...opts });
+
+    window.addEventListener('error', e => console.error('WindowError:', e.message, e.filename, e.lineno));
+    window.addEventListener('unhandledrejection', e => console.error('PromiseRejection:', e.reason));
+    console.log('➡️ Host:', location.href, '\n➡️ API_BASE:', API_BASE);
+
+    /* ====== Toasts ====== */
+    const toastSuccess=new bootstrap.Toast(document.getElementById('toastSuccess'));
+    const toastError  =new bootstrap.Toast(document.getElementById('toastError'));
+    const toastConfirmEl=document.getElementById('toastConfirm');
+    const toastConfirm=new bootstrap.Toast(toastConfirmEl);
+    let confirmCallback=null;
+
+    function showSuccess(msg="✅ العملية نجحت"){document.querySelector("#toastSuccess .toast-body").innerText=msg;toastSuccess.show()}
+    function showError(msg="❌ حدث خطأ"){document.querySelector("#toastError .toast-body").innerText=msg;toastError.show()}
+    function showConfirm(msg,cb){document.getElementById("toastConfirmMsg").innerText=msg;confirmCallback=cb;toastConfirm.show()}
+    document.getElementById("confirmYes").addEventListener("click",()=>{toastConfirm.hide();if(confirmCallback)confirmCallback()})
+
+    /* ====== شارة المستخدم + صلاحيات ====== */
+    let CURRENT_USER=null;
+    function renderUser(u){
+      const username=u?.username||(u?.email?u.email.split('@')[0]:'—');
+      document.getElementById('userUsername').textContent=username||'—';
+      document.getElementById('userFullName').textContent=u?.name||'—';
+      document.getElementById('userRole').textContent=u?.role||'—';
+    }
+    async function ensureAuth(){
       try{
-        const { data } = await axios.get('/api/colleges');
-        const collegeFilter = document.getElementById('collegeFilter');
-        (data||[]).forEach(c=>{
-          const opt=document.createElement('option');
-          opt.value=c.name; opt.textContent=c.name;
-          collegeFilter.appendChild(opt);
-        });
-      }catch(e){ /* صامت */ }
+        const r=await apiFetch('/auth/committees/me');
+        const j=await r.json().catch(()=>null);
+        if(!j || !j.authenticated){
+          showError('الرجاء تسجيل الدخول أولاً');
+          throw 0;
+        }
+        if(j.user?.isActive===false){
+          showError('🚫 حسابك معطّل. الرجاء التواصل مع المشرف.');
+          setTimeout(()=>location.href=go('/committees-home.html'),1200);throw 0;
+        }
+        CURRENT_USER=j.user;renderUser(j.user);
+        const isAdmin=(j.user?.role||'').toLowerCase()==='admin';
+        document.getElementById('settingsCard').classList.toggle('d-none',!isAdmin);
+      }catch{throw 0;}
     }
-
-    /* ===== Sanitizer بسيط للملاحظات للطباعة ===== */
-    function sanitizeNotes(html=''){
+    document.getElementById('homeBtn').href=go('/committees-home.html');
+    document.getElementById('logoutBtn').addEventListener('click',async()=>{
       try{
-        const allowed=['P','UL','OL','LI','B','STRONG','I','EM','U','BR'];
-        const tmp=document.createElement('div'); tmp.innerHTML = html;
-        const walker=document.createTreeWalker(tmp, NodeFilter.SHOW_ELEMENT, null);
-        const toRemove=[];
-        while(walker.nextNode()){
-          const el=walker.currentNode;
-          if(!allowed.includes(el.tagName)) toRemove.push(el);
-          // إزالة الخصائص الخطرة
-          for(const a of Array.from(el.attributes||[])){
-            const name=a.name.toLowerCase();
-            if(name.startsWith('on') || name==='style') el.removeAttribute(a.name);
-          }
-        }
-        toRemove.forEach(n=>n.replaceWith(document.createTextNode(n.textContent||'')));
-        return tmp.innerHTML.trim() || '—';
-      }catch{return '—'}
-    }
-
-    /* ===== تحديث عنوان التوفر ===== */
-    function updateAvailabilityHeader(){
-      const n=savedVisibleColumns.length;
-      document.getElementById('availabilityHeader').innerText=`درجة التوفر من (${n})`;
-    }
-
-    /* ===== حساب درجة التوفر للصف ===== */
-    function updateAvailability(row){
-      let sum=0;
-      availabilityFields.forEach(f=>{
-        const cell=row.querySelector(`[data-field="${f}"]`);
-        if(cell && !cell.classList.contains('hidden-col')){
-          sum += parseFloat(cell.innerText)||0;
-        }
-      });
-      const target=row.querySelector('.availability-cell');
-      if(target){
-        target.innerText=sum.toFixed(2);
-        target.classList.add('highlight');
-        setTimeout(()=>target.classList.remove('highlight'),800);
-      }
-    }
-
-    /* ===== نسبة الاكتمال + عدد اللجان ===== */
-    function updateCompletionAndCounts(){
-      const rows=[...document.querySelectorAll('#committeesTable tr')].filter(r=>r.style.display!=='none');
-      let total=0;
-      rows.forEach(r=>{ total += parseFloat(r.querySelector('.availability-cell')?.innerText)||0; });
-      const denom = rows.length * savedVisibleColumns.length;
-      const pct = denom>0 ? ((total/denom)*100).toFixed(2) : '0.00';
-
-      const completionDiv=document.getElementById('completionRateContainer');
-      const countDiv=document.getElementById('committeesCountContainer');
-      const lc = lastCollege || 'جميع الكليات';
-      if(lc && lc!=='جميع الكليات'){
-        completionDiv.innerHTML = `نسبة الاكتمال لكلية ${lc} = ${pct}%`;
-        countDiv.innerHTML      = `عدد لجان كلية ${lc} = ${rows.length}`;
-      }else{
-        completionDiv.innerHTML = `نسبة الاكتمال لجميع الكليات = ${pct}%`;
-        countDiv.innerHTML      = `عدد لجان جميع الكليات = ${rows.length}`;
-      }
-    }
-
-    /* ===== تطبيق رؤية الأعمدة ===== */
-    function applyColumnVisibility(){
-      // الكلية
-      const showCollege=document.getElementById('toggle_college').checked;
-      document.querySelectorAll('.col-college').forEach(el=>el.classList.toggle('hidden-col',!showCollege));
-      // التاريخ
-      const showDate=document.getElementById('toggle_date').checked;
-      document.querySelectorAll('.date-col').forEach(el=>el.classList.toggle('hidden-col',!showDate));
-      // الحقول العددية حسب الإعدادات
-      availabilityFields.forEach(f=>{
-        const show = savedVisibleColumns.includes(f);
-        document.querySelectorAll(`[data-field="${f}"]`).forEach(td=>td.classList.toggle('hidden-col', !show));
-        const th=document.querySelector(`.col-${f}`);
-        if(th) th.classList.toggle('hidden-col', !show);
-      });
-
-      /* ✅ منطق إخفاء/إظهار عمود الملاحظات بناءً على الأعمدة المختارة */
-      const hideNotes = savedVisibleColumns.length === 0;
-      const notesHeader = document.querySelector('#evaluationsTableWrapper th.col-notes');
-      if (notesHeader) notesHeader.classList.toggle('hidden-col', hideNotes);
-      document.querySelectorAll('#evaluationsTableWrapper td[data-notes-col]').forEach(td=>{
-        td.classList.toggle('hidden-col', hideNotes);
-      });
-
-      document.querySelectorAll('#committeesTable tr').forEach(updateAvailability);
-      updateAvailabilityHeader();
-      updateCompletionAndCounts();
-    }
-
-    document.querySelectorAll('.simple-toggle').forEach(cb=>{
-      cb.addEventListener('change', applyColumnVisibility);
+        const r=await apiFetch('/auth/committees/logout',{method:'POST',headers:{'Content-Type':'application/json'}});
+        if(r.ok){showSuccess('✅ تم تسجيل الخروج');setTimeout(()=>location.href=go('/committees-login.html'),700)}
+        else{showError('❌ تعذر تسجيل الخروج')}
+      }catch{showError('❌ خطأ في الاتصال')}
     });
 
-    /* ===== البحث باسم اللجنة ===== */
-    function applyCommitteeSearch(){
-      const term=document.getElementById('committeeSearch').value.trim().toLowerCase();
-      document.querySelectorAll('#committeesTable tr').forEach(row=>{
-        const name=row.cells[2]?.innerText.trim().toLowerCase()||'';
-        row.style.display = name.includes(term)? '': 'none';
-      });
-      updateCompletionAndCounts();
+    /* ====== أدوات مساعدة للقوائم ====== */
+    function normalizeName(item){
+      if(typeof item==='string')return item;
+      return item?.name??item?.committee_name??item?.college??item?.auditor_name??'';
     }
-    document.getElementById('committeeSearch').addEventListener('input', applyCommitteeSearch);
+    function fillSelect(sel,arr,placeholder='— اختر —'){
+      sel.innerHTML=`<option value="">${placeholder}</option>`;
+      (arr||[]).forEach(v=>{const val=normalizeName(v);if(!val)return;const o=document.createElement('option');o.value=o.textContent=val;sel.appendChild(o);});
+    }
+    function buildSelect(optionsArray,current,field){
+      const sel=document.createElement('select');
+      sel.className='form-select form-select-sm';
+      sel.dataset.field=field;
+      const opts=(optionsArray||[]).map(normalizeName).filter(Boolean);
+      const set=new Set(opts);
+      if(current && !set.has(current)) set.add(current);
+      sel.innerHTML=`<option value=""></option>`+Array.from(set).map(v=>`<option value="${v}"${v===current?' selected':''}>${v}</option>`).join('');
+      if(current) sel.value=current;
+      return sel;
+    }
 
-    /* ===== تحميل الإعدادات (تشمل publishResults) ===== */
-    async function loadSettings(){
-      const semesterEl=document.getElementById('semesterInfo');
-      const visitsEl  =document.getElementById('selectedVisitsContainer');
-      const na = document.getElementById('notAvailable');
-      const pc = document.getElementById('pageContent');
-
+    /* ====== مصادر (قوائم) ====== */
+    let LIST_COLLEGES=[],LIST_AUDITORS=[],LIST_COMMITTEES=[];
+    async function loadDatalists(){
       try{
-        const {data} = await axios.get('/api/settings');
-        settingsCache = data || {};
-        // متغير التحكم بالنشر
-        PUBLISH_RESULTS = !!settingsCache.publishResults;
+        const [cR,aR,mR]=await Promise.all([
+          apiFetch('/api/colleges'),
+          apiFetch('/api/auditors'),
+          apiFetch('/api/committee-names?q=').catch(()=>apiFetch('/api/committees-master'))
+        ]);
+        LIST_COLLEGES=await cR.json().catch(()=>[]);
+        LIST_AUDITORS=await aR.json().catch(()=>[]);
+        LIST_COMMITTEES=await mR.json().catch(()=>[]);
 
-        if(!PUBLISH_RESULTS){
-          // إظهار الرسالة فقط
-          na.classList.remove('d-none');
-          na.classList.add('d-flex');
-          pc.classList.add('d-none');
-          return false;
-        }
+        const collegeFilter=document.getElementById('collegeFilter');
+        const auditorFilter=document.getElementById('auditorFilter');
+        const committeeFilter=document.getElementById('committeeFilter');
 
-        // مفعّل => إظهار الصفحة وإخفاء الرسالة
-        na.classList.add('d-none');
-        na.classList.remove('d-flex');
-        pc.classList.remove('d-none');
+        fillSelect(collegeFilter,LIST_COLLEGES,'جميع الكليات');
+        fillSelect(auditorFilter,LIST_AUDITORS,'جميع المدققين');
+        fillSelect(committeeFilter,LIST_COMMITTEES,'جميع اللجان');
 
-        savedVisibleColumns = settingsCache.visibleColumns || [];
+        // تعبئة مودال التحرير
+        fillSelect(document.getElementById('er_college'),LIST_COLLEGES,'— الكلية —');
+        fillSelect(document.getElementById('er_committee'),LIST_COMMITTEES,'— اسم اللجنة —');
+        fillSelect(document.getElementById('er_auditor'),LIST_AUDITORS,'— اسم المدقق —');
+      }catch(e){console.warn('datalist load error',e);}
+    }
 
-        // سطر الفصل/العام
-        const t = settingsCache.term || '—';
-        const ay= settingsCache.academicYear || '—';
-        semesterEl.textContent = `${t} - ${ay}`;
+    /* ====== Mini Editor ====== */
+    document.addEventListener('click',(e)=>{
+      const btn=e.target.closest('[data-cmd]'); if(!btn) return;
+      const cmd=btn.getAttribute('data-cmd'); document.execCommand(cmd,false,null);
+      const mm=document.getElementById('er_editor'); if(mm) mm.focus();
+    });
+    function stripHtml(html){const tmp=document.createElement('div');tmp.innerHTML=html;return (tmp.textContent||tmp.innerText||'').trim();}
 
-        // الزيارات أعلى الجدول
-        const visits = Array.isArray(settingsCache.selectedVisits) && settingsCache.selectedVisits.length
-          ? settingsCache.selectedVisits.join(' | ')
-          : 'لم يتم اختيار أي زيارة';
-        visitsEl.textContent = `الزيارات: ${visits}`;
+    /* ====== الحقول العددية ====== */
+    const NUMERIC_FIELDS=["formation_decision","work_plan","performance_indicators","meetings","consistency","coverage_books","report1","report2","report3","statistical_analysis"];
+    function getVisibleNumericFields(){
+      return NUMERIC_FIELDS.filter(f=>{
+        const th=document.querySelector(`th.col-${f}`);
+        return th && !th.classList.contains('hidden-col');
+      });
+    }
+    function clamp01(val){
+      let v=Number(String(val).replace(',', '.'));
+      if(isNaN(v)) return null;
+      if(v<0) v=0; if(v>1) v=1;
+      return Math.round(v*100)/100;
+    }
 
-        return true;
-      }catch(e){
-        // في حالة الخطأ نتصرف كأن النشر غير مفعّل (أكثر أمانًا)
-        na.classList.remove('d-none');
-        na.classList.add('d-flex');
-        pc.classList.add('d-none');
-        return false;
+    function updateAvailabilityHeader(){
+      const n=getVisibleNumericFields().length;
+      document.getElementById("availabilityHeader").innerText=`درجة التوفر من (${n})`;
+    }
+    function updateAvailability(row){
+      const fields=getVisibleNumericFields();
+      let sum=0;
+      fields.forEach(f=>{
+        const cell=row.querySelector(`[data-field="${f}"]`);
+        if(!cell) return;
+        const v=parseFloat((cell.querySelector('input')?.value ?? cell.innerText ?? '').toString().replace(',', '.'));
+        if(!isNaN(v)) sum+=v;
+      });
+      const availabilityCell=row.querySelector(".availability-cell");
+      if(availabilityCell){
+        availabilityCell.innerText=(Math.round(sum*100)/100).toFixed(2);
+        availabilityCell.classList.add("highlight");
+        setTimeout(()=>availabilityCell.classList.remove("highlight"),800);
       }
     }
+    function recalcAllAvailability(){
+      document.querySelectorAll('#committeesTable tr').forEach(updateAvailability);
+    }
+    function updateCompletionRate(){
+      const rows=document.querySelectorAll('#committeesTable tr');
+      let totalAvailability=0,numCommittees=0;
+      rows.forEach(row=>{
+        if(row.style.display==='none') return;
+        const availabilityCell=row.querySelector('.availability-cell');
+        if(availabilityCell){ totalAvailability+=parseFloat(availabilityCell.innerText)||0; numCommittees++; }
+      });
+      const denominator=numCommittees * getVisibleNumericFields().length;
+      const pct=denominator>0 ? ((totalAvailability/denominator)*100).toFixed(2) : '0.00';
+      const lastCollege=document.getElementById('collegeFilter').value || 'جميع الكليات';
+      document.getElementById("completionRateContainer").innerHTML=`📌 نسبة الاكتمال لـ <b>${lastCollege}</b> = ${pct}% — <span class="muted">عدد اللجان: ${numCommittees}</span>`;
+    }
 
-    /* ===== تحميل جدول اللجان ===== */
-    async function loadCommittees(){
+    /* ====== إظهار/إخفاء الأعمدة (فوري) ====== */
+    function applyColumnVisibilityInstant(){
+      document.querySelectorAll('.col-toggle').forEach(cb=>{
+        const field=cb.dataset.field; const show=cb.checked;
+        document.querySelectorAll(`th.col-${field}`).forEach(el=>el.classList.toggle('hidden-col',!show));
+        document.querySelectorAll(`#committeesTable td[data-field="${field}"]`).forEach(el=>el.classList.toggle('hidden-col',!show));
+      });
+      updateAvailabilityHeader();
+      recalcAllAvailability();
+      updateCompletionRate();
+    }
+
+    /* ====== منطق زري "إخفاء جميع الأعمدة" و"إظهار جميع الأعمدة" ====== */
+    const hideAllEl = document.getElementById('hideAllColumns');
+    const showAllEl = document.getElementById('showAllColumns');
+
+    function setMasterTogglesState(){
+      const toggles=[...document.querySelectorAll('.col-toggle')];
+      const anyChecked = toggles.some(cb=>cb.checked);
+      const allChecked = toggles.every(cb=>cb.checked);
+      hideAllEl.checked = !anyChecked;     // إذا لم يبقَ عمود مفعّل → مخفي الكل مفعّل
+      showAllEl.checked = allChecked;      // إذا الكل مفعّل → إظهار الكل مفعّل
+    }
+
+    hideAllEl?.addEventListener('change', ()=>{
+      if(hideAllEl.checked){
+        showAllEl.checked=false;
+        document.querySelectorAll('.col-toggle').forEach(cb=>cb.checked=false);
+        applyColumnVisibilityInstant();
+      }
+    });
+
+    showAllEl?.addEventListener('change', ()=>{
+      if(showAllEl.checked){
+        hideAllEl.checked=false;
+        document.querySelectorAll('.col-toggle').forEach(cb=>cb.checked=true);
+        applyColumnVisibilityInstant();
+      }
+    });
+
+    document.getElementById('settingsCard')?.addEventListener('change',(e)=>{
+      if(e.target.classList.contains('col-toggle')){
+        applyColumnVisibilityInstant();
+        setMasterTogglesState();
+      }
+      if(e.target.classList.contains('visit-toggle')) updateSelectedVisits();
+    });
+
+    /* ====== تحميل الإعدادات + شارة الفصل/العام ====== */
+    async function loadSettings(){
       try{
-        const college=document.getElementById('collegeFilter').value;
-        lastCollege = college || 'جميع الكليات';
-        let url='/api/committees';
-        const params=[];
-        if(college) params.push('college='+encodeURIComponent(college));
-        if(params.length) url+='?'+params.join('&');
+        const res=await apiFetch('/api/settings'); const settings=await res.json();
 
-        const res=await axios.get(url);
-        const tbody=document.getElementById('committeesTable');
-        tbody.innerHTML='';
+        if(settings?.selectedVisits){
+          document.querySelectorAll('.visit-toggle').forEach(cb=>{cb.checked=settings.selectedVisits.includes(cb.value)});
+        }
 
-        const arr=Array.isArray(res.data)?res.data:[];
-        if(!arr.length){
-          tbody.innerHTML=`<tr><td colspan="16" class="text-center">لا توجد بيانات</td></tr>`;
-          updateAvailabilityHeader();
-          document.getElementById('completionRateContainer').textContent='';
-          document.getElementById('committeesCountContainer').textContent='';
+        document.getElementById('publishResults').checked = !!settings?.publishResults;
+
+        if(Array.isArray(settings?.visibleColumns)){
+          document.querySelectorAll('.col-toggle').forEach(cb=>{
+            cb.checked = settings.visibleColumns.includes(cb.dataset.field);
+          });
+        }else{
+          document.querySelectorAll('.col-toggle').forEach(cb=>cb.checked=true);
+        }
+        applyColumnVisibilityInstant();
+        setMasterTogglesState();
+
+        const term=settings?.term||''; const ay=settings?.academicYear||'';
+        if(term||ay){
+          document.getElementById('termBadge').innerHTML=`<span class="badge text-bg-info">📚 الفصل الحالي: <b>${term||'—'}</b> — العام: <b>${ay||'—'}</b></span>`;
+        }else{
+          document.getElementById('termBadge').innerHTML='';
+        }
+
+        document.getElementById('termSelect').value = term || '';
+        document.getElementById('academicYearInput').value = ay || '';
+
+        updateSelectedVisits();
+      }catch(e){ /* تجاهل */ }
+    }
+
+    function updateSelectedVisits(){
+      const selected=Array.from(document.querySelectorAll('.visit-toggle:checked')).map(cb=>cb.value);
+      document.getElementById('selectedVisitsContainer').innerHTML=selected.length?("الزيارات: "+selected.join(' | ')):'';
+    }
+
+    document.getElementById('saveAllSettingsBtn')?.addEventListener('click',async()=>{
+      try{
+        const visibleColumns=Array.from(document.querySelectorAll('.col-toggle:checked')).map(cb=>cb.getAttribute('data-field'));
+        const selectedVisits=Array.from(document.querySelectorAll('.visit-toggle:checked')).map(cb=>cb.value);
+        const publishResults = document.getElementById('publishResults').checked;
+        const term = document.getElementById('termSelect').value.trim();
+        const academicYear = document.getElementById('academicYearInput').value.trim();
+
+        const rx=/^(20\d{2})[\/-](20\d{2})$/;
+        if(academicYear && !rx.test(academicYear)){
+          showError('⚠️ صيغة العام الجامعي يجب أن تكون 2024-2025 أو 2024/2025');
           return;
         }
 
-        // ترتيب افتراضي حسب الكلية
-        arr.sort((a,b)=>(a.college||'').localeCompare(b.college||'','ar'));
+        const payload={visibleColumns,selectedVisits,publishResults,term,academicYear};
+        await axios.put(`${API_BASE}/api/settings`,payload,{withCredentials:true});
 
-        // رسم الصفوف
-        arr.forEach((c,idx)=>{
-          const tr=document.createElement('tr');
-          const dateTxt = c.audit_date ? new Date(c.audit_date).toLocaleDateString('ar-EG'): '-';
-          const notesHtml = (c.notes||'').trim();
-          const hasNotes  = !!notesHtml && notesHtml!=='<p><br></p>' && notesHtml!=='<br>';
+        applyColumnVisibilityInstant();
+        setMasterTogglesState();
+        updateSelectedVisits();
+        if(term||academicYear){
+          document.getElementById('termBadge').innerHTML=`<span class="badge text-bg-info">📚 الفصل الحالي: <b>${term||'—'}</b> — العام: <b>${academicYear||'—'}</b></span>`;
+        }else{
+          document.getElementById('termBadge').innerHTML='';
+        }
 
-          tr.innerHTML = `
-            <td>${idx+1}</td>
-            <td class="col-college">${c.college??''}</td>
-            <td>${c.committee_name??''}</td>
-            <td class="date-col hidden-col">${dateTxt}</td>
-            <td data-field="formation_decision">${c.formation_decision ?? 0}</td>
-            <td data-field="work_plan">${c.work_plan ?? 0}</td>
-            <td data-field="performance_indicators">${c.performance_indicators ?? 0}</td>
-            <td data-field="meetings">${c.meetings ?? 0}</td>
-            <td data-field="consistency">${c.consistency ?? 0}</td>
-            <td data-field="coverage_books">${c.coverage_books ?? 0}</td>
-            <td data-field="report1">${c.report1 ?? 0}</td>
-            <td data-field="report2">${c.report2 ?? 0}</td>
-            <td data-field="report3">${c.report3 ?? 0}</td>
-            <td data-field="statistical_analysis">${c.statistical_analysis ?? 0}</td>
-            <td class="availability-cell">${c.availability_score ?? 0}</td>
-            <!-- ✅ وسم خلية الملاحظات لسهولة التحكم -->
-            <td data-notes-col>
-              <span class="notes-screen">
-                ${
-                  hasNotes
-                  ? `<button class="btn btn-sm btn-info" title="عرض الملاحظات" data-notes="1">🔍</button>`
-                  : '<span class="text-muted">لا توجد ملاحظات</span>'
-                }
-              </span>
-              <div class="print-notes">${hasNotes ? sanitizeNotes(notesHtml) : '—'}</div>
-            </td>
-          `;
-          // زر عرض الملاحظات (شاشة فقط)
-          const btn = tr.querySelector('[data-notes]');
-          if(btn){
-            btn.addEventListener('click',()=>{
-              document.getElementById('notesContent').innerHTML = notesHtml || '<i>لا توجد ملاحظات</i>';
-              new bootstrap.Modal(document.getElementById('notesModal')).show();
-            });
+        showSuccess("✅ تم حفظ الإعدادات بنجاح");
+      }catch(err){console.error(err);showError("❌ خطأ في حفظ الإعدادات")}
+    });
+
+    /* ====== إنشاء صف ====== */
+    function buildRow(c,idx){
+      const tr=document.createElement('tr');
+      tr.dataset.id=c._id||'';
+      if(c.__isNew) { tr.dataset.new="1"; tr.classList.add('is-new','table-info'); }
+
+      const selCollege=buildSelect(LIST_COLLEGES,c.college,'college');
+      const selCommittee=buildSelect(LIST_COMMITTEES,c.committee_name,'committee_name');
+      const selAuditor=buildSelect(LIST_AUDITORS,c.auditor_name,'auditor_name');
+
+      tr.innerHTML=`
+        <td class="row-idx">${idx+1}</td>
+
+        <td class="w-wide" data-field="college"></td>
+        <td class="w-wide" data-field="committee_name"></td>
+        <td class="w-wide" data-field="auditor_name"></td>
+
+        <td class="date-col" data-field="audit_date">
+          <input type="date" class="form-control form-control-sm" value="${c.audit_date ? String(c.audit_date).slice(0,10) : ''}">
+        </td>
+
+        <td class="w-narrow col-formation_decision" data-field="formation_decision"><input type="text" class="form-control form-control-sm" value="${c.formation_decision ?? 0}"></td>
+        <td class="w-narrow col-work_plan" data-field="work_plan"><input type="text" class="form-control form-control-sm" value="${c.work_plan ?? 0}"></td>
+        <td class="w-narrow col-performance_indicators" data-field="performance_indicators"><input type="text" class="form-control form-control-sm" value="${c.performance_indicators ?? 0}"></td>
+        <td class="w-narrow col-meetings" data-field="meetings"><input type="text" class="form-control form-control-sm" value="${c.meetings ?? 0}"></td>
+        <td class="w-narrow col-consistency" data-field="consistency"><input type="text" class="form-control form-control-sm" value="${c.consistency ?? 0}"></td>
+        <td class="w-narrow col-coverage_books" data-field="coverage_books"><input type="text" class="form-control form-control-sm" value="${c.coverage_books ?? 0}"></td>
+        <td class="w-narrow col-report1" data-field="report1"><input type="text" class="form-control form-control-sm" value="${c.report1 ?? 0}"></td>
+        <td class="w-narrow col-report2" data-field="report2"><input type="text" class="form-control form-control-sm" value="${c.report2 ?? 0}"></td>
+        <td class="w-narrow col-report3" data-field="report3"><input type="text" class="form-control form-control-sm" value="${c.report3 ?? 0}"></td>
+        <td class="w-narrow col-statistical_analysis" data-field="statistical_analysis"><input type="text" class="form-control form-control-sm" value="${c.statistical_analysis ?? 0}"></td>
+
+        <td class="availability-cell w-narrow">${c.availability_score ?? 0}</td>
+
+        <td class="w-wide" data-field="notes">
+          ${
+            (c.notes && stripHtml(c.notes))
+            ? `<button class="btn btn-sm btn-secondary btn-edit-open">عرض الملاحظات</button>`
+            : `<span class="text-muted">لا توجد ملاحظات</span>`
           }
-          document.getElementById('committeesTable').appendChild(tr);
-          updateAvailability(tr);
-        });
+        </td>
 
-        // تطبيق رؤية الأعمدة (حسب الإعدادات الحالية والتبديلات)
-        applyColumnVisibility();
-        // تطبيق البحث الحالي
-        applyCommitteeSearch();
+        <td class="w-narrow actions-col">
+          <div class="d-flex justify-content-center align-items-center gap-1">
+            <button class="btn btn-sm btn-primary btn-edit-open" title="تعديل"><i class="bi bi-pencil-square"></i></button>
+            <button class="btn btn-sm btn-success save-row" title="حفظ"><i class="bi bi-save"></i></button>
+            <button class="btn btn-sm btn-danger delete-row" title="حذف"><i class="bi bi-trash"></i></button>
+          </div>
+        </td>
+      `;
+
+      tr.querySelector('[data-field="college"]').appendChild(selCollege);
+      tr.querySelector('[data-field="committee_name"]').appendChild(selCommittee);
+      tr.querySelector('[data-field="auditor_name"]').appendChild(selAuditor);
+
+      tr.__notesHTML=c.notes||'';
+      attachInputListeners(tr);
+      updateAvailability(tr);
+      return tr;
+    }
+
+    function renumberRows(){
+      document.querySelectorAll('#committeesTable tr .row-idx').forEach((td,i)=>{td.textContent=i+1;});
+    }
+
+    function attachInputListeners(tr){
+      const numericFieldsSet=new Set(NUMERIC_FIELDS);
+      tr.querySelectorAll('[data-field] input').forEach(inp=>{
+        const field=inp.closest('td').dataset.field;
+        if(!numericFieldsSet.has(field) && field!=='audit_date') return;
+
+        inp.addEventListener('input',()=>{
+          if(numericFieldsSet.has(field)){
+            const clamped=clamp01(inp.value);
+            const invalid=(clamped===null);
+            inp.classList.toggle('is-invalid',invalid);
+            if(!invalid) inp.value=clamped;
+            markRowChanged(tr);
+            updateAvailability(tr);
+            updateCompletionRate();
+          }else{
+            markRowChanged(tr);
+          }
+        });
+      });
+      tr.querySelectorAll('select,input[type="date"]').forEach(el=>{
+        el.addEventListener('change',()=>{ markRowChanged(tr); });
+      });
+    }
+    function markRowChanged(tr){tr.dataset.dirty="1";tr.classList.add('table-warning')}
+    function clearRowChanged(tr){delete tr.dataset.dirty;tr.classList.remove('table-warning','is-new','table-info')}
+
+    /* ====== إضافة سجل جديد ====== */
+    document.getElementById('addRowBtn').addEventListener('click',()=>{
+      const tbody=document.getElementById('committeesTable');
+      const c={
+        __isNew:true,
+        college:'',
+        committee_name:'',
+        auditor_name:'',
+        audit_date:'',
+        formation_decision:0,work_plan:0,performance_indicators:0,meetings:0,consistency:0,
+        coverage_books:0,report1:0,report2:0,report3:0,statistical_analysis:0,
+        availability_score:0,notes:''
+      };
+      const tr=buildRow(c,0);
+      tbody.prepend(tr);
+      renumberRows();
+      applyColumnVisibilityInstant();
+      updateCompletionRate();
+    });
+
+    /* ====== تحميل السجلات ====== */
+    async function loadCommittees(){
+      try{
+        const college=document.getElementById('collegeFilter').value;
+        const auditor=document.getElementById('auditorFilter').value;
+        let url='/api/committees';
+        const params=[];
+        if(college) params.push('college='+encodeURIComponent(college));
+        if(auditor) params.push('auditor_name='+encodeURIComponent(auditor));
+        if(params.length) url+='?'+params.join('&');
+
+        const res=await apiFetch(url);
+        const arr=await res.json();
+
+        const tbody=document.getElementById('committeesTable');
+        tbody.innerHTML='';
+
+        if(!Array.isArray(arr)||arr.length===0){
+          tbody.innerHTML=`<tr><td colspan="18" class="text-center">لا توجد بيانات</td></tr>`;
+          document.getElementById("completionRateContainer").innerHTML='';
+          document.getElementById("selectedVisitsContainer").innerHTML='';
+          return;
+        }
+
+        const committeeSel=document.getElementById('committeeFilter').value;
+        let data=arr;
+        if(committeeSel){
+          data=arr.filter(x=>(x?.committee_name||'')===committeeSel);
+        }
+
+        data.sort((a,b)=>(a.college||'').localeCompare(b.college||'','ar') || (a.committee_name||'').localeCompare(b.committee_name||'','ar'));
+
+        data.forEach((c,idx)=>{ const tr=buildRow(c,idx); document.getElementById('committeesTable').appendChild(tr); });
+
+        applyColumnVisibilityInstant();
+        updateCompletionRate();
+        renumberRows();
       }catch(err){
         console.error(err);
         showError('❌ فشل تحميل البيانات');
         const tbody=document.getElementById('committeesTable');
-        tbody.innerHTML=`<tr><td colspan="16" class="text-center text-danger">فشل الجلب</td></tr>`;
+        tbody.innerHTML=`<tr><td colspan="18" class="text-center text-danger">فشل الجلب</td></tr>`;
       }
     }
 
-    /* ===== طباعة ===== */
-    document.getElementById('printBtn').addEventListener('click', ()=> {
-      updateCompletionAndCounts();
-      window.print();
+    /* ====== حفظ كل المعدل ====== */
+    document.getElementById('saveAllBtn').addEventListener('click',async()=>{
+      try{
+        const rows=Array.from(document.querySelectorAll('#committeesTable tr.table-warning, #committeesTable tr.is-new'));
+        if(!rows.length){showError('لا توجد تعديلات');return;}
+        for(const tr of rows){
+          const payload=collectRowData(tr);
+          const date=payload.audit_date?.trim();
+          if(date && !/^\d{4}-\d{2}-\d{2}$/.test(date)){showError('⚠️ صيغة التاريخ يجب أن تكون YYYY-MM-DD');return;}
+          if(tr.dataset.new==="1"){
+            await axios.post(`${API_BASE}/api/committees`,payload,{withCredentials:true});
+          }else{
+            const id=tr.dataset.id;
+            await axios.put(`${API_BASE}/api/committees/${id}`,payload,{withCredentials:true});
+          }
+        }
+        showSuccess('✅ تم حفظ جميع التعديلات');
+        await loadCommittees();
+      }catch(e){console.error(e);showError('❌ خطأ أثناء حفظ الكل');}
     });
 
-    /* ===== أحداث عامة ===== */
-    document.getElementById('collegeFilter').addEventListener('change', async ()=>{
-      if(!PUBLISH_RESULTS) return;
-      await loadCommittees();
-    });
-    document.getElementById('reloadBtn').addEventListener('click', async ()=>{
-      const ok = await loadSettings();
-      if(ok){ // فقط إذا النشر مفعّل
-        await loadOptions(); // يمكن إعادة تحميل القوائم أيضًا عند الرغبة
-        await loadCommittees();
+    document.getElementById('collegeFilter').addEventListener('change',loadCommittees);
+    document.getElementById('auditorFilter').addEventListener('change',loadCommittees);
+    document.getElementById('committeeFilter').addEventListener('change',loadCommittees);
+    document.getElementById('reloadBtn').addEventListener('click',loadCommittees);
+
+    /* ====== مودال موحّد: فتح/حفظ ====== */
+    let EDITING_ROW=null;
+    function openUnifiedModal(tr){
+      EDITING_ROW=tr;
+      fillSelect(document.getElementById('er_college'),LIST_COLLEGES,'— الكلية —');
+      fillSelect(document.getElementById('er_committee'),LIST_COMMITTEES,'— اسم اللجنة —');
+      fillSelect(document.getElementById('er_auditor'),LIST_AUDITORS,'— اسم المدقق —');
+
+      document.getElementById('er_college').value   = tr.querySelector('[data-field="college"] select')?.value || '';
+      document.getElementById('er_committee').value = tr.querySelector('[data-field="committee_name"] select')?.value || '';
+      document.getElementById('er_auditor').value   = tr.querySelector('[data-field="auditor_name"] select')?.value || '';
+      document.getElementById('er_date').value      = tr.querySelector('[data-field="audit_date"] input')?.value || '';
+
+      const html=tr.__notesHTML||'';
+      document.getElementById('viewNotes').innerHTML = html || '<i class="muted">لا توجد ملاحظات</i>';
+      document.getElementById('er_editor').innerHTML = html || '';
+
+      new bootstrap.Modal(document.getElementById('editUnifiedModal')).show();
+    }
+    document.getElementById('committeesTable').addEventListener('click',async(e)=>{
+      const tr=e.target.closest('tr'); if(!tr) return;
+      if(e.target.closest('.btn-edit-open')){ openUnifiedModal(tr); return; }
+
+      const btnSave=e.target.closest('.save-row');
+      const btnDelete=e.target.closest('.delete-row');
+
+      if(btnSave){
+        const payload=collectRowData(tr);
+        const date=payload.audit_date?.trim();
+        if(date && !/^\d{4}-\d{2}-\d{2}$/.test(date)){showError('⚠️ صيغة التاريخ يجب أن تكون YYYY-MM-DD');return;}
+        try{
+          if(tr.dataset.new==="1"){
+            await axios.post(`${API_BASE}/api/committees`,payload,{withCredentials:true});
+          }else{
+            const id=tr.dataset.id;
+            await axios.put(`${API_BASE}/api/committees/${id}`,payload,{withCredentials:true});
+          }
+          showSuccess("✅ تم حفظ التعديلات");
+          await loadCommittees();
+        }catch(err){console.error(err);showError("❌ خطأ أثناء الحفظ");}
+        return;
+      }
+      if(btnDelete){
+        if(tr.dataset.new==="1" && !tr.dataset.id){
+          tr.remove(); renumberRows(); updateCompletionRate();
+          return;
+        }
+        showConfirm("⚠️ هل أنت متأكد من الحذف؟",async()=>{
+          try{
+            await axios.delete(`${API_BASE}/api/committees/${tr.dataset.id}`,{withCredentials:true});
+            showSuccess("🗑️ تم حذف السجل بنجاح");
+            loadCommittees();
+          }catch(err){console.error(err);showError("❌ فشل الحذف");}
+        });
       }
     });
 
-    /* ===== تشغيل أولي =====
-       1) قراءة الإعدادات لتحديد publishResults
-       2) إذا مفعّل: نحمّل القوائم ثم الجدول
-    */
+    document.getElementById('saveUnifiedBtn').addEventListener('click',()=>{
+      if(!EDITING_ROW) return;
+      EDITING_ROW.querySelector('[data-field="college"] select').value        = document.getElementById('er_college').value || '';
+      EDITING_ROW.querySelector('[data-field="committee_name"] select').value = document.getElementById('er_committee').value || '';
+      EDITING_ROW.querySelector('[data-field="auditor_name"] select').value   = document.getElementById('er_auditor').value || '';
+      EDITING_ROW.querySelector('[data-field="audit_date"] input').value      = document.getElementById('er_date').value || '';
+
+      const newHtml=document.getElementById('er_editor').innerHTML;
+      EDITING_ROW.__notesHTML=newHtml||'';
+      const notesCell=EDITING_ROW.querySelector('[data-field="notes"]');
+      if(stripHtml(EDITING_ROW.__notesHTML)) notesCell.innerHTML='<button class="btn btn-sm btn-secondary btn-edit-open">عرض الملاحظات</button>';
+      else notesCell.innerHTML='<span class="text-muted">لا توجد ملاحظات</span>';
+
+      markRowChanged(EDITING_ROW);
+      bootstrap.Modal.getInstance(document.getElementById('editUnifiedModal')).hide();
+      showSuccess('تم تحديث الصف (تحتاج حفظ الصف)');
+    });
+
+    /* ====== جمع بيانات صف ====== */
+    function collectRowData(row){
+      const data={};
+      data.college=row.querySelector('[data-field="college"] select')?.value?.trim()||'';
+      data.committee_name=row.querySelector('[data-field="committee_name"] select')?.value?.trim()||'';
+      data.auditor_name=row.querySelector('[data-field="auditor_name"] select')?.value?.trim()||'';
+      data.audit_date=row.querySelector('[data-field="audit_date"] input')?.value||'';
+
+      NUMERIC_FIELDS.forEach(f=>{
+        const inp=row.querySelector(`[data-field="${f}"] input`); if(!inp) return;
+        const clamped=clamp01(inp.value);
+        data[f]=(clamped===null)?0:clamped;
+      });
+
+      const availabilityCell=row.querySelector('.availability-cell');
+      data.availability_score=parseFloat(availabilityCell?.innerText)||0;
+      data.notes=row.__notesHTML||'';
+      return data;
+    }
+
+    /* ====== بدء التشغيل ====== */
     (async function init(){
-      const ok = await loadSettings();
-      if(!ok) return;
-      await loadOptions();
-      await loadCommittees();
+      try{
+        await ensureAuth();
+        document.getElementById('homeBtn').href=go('/committees-home.html');
+        await loadDatalists();
+        await loadSettings();
+        await loadCommittees();
+      }catch{}
     })();
   </script>
 </body>
