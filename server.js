@@ -1052,6 +1052,44 @@ app.get('/auth/committees/me', (req, res) => {
   res.json({ authenticated: !!user, user: user || null });
 });
 
+// تغيير كلمة المرور للمستخدم الحالي (جديد)
+app.post('/auth/committees/change-password', authRequired, async (req, res) => {
+  try {
+    const { currentPassword, newPassword } = req.body || {};
+    if (!currentPassword || !newPassword || String(newPassword).trim().length < 6) {
+      return res.status(400).json({ message: 'كلمة المرور الحالية مطلوبة والجديدة 6 أحرف فأكثر' });
+    }
+
+    const sessUser = currentUser(req);
+    const user = await User.findById(sessUser.id);
+    if (!user) return res.status(404).json({ message: 'المستخدم غير موجود' });
+
+    const ok = await bcrypt.compare(String(currentPassword), user.password);
+    if (!ok) return res.status(401).json({ message: 'كلمة المرور الحالية غير صحيحة' });
+
+    const hash = await bcrypt.hash(String(newPassword), 10);
+    user.password = hash;
+    await user.save();
+
+    // سجّل العملية في AuditLog (اختياري ولكن مفيد)
+    await logAudit(req, {
+      model: 'User',
+      action: 'update',
+      docId: String(user._id),
+      payload: { selfPasswordChange: true, userId: String(user._id) }
+    });
+
+    // ⚠️ أعدم الجلسة لتسجيل خروج تلقائي بعد تغيير كلمة المرور
+    req.session.destroy(() => {
+      res.clearCookie('cmts.sid'); // نفس اسم الكوكي المعرّف في session
+      return res.json({ message: 'تم تغيير كلمة المرور وتم تسجيل الخروج تلقائيًا' });
+    });
+  } catch (err) {
+    return res.status(500).json({ message: '❌ خطأ في تغيير كلمة المرور', error: err.message });
+  }
+});
+
+
 /****************************************************
  * تابع لنظام اللجان: تقييمات اللجان (CRUD)
  ****************************************************/
