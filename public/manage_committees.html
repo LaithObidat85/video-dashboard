@@ -259,7 +259,7 @@
     </div>
   </div>
 
-  <!-- datalist/مصادر (غير مستعملة بصريًا الآن لكن نبقيها إن احتجت لاحقًا) -->
+  <!-- datalist/مصادر -->
   <datalist id="dl_colleges"></datalist>
   <datalist id="dl_committees"></datalist>
   <datalist id="dl_auditors"></datalist>
@@ -335,14 +335,33 @@
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
   <script>
-    /* ====== بيئة موحّدة ====== */
-    const RENDER_BASE='https://vdash-qkyv.onrender.com';
-    const host=location.hostname;
-    const isGithub=host.endsWith('github.io');
-    const isLocal=host==='localhost'||host==='127.0.0.1';
-    const API_BASE=isGithub?RENDER_BASE:(isLocal?'http://localhost:3000':'');
-    const go=(path)=>isGithub?(RENDER_BASE+path):path;
+    /* ====== إعداد أساس الربط مع الـAPI (إصلاح شامل) ====== */
+    const RENDER_BASE = 'https://vdash-qkyv.onrender.com';
+    const { protocol, hostname, origin } = location;
+    const isGitHub = hostname.endsWith('github.io');
+    const isLocal  = hostname === 'localhost' || hostname === '127.0.0.1';
+    const isRender = hostname.endsWith('onrender.com');
+    const isFile   = protocol === 'file:';
 
+    // أين نرسل الطلبات؟
+    const API_BASE = (isGitHub || isFile) ? RENDER_BASE
+                    : isRender           ? origin
+                    : isLocal            ? 'http://localhost:3000'
+                    : RENDER_BASE;
+
+    // لتوليد روابط تنقل لصفحات الاستضافة (GitHub/file يوجّه لRender)
+    const go = (path) => (isGitHub || isFile) ? (RENDER_BASE + path) : path;
+
+    // fetch موحّد مع الكوكيز
+    const apiFetch = (path, opts={}) =>
+      fetch(`${API_BASE}${path}`, { credentials: 'include', ...opts });
+
+    // تتبّع مفيد للتشخيص
+    window.addEventListener('error', e => console.error('WindowError:', e.message, e.filename, e.lineno));
+    window.addEventListener('unhandledrejection', e => console.error('PromiseRejection:', e.reason));
+    console.log('➡️ Host:', location.href, '\n➡️ API_BASE:', API_BASE);
+
+    /* ====== Toasts ====== */
     const toastSuccess=new bootstrap.Toast(document.getElementById('toastSuccess'));
     const toastError  =new bootstrap.Toast(document.getElementById('toastError'));
     const toastConfirmEl=document.getElementById('toastConfirm');
@@ -353,22 +372,25 @@
     function showError(msg="❌ حدث خطأ"){document.querySelector("#toastError .toast-body").innerText=msg;toastError.show()}
     function showConfirm(msg,cb){document.getElementById("toastConfirmMsg").innerText=msg;confirmCallback=cb;toastConfirm.show()}
     document.getElementById("confirmYes").addEventListener("click",()=>{toastConfirm.hide();if(confirmCallback)confirmCallback()})
-    const apiFetch=(path,opts={})=>fetch(`${API_BASE}${path}`,{credentials:'include',...opts});
 
     /* ====== شارة المستخدم + صلاحيات ====== */
     let CURRENT_USER=null;
     function renderUser(u){
       const username=u?.username||(u?.email?u.email.split('@')[0]:'—');
-      document.getElementById('userUsername').textContent=username;
+      document.getElementById('userUsername').textContent=username||'—';
       document.getElementById('userFullName').textContent=u?.name||'—';
       document.getElementById('userRole').textContent=u?.role||'—';
     }
     async function ensureAuth(){
       try{
         const r=await apiFetch('/auth/committees/me');
-        const j=await r.json();
-        if(!j?.authenticated){
-          location.href=go('/committees-login.html?next='+encodeURIComponent('/manage_committees.html'));throw 0;
+        const j=await r.json().catch(()=>null);
+        if(!j || !j.authenticated){
+          // إن لم تتوفر صفحة تسجيل الدخول لديك، أظهر رسالة بدون تحويل قسري
+          showError('الرجاء تسجيل الدخول أولاً');
+          // أو استخدم تحويلًا فعليًا إن كانت الصفحة موجودة لديك:
+          // location.href = go('/committees-login.html?next='+encodeURIComponent('/manage_committees.html'));
+          throw 0;
         }
         if(j.user?.isActive===false){
           showError('🚫 حسابك معطّل. الرجاء التواصل مع المشرف.');
@@ -376,7 +398,6 @@
         }
         CURRENT_USER=j.user;renderUser(j.user);
         const isAdmin=(j.user?.role||'').toLowerCase()==='admin';
-        // بطاقة الإعدادات تظهر فقط للأدمن
         document.getElementById('settingsCard').classList.toggle('d-none',!isAdmin);
       }catch{throw 0;}
     }
@@ -395,7 +416,7 @@
       return item?.name??item?.committee_name??item?.college??item?.auditor_name??'';
     }
     function fillSelect(sel,arr,placeholder='— اختر —'){
-      sel.innerHTML=\`<option value="">\${placeholder}</option>\`;
+      sel.innerHTML=`<option value="">${placeholder}</option>`;
       (arr||[]).forEach(v=>{const val=normalizeName(v);if(!val)return;const o=document.createElement('option');o.value=o.textContent=val;sel.appendChild(o);});
     }
     function buildSelect(optionsArray,current,field){
@@ -405,7 +426,7 @@
       const opts=(optionsArray||[]).map(normalizeName).filter(Boolean);
       const set=new Set(opts);
       if(current && !set.has(current)) set.add(current);
-      sel.innerHTML=\`<option value=""></option>\`+Array.from(set).map(v=>\`<option value="\${v}"\${v===current?' selected':''}>\${v}</option>\`).join('');
+      sel.innerHTML=`<option value=""></option>`+Array.from(set).map(v=>`<option value="${v}"${v===current?' selected':''}>${v}</option>`).join('');
       if(current) sel.value=current;
       return sel;
     }
@@ -450,7 +471,7 @@
     const NUMERIC_FIELDS=["formation_decision","work_plan","performance_indicators","meetings","consistency","coverage_books","report1","report2","report3","statistical_analysis"];
     function getVisibleNumericFields(){
       return NUMERIC_FIELDS.filter(f=>{
-        const th=document.querySelector(\`th.col-\${f}\`);
+        const th=document.querySelector(`th.col-${f}`);
         return th && !th.classList.contains('hidden-col');
       });
     }
@@ -463,13 +484,13 @@
 
     function updateAvailabilityHeader(){
       const n=getVisibleNumericFields().length;
-      document.getElementById("availabilityHeader").innerText=\`درجة التوفر من (\${n})\`;
+      document.getElementById("availabilityHeader").innerText=`درجة التوفر من (${n})`;
     }
     function updateAvailability(row){
       const fields=getVisibleNumericFields();
       let sum=0;
       fields.forEach(f=>{
-        const cell=row.querySelector(\`[data-field="\${f}"]\`);
+        const cell=row.querySelector(`[data-field="${f}"]`);
         if(!cell) return;
         const v=parseFloat((cell.querySelector('input')?.value ?? cell.innerText ?? '').toString().replace(',', '.'));
         if(!isNaN(v)) sum+=v;
@@ -495,15 +516,15 @@
       const denominator=numCommittees * getVisibleNumericFields().length;
       const pct=denominator>0 ? ((totalAvailability/denominator)*100).toFixed(2) : '0.00';
       const lastCollege=document.getElementById('collegeFilter').value || 'جميع الكليات';
-      document.getElementById("completionRateContainer").innerHTML=\`📌 نسبة الاكتمال لـ <b>\${lastCollege}</b> = \${pct}% — <span class="muted">عدد اللجان: \${numCommittees}</span>\`;
+      document.getElementById("completionRateContainer").innerHTML=`📌 نسبة الاكتمال لـ <b>${lastCollege}</b> = ${pct}% — <span class="muted">عدد اللجان: ${numCommittees}</span>`;
     }
 
     /* ====== إظهار/إخفاء الأعمدة (فوري) ====== */
     function applyColumnVisibilityInstant(){
       document.querySelectorAll('.col-toggle').forEach(cb=>{
         const field=cb.dataset.field; const show=cb.checked;
-        document.querySelectorAll(\`th.col-\${field}\`).forEach(el=>el.classList.toggle('hidden-col',!show));
-        document.querySelectorAll(\`#committeesTable td[data-field="\${field}"]\`).forEach(el=>el.classList.toggle('hidden-col',!show));
+        document.querySelectorAll(`th.col-${field}`).forEach(el=>el.classList.toggle('hidden-col',!show));
+        document.querySelectorAll(`#committeesTable td[data-field="${field}"]`).forEach(el=>el.classList.toggle('hidden-col',!show));
       });
       updateAvailabilityHeader();
       recalcAllAvailability();
@@ -565,7 +586,6 @@
             cb.checked = settings.visibleColumns.includes(cb.dataset.field);
           });
         }else{
-          // إن لم تكن محفوظة من قبل، اترك الافتراضيات (كلها مفعّلة)
           document.querySelectorAll('.col-toggle').forEach(cb=>cb.checked=true);
         }
         applyColumnVisibilityInstant();
@@ -574,12 +594,12 @@
         // الشارة
         const term=settings?.term||''; const ay=settings?.academicYear||'';
         if(term||ay){
-          document.getElementById('termBadge').innerHTML=\`<span class="badge text-bg-info">📚 الفصل الحالي: <b>\${term||'—'}</b> — العام: <b>\${ay||'—'}</b></span>\`;
+          document.getElementById('termBadge').innerHTML=`<span class="badge text-bg-info">📚 الفصل الحالي: <b>${term||'—'}</b> — العام: <b>${ay||'—'}</b></span>`;
         }else{
           document.getElementById('termBadge').innerHTML='';
         }
 
-        // عبّئ حقول الفصل/العام في البطاقة
+        // حقول البطاقة
         document.getElementById('termSelect').value = term || '';
         document.getElementById('academicYearInput').value = ay || '';
 
@@ -592,7 +612,7 @@
       document.getElementById('selectedVisitsContainer').innerHTML=selected.length?("الزيارات: "+selected.join(' | ')):'';
     }
 
-    // زر حفظ الإعدادات الموحّد
+    // زر حفظ الإعدادات
     document.getElementById('saveAllSettingsBtn')?.addEventListener('click',async()=>{
       try{
         const visibleColumns=Array.from(document.querySelectorAll('.col-toggle:checked')).map(cb=>cb.getAttribute('data-field'));
@@ -608,14 +628,13 @@
         }
 
         const payload={visibleColumns,selectedVisits,publishResults,term,academicYear};
-        await axios.put(\`\${API_BASE}/api/settings\`,payload,{withCredentials:true});
+        await axios.put(`${API_BASE}/api/settings`,payload,{withCredentials:true});
 
-        // طبّق فورًا على الواجهة
         applyColumnVisibilityInstant();
         setMasterTogglesState();
         updateSelectedVisits();
         if(term||academicYear){
-          document.getElementById('termBadge').innerHTML=\`<span class="badge text-bg-info">📚 الفصل الحالي: <b>\${term||'—'}</b> — العام: <b>\${academicYear||'—'}</b></span>\`;
+          document.getElementById('termBadge').innerHTML=`<span class="badge text-bg-info">📚 الفصل الحالي: <b>${term||'—'}</b> — العام: <b>${academicYear||'—'}</b></span>`;
         }else{
           document.getElementById('termBadge').innerHTML='';
         }
@@ -893,7 +912,7 @@
       data.audit_date=row.querySelector('[data-field="audit_date"] input')?.value||'';
 
       NUMERIC_FIELDS.forEach(f=>{
-        const inp=row.querySelector(\`[data-field="\${f}"] input\`); if(!inp) return;
+        const inp=row.querySelector(`[data-field="${f}"] input`); if(!inp) return;
         const clamped=clamp01(inp.value);
         data[f]=(clamped===null)?0:clamped;
       });
