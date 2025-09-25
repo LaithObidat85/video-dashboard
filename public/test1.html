@@ -132,7 +132,8 @@
           <th class="col-report3">تقرير إنجاز 3</th>
           <th class="col-statistical_analysis">التحليل الإحصائي</th>
           <th id="availabilityHeader">درجة التوفر من (9)</th>
-          <th>الملاحظات</th>
+          <!-- ✅ تمييز رأس عمود الملاحظات -->
+          <th class="col-notes">الملاحظات</th>
         </tr>
       </thead>
       <tbody id="committeesTable">
@@ -276,6 +277,14 @@
         if(th) th.classList.toggle('hidden-col', !show);
       });
 
+      /* ✅ منطق إخفاء/إظهار عمود الملاحظات بناءً على الأعمدة المختارة */
+      const hideNotes = savedVisibleColumns.length === 0;
+      const notesHeader = document.querySelector('#evaluationsTableWrapper th.col-notes');
+      if (notesHeader) notesHeader.classList.toggle('hidden-col', hideNotes);
+      document.querySelectorAll('#evaluationsTableWrapper td[data-notes-col]').forEach(td=>{
+        td.classList.toggle('hidden-col', hideNotes);
+      });
+
       document.querySelectorAll('#committeesTable tr').forEach(updateAvailability);
       updateAvailabilityHeader();
       updateCompletionAndCounts();
@@ -394,7 +403,8 @@
             <td data-field="report3">${c.report3 ?? 0}</td>
             <td data-field="statistical_analysis">${c.statistical_analysis ?? 0}</td>
             <td class="availability-cell">${c.availability_score ?? 0}</td>
-            <td>
+            <!-- ✅ وسم خلية الملاحظات لسهولة التحكم -->
+            <td data-notes-col>
               <span class="notes-screen">
                 ${
                   hasNotes
