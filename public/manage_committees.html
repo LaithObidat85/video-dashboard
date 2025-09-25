@@ -33,7 +33,7 @@
     table{
       background:#fff;
       border-radius:12px;
-      /* كان overflow:hidden يقتل sticky للـ thead — أزلناه */
+      /* لا تستخدم overflow:hidden حتى لا تلغي sticky */
       font-size:14px;
       width:100%;
       margin:auto
@@ -44,20 +44,27 @@
     .highlight{background:#d4edda!important;transition:background-color 1s ease}
     .hidden-col{display:none!important}
 
-    .sticky-header{background:#f8f9fa;padding-top:10px;position:sticky;top:0;z-index:40}
-    /* استخدمنا متغير CSS ديناميكي لتعويض ارتفاع الهيدر المثبت */
+    /* شريط الإعدادات لم يعد sticky */
+    .sticky-header{background:#f8f9fa;padding-top:10px}
+
+    /* ✅ ترويسة الجدول مثبّتة أعلى الشاشة تمامًا */
     #evaluationsTableWrapper thead th{
       position:sticky;
-      top:var(--thead-sticky-top,0px);
+      top:0;
       z-index:9;
-      background:#f8f9fa
+      background:#f8f9fa;
+      color:#000;
     }
+
     #evaluationsTableWrapper th.date-col,#evaluationsTableWrapper td.date-col{direction:ltr;text-align:center;width:140px;max-width:140px}
 
     /* أحجام الأعمدة  */
     th.w-wide, td.w-wide{min-width:200px}
     th.w-narrow, td.w-narrow{min-width:70px;max-width:90px}
     td.w-narrow input{padding:.125rem .25rem}
+
+    /* ✅ توسيع عمود الإجراءات */
+    th.actions-col, td.actions-col{min-width:160px}
 
     .toast-container{position:fixed;top:20px;left:50%;transform:translateX(-50%);z-index:2000}
     #completionRateContainer,#selectedVisitsContainer,#termBadge{text-align:center;font-weight:bold;margin:5px 0;font-size:16px;min-height:24px}
@@ -125,7 +132,7 @@
         </div>
       </div>
 
-      <!-- بطاقة إعدادات موحّدة -->
+      <!-- بطاقة إعدادات موحّدة (تظهر للأدمن فقط) -->
       <div class="card mb-3 d-none" id="settingsCard">
         <div class="card-header fw-bold">
           ⚙️ إعدادات
@@ -172,6 +179,11 @@
                 <div class="form-check">
                   <input class="form-check-input" type="checkbox" id="hideAllColumns">
                   <label class="form-check-label" for="hideAllColumns">إخفاء جميع الأعمدة</label>
+                </div>
+                <!-- ✅ زر إظهار جميع الأعمدة -->
+                <div class="form-check">
+                  <input class="form-check-input" type="checkbox" id="showAllColumns">
+                  <label class="form-check-label" for="showAllColumns">إظهار جميع الأعمدة</label>
                 </div>
               </div>
 
@@ -237,7 +249,7 @@
 
             <th id="availabilityHeader" class="w-narrow">درجة التوفر من (9)</th>
             <th class="w-wide">الملاحظات</th>
-            <th class="w-narrow">إجراءات</th>
+            <th class="w-narrow actions-col">إجراءات</th>
           </tr>
         </thead>
         <tbody id="committeesTable">
@@ -383,7 +395,7 @@
       return item?.name??item?.committee_name??item?.college??item?.auditor_name??'';
     }
     function fillSelect(sel,arr,placeholder='— اختر —'){
-      sel.innerHTML=`<option value="">${placeholder}</option>`;
+      sel.innerHTML=\`<option value="">\${placeholder}</option>\`;
       (arr||[]).forEach(v=>{const val=normalizeName(v);if(!val)return;const o=document.createElement('option');o.value=o.textContent=val;sel.appendChild(o);});
     }
     function buildSelect(optionsArray,current,field){
@@ -393,7 +405,7 @@
       const opts=(optionsArray||[]).map(normalizeName).filter(Boolean);
       const set=new Set(opts);
       if(current && !set.has(current)) set.add(current);
-      sel.innerHTML=`<option value=""></option>`+Array.from(set).map(v=>`<option value="${v}"${v===current?' selected':''}>${v}</option>`).join('');
+      sel.innerHTML=\`<option value=""></option>\`+Array.from(set).map(v=>\`<option value="\${v}"\${v===current?' selected':''}>\${v}</option>\`).join('');
       if(current) sel.value=current;
       return sel;
     }
@@ -438,7 +450,7 @@
     const NUMERIC_FIELDS=["formation_decision","work_plan","performance_indicators","meetings","consistency","coverage_books","report1","report2","report3","statistical_analysis"];
     function getVisibleNumericFields(){
       return NUMERIC_FIELDS.filter(f=>{
-        const th=document.querySelector(`th.col-${f}`);
+        const th=document.querySelector(\`th.col-\${f}\`);
         return th && !th.classList.contains('hidden-col');
       });
     }
@@ -451,13 +463,13 @@
 
     function updateAvailabilityHeader(){
       const n=getVisibleNumericFields().length;
-      document.getElementById("availabilityHeader").innerText=`درجة التوفر من (${n})`;
+      document.getElementById("availabilityHeader").innerText=\`درجة التوفر من (\${n})\`;
     }
     function updateAvailability(row){
       const fields=getVisibleNumericFields();
       let sum=0;
       fields.forEach(f=>{
-        const cell=row.querySelector(`[data-field="${f}"]`);
+        const cell=row.querySelector(\`[data-field="\${f}"]\`);
         if(!cell) return;
         const v=parseFloat((cell.querySelector('input')?.value ?? cell.innerText ?? '').toString().replace(',', '.'));
         if(!isNaN(v)) sum+=v;
@@ -483,53 +495,55 @@
       const denominator=numCommittees * getVisibleNumericFields().length;
       const pct=denominator>0 ? ((totalAvailability/denominator)*100).toFixed(2) : '0.00';
       const lastCollege=document.getElementById('collegeFilter').value || 'جميع الكليات';
-      document.getElementById("completionRateContainer").innerHTML=`📌 نسبة الاكتمال لـ <b>${lastCollege}</b> = ${pct}% — <span class="muted">عدد اللجان: ${numCommittees}</span>`;
+      document.getElementById("completionRateContainer").innerHTML=\`📌 نسبة الاكتمال لـ <b>\${lastCollege}</b> = \${pct}% — <span class="muted">عدد اللجان: \${numCommittees}</span>\`;
     }
-
-    /* ====== sticky top (حساب ديناميكي لارتفاع الهيدر) ====== */
-    function updateStickyTop(){
-      const sh=document.querySelector('.sticky-header');
-      const h=sh?sh.offsetHeight:0;
-      document.documentElement.style.setProperty('--thead-sticky-top', h+'px');
-    }
-    window.addEventListener('resize', updateStickyTop);
 
     /* ====== إظهار/إخفاء الأعمدة (فوري) ====== */
     function applyColumnVisibilityInstant(){
       document.querySelectorAll('.col-toggle').forEach(cb=>{
         const field=cb.dataset.field; const show=cb.checked;
-        document.querySelectorAll(`th.col-${field}`).forEach(el=>el.classList.toggle('hidden-col',!show));
-        document.querySelectorAll(`#committeesTable td[data-field="${field}"]`).forEach(el=>el.classList.toggle('hidden-col',!show));
+        document.querySelectorAll(\`th.col-\${field}\`).forEach(el=>el.classList.toggle('hidden-col',!show));
+        document.querySelectorAll(\`#committeesTable td[data-field="\${field}"]\`).forEach(el=>el.classList.toggle('hidden-col',!show));
       });
       updateAvailabilityHeader();
       recalcAllAvailability();
       updateCompletionRate();
-      updateStickyTop(); // قد يتغير ارتفاع الهيدر قليلًا
     }
 
-    // ✅ زر "إخفاء جميع الأعمدة"
+    /* ====== منطق زري "إخفاء جميع الأعمدة" و"إظهار جميع الأعمدة" ====== */
     const hideAllEl = document.getElementById('hideAllColumns');
-    function setHideAllColumnsCheckedState(){
-      const anyChecked = Array.from(document.querySelectorAll('.col-toggle')).some(cb=>cb.checked);
-      hideAllEl.checked = !anyChecked;
+    const showAllEl = document.getElementById('showAllColumns');
+
+    function setMasterTogglesState(){
+      const toggles=[...document.querySelectorAll('.col-toggle')];
+      const anyChecked = toggles.some(cb=>cb.checked);
+      const allChecked = toggles.every(cb=>cb.checked);
+      hideAllEl.checked = !anyChecked;     // إذا لم يبقَ عمود مفعّل → مخفي الكل مفعّل
+      showAllEl.checked = allChecked;      // إذا الكل مفعّل → إظهار الكل مفعّل
     }
+
     hideAllEl?.addEventListener('change', ()=>{
       if(hideAllEl.checked){
+        showAllEl.checked=false;
         document.querySelectorAll('.col-toggle').forEach(cb=>cb.checked=false);
         applyColumnVisibilityInstant();
       }
-      // عند إلغاء التفعيل لا نُعدل حالة الأعمدة تلقائيًا
+    });
+
+    showAllEl?.addEventListener('change', ()=>{
+      if(showAllEl.checked){
+        hideAllEl.checked=false;
+        document.querySelectorAll('.col-toggle').forEach(cb=>cb.checked=true);
+        applyColumnVisibilityInstant();
+      }
     });
 
     document.getElementById('settingsCard')?.addEventListener('change',(e)=>{
       if(e.target.classList.contains('col-toggle')){
         applyColumnVisibilityInstant();
-        // أي تفعيل يدوي لأي عمود يطفئ "إخفاء جميع الأعمدة"
-        if(e.target.checked){ hideAllEl.checked=false; }
-        setHideAllColumnsCheckedState();
+        setMasterTogglesState();
       }
       if(e.target.classList.contains('visit-toggle')) updateSelectedVisits();
-      updateStickyTop();
     });
 
     /* ====== تحميل الإعدادات + شارة الفصل/العام ====== */
@@ -545,22 +559,22 @@
         // نشر النتائج
         document.getElementById('publishResults').checked = !!settings?.publishResults;
 
-        // ✅ حالة الأعمدة (احترم [] كقيمة صالحة، لا نفعل جميع الأعمدة تلقائيًا)
+        // (احترم []) كقيمة صالحة
         if(Array.isArray(settings?.visibleColumns)){
           document.querySelectorAll('.col-toggle').forEach(cb=>{
             cb.checked = settings.visibleColumns.includes(cb.dataset.field);
           });
         }else{
-          // إن لم تكن محفوظة من قبل (undefined)، اترك الافتراضيات (كلها مفعّلة)
+          // إن لم تكن محفوظة من قبل، اترك الافتراضيات (كلها مفعّلة)
           document.querySelectorAll('.col-toggle').forEach(cb=>cb.checked=true);
         }
         applyColumnVisibilityInstant();
-        setHideAllColumnsCheckedState(); // حدّث حالة زر الإخفاء الكلي
+        setMasterTogglesState();
 
         // الشارة
         const term=settings?.term||''; const ay=settings?.academicYear||'';
         if(term||ay){
-          document.getElementById('termBadge').innerHTML=`<span class="badge text-bg-info">📚 الفصل الحالي: <b>${term||'—'}</b> — العام: <b>${ay||'—'}</b></span>`;
+          document.getElementById('termBadge').innerHTML=\`<span class="badge text-bg-info">📚 الفصل الحالي: <b>\${term||'—'}</b> — العام: <b>\${ay||'—'}</b></span>\`;
         }else{
           document.getElementById('termBadge').innerHTML='';
         }
@@ -570,7 +584,6 @@
         document.getElementById('academicYearInput').value = ay || '';
 
         updateSelectedVisits();
-        updateStickyTop();
       }catch(e){ /* تجاهل */ }
     }
 
@@ -595,14 +608,14 @@
         }
 
         const payload={visibleColumns,selectedVisits,publishResults,term,academicYear};
-        await axios.put(`${API_BASE}/api/settings`,payload,{withCredentials:true});
+        await axios.put(\`\${API_BASE}/api/settings\`,payload,{withCredentials:true});
 
         // طبّق فورًا على الواجهة
         applyColumnVisibilityInstant();
-        setHideAllColumnsCheckedState();
+        setMasterTogglesState();
         updateSelectedVisits();
         if(term||academicYear){
-          document.getElementById('termBadge').innerHTML=`<span class="badge text-bg-info">📚 الفصل الحالي: <b>${term||'—'}</b> — العام: <b>${academicYear||'—'}</b></span>`;
+          document.getElementById('termBadge').innerHTML=\`<span class="badge text-bg-info">📚 الفصل الحالي: <b>\${term||'—'}</b> — العام: <b>\${academicYear||'—'}</b></span>\`;
         }else{
           document.getElementById('termBadge').innerHTML='';
         }
@@ -653,7 +666,7 @@
           }
         </td>
 
-        <td class="w-narrow">
+        <td class="w-narrow actions-col">
           <div class="d-flex justify-content-center align-items-center gap-1">
             <button class="btn btn-sm btn-primary btn-edit-open" title="تعديل"><i class="bi bi-pencil-square"></i></button>
             <button class="btn btn-sm btn-success save-row" title="حفظ"><i class="bi bi-save"></i></button>
@@ -880,7 +893,7 @@
       data.audit_date=row.querySelector('[data-field="audit_date"] input')?.value||'';
 
       NUMERIC_FIELDS.forEach(f=>{
-        const inp=row.querySelector(`[data-field="${f}"] input`); if(!inp) return;
+        const inp=row.querySelector(\`[data-field="\${f}"] input\`); if(!inp) return;
         const clamped=clamp01(inp.value);
         data[f]=(clamped===null)?0:clamped;
       });
@@ -899,7 +912,6 @@
         await loadDatalists();
         await loadSettings();
         await loadCommittees();
-        updateStickyTop(); // تأكيدًا بعد أول تحميل
       }catch{}
     })();
   </script>
