@@ -207,10 +207,14 @@
             <option>10</option><option selected>20</option><option>50</option>
           </select>
         </div>
-        <div class="ms-auto d-flex gap-2">
-          <button class="btn btn-outline-secondary" id="btnExport"><i class="bi bi-filetype-csv"></i> تصدير CSV</button>
-          <button class="btn btn-outline-secondary" id="btnReload"><i class="bi bi-arrow-repeat"></i> تحديث</button>
-        </div>
+      <div class="ms-auto d-flex gap-2">
+  <button class="btn btn-success" id="btnSaveChanges" disabled><i class="bi bi-save"></i> حفظ التغييرات</button>
+  <button class="btn btn-outline-secondary" id="btnDiscardChanges" disabled><i class="bi bi-x-circle"></i> إلغاء التغييرات</button>
+  <button class="btn btn-outline-dark" id="btnBulkPw"><i class="bi bi-key-fill"></i> تغيير كلمات المرور للجميع</button>
+  <button class="btn btn-outline-secondary" id="btnExport"><i class="bi bi-filetype-csv"></i> تصدير CSV</button>
+  <button class="btn btn-outline-secondary" id="btnReload"><i class="bi bi-arrow-repeat"></i> تحديث</button>
+</div>
+
       </div>
     </div>
 
@@ -299,6 +303,28 @@
       </div>
     </div>
   </div>
+
+  <!-- Modal: تغيير كلمات المرور للجميع (استثناء admin) -->
+<div class="modal fade" id="bulkPwModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="bi bi-key-fill me-1"></i> تغيير كلمات المرور للجميع (مع استثناء admin)</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <label class="form-label">كلمة المرور الجديدة</label>
+        <input type="text" id="bulkNewPw" class="form-control" placeholder="أدخل كلمة مرور موحدة للجميع (باستثناء admin)">
+        <div class="form-text">سيتم تطبيق هذه الكلمة على جميع المستخدمين ما عدا من دورهم <code>admin</code>.</div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+        <button class="btn btn-primary" id="applyBulkPwBtn"><i class="bi bi-check2-circle"></i> تطبيق</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 
   <!-- Toasts -->
   <div class="toast-container position-fixed top-0 start-50 translate-middle-x p-3" style="z-index:2000">
@@ -460,6 +486,43 @@ function confirmToast({ message='هل تريد المتابعة؟', confirmText=
       selected: new Set(),
     };
 
+// ====== مسودة تغييرات محلية (بدون حفظ تلقائي) ======
+const drafts = new Map(); // key: userId, value: { name?, username?, email?, role?, isActive? }
+
+function markDirty(id, patch) {
+  const current = drafts.get(id) || {};
+  Object.assign(current, patch || {});
+  drafts.set(id, current);
+
+  // وسم الصف بصريًا
+  const row = document.querySelector(`#usersTbody tr[data-id="${CSS.escape(id)}"]`);
+  if (row) row.classList.add('row-highlight');
+
+  // تفعيل أزرار الحفظ/الإلغاء
+  document.getElementById('btnSaveChanges').disabled = drafts.size === 0;
+  document.getElementById('btnDiscardChanges').disabled = drafts.size === 0;
+
+  // تحديث شريط العد
+  document.getElementById('countSpan').textContent = `المحدّد: ${state.selected.size} | الإجمالي: ${state.total} | تعديلات غير محفوظة: ${drafts.size}`;
+}
+
+function clearDrafts() {
+  drafts.clear();
+  document.querySelectorAll('#usersTbody tr.row-highlight').forEach(tr => tr.classList.remove('row-highlight'));
+  document.getElementById('btnSaveChanges').disabled = true;
+  document.getElementById('btnDiscardChanges').disabled = true;
+  updateBulkBar(); // لتحديث النص
+}
+
+// تحذير عند مغادرة الصفحة بوجود مسودة
+window.addEventListener('beforeunload', (e) => {
+  if (drafts.size > 0) {
+    e.preventDefault();
+    e.returnValue = '';
+  }
+});
+
+    
     function saveFilters(){
       localStorage.setItem('users.filters', JSON.stringify({
         search: state.search, role: state.role, active: state.active, sort: state.sort, limit: state.limit
@@ -478,9 +541,9 @@ function confirmToast({ message='هل تريد المتابعة؟', confirmText=
 
     const tbody = document.getElementById('usersTbody');
     function rowCheckbox(id, checked){ return `<input class="form-check-input chkRow" type="checkbox" value="${id}" ${checked?'checked':''}>`; }
-    function roleSelect(id, role){
+   function roleSelect(id, role){
   return `
-      <select class="form-select form-select-sm inline-role" data-id="${id}" title="تغيير فوري">
+      <select class="form-select form-select-sm inline-role" data-id="${id}" title="سيُحفظ عند الضغط على «حفظ التغييرات»">
         <option value="user" ${role==='user'?'selected':''}>user</option>
         <option value="admin" ${role==='admin'?'selected':''}>admin</option>
         <option value="subuser-member" ${role==='subuser-member'?'selected':''}>subuser-member</option>
@@ -489,7 +552,7 @@ function confirmToast({ message='هل تريد المتابعة؟', confirmText=
 
     function activeToggle(id, isActive){ return `
       <div class="form-check form-switch">
-        <input class="form-check-input inline-active" type="checkbox" role="switch" data-id="${id}" ${isActive?'checked':''} title="تفعيل/تعطيل فوري">
+        <input class="form-check-input inline-active" type="checkbox" role="switch" data-id="${id}" ${isActive?'checked':''} title="سيُحفظ عند الضغط على «حفظ التغييرات">
       </div>`; }
 
     const pageAr = m => ({Evaluation:'تقييم اللجان',College:'الكليات',Auditor:'المدققون',Committee:'أسماء اللجان',Settings:'الإعدادات',User:'المستخدمون'})[m] || (m||'—');
@@ -573,13 +636,15 @@ function confirmToast({ message='هل تريد المتابعة؟', confirmText=
 }
 
 
-    function updateBulkBar(){
-      const any = state.selected.size>0;
-      document.getElementById('bulkActivate').disabled = !any;
-      document.getElementById('bulkDeactivate').disabled = !any;
-      document.getElementById('bulkDelete').disabled = !any;
-      document.getElementById('countSpan').textContent = `المحدّد: ${state.selected.size} | الإجمالي: ${state.total}`;
-    }
+   function updateBulkBar(){
+  const any = state.selected.size>0;
+  document.getElementById('bulkActivate').disabled = !any;
+  document.getElementById('bulkDeactivate').disabled = !any;
+  document.getElementById('bulkDelete').disabled = !any;
+  const dirty = typeof drafts !== 'undefined' ? drafts.size : 0;
+  document.getElementById('countSpan').textContent =
+    `المحدّد: ${state.selected.size} | الإجمالي: ${state.total}${dirty ? ` | تعديلات غير محفوظة: ${dirty}` : ''}`;
+}
 
     /* ====== تحميل المستخدمين ====== */
     async function fetchUsers(){
@@ -713,6 +778,52 @@ async function deleteUser(id, name){
       }
     }
 
+    // ====== حفظ كل المسودات دفعة واحدة ======
+async function saveAllDrafts(){
+  if(drafts.size === 0) return;
+  document.getElementById('btnSaveChanges').disabled = true;
+
+  let okCount = 0, failCount = 0;
+
+  // احفظ على التوالي لتفادي ضغط السيرفر
+  for (const [id, patch] of drafts.entries()){
+    try{
+      const r = await apiFetch('/api/users/'+id,{
+        method:'PUT',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify(patch)
+      });
+      const data = await r.json().catch(()=> ({}));
+      if(!r.ok) throw new Error(data?.message || 'فشل التعديل');
+      okCount++;
+    }catch(err){
+      failCount++;
+      console.error('saveAllDrafts error for', id, err);
+    }
+  }
+
+  if(failCount === 0){
+    setToast(toastSuccess, `✅ تم حفظ ${okCount} تغييرًا`); toastSuccess.show();
+    clearDrafts();
+    fetchUsers();
+  }else{
+    setToast(toastError, `❌ فشل حفظ ${failCount} من ${drafts.size}`); toastError.show();
+    // اترك المسودة كما هي ليمكن المحاولة مجددًا
+    document.getElementById('btnSaveChanges').disabled = false;
+  }
+}
+
+// ====== إلغاء كل المسودات ======
+function discardAllDrafts(){
+  clearDrafts();
+  fetchUsers(); // إعادة تحميل الجدول للحالة الأصلية
+}
+
+// أزرار الحفظ/الإلغاء
+document.getElementById('btnSaveChanges').addEventListener('click', saveAllDrafts);
+document.getElementById('btnDiscardChanges').addEventListener('click', discardAllDrafts);
+
+
     /* ====== إضافة مستخدم (تحقق فوري + مقياس قوة + إظهار/إخفاء) ====== */
     const addForm = document.getElementById('addUserForm');
     const addBtn = document.getElementById('addBtn');
@@ -840,12 +951,12 @@ async function deleteUser(id, name){
         document.getElementById('chkAll').checked = (all.length>0 && all.every(x=>x.checked));
         updateBulkBar();
       } else if(t.classList.contains('inline-role')){
-        const id = t.dataset.id;
-        updateUserPartial(id, { role: t.value });
-      } else if(t.classList.contains('inline-active')){
-        const id = t.dataset.id;
-        updateUserPartial(id, { isActive: t.checked });
-      }
+  const id = t.dataset.id;
+  markDirty(id, { role: t.value });
+} else if(t.classList.contains('inline-active')){
+  const id = t.dataset.id;
+  markDirty(id, { isActive: t.checked });
+}
     });
 
     tbodyEl.addEventListener('click', (e)=>{
@@ -861,36 +972,30 @@ async function deleteUser(id, name){
       }
     });
 
-/* ====== تحرير مباشر (name/username/email) مع حفظ تلقائي ====== */
-async function saveInline(inputEl){
+/* ====== تحرير مباشر (name/username/email) بدون حفظ تلقائي ====== */
+function queueInline(inputEl){
   const id    = inputEl.dataset.id;
   const field = inputEl.dataset.field;
   const value = inputEl.value.trim();
   if(!id || !field) return;
-  const row = tbody.querySelector(`tr[data-id="${id}"]`);
-  row?.classList.add('cell-saving');
-  const ok = await updateUserPartial(id, { [field]: value });
-  if(ok){
-    const createdCell = row?.querySelector('.cell-created');
-    if(createdCell){
-      createdCell.textContent = new Date().toLocaleString('ar-EG');
-    }
-  }
-  row?.classList.remove('cell-saving');
+  markDirty(id, { [field]: value });
 }
+
 tbodyEl.addEventListener('blur', (e)=>{
   const t = e.target;
   if(t.classList.contains('inline-edit')){
-    saveInline(t);
+    queueInline(t);
   }
 }, true);
+
 tbodyEl.addEventListener('keydown', (e)=>{
   const t = e.target;
   if(t.classList.contains('inline-edit') && e.key === 'Enter'){
     e.preventDefault();
-    t.blur();
+    t.blur(); // سيؤدي للـ queueInline عبر blur
   }
 });
+
 
     document.querySelectorAll('.dropdown-menu [data-role]').forEach(a=>{
       a.addEventListener('click', (e)=>{
@@ -902,7 +1007,7 @@ tbodyEl.addEventListener('keydown', (e)=>{
     });
     document.getElementById('bulkActivate').addEventListener('click', ()=> bulkAction({ action:'activate' }, '✅ تم تفعيل المحددين'));
     document.getElementById('bulkDeactivate').addEventListener('click', ()=> bulkAction({ action:'deactivate' }, '✅ تم تعطيل المحددين'));
-    document.getElementById('bulkDelete').addEventListener('click', async ()=>{
+   document.getElementById('bulkDelete').addEventListener('click', async ()=>{
   if(state.selected.size === 0){
     setToast(toastInfo,'لم يتم تحديد مستخدمين'); toastInfo.show();
     return;
@@ -919,6 +1024,7 @@ tbodyEl.addEventListener('keydown', (e)=>{
   bulkAction({ action:'delete' }, '🗑️ تم حذف المحددين');
 });
 
+
     (async function init(){
       try{
         await ensureAdmin();
@@ -932,6 +1038,35 @@ tbodyEl.addEventListener('keydown', (e)=>{
       }
     })();
 
+// ====== تغيير كلمات المرور للجميع (استثناء admin) ======
+const bulkPwModal = new bootstrap.Modal(document.getElementById('bulkPwModal'));
+document.getElementById('btnBulkPw').addEventListener('click', ()=>{
+  document.getElementById('bulkNewPw').value = '';
+  bulkPwModal.show();
+});
+
+document.getElementById('applyBulkPwBtn').addEventListener('click', async ()=>{
+  const pw = document.getElementById('bulkNewPw').value.trim();
+  if(!pw){
+    setToast(toastInfo, 'أدخل كلمة مرور'); toastInfo.show();
+    return;
+  }
+  try{
+    const r = await apiFetch('/api/users/passwords/bulk', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ newPassword: pw })
+    });
+    const data = await r.json().catch(()=> ({}));
+    if(!r.ok) throw new Error(data?.message || 'فشل التغيير الجماعي');
+    setToast(toastSuccess, `✅ ${data.updatedCount||0} حساب تم تغيير كلمة مروره (مع استثناء admin)`); toastSuccess.show();
+    bulkPwModal.hide();
+  }catch(err){
+    setToast(toastError, '❌ '+(err.message||'فشل التغيير الجماعي')); toastError.show();
+  }
+});
+
+    
   </script>
 </body>
 </html>
