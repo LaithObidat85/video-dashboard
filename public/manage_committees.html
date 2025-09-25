@@ -8,13 +8,20 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.rtl.min.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
 
-  <!-- يضيف كلاس التحميل مبكراً جداً لتجنّب أي وميض للمحتوى -->
+  <!-- نفعل ستاتس التحميل مبكراً -->
   <script>document.documentElement.classList.add('app-loading');</script>
 
   <style>
-    /* ستار التحميل: اخفاء كامل للمحتوى حتى يكتمل init() */
-    html.app-loading body{opacity:0; visibility:hidden; pointer-events:none}
-    html.app-ready body{opacity:1; visibility:visible; pointer-events:auto; transition:opacity .2s ease}
+    /* شاشة "جاري التحميل..." */
+    #appLoader{
+      position:fixed; inset:0; display:flex; align-items:center; justify-content:center;
+      gap:.75rem; background:#ffffff; z-index:3000; font-weight:700; color:#333;
+    }
+    html.app-ready #appLoader{ display:none; }
+
+    /* أثناء التحميل: اخفِ محتوى الصفحة فقط */
+    html.app-loading .page-wrap{ display:none !important; }
+    html.app-loading .toast-container{ display:none !important; }
 
     body{background:#f8f9fa;font-family:'Segoe UI',sans-serif}
 
@@ -118,6 +125,13 @@
   </style>
 </head>
 <body>
+
+  <!-- شاشة "جاري التحميل..." -->
+  <div id="appLoader" aria-live="polite">
+    <div class="spinner-border" role="status" aria-hidden="true"></div>
+    <span>جاري التحميل…</span>
+  </div>
+
   <div class="container-fluid page-wrap">
     <!-- Header -->
     <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-2">
@@ -140,7 +154,7 @@
     </div>
 
     <div class="sticky-header">
-      <!-- الفلاتر: ثلاث قوائم منسدلة موزّعة على عرض الصفحة -->
+      <!-- الفلاتر -->
       <div class="filters row g-3 mb-3">
         <div class="col-12 col-sm-6 col-lg-4">
           <label class="form-label">الكلية</label>
@@ -162,14 +176,12 @@
         </div>
       </div>
 
-      <!-- بطاقة إعدادات موحّدة (تظهر للأدمن فقط) -->
+      <!-- بطاقة إعدادات (أدمن فقط) -->
       <div class="card mb-3 d-none" id="settingsCard">
-        <div class="card-header fw-bold">
-          ⚙️ إعدادات
-        </div>
+        <div class="card-header fw-bold">⚙️ إعدادات</div>
         <div class="card-body">
           <div class="row g-3 align-items-end">
-            <!-- مجموعة الزيارات -->
+            <!-- الزيارات -->
             <div class="col-12">
               <div class="d-flex flex-wrap gap-3 align-items-center">
                 <div class="form-check"><input class="form-check-input visit-toggle" type="checkbox" id="visit1" value="الزيارة الأولى"><label class="form-check-label" for="visit1">الزيارة الأولى</label></div>
@@ -178,7 +190,7 @@
                 <div class="form-check"><input class="form-check-input visit-toggle" type="checkbox" id="visit4" value="الزيارة الرابعة"><label class="form-check-label" for="visit4">الزيارة الرابعة</label></div>
                 <div class="form-check"><input class="form-check-input visit-toggle" type="checkbox" id="visit5" value="الزيارة النهائية"><label class="form-check-label" for="visit5">الزيارة النهائية</label></div>
 
-                <!-- نشر النتائج في صفحة "نتائج تقييم اللجان" -->
+                <!-- نشر النتائج -->
                 <div class="form-check ms-lg-3">
                   <input class="form-check-input" type="checkbox" id="publishResults">
                   <label class="form-check-label" for="publishResults">عرض البيانات في صفحة «نتائج تقييم اللجان»</label>
@@ -205,12 +217,10 @@
             <div class="col-12">
               <div class="d-flex flex-wrap align-items-center gap-3 mb-2">
                 <div class="fw-semibold">إظهار/إخفاء الأعمدة</div>
-                <!-- ✅ زر إخفاء جميع الأعمدة -->
                 <div class="form-check">
                   <input class="form-check-input" type="checkbox" id="hideAllColumns">
                   <label class="form-check-label" for="hideAllColumns">إخفاء جميع الأعمدة</label>
                 </div>
-                <!-- ✅ زر إظهار جميع الأعمدة -->
                 <div class="form-check">
                   <input class="form-check-input" type="checkbox" id="showAllColumns">
                   <label class="form-check-label" for="showAllColumns">إظهار جميع الأعمدة</label>
@@ -239,7 +249,7 @@
         </div>
       </div>
 
-      <!-- شارة الفصل/العام + الزيارات المختارة + نسبة الاكتمال -->
+      <!-- شارات ومؤشرات -->
       <div id="termBadge"></div>
       <div id="selectedVisitsContainer"></div>
       <div id="completionRateContainer"></div>
@@ -562,8 +572,8 @@
       const toggles=[...document.querySelectorAll('.col-toggle')];
       const anyChecked = toggles.some(cb=>cb.checked);
       const allChecked = toggles.every(cb=>cb.checked);
-      hideAllEl.checked = !anyChecked;     // إذا لم يبقَ عمود مفعّل → مخفي الكل مفعّل
-      showAllEl.checked = allChecked;      // إذا الكل مفعّل → إظهار الكل مفعّل
+      hideAllEl.checked = !anyChecked;
+      showAllEl.checked = allChecked;
     }
 
     hideAllEl?.addEventListener('change', ()=>{
@@ -949,7 +959,7 @@
       }catch{
         // نعرض الصفحة حتى في حال الخطأ كي تظهر رسائل التوست
       } finally {
-        // انهِ ستار التحميل بعد اكتمال كل شيء
+        // إنهاء شاشة "جاري التحميل..." وإظهار الصفحة
         document.documentElement.classList.remove('app-loading');
         document.documentElement.classList.add('app-ready');
       }
