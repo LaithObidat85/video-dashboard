@@ -1,39 +1,60 @@
-
-
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-  <meta charset="UTF-8" />
-  <title>إضافة روابط ملفات اللجان - نظام اللجان</title>
+  <meta charset="UTF-8">
+  <title>إدارة تقييم اللجان - نظام اللجان</title>
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <link rel="icon" type="image/png" href="https://www.dropbox.com/scl/fi/f283e4rvv5cf9x12a1cic/my-website-logo.png?rlkey=yia776im7klypy27af32m0scy&e=1&st=vhaprvzh&dl=1">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.rtl.min.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
   <style>
     body{background:#f8f9fa;font-family:'Segoe UI',sans-serif}
+    /* نزّل الهيدر مثل صفحة المدققين */
     .container{margin-top:40px;max-width:98vw}
     .user-chip{display:inline-flex;align-items:center;gap:.25rem;font-size:1rem!important;padding:.375rem .75rem!important;line-height:1.5!important;border-radius:.375rem;font-weight:700!important}
     .user-chip.badge #userRole{font-weight:500!important}
-    .muted{color:#6c757d}
+
+    table{background:#fff;border-radius:12px;overflow:hidden;font-size:14px;width:100%;margin:auto}
+    th,td{text-align:center;vertical-align:middle}
+    th{background:#f8f9fa;color:#000}
+    td.invalid{background:#fde2e1!important}
+    .highlight{background:#d4edda!important;transition:background-color 1s ease}
+    .hidden-col{display:none!important}
+
+    .sticky-header{background:#f8f9fa;padding-top:10px}
+    #evaluationsTableWrapper thead th{position:sticky;top:0;z-index:9;background:#f8f9fa;color:#000}
+    #evaluationsTableWrapper th.date-col,#evaluationsTableWrapper td.date-col{direction:ltr;text-align:center;width:140px;max-width:140px}
+
+    /* أحجام الأعمدة  */
+    th.w-wide, td.w-wide{min-width:200px}
+    th.w-narrow, td.w-narrow{min-width:70px;max-width:90px}
+    td.w-narrow input{padding:.125rem .25rem}
+
     .toast-container{position:fixed;top:20px;left:50%;transform:translateX(-50%);z-index:2000}
-    .required-asterisk{color:#dc3545;margin-inline-start:.25rem}
-    .disabled-cover{pointer-events:none;opacity:.65}
-    .nav-tabs .nav-link{border-radius:.5rem .5rem 0 0}
-    .tab-pane{background:#fff;border:1px solid #dee2e6;border-top:0;border-radius:0 0 .5rem .5rem;padding:1rem}
-    .list-row{display:flex;gap:.5rem;align-items:center;background:#fff;border:1px solid #e9ecef;border-radius:.5rem;padding:.5rem}
-    .list-row .index{width:2rem;text-align:center;color:#6c757d}
-    .list-row .actions .btn{padding:.25rem .5rem}
-    .sticky-panel{position:sticky;top:12px}
-    .counter-badge{font-weight:700}
-    .gdrive-status{display:flex;align-items:center;gap:.5rem}
-    .gdrive-status .badge{font-size:.85rem}
+    #completionRateContainer,#selectedVisitsContainer,#termBadge{text-align:center;font-weight:bold;margin:5px 0;font-size:16px;min-height:24px}
+    #termBadge .badge{font-size:.95rem}
+
+    .filters{margin-bottom:12px;width:99%;margin-left:auto;margin-right:auto}
+
+    .mini-toolbar{display:flex;gap:.25rem;margin-bottom:.5rem;flex-wrap:wrap}
+    .mini-toolbar button{border:1px solid #ced4da;background:#f8f9fa;padding:.25rem .5rem;border-radius:.375rem}
+    .mini-editor{border:1px solid #ced4da;border-radius:.5rem;padding:.5rem;min-height:180px;background:#fff}
+    .muted{color:#6c757d}
+
+    /* شريط الإجراءات */
+    .bulk-bar{display:flex;gap:.5rem;flex-wrap:wrap;align-items:center;justify-content:flex-start}
+    .bulk-title{font-weight:700;margin-inline-end:.25rem}
+    .form-switch .form-check-input{cursor:pointer}
+
+    /* تمييز الصف الجديد مؤقتًا */
+    tr.is-new{background:#e9f7ff}
   </style>
 </head>
 <body>
   <div class="container">
     <!-- Header -->
     <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-2">
-      <h4 class="mb-0">إضافة روابط ملفات اللجان</h4>
+      <h4 class="mb-0">إدارة تقييم اللجان</h4>
       <div class="d-flex align-items-center gap-2">
         <span id="userInfo" class="user-chip badge bg-light text-dark border">
           <i class="bi bi-person"></i>
@@ -51,264 +72,210 @@
       </div>
     </div>
 
-    <!-- اختيار الكلية/اللجنة + إعدادات العام/الفصل + اتصال Drive -->
-    <div class="card mb-3">
-      <div class="card-body row g-3">
-        <div class="col-md-3">
-          <label class="form-label">الكلية <span class="required-asterisk">*</span></label>
-          <select id="collegeSelect" class="form-select">
-            <option value="">— اختر الكلية —</option>
+    <div class="sticky-header">
+      <!-- فلاتر -->
+      <div class="filters row">
+        <div class="col-md-3 mb-2">
+          <label class="form-label">الكلية</label>
+          <select id="collegeFilter" class="form-select">
+            <option value="">جميع الكليات</option>
           </select>
         </div>
-        <div class="col-md-3">
-          <label class="form-label">اسم اللجنة <span class="required-asterisk">*</span></label>
-          <select id="committeeSelect" class="form-select">
-            <option value="">— اختر اللجنة —</option>
+        <div class="col-md-3 mb-2">
+          <label class="form-label">اسم المدقق</label>
+          <select id="auditorFilter" class="form-select">
+            <option value="">جميع المدققين</option>
           </select>
         </div>
-
-        <!-- العام الجامعي (مربع نص) -->
-        <div class="col-md-3">
-          <label class="form-label">
-            العام الجامعي <span class="required-asterisk">*</span>
-          </label>
-          <input id="academicYearInput" type="text" class="form-control" placeholder="2024/2025 أو 2024-2025" />
-          <div class="form-text">صيغة مقبولة: 20xx/20yy أو 20xx-20yy (ويُفضّل أن يكون الفرق سنة واحدة).</div>
+        <div class="col-md-3 mb-2">
+          <label class="form-label">بحث باسم اللجنة</label>
+          <input type="text" id="committeeSearch" class="form-control" placeholder="اكتب للبحث...">
         </div>
+        <div class="col-md-3 mb-2"><!-- خانة احتياط/موازنة --></div>
+      </div>
 
-        <!-- الفصل (قائمة منسدلة) -->
-        <div class="col-md-3">
-          <label class="form-label">
-            الفصل الدراسي <span class="required-asterisk">*</span>
-          </label>
-          <select id="termSelect" class="form-select">
-            <option value="">— اختر الفصل —</option>
-            <option value="الفصل الأول">الفصل الأول</option>
-            <option value="الفصل الثاني">الفصل الثاني</option>
-            <option value="الفصل الصيفي">الفصل الصيفي</option>
-          </select>
-        </div>
+      <!-- مجموعة الزيارات/الأعمدة/الفصل/العام (Admin فقط) -->
+      <div class="card mb-3 d-none" id="visitsCard">
+        <div class="card-body d-flex flex-wrap justify-content-center gap-3">
+          <div class="form-check"><input class="form-check-input visit-toggle" type="checkbox" id="visit1" value="الزيارة الأولى"><label class="form-check-label" for="visit1">الزيارة الأولى</label></div>
+          <div class="form-check"><input class="form-check-input visit-toggle" type="checkbox" id="visit2" value="الزيارة الثانية"><label class="form-check-label" for="visit2">الزيارة الثانية</label></div>
+          <div class="form-check"><input class="form-check-input visit-toggle" type="checkbox" id="visit3" value="الزيارة الثالثة"><label class="form-check-label" for="visit3">الزيارة الثالثة</label></div>
+          <div class="form-check"><input class="form-check-input visit-toggle" type="checkbox" id="visit4" value="الزيارة الرابعة"><label class="form-check-label" for="visit4">الزيارة الرابعة</label></div>
+          <div class="form-check"><input class="form-check-input visit-toggle" type="checkbox" id="visit5" value="الزيارة النهائية"><label class="form-check-label" for="visit5">الزيارة النهائية</label></div>
 
-        <div class="col-12">
-          <label class="form-label">Google Drive</label>
-          <div class="d-flex gap-2 gdrive-status">
-            <button id="gdriveConnectBtn" class="btn btn-outline-success">
-              <i class="bi bi-google"></i> اتصال Google Drive
-            </button>
-            <span id="gdriveState" class="badge text-bg-secondary">غير متصل</span>
-            <button id="gdriveDisconnectBtn" class="btn btn-outline-secondary btn-sm d-none">فصل</button>
+          <!-- ✅ جديد: خيار عرض البيانات في صفحة النتائج -->
+          <div class="form-check">
+            <input class="form-check-input" type="checkbox" id="publishResults">
+            <label class="form-check-label" for="publishResults">عرض البيانات في صفحة «نتائج تقييم اللجان»</label>
           </div>
-          <div class="form-text">الاتصال يمنح صلاحية <code>drive.readonly</code> لاختيار ملفات موجودة دون رفع.</div>
+
+          <button class="btn btn-sm btn-success" id="saveSettingsBtn" title="حفظ الإعدادات">💾</button>
+        </div>
+      </div>
+
+      <div class="card mb-3 d-none" id="termCard">
+        <div class="card-body row g-3 align-items-end">
+          <div class="col-md-4">
+            <label class="form-label">الفصل</label>
+            <select id="termSelect" class="form-select">
+              <option value="">— اختر الفصل —</option>
+              <option value="الفصل الأول">الفصل الأول</option>
+              <option value="الفصل الثاني">الفصل الثاني</option>
+              <option value="الفصل الصيفي">الفصل الصيفي</option>
+            </select>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">العام الجامعي</label>
+            <input type="text" id="academicYearInput" class="form-control" placeholder="مثال: 2024-2025 أو 2024/2025">
+          </div>
+          <div class="col-md-4">
+            <button class="btn btn-primary w-100" id="saveTermBtn">حفظ الفصل/العام</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="card mb-2 d-none" id="columnsCard">
+        <div class="card-body d-flex flex-wrap justify-content-center gap-3 align-items-center" id="columnToggles">
+          <div class="form-check"><input class="form-check-input col-toggle" type="checkbox" data-field="formation_decision" checked><label class="form-check-label">قرار التشكيل</label></div>
+          <div class="form-check"><input class="form-check-input col-toggle" type="checkbox" data-field="work_plan" checked><label class="form-check-label">خطة العمل</label></div>
+          <div class="form-check"><input class="form-check-input col-toggle" type="checkbox" data-field="performance_indicators" checked><label class="form-check-label">مؤشرات الأداء</label></div>
+          <div class="form-check"><input class="form-check-input col-toggle" type="checkbox" data-field="meetings" checked><label class="form-check-label">عدد الاجتماعات</label></div>
+          <div class="form-check"><input class="form-check-input col-toggle" type="checkbox" data-field="consistency" checked><label class="form-check-label">التوافق بين الدعوات والاجتماعات</label></div>
+          <div class="form-check"><input class="form-check-input col-toggle" type="checkbox" data-field="coverage_books" checked><label class="form-check-label">كتب التغطية</label></div>
+          <div class="form-check"><input class="form-check-input col-toggle" type="checkbox" data-field="report1" checked><label class="form-check-label">تقرير إنجاز 1</label></div>
+          <div class="form-check"><input class="form-check-input col-toggle" type="checkbox" data-field="report2" checked><label class="form-check-label">تقرير إنجاز 2</label></div>
+          <div class="form-check"><input class="form-check-input col-toggle" type="checkbox" data-field="report3" checked><label class="form-check-label">تقرير إنجاز 3</label></div>
+          <div class="form-check"><input class="form-check-input col-toggle" type="checkbox" data-field="statistical_analysis" checked><label class="form-check-label">التحليل الإحصائي</label></div>
+        </div>
+      </div>
+
+      <!-- شارة الفصل/العام -->
+      <div id="termBadge"></div>
+      <!-- نص الزيارات يظهر هنا -->
+      <div id="selectedVisitsContainer"></div>
+      <!-- نسبة الاكتمال -->
+      <div id="completionRateContainer"></div>
+
+      <!-- شريط الإجراءات -->
+      <div class="card p-2 mb-2">
+        <div class="bulk-bar">
+          <span class="bulk-title">إجراءات سريعة</span>
+          <button class="btn btn-sm btn-primary" id="addRowBtn" title="إضافة سجل جديد">➕ إضافة سجل</button>
+          <button class="btn btn-sm btn-success" id="saveAllBtn" title="حفظ جميع الصفوف المعدلة">💾 حفظ الكل</button>
+          <button class="btn btn-sm btn-outline-secondary" id="reloadBtn">تحديث</button>
         </div>
       </div>
     </div>
 
-    <div class="row g-4">
-      <!-- اليسار: التبويبات -->
-      <div class="col-lg-9">
-        <!-- Tabs -->
-        <ul class="nav nav-tabs mb-0" id="filesTabs" role="tablist">
-          <li class="nav-item" role="presentation">
-            <button class="nav-link active" id="core-tab" data-bs-toggle="tab" data-bs-target="#core" type="button" role="tab" aria-controls="core" aria-selected="true">
-              المستندات الأساسية
-            </button>
-          </li>
-          <li class="nav-item" role="presentation">
-            <button class="nav-link" id="inv-tab" data-bs-toggle="tab" data-bs-target="#inv" type="button" role="tab" aria-controls="inv" aria-selected="false">
-              دعوات الاجتماع <span class="badge bg-secondary ms-1" id="badgeInv">0</span>
-            </button>
-          </li>
-          <li class="nav-item" role="presentation">
-            <button class="nav-link" id="min-tab" data-bs-toggle="tab" data-bs-target="#min" type="button" role="tab" aria-controls="min" aria-selected="false">
-              محاضر الاجتماع <span class="badge bg-secondary ms-1" id="badgeMin">0</span>
-            </button>
-          </li>
-          <li class="nav-item" role="presentation">
-            <button class="nav-link" id="cov-tab" data-bs-toggle="tab" data-bs-target="#cov" type="button" role="tab" aria-controls="cov" aria-selected="false">
-              كتب التغطية <span class="badge bg-secondary ms-1" id="badgeCov">0</span>
-            </button>
-          </li>
-          <li class="nav-item" role="presentation">
-            <button class="nav-link" id="rep-tab" data-bs-toggle="tab" data-bs-target="#rep" type="button" role="tab" aria-controls="rep" aria-selected="false">
-              التقارير والتحليل
-            </button>
-          </li>
-        </ul>
+    <!-- جدول -->
+    <table class="table table-bordered table-striped table-responsive" id="evaluationsTableWrapper">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th class="w-wide">الكلية</th>
+          <th class="w-wide">اسم اللجنة</th>
+          <th class="w-wide">اسم المدقق</th>
+          <th class="date-col">تاريخ التدقيق</th>
 
-        <div class="tab-content">
-          <!-- المستندات الأساسية -->
-          <div class="tab-pane fade show active" id="core" role="tabpanel" aria-labelledby="core-tab" tabindex="0">
-            <div class="row g-3">
-              <div class="col-md-6">
-                <label class="form-label">رابط قرار التشكيل</label>
-                <div class="input-group">
-                  <span class="input-group-text"><i class="bi bi-link-45deg"></i></span>
-                  <input id="fdUrl" type="url" class="form-control" placeholder="https://drive.google.com/...">
-                  <button class="btn btn-outline-primary" data-pick="fdUrl"><i class="bi bi-folder2-open"></i> من Drive</button>
-                </div>
-                <div id="fdHint" class="form-text">اختر ملفًا موجودًا من Google Drive أو ألصق الرابط يدويًا.</div>
-              </div>
-              <div class="col-md-6">
-                <label class="form-label">رابط خطة العمل</label>
-                <div class="input-group">
-                  <span class="input-group-text"><i class="bi bi-link-45deg"></i></span>
-                  <input id="wpUrl" type="url" class="form-control" placeholder="https://drive.google.com/...">
-                  <button class="btn btn-outline-primary" data-pick="wpUrl"><i class="bi bi-folder2-open"></i> من Drive</button>
-                </div>
-              </div>
-            </div>
-          </div>
+          <th class="col-formation_decision w-narrow">قرار التشكيل</th>
+          <th class="col-work_plan w-narrow">خطة العمل</th>
+          <th class="col-performance_indicators w-narrow">مؤشرات الأداء</th>
+          <th class="col-meetings w-narrow">عدد الاجتماعات</th>
+          <th class="col-consistency w-narrow">التوافق بين الدعوات والاجتماعات</th>
+          <th class="col-coverage_books w-narrow">كتب التغطية</th>
+          <th class="col-report1 w-narrow">تقرير إنجاز 1</th>
+          <th class="col-report2 w-narrow">تقرير إنجاز 2</th>
+          <th class="col-report3 w-narrow">تقرير إنجاز 3</th>
+          <th class="col-statistical_analysis w-narrow">التحليل الإحصائي</th>
 
-          <!-- الدعوات (متعدد) -->
-          <div class="tab-pane fade" id="inv" role="tabpanel" aria-labelledby="inv-tab" tabindex="0">
-            <div class="d-flex justify-content-between align-items-center mb-2">
-              <h6 class="mb-0">روابط دعوات الاجتماع</h6>
-              <button id="addInvitationBtn" class="btn btn-sm btn-primary"><i class="bi bi-plus-circle"></i> إضافة دعوة</button>
-            </div>
-            <div id="invitationsList" class="vstack gap-2"></div>
-          </div>
+          <th id="availabilityHeader" class="w-narrow">درجة التوفر من (9)</th>
+          <th class="w-wide">الملاحظات</th>
+          <th class="w-narrow">إجراءات</th>
+        </tr>
+      </thead>
+      <tbody id="committeesTable">
+        <tr><td colspan="18" class="text-center">جاري التحميل...</td></tr>
+      </tbody>
+    </table>
+  </div>
 
-          <!-- المحاضر (متعدد) -->
-          <div class="tab-pane fade" id="min" role="tabpanel" aria-labelledby="min-tab" tabindex="0">
-            <div class="d-flex justify-content-between align-items-center mb-2">
-              <h6 class="mb-0">روابط محاضر الاجتماع</h6>
-              <button id="addMinuteBtn" class="btn btn-sm btn-primary"><i class="bi bi-plus-circle"></i> إضافة محضر</button>
-            </div>
-            <div id="minutesList" class="vstack gap-2"></div>
-          </div>
+  <!-- datalist/مصادر -->
+  <datalist id="dl_colleges"></datalist>
+  <datalist id="dl_committees"></datalist>
+  <datalist id="dl_auditors"></datalist>
 
-          <!-- كتب التغطية (متعدد) -->
-          <div class="tab-pane fade" id="cov" role="tabpanel" aria-labelledby="cov-tab" tabindex="0">
-            <div class="d-flex justify-content-between align-items-center mb-2">
-              <h6 class="mb-0">روابط كتب التغطية</h6>
-              <button id="addCoverageBtn" class="btn btn-sm btn-primary"><i class="bi bi-plus-circle"></i> إضافة كتاب تغطية</button>
-            </div>
-            <div id="coverageList" class="vstack gap-2"></div>
-          </div>
-
-          <!-- التقارير والتحليل (مفردة) -->
-          <div class="tab-pane fade" id="rep" role="tabpanel" aria-labelledby="rep-tab" tabindex="0">
-            <div class="row g-3">
-              <div class="col-md-6">
-                <label class="form-label">رابط تقرير إنجاز 1</label>
-                <div class="input-group">
-                  <span class="input-group-text"><i class="bi bi-link-45deg"></i></span>
-                  <input id="r1Url" type="url" class="form-control" placeholder="https://drive.google.com/...">
-                  <button class="btn btn-outline-primary" data-pick="r1Url"><i class="bi bi-folder2-open"></i> من Drive</button>
-                </div>
-              </div>
-              <div class="col-md-6">
-                <label class="form-label">رابط تقرير إنجاز 2</label>
-                <div class="input-group">
-                  <span class="input-group-text"><i class="bi bi-link-45deg"></i></span>
-                  <input id="r2Url" type="url" class="form-control" placeholder="https://drive.google.com/...">
-                  <button class="btn btn-outline-primary" data-pick="r2Url"><i class="bi bi-folder2-open"></i> من Drive</button>
-                </div>
-              </div>
-              <div class="col-md-6">
-                <label class="form-label">رابط تقرير إنجاز 3</label>
-                <div class="input-group">
-                  <span class="input-group-text"><i class="bi bi-link-45deg"></i></span>
-                  <input id="r3Url" type="url" class="form-control" placeholder="https://drive.google.com/...">
-                  <button class="btn btn-outline-primary" data-pick="r3Url"><i class="bi bi-folder2-open"></i> من Drive</button>
-                </div>
-              </div>
-              <div class="col-md-6">
-                <label class="form-label">رابط التحليل الإحصائي</label>
-                <div class="input-group">
-                  <span class="input-group-text"><i class="bi bi-link-45deg"></i></span>
-                  <input id="saUrl" type="url" class="form-control" placeholder="https://drive.google.com/...">
-                  <button class="btn btn-outline-primary" data-pick="saUrl"><i class="bi bi-folder2-open"></i> من Drive</button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- إجراءات -->
-        <div class="card mt-3 mb-5">
-          <div class="card-body d-flex flex-wrap gap-2">
-            <button id="saveBtn" class="btn btn-success"><i class="bi bi-save"></i> حفظ</button>
-            <button id="resetBtn" class="btn btn-outline-secondary"><i class="bi bi-arrow-counterclockwise"></i> تفريغ</button>
-            <a id="backBtn" class="btn btn-outline-primary" href="#"><i class="bi bi-arrow-right-circle"></i> رجوع</a>
-          </div>
-        </div>
+  <!-- مودال موحّد: تفاصيل + ملاحظات -->
+  <div class="modal fade" id="editUnifiedModal" tabindex="-1">
+    <div class="modal-dialog modal-xl"><div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">تعديل التقييم والملاحظات</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
-
-      <!-- اليمين: ملخص -->
-      <div class="col-lg-3">
-        <div class="sticky-panel">
-          <div class="card">
-            <div class="card-body">
-              <h6 class="mb-3">ملخص سريع</h6>
-              <div class="small mb-2">الكلية: <b id="sumCollege">—</b></div>
-              <div class="small mb-2">اللجنة: <b id="sumCommittee">—</b></div>
-              <div class="small mb-2">العام الجامعي: <b id="sumAcademicYear">—</b></div>
-              <div class="small mb-3">الفصل: <b id="sumTerm">—</b></div>
-              <ul class="list-unstyled small vstack gap-2">
-                <li>قرار التشكيل: <span id="sumFD" class="counter-badge">—</span></li>
-                <li>خطة العمل: <span id="sumWP" class="counter-badge">—</span></li>
-                <li>الدعوات: <span id="sumInv" class="counter-badge">0</span></li>
-                <li>المحاضر: <span id="sumMin" class="counter-badge">0</span></li>
-                <li>كتب التغطية: <span id="sumCov" class="counter-badge">0</span></li>
-                <li>تقرير 1: <span id="sumR1" class="counter-badge">—</span></li>
-                <li>تقرير 2: <span id="sumR2" class="counter-badge">—</span></li>
-                <li>تقرير 3: <span id="sumR3" class="counter-badge">—</span></li>
-                <li>التحليل الإحصائي: <span id="sumSA" class="counter-badge">—</span></li>
-              </ul>
-              <hr>
-              <div class="small muted">سيتم ربط الحفظ بنهايات السيرفر.</div>
-            </div>
+      <div class="modal-body">
+        <!-- قسم تفاصيل التقييم -->
+        <div class="row g-3 mb-3">
+          <div class="col-md-4">
+            <label class="form-label">الكلية</label>
+            <select id="er_college" class="form-select"></select>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">اسم اللجنة</label>
+            <select id="er_committee" class="form-select"></select>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">اسم المدقق</label>
+            <select id="er_auditor" class="form-select"></select>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">تاريخ التدقيق</label>
+            <input type="date" id="er_date" class="form-control">
           </div>
         </div>
+
+        <hr class="my-2">
+
+        <!-- قسم الملاحظات -->
+        <h6 class="mb-2">📝 الملاحظات</h6>
+        <div id="viewNotes" class="mb-2"></div>
+        <div class="mini-toolbar">
+          <button type="button" data-cmd="bold"><b>B</b></button>
+          <button type="button" data-cmd="italic"><i>I</i></button>
+          <button type="button" data-cmd="underline"><u>U</u></button>
+          <button type="button" data-cmd="insertUnorderedList">• قائمة</button>
+        </div>
+        <div id="er_editor" class="mini-editor" contenteditable="true"></div>
       </div>
+      <div class="modal-footer">
+        <button class="btn btn-primary" id="saveUnifiedBtn">💾 حفظ</button>
+        <button class="btn btn-secondary" data-bs-dismiss="modal">إغلاق</button>
+      </div>
+    </div></div>
+  </div>
+
+  <!-- Toasts -->
+  <div class="toast-container">
+    <div id="toastSuccess" class="toast align-items-center text-bg-success border-0 mb-2" role="alert">
+      <div class="d-flex"><div class="toast-body">✅ العملية نجحت</div><button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button></div>
     </div>
-
-    <!-- Toasts -->
-    <div class="toast-container">
-      <div id="toastSuccess" class="toast align-items-center text-bg-success border-0 mb-2" role="alert">
-        <div class="d-flex"><div class="toast-body">✅ تم الحفظ بنجاح</div><button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button></div>
-      </div>
-      <div id="toastError" class="toast align-items-center text-bg-danger border-0 mb-2" role="alert">
-        <div class="d-flex"><div class="toast-body">❌ حدث خطأ</div><button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button></div>
+    <div id="toastError" class="toast align-items-center text-bg-danger border-0 mb-2" role="alert">
+      <div class="d-flex"><div class="toast-body">❌ حدث خطأ</div><button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button></div>
+    </div>
+    <div id="toastConfirm" class="toast align-items-center text-bg-warning border-0 mb-2" role="alert">
+      <div class="d-flex">
+        <div class="toast-body" id="toastConfirmMsg">⚠️ هل أنت متأكد؟</div>
+        <div class="me-2 m-auto">
+          <button type="button" class="btn btn-sm btn-danger" id="confirmYes">نعم</button>
+          <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="toast">إلغاء</button>
+        </div>
       </div>
     </div>
   </div>
 
-  <!-- ====== Google: مفاتيح + GIS ====== -->
-  <script>
-    window.GOOGLE_CLIENT_ID = '656975767411-lu47r57vrfmhrplrd11rdgbm34cqofsn.apps.googleusercontent.com';
-    window.GOOGLE_API_KEY   = 'AIzaSyAaUEq7_7nbhj7Ch-7X0OWKyREUK8bH_EY';
-    window.DRIVE_SCOPE = 'https://www.googleapis.com/auth/drive.readonly';
-
-    window.googleAccessToken = null;
-    window.gisTokenClient    = null;
-
-    window.initGis = function () {
-      if (!window.google || !google.accounts || !google.accounts.oauth2) return;
-      window.gisTokenClient = google.accounts.oauth2.initTokenClient({
-        client_id: window.GOOGLE_CLIENT_ID,
-        scope: window.DRIVE_SCOPE,
-        callback: (resp) => {
-          if (resp && resp.access_token) {
-            window.googleAccessToken = resp.access_token;
-            if (typeof window.setGDriveState === 'function') window.setGDriveState(true);
-          }
-        }
-      });
-    };
-  </script>
-
-  <!-- Google APIs (Picker + GIS) -->
-  <script src="https://accounts.google.com/gsi/client" async defer onload="initGis()"></script>
-  <script src="https://apis.google.com/js/api.js" async defer></script>
-
-  <!-- Bootstrap JS -->
+  <!-- Scripts -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-
-  <!-- ====== تطبيق الصفحة ====== -->
+  <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
   <script>
-    /* ====== بيئة موحدة ====== */
+    /* ====== بيئة موحّدة ====== */
     const RENDER_BASE='https://vdash-qkyv.onrender.com';
     const host=location.hostname;
     const isGithub=host.endsWith('github.io');
@@ -318,9 +285,17 @@
 
     const toastSuccess=new bootstrap.Toast(document.getElementById('toastSuccess'));
     const toastError  =new bootstrap.Toast(document.getElementById('toastError'));
+    const toastConfirmEl=document.getElementById('toastConfirm');
+    const toastConfirm=new bootstrap.Toast(toastConfirmEl);
+    let confirmCallback=null;
+
+    function showSuccess(msg="✅ العملية نجحت"){document.querySelector("#toastSuccess .toast-body").innerText=msg;toastSuccess.show()}
+    function showError(msg="❌ حدث خطأ"){document.querySelector("#toastError .toast-body").innerText=msg;toastError.show()}
+    function showConfirm(msg,cb){document.getElementById("toastConfirmMsg").innerText=msg;confirmCallback=cb;toastConfirm.show()}
+    document.getElementById("confirmYes").addEventListener("click",()=>{toastConfirm.hide();if(confirmCallback)confirmCallback()})
     const apiFetch=(path,opts={})=>fetch(`${API_BASE}${path}`,{credentials:'include',...opts});
 
-    /* ====== جلسة المستخدم ====== */
+    /* ====== شارة المستخدم + صلاحيات ====== */
     let CURRENT_USER=null;
     function renderUser(u){
       const username=u?.username||(u?.email?u.email.split('@')[0]:'—');
@@ -329,450 +304,513 @@
       document.getElementById('userRole').textContent=u?.role||'—';
     }
     async function ensureAuth(){
-      const r=await apiFetch('/auth/committees/me');
-      const j=await r.json();
-      if(!j?.authenticated){
-        location.href=go('/committees-login.html?next='+encodeURIComponent('/committees-files-add.html'));throw 0;
-      }
-      if(j.user?.isActive===false){
-        alert('🚫 حسابك معطّل.'); location.href=go('/committees-home.html'); throw 0;
-      }
-      CURRENT_USER=j.user; renderUser(j.user);
+      try{
+        const r=await apiFetch('/auth/committees/me');
+        const j=await r.json();
+        if(!j?.authenticated){
+          location.href=go('/committees-login.html?next='+encodeURIComponent('/manage_committees.html'));throw 0;
+        }
+        if(j.user?.isActive===false){
+          showError('🚫 حسابك معطّل. الرجاء التواصل مع المشرف.');
+          setTimeout(()=>location.href=go('/committees-home.html'),1200);throw 0;
+        }
+        CURRENT_USER=j.user;renderUser(j.user);
+        const isAdmin=(j.user?.role||'').toLowerCase()==='admin';
+        document.getElementById('visitsCard').classList.toggle('d-none',!isAdmin);
+        document.getElementById('columnsCard').classList.toggle('d-none',!isAdmin);
+        document.getElementById('termCard').classList.toggle('d-none',!isAdmin);
+      }catch{throw 0;}
     }
     document.getElementById('homeBtn').href=go('/committees-home.html');
     document.getElementById('logoutBtn').addEventListener('click',async()=>{
       try{
         const r=await apiFetch('/auth/committees/logout',{method:'POST',headers:{'Content-Type':'application/json'}});
-        if(r.ok){ toastSuccess.show(); setTimeout(()=>location.href=go('/committees-login.html'),700); }
-        else toastError.show();
-      }catch{ toastError.show(); }
+        if(r.ok){showSuccess('✅ تم تسجيل الخروج');setTimeout(()=>location.href=go('/committees-login.html'),700)}
+        else{showError('❌ تعذر تسجيل الخروج')}
+      }catch{showError('❌ خطأ في الاتصال')}
     });
-    document.getElementById('backBtn').href=go('/committees-home.html');
 
-    /* ====== القوائم (كلية/لجنة) ====== */
-    function normalizeName(item){ if(typeof item==='string') return item; return item?.name||item?.committee_name||item?.college||''; }
+    /* ====== أدوات مساعدة للقوائم ====== */
+    function normalizeName(item){
+      if(typeof item==='string')return item;
+      return item?.name??item?.committee_name??item?.college??item?.auditor_name??'';
+    }
+    function fillSelect(sel,arr,placeholder='— اختر —'){
+      sel.innerHTML=`<option value="">${placeholder}</option>`;
+      (arr||[]).forEach(v=>{const val=normalizeName(v);if(!val)return;const o=document.createElement('option');o.value=o.textContent=val;sel.appendChild(o);});
+    }
+    function buildSelect(optionsArray,current,field){
+      const sel=document.createElement('select');
+      sel.className='form-select form-select-sm';
+      sel.dataset.field=field;
+      const opts=(optionsArray||[]).map(normalizeName).filter(Boolean);
+      const set=new Set(opts);
+      if(current && !set.has(current)) set.add(current);
+      sel.innerHTML=`<option value=""></option>`+Array.from(set).map(v=>`<option value="${v}"${v===current?' selected':''}>${v}</option>`).join('');
+      if(current) sel.value=current;
+      return sel;
+    }
+
+    /* ====== مصادر (قوائم) ====== */
+    let LIST_COLLEGES=[],LIST_AUDITORS=[],LIST_COMMITTEES=[];
     async function loadDatalists(){
-      const [cR,mR]=await Promise.all([
-        apiFetch('/api/colleges'),
-        apiFetch('/api/committee-names?q=').catch(()=>apiFetch('/api/committees-master'))
-      ]);
-      const colleges=await cR.json().catch(()=>[]);
-      const committees=await mR.json().catch(()=>[]);
-      const collegeSel=document.getElementById('collegeSelect');
-      const committeeSel=document.getElementById('committeeSelect');
-      (colleges||[]).forEach(c=>{const n=normalizeName(c);if(!n)return;const o=document.createElement('option');o.value=o.textContent=n;collegeSel.appendChild(o);});
-      (committees||[]).forEach(c=>{const n=normalizeName(c);if(!n)return;const o=document.createElement('option');o.value=o.textContent=n;committeeSel.appendChild(o);});
-    }
-
-    /* ====== تحميل إعدادات افتراضية للعام/الفصل ====== */
-    async function loadDefaultsFromSettings(){
       try{
-        const r=await apiFetch('/api/settings');
-        const s=await r.json();
-        if (s?.academicYear) {
-          document.getElementById('academicYearInput').value=s.academicYear;
-          state.academicYear=s.academicYear.trim();
-        }
-        if (s?.term) {
-          document.getElementById('termSelect').value=s.term;
-          state.term=s.term;
-        }
-      }catch{}
-      refreshSummary();
-      // محاولة تعبئة أولية إذا كانت القيم كاملة
-      await new Promise(r=>setTimeout(r,0));
-      schedulePrefillCheck();
+        const [cR,aR,mR]=await Promise.all([
+          apiFetch('/api/colleges'),
+          apiFetch('/api/auditors'),
+          apiFetch('/api/committee-names?q=').catch(()=>apiFetch('/api/committees-master'))
+        ]);
+        LIST_COLLEGES=await cR.json().catch(()=>[]);
+        LIST_AUDITORS=await aR.json().catch(()=>[]);
+        LIST_COMMITTEES=await mR.json().catch(()=>[]);
+
+        const collegeFilter=document.getElementById('collegeFilter');
+        const auditorFilter=document.getElementById('auditorFilter');
+        (LIST_COLLEGES||[]).forEach(c=>{const n=normalizeName(c);if(!n)return;const opt=document.createElement('option');opt.value=n;opt.textContent=n;collegeFilter.appendChild(opt);});
+        (LIST_AUDITORS||[]).forEach(a=>{const n=normalizeName(a);if(!n)return;const opt=document.createElement('option');opt.value=n;opt.textContent=n;auditorFilter.appendChild(opt);});
+
+        fillSelect(document.getElementById('er_college'),LIST_COLLEGES,'— الكلية —');
+        fillSelect(document.getElementById('er_committee'),LIST_COMMITTEES,'— اسم اللجنة —');
+        fillSelect(document.getElementById('er_auditor'),LIST_AUDITORS,'— اسم المدقق —');
+      }catch(e){console.warn('datalist load error',e);}
     }
 
-    /* ====== الحالة العامة ====== */
-    const state={
-      college:'', committee_name:'',
-      academicYear:'', term:'',
-      formation_decision:null, work_plan:null,
-      invitations:[], minutes:[], coverage_letters:[],
-      report1:null, report2:null, report3:null, statistical_analysis:null
-    };
-
-    /* ====== تحقق العام الجامعي (regex + فرق سنة) ====== */
-    const yearRx = /^(20\d{2})[\/-](20\d{2})$/;
-    function validateAcademicYear(s){
-      const m = String(s||'').trim().match(yearRx);
-      if(!m) return { ok:false, msg:'صيغة غير صحيحة' };
-      const y1 = parseInt(m[1],10), y2 = parseInt(m[2],10);
-      if (y2 - y1 !== 1) return { ok:false, msg:'يجب أن يكون الفرق سنة واحدة' };
-      return { ok:true, msg:'' };
-    }
-
-    function refreshSummary(){
-      document.getElementById('sumCollege').textContent=state.college||'—';
-      document.getElementById('sumCommittee').textContent=state.committee_name||'—';
-      document.getElementById('sumAcademicYear').textContent=state.academicYear||'—';
-      document.getElementById('sumTerm').textContent=state.term||'—';
-
-      document.getElementById('sumFD').textContent=state.formation_decision? 'رابط' : '—';
-      document.getElementById('sumWP').textContent=state.work_plan? 'رابط' : '—';
-      document.getElementById('sumInv').textContent=state.invitations.length;
-      document.getElementById('sumMin').textContent=state.minutes.length;
-      document.getElementById('sumCov').textContent=state.coverage_letters.length;
-      document.getElementById('sumR1').textContent=state.report1? 'رابط' : '—';
-      document.getElementById('sumR2').textContent=state.report2? 'رابط' : '—';
-      document.getElementById('sumR3').textContent=state.report3? 'رابط' : '—';
-      document.getElementById('sumSA').textContent=state.statistical_analysis? 'رابط' : '—';
-      document.getElementById('badgeInv').textContent=state.invitations.length;
-      document.getElementById('badgeMin').textContent=state.minutes.length;
-      document.getElementById('badgeCov').textContent=state.coverage_letters.length;
-      toggleActions();
-    }
-    function toggleActions(){
-      const disabled = !(state.college && state.committee_name && state.academicYear && state.term);
-      document.getElementById('saveBtn').classList.toggle('disabled-cover',disabled);
-    }
-
-    /* ربط تغييرات رأس الصفحة */
-    document.getElementById('collegeSelect').addEventListener('change',e=>{
-      state.college=e.target.value;refreshSummary();schedulePrefillCheck();
+    /* ====== Mini Editor ====== */
+    document.addEventListener('click',(e)=>{
+      const btn=e.target.closest('[data-cmd]'); if(!btn) return;
+      const cmd=btn.getAttribute('data-cmd'); document.execCommand(cmd,false,null);
+      const mm=document.getElementById('er_editor'); if(mm) mm.focus();
     });
-    document.getElementById('committeeSelect').addEventListener('change',e=>{
-      state.committee_name=e.target.value;refreshSummary();schedulePrefillCheck();
-    });
-    document.getElementById('termSelect').addEventListener('change',e=>{
-      state.term=e.target.value;refreshSummary();schedulePrefillCheck();
-    });
-    const ayInput = document.getElementById('academicYearInput');
-    ayInput.addEventListener('input',()=>{
-      const v = ayInput.value.trim();
-      const {ok} = validateAcademicYear(v);
-      if (!v){ ayInput.classList.remove('is-invalid'); state.academicYear=''; refreshSummary(); return; }
-      if (ok){ ayInput.classList.remove('is-invalid'); state.academicYear=v; }
-      else   { ayInput.classList.add('is-invalid'); state.academicYear=''; }
-      refreshSummary();
-      if(ok) schedulePrefillCheck();
-    });
+    function stripHtml(html){const tmp=document.createElement('div');tmp.innerHTML=html;return (tmp.textContent||tmp.innerText||'').trim();}
 
-    /* ====== تحقق الروابط ====== */
-    function isValidUrl(u){ try{ new URL(u); return true; } catch{ return false; } }
-    function wireSingleUrl(inputId, setter){
-      const el=document.getElementById(inputId);
-      el.addEventListener('input',()=>{
-        const v=el.value.trim();
-        if(!v){ setter(null); el.classList.remove('is-invalid'); refreshSummary(); return; }
-        if(isValidUrl(v)){ setter({type:'url', value:v}); el.classList.remove('is-invalid'); }
-        else{ setter(null); el.classList.add('is-invalid'); }
-        refreshSummary();
+    /* ====== الحقول العددية ====== */
+    const NUMERIC_FIELDS=["formation_decision","work_plan","performance_indicators","meetings","consistency","coverage_books","report1","report2","report3","statistical_analysis"];
+    function getVisibleNumericFields(){
+      return NUMERIC_FIELDS.filter(f=>{
+        const th=document.querySelector(`th.col-${f}`);
+        return th && !th.classList.contains('hidden-col');
       });
     }
-    wireSingleUrl('fdUrl', (x)=>state.formation_decision=x);
-    wireSingleUrl('wpUrl', (x)=>state.work_plan=x);
-    wireSingleUrl('r1Url', (x)=>state.report1=x);
-    wireSingleUrl('r2Url', (x)=>state.report2=x);
-    wireSingleUrl('r3Url', (x)=>state.report3=x);
-    wireSingleUrl('saUrl', (x)=>state.statistical_analysis=x);
+    function clamp01(val){
+      let v=Number(String(val).replace(',', '.'));
+      if(isNaN(v)) return null;
+      if(v<0) v=0; if(v>1) v=1;
+      return Math.round(v*100)/100;
+    }
 
-    /* ====== Google Drive: GIS + Picker ====== */
-    let pickerApiLoaded=false;
-    function setGDriveState(connected, emailText=''){
-      const badge=document.getElementById('gdriveState');
-      const btnDisc=document.getElementById('gdriveDisconnectBtn');
-      if(connected){
-        badge.className='badge text-bg-success';
-        badge.textContent= emailText ? ('متصل: ' + emailText) : 'متصل';
-        btnDisc.classList.remove('d-none');
-      }else{
-        badge.className='badge text-bg-secondary';
-        badge.textContent='غير متصل';
-        btnDisc.classList.add('d-none');
+    function updateAvailabilityHeader(){
+      const n=getVisibleNumericFields().length;
+      document.getElementById("availabilityHeader").innerText=`درجة التوفر من (${n})`;
+    }
+    function updateAvailability(row){
+      const fields=getVisibleNumericFields();
+      let sum=0;
+      fields.forEach(f=>{
+        const cell=row.querySelector(`[data-field="${f}"]`);
+        if(!cell) return;
+        const v=parseFloat((cell.querySelector('input')?.value ?? cell.innerText ?? '').toString().replace(',', '.'));
+        if(!isNaN(v)) sum+=v;
+      });
+      const availabilityCell=row.querySelector(".availability-cell");
+      if(availabilityCell){
+        availabilityCell.innerText=(Math.round(sum*100)/100).toFixed(2);
+        availabilityCell.classList.add("highlight");
+        setTimeout(()=>availabilityCell.classList.remove("highlight"),800);
       }
-      document.querySelectorAll('[data-pick]').forEach(b=>{ b.disabled = !connected; });
     }
-    function loadPickerApi(){
-      return new Promise(res=>{
-        if(pickerApiLoaded) return res();
-        gapi.load('picker', ()=>{ pickerApiLoaded=true; res(); });
+    function recalcAllAvailability(){
+      document.querySelectorAll('#committeesTable tr').forEach(updateAvailability);
+    }
+    function updateCompletionRate(){
+      const rows=document.querySelectorAll('#committeesTable tr');
+      let totalAvailability=0,numCommittees=0;
+      rows.forEach(row=>{
+        if(row.style.display==='none') return;
+        const availabilityCell=row.querySelector('.availability-cell');
+        if(availabilityCell){ totalAvailability+=parseFloat(availabilityCell.innerText)||0; numCommittees++; }
       });
+      const denominator=numCommittees * getVisibleNumericFields().length;
+      const pct=denominator>0 ? ((totalAvailability/denominator)*100).toFixed(2) : '0.00';
+      const lastCollege=document.getElementById('collegeFilter').value || 'جميع الكليات';
+      document.getElementById("completionRateContainer").innerHTML=`📌 نسبة الاكتمال لـ <b>${lastCollege}</b> = ${pct}% — <span class="muted">عدد اللجان: ${numCommittees}</span>`;
     }
-    async function ensureDriveToken(){
-      if (window.googleAccessToken) return true;
-      if (!window.gisTokenClient) window.initGis();
-      return new Promise(resolve=>{
-        window.gisTokenClient.requestAccessToken({ prompt: 'consent' });
-        const t=setInterval(()=>{ if(window.googleAccessToken){ clearInterval(t); resolve(true); } },200);
-        setTimeout(()=>{ clearInterval(t); resolve(!!window.googleAccessToken); },10000);
+
+    /* ====== إظهار/إخفاء الأعمدة ====== */
+    function applyColumnVisibilityInstant(){
+      document.querySelectorAll('.col-toggle').forEach(cb=>{
+        const field=cb.dataset.field; const show=cb.checked;
+        document.querySelectorAll(`th.col-${field}`).forEach(el=>el.classList.toggle('hidden-col',!show));
+        document.querySelectorAll(`#committeesTable td[data-field="${field}"]`).forEach(el=>el.classList.toggle('hidden-col',!show));
       });
+      updateAvailabilityHeader();
+      recalcAllAvailability();
+      updateCompletionRate();
     }
-    async function fetchWebViewLink(fileId){
-      const r = await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}?fields=webViewLink`, {
-        headers: { Authorization: 'Bearer ' + window.googleAccessToken }
-      });
-      const j = await r.json();
-      return j.webViewLink || `https://drive.google.com/file/d/${fileId}/view`;
-    }
-    async function openDrivePicker(onPicked){
-      const ok = await ensureDriveToken();
-      if(!ok){ alert('تعذر الاتصال بـ Google Drive'); return; }
-      await loadPickerApi();
-      const viewDocs = new google.picker.DocsView().setIncludeFolders(true).setSelectFolderEnabled(false);
-      const picker = new google.picker.PickerBuilder()
-        .setOAuthToken(window.googleAccessToken)
-        .setDeveloperKey(window.GOOGLE_API_KEY)
-        .addView(viewDocs)
-        .setOrigin(window.location.origin)
-        .setLocale('ar')
-        .setSize(880,520)
-        .setCallback(async (data)=>{
-          if(data.action === google.picker.Action.PICKED && data.docs && data.docs.length){
-            const file = data.docs[0];
-            try{
-              const link = await fetchWebViewLink(file.id);
-              onPicked(link, file);
-            }catch(e){
-              console.error(e); alert('تعذر جلب رابط العرض للملف');
-            }
-          }
-        }).build();
-      picker.setVisible(true);
-    }
-    document.getElementById('gdriveConnectBtn').addEventListener('click', async ()=>{
-      const ok = await ensureDriveToken(); setGDriveState(ok);
-    });
-    document.getElementById('gdriveDisconnectBtn').addEventListener('click', ()=>{
-      window.googleAccessToken = null; setGDriveState(false);
-    });
-    document.querySelectorAll('[data-pick]').forEach(btn=>{
-      btn.addEventListener('click', ()=>{
-        const targetId = btn.getAttribute('data-pick');
-        const inputEl = document.getElementById(targetId);
-        openDrivePicker((link)=>{ inputEl.value = link; inputEl.dispatchEvent(new Event('input')); });
-      });
+    document.getElementById('columnsCard')?.addEventListener('change',(e)=>{
+      if(e.target.classList.contains('col-toggle')) applyColumnVisibilityInstant();
     });
 
-    /* ====== القوائم المتعددة ====== */
-    // 🔁 نسخة مطوّرة: تدعم عنصرًا تمهيديًا initialItem للتهيئة من قاعدة البيانات
-    function addMultiUrlRow(listEl, arrRef, initialItem = null){
-      const row=document.createElement('div');
-      row.className='list-row';
-      row.innerHTML=`
-        <span class="index">#</span>
-        <div class="flex-grow-1">
-          <div class="input-group">
-            <span class="input-group-text"><i class="bi bi-link-45deg"></i></span>
-            <input type="url" class="form-control url-input" placeholder="https://drive.google.com/...">
-            <button class="btn btn-outline-primary btn-drive-row" type="button"><i class="bi bi-folder2-open"></i></button>
-          </div>
-          <div class="form-text">اكتب عنوانًا اختياريًا في الحقل التالي.</div>
-          <input type="text" class="form-control form-control-sm mt-1 title-input" placeholder="عنوان اختياري">
-        </div>
-        <div class="actions ms-2">
-          <button class="btn btn-outline-danger" type="button"><i class="bi bi-trash"></i></button>
-        </div>
-      `;
-      const idxSpan=row.querySelector('.index');
-      const urlInput=row.querySelector('.url-input');
-      const titleInput=row.querySelector('.title-input');
-      const delBtn=row.querySelector('.actions .btn');
-      const driveBtn=row.querySelector('.btn-drive-row');
-
-      const item={
-        value: (initialItem && initialItem.value) ? initialItem.value : '',
-        title: (initialItem && initialItem.title) ? initialItem.title : ''
-      };
-      arrRef.push(item);
-
-      function refreshIndex(){ idxSpan.textContent = (Array.from(listEl.children).indexOf(row)+1); }
-
-      // تعبئة أولية في الـDOM إن وُجدت
-      if(item.value){ urlInput.value=item.value; }
-      if(item.title){ titleInput.value=item.title; }
-
-      urlInput.addEventListener('input',()=>{
-        const v=urlInput.value.trim();
-        if(isValidUrl(v)){ item.value=v; urlInput.classList.remove('is-invalid'); }
-        else{ item.value=''; if(v) urlInput.classList.add('is-invalid'); else urlInput.classList.remove('is-invalid'); }
-        refreshSummary();
-      });
-      titleInput.addEventListener('input',()=>{ item.title=titleInput.value.trim(); });
-
-      delBtn.addEventListener('click',()=>{
-        const i=arrRef.indexOf(item);
-        if(i>=0) arrRef.splice(i,1);
-        row.remove();
-        Array.from(listEl.children).forEach(refreshIndex);
-        refreshSummary();
-      });
-
-      driveBtn.addEventListener('click', ()=>{
-        openDrivePicker((link)=>{ urlInput.value = link; urlInput.dispatchEvent(new Event('input')); });
-      });
-
-      listEl.appendChild(row);
-      Array.from(listEl.children).forEach(refreshIndex);
-      refreshSummary();
-    }
-    document.getElementById('addInvitationBtn').addEventListener('click',()=>addMultiUrlRow(document.getElementById('invitationsList'), state.invitations));
-    document.getElementById('addMinuteBtn').addEventListener('click',()=>addMultiUrlRow(document.getElementById('minutesList'), state.minutes));
-    document.getElementById('addCoverageBtn').addEventListener('click',()=>addMultiUrlRow(document.getElementById('coverageList'), state.coverage_letters));
-
-    /* ====== Helpers للتهيئة من قاعدة البيانات ====== */
-    function setSingleInputAndState(inputId, stateKey, urlObj){
-      const el=document.getElementById(inputId);
-      if(urlObj && urlObj.value){
-        el.value = urlObj.value;
-        el.classList.remove('is-invalid');
-        state[stateKey] = { type:'url', value:urlObj.value, title: urlObj.title || '' };
-      }else{
-        // لا نُفرّغ شيئًا تلقائيًا إذا لم يوجد سجل — نحافظ على إدخالات المستخدم
-        // (بالتالي لا تغيير هنا على الإطلاق)
-      }
-      // إطلاق input حتى لو لم نغيّر، لضمان التحقق/التلخيص
-      el.dispatchEvent(new Event('input'));
-    }
-    function rebuildMultiList(listElId, arrRef, items){
-      const listEl = document.getElementById(listElId);
-      // نملأ القائمة بالعناصر القادمة من DB فقط إن كانت موجودة
-      if (Array.isArray(items) && items.length){
-        listEl.innerHTML = '';
-        arrRef.length = 0;
-        items.forEach(it => addMultiUrlRow(listEl, arrRef, it));
-      }
-      refreshSummary();
-    }
-
-    /* ====== التهيئة التلقائية من قاعدة البيانات ====== */
-    let prefillReqCounter = 0;
-    async function tryPrefillFromDB(){
-      // يجب اكتمال الأربع قيم وصحة العام الجامعي
-      const ayOk = state.academicYear && validateAcademicYear(state.academicYear).ok;
-      if(!(state.college && state.committee_name && state.term && ayOk)) return;
-
-      const myReq = ++prefillReqCounter;
-
-      // مؤشر بصري خفيف: لا يغيّر حالة الاتصال الفعلية
-      const badge = document.getElementById('gdriveState');
-      const oldBadgeText = badge.textContent;
-      badge.textContent = 'جارِ التحقق...';
-
+    /* ====== تحميل الإعدادات + شارة الفصل/العام ====== */
+    async function loadSettings(){
       try{
-        const params = new URLSearchParams({
-          college: state.college,
-          committee_name: state.committee_name,
-          academicYear: state.academicYear,
-          term: state.term,
-          limit: '1'
-        });
-        const r = await apiFetch(`/api/committees-files?${params.toString()}`, { method:'GET' });
+        const res=await apiFetch('/api/settings'); const settings=await res.json();
 
-        // لو جاء طلب أحدث، تجاهل الرد القديم
-        if (myReq !== prefillReqCounter) return;
+        // زيارات
+        if(settings?.selectedVisits){
+          document.querySelectorAll('.visit-toggle').forEach(cb=>{cb.checked=settings.selectedVisits.includes(cb.value)});
+        }
 
-        if(!r.ok){
-          badge.textContent = oldBadgeText;
+        // ✅ نشر النتائج
+        document.getElementById('publishResults').checked = !!settings?.publishResults;
+
+        // حالة الأعمدة
+        if(Array.isArray(settings?.visibleColumns) && settings.visibleColumns.length){
+          document.querySelectorAll('.col-toggle').forEach(cb=>{cb.checked=settings.visibleColumns.includes(cb.dataset.field)});
+        }
+        applyColumnVisibilityInstant();
+
+        // الشارة
+        const term=settings?.term||''; const ay=settings?.academicYear||'';
+        let html=''; if(term||ay){html=`<span class="badge text-bg-info">📚 الفصل الحالي: <b>${term||'—'}</b> — العام: <b>${ay||'—'}</b></span>`;}
+        document.getElementById('termBadge').innerHTML=html;
+
+        // ✅ نص الزيارات أعلى نسبة الاكتمال
+        updateSelectedVisits();
+
+      }catch(e){ /* تجاهل */ }
+    }
+
+    function updateSelectedVisits(){
+      const selected=Array.from(document.querySelectorAll('.visit-toggle:checked')).map(cb=>cb.value);
+      document.getElementById('selectedVisitsContainer').innerHTML=selected.length?("الزيارات: "+selected.join(' | ')):'';
+    }
+
+    // حفظ الإعدادات (الأعمدة/الزيارات/النشر)
+    document.getElementById('saveSettingsBtn')?.addEventListener('click',async()=>{
+      try{
+        const visibleColumns=Array.from(document.querySelectorAll('.col-toggle:checked')).map(cb=>cb.getAttribute('data-field'));
+        const selectedVisits=Array.from(document.querySelectorAll('.visit-toggle:checked')).map(cb=>cb.value);
+        const publishResults = document.getElementById('publishResults').checked;
+        await axios.put(`${API_BASE}/api/settings`,{visibleColumns,selectedVisits,publishResults},{withCredentials:true});
+        showSuccess("✅ تم حفظ الإعدادات بنجاح");
+        updateSelectedVisits();
+        applyColumnVisibilityInstant();
+      }catch(err){console.error(err);showError("❌ خطأ في حفظ الإعدادات")}
+    });
+
+    // ✅ زر حفظ الفصل/العام
+    document.getElementById('saveTermBtn')?.addEventListener('click', async ()=>{
+      try{
+        const term = document.getElementById('termSelect').value.trim();
+        const academicYear = document.getElementById('academicYearInput').value.trim();
+        const rx = /^(20\d{2})[\/-](20\d{2})$/;
+        if(academicYear && !rx.test(academicYear)){
+          showError('⚠️ صيغة العام الجامعي يجب أن تكون 2024-2025 أو 2024/2025');
           return;
         }
-        const j = await r.json().catch(()=>null);
-        const doc = j && Array.isArray(j.data) && j.data.length ? j.data[0] : null;
+        const payload = { term, academicYear };
+        const r = await axios.put(`${API_BASE}/api/settings`, payload, { withCredentials:true });
+        const s = r.data || {};
+        const t = s.term || term || '—';
+        const ay = s.academicYear || academicYear || '—';
+        document.getElementById('termBadge').innerHTML = `<span class="badge text-bg-info">📚 الفصل الحالي: <b>${t}</b> — العام: <b>${ay}</b></span>`;
+        showSuccess('✅ تم حفظ الفصل/العام');
+      }catch(e){
+        console.error(e);
+        showError('❌ خطأ في حفظ الفصل/العام');
+      }
+    });
 
-        if(doc){
-          // تعبئة المفرد
-          setSingleInputAndState('fdUrl', 'formation_decision', doc.formation_decision || null);
-          setSingleInputAndState('wpUrl', 'work_plan', doc.work_plan || null);
-          setSingleInputAndState('r1Url', 'report1', doc.report1 || null);
-          setSingleInputAndState('r2Url', 'report2', doc.report2 || null);
-          setSingleInputAndState('r3Url', 'report3', doc.report3 || null);
-          setSingleInputAndState('saUrl', 'statistical_analysis', doc.statistical_analysis || null);
+    /* ====== إنشاء صف ====== */
+    function buildRow(c,idx){
+      const tr=document.createElement('tr');
+      tr.dataset.id=c._id||'';
+      if(c.__isNew) { tr.dataset.new="1"; tr.classList.add('is-new','table-info'); }
 
-          // تعبئة القوائم المتعددة (لن نُفرغها إن لم توجد عناصر)
-          rebuildMultiList('invitationsList', state.invitations, doc.invitations || []);
-          rebuildMultiList('minutesList', state.minutes, doc.minutes || []);
-          rebuildMultiList('coverageList', state.coverage_letters, doc.coverage_letters || []);
+      const selCollege=buildSelect(LIST_COLLEGES,c.college,'college');
+      const selCommittee=buildSelect(LIST_COMMITTEES,c.committee_name,'committee_name');
+      const selAuditor=buildSelect(LIST_AUDITORS,c.auditor_name,'auditor_name');
 
-          toastSuccess.show(); // تلميح نجاح بسيط
-        }else{
-          // لا يوجد سجل — لا نلمس إدخالات المستخدم (لا تفريغ تلقائي)
+      tr.innerHTML=`
+        <td class="row-idx">${idx+1}</td>
+
+        <td class="w-wide" data-field="college"></td>
+        <td class="w-wide" data-field="committee_name"></td>
+        <td class="w-wide" data-field="auditor_name"></td>
+
+        <td class="date-col" data-field="audit_date">
+          <input type="date" class="form-control form-control-sm" value="${c.audit_date ? c.audit_date.split('T')[0] : ''}">
+        </td>
+
+        <td class="w-narrow col-formation_decision" data-field="formation_decision"><input type="text" class="form-control form-control-sm" value="${c.formation_decision ?? 0}"></td>
+        <td class="w-narrow col-work_plan" data-field="work_plan"><input type="text" class="form-control form-control-sm" value="${c.work_plan ?? 0}"></td>
+        <td class="w-narrow col-performance_indicators" data-field="performance_indicators"><input type="text" class="form-control form-control-sm" value="${c.performance_indicators ?? 0}"></td>
+        <td class="w-narrow col-meetings" data-field="meetings"><input type="text" class="form-control form-control-sm" value="${c.meetings ?? 0}"></td>
+        <td class="w-narrow col-consistency" data-field="consistency"><input type="text" class="form-control form-control-sm" value="${c.consistency ?? 0}"></td>
+        <td class="w-narrow col-coverage_books" data-field="coverage_books"><input type="text" class="form-control form-control-sm" value="${c.coverage_books ?? 0}"></td>
+        <td class="w-narrow col-report1" data-field="report1"><input type="text" class="form-control form-control-sm" value="${c.report1 ?? 0}"></td>
+        <td class="w-narrow col-report2" data-field="report2"><input type="text" class="form-control form-control-sm" value="${c.report2 ?? 0}"></td>
+        <td class="w-narrow col-report3" data-field="report3"><input type="text" class="form-control form-control-sm" value="${c.report3 ?? 0}"></td>
+        <td class="w-narrow col-statistical_analysis" data-field="statistical_analysis"><input type="text" class="form-control form-control-sm" value="${c.statistical_analysis ?? 0}"></td>
+
+        <td class="availability-cell w-narrow">${c.availability_score ?? 0}</td>
+
+        <td class="w-wide" data-field="notes">
+          ${
+            (c.notes && stripHtml(c.notes))
+            ? `<button class="btn btn-sm btn-secondary btn-edit-open">عرض الملاحظات</button>`
+            : `<span class="text-muted">لا توجد ملاحظات</span>`
+          }
+        </td>
+
+        <td class="w-narrow">
+          <div class="d-flex justify-content-center align-items-center gap-1">
+            <button class="btn btn-sm btn-primary btn-edit-open" title="تعديل"><i class="bi bi-pencil-square"></i></button>
+            <button class="btn btn-sm btn-success save-row" title="حفظ"><i class="bi bi-save"></i></button>
+            <button class="btn btn-sm btn-danger delete-row" title="حذف"><i class="bi bi-trash"></i></button>
+          </div>
+        </td>
+      `;
+
+      tr.querySelector('[data-field="college"]').appendChild(selCollege);
+      tr.querySelector('[data-field="committee_name"]').appendChild(selCommittee);
+      tr.querySelector('[data-field="auditor_name"]').appendChild(selAuditor);
+
+      tr.__notesHTML=c.notes||'';
+      attachInputListeners(tr);
+      updateAvailability(tr);
+      return tr;
+    }
+
+    function renumberRows(){
+      document.querySelectorAll('#committeesTable tr .row-idx').forEach((td,i)=>{td.textContent=i+1;});
+    }
+
+    function attachInputListeners(tr){
+      const numericFieldsSet=new Set(NUMERIC_FIELDS);
+      tr.querySelectorAll('[data-field] input').forEach(inp=>{
+        const field=inp.closest('td').dataset.field;
+        if(!numericFieldsSet.has(field) && field!=='audit_date') return;
+
+        inp.addEventListener('input',()=>{
+          if(numericFieldsSet.has(field)){
+            const clamped=clamp01(inp.value);
+            const invalid=(clamped===null);
+            inp.classList.toggle('is-invalid',invalid);
+            if(!invalid) inp.value=clamped;
+            markRowChanged(tr);
+            updateAvailability(tr);
+            updateCompletionRate();
+          }else{
+            markRowChanged(tr);
+          }
+        });
+      });
+      tr.querySelectorAll('select,input[type="date"]').forEach(el=>{
+        el.addEventListener('change',()=>{ markRowChanged(tr); if(el.type!=='date'){} });
+      });
+    }
+    function markRowChanged(tr){tr.dataset.dirty="1";tr.classList.add('table-warning')}
+    function clearRowChanged(tr){delete tr.dataset.dirty;tr.classList.remove('table-warning','is-new','table-info')}
+
+    /* ====== إضافة سجل جديد ====== */
+    document.getElementById('addRowBtn').addEventListener('click',()=>{
+      const tbody=document.getElementById('committeesTable');
+      const c={
+        __isNew:true,
+        college:'',
+        committee_name:'',
+        auditor_name:'',
+        audit_date:'',
+        formation_decision:0,work_plan:0,performance_indicators:0,meetings:0,consistency:0,
+        coverage_books:0,report1:0,report2:0,report3:0,statistical_analysis:0,
+        availability_score:0,notes:''
+      };
+      const tr=buildRow(c,0);
+      tbody.prepend(tr);
+      renumberRows();
+      applyColumnVisibilityInstant();
+      updateCompletionRate();
+    });
+
+    /* ====== تحميل السجلات ====== */
+    async function loadCommittees(){
+      try{
+        const college=document.getElementById('collegeFilter').value;
+        const auditor=document.getElementById('auditorFilter').value;
+        let url='/api/committees';
+        const params=[];
+        if(college) params.push('college='+encodeURIComponent(college));
+        if(auditor) params.push('auditor_name='+encodeURIComponent(auditor));
+        if(params.length) url+='?'+params.join('&');
+
+        const res=await apiFetch(url);
+        const arr=await res.json();
+
+        const tbody=document.getElementById('committeesTable');
+        tbody.innerHTML='';
+
+        if(!Array.isArray(arr)||arr.length===0){
+          tbody.innerHTML=`<tr><td colspan="18" class="text-center">لا توجد بيانات</td></tr>`;
+          document.getElementById("completionRateContainer").innerHTML='';
+          document.getElementById("selectedVisitsContainer").innerHTML='';
+          return;
         }
 
-      }catch(e){
-        console.error('Prefill error:', e);
-      }finally{
-        badge.textContent = oldBadgeText;
-        refreshSummary();
+        arr.sort((a,b)=>(a.college||'').localeCompare(b.college||'','ar') || (a.committee_name||'').localeCompare(b.committee_name||'','ar'));
+
+        arr.forEach((c,idx)=>{ const tr=buildRow(c,idx); document.getElementById('committeesTable').appendChild(tr); });
+
+        applyColumnVisibilityInstant();
+        applyCommitteeSearch();
+        updateCompletionRate();
+        renumberRows();
+      }catch(err){
+        console.error(err);
+        showError('❌ فشل تحميل البيانات');
+        const tbody=document.getElementById('committeesTable');
+        tbody.innerHTML=`<tr><td colspan="18" class="text-center text-danger">فشل الجلب</td></tr>`;
       }
     }
 
-    /* ====== Debounce لاستدعاء التهيئة ====== */
-    let prefillTimer = null;
-    function schedulePrefillCheck(){
-      clearTimeout(prefillTimer);
-      prefillTimer = setTimeout(tryPrefillFromDB, 300);
-    }
-
-    /* ====== حفظ/تفريغ ====== */
-    function buildPayload(){
-      return {
-        college: state.college,
-        committee_name: state.committee_name,
-        academicYear: state.academicYear,
-        term: state.term,
-        formation_decision: state.formation_decision,
-        work_plan: state.work_plan,
-        invitations: state.invitations.filter(x=>x.value).map(x=>({ type:'url', value:x.value, title:x.title||'' })),
-        minutes: state.minutes.filter(x=>x.value).map(x=>({ type:'url', value:x.value, title:x.title||'' })),
-        coverage_letters: state.coverage_letters.filter(x=>x.value).map(x=>({ type:'url', value:x.value, title:x.title||'' })),
-        report1: state.report1, report2: state.report2, report3: state.report3,
-        statistical_analysis: state.statistical_analysis
-      };
-    }
-
-    document.getElementById('saveBtn').addEventListener('click', async ()=>{
+    /* ====== حفظ كل المعدل ====== */
+    document.getElementById('saveAllBtn').addEventListener('click',async()=>{
       try{
-        if(!state.college || !state.committee_name){
-          alert('الرجاء اختيار الكلية واسم اللجنة'); return;
-        }
-        if(!state.academicYear){
-          alert('الرجاء إدخال العام الجامعي'); return;
-        }
-        const chk = validateAcademicYear(state.academicYear);
-        if(!chk.ok){ ayInput.classList.add('is-invalid'); alert('العام الجامعي غير صحيح: '+chk.msg); return; }
-
-        if(!state.term){
-          alert('الرجاء اختيار الفصل الدراسي'); return;
-        }
-
-        const singles=['formation_decision','work_plan','report1','report2','report3','statistical_analysis'];
-        for(const k of singles){
-          const v=state[k];
-          if(v && (!v.value || !isValidUrl(v.value))){
-            alert('هناك رابط غير صالح في: '+k); return;
+        const rows=Array.from(document.querySelectorAll('#committeesTable tr.table-warning, #committeesTable tr.is-new'));
+        if(!rows.length){showError('لا توجد تعديلات');return;}
+        for(const tr of rows){
+          const payload=collectRowData(tr);
+          const date=payload.audit_date?.trim();
+          if(date && !/^\d{4}-\d{2}-\d{2}$/.test(date)){showError('⚠️ صيغة التاريخ يجب أن تكون YYYY-MM-DD');return;}
+          if(tr.dataset.new==="1"){
+            await axios.post(`${API_BASE}/api/committees`,payload,{withCredentials:true});
+          }else{
+            const id=tr.dataset.id;
+            await axios.put(`${API_BASE}/api/committees/${id}`,payload,{withCredentials:true});
           }
         }
-
-        const payload=buildPayload();
-
-        const r = await fetch(`${API_BASE}/api/committees-files`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          credentials: 'include',
-          body: JSON.stringify(payload)
-        });
-
-        if(!r.ok){
-          const j=await r.json().catch(()=>({}));
-          alert('فشل الحفظ: ' + (j.message || r.status)); return;
-        }
-
-        toastSuccess.show();
-      }catch(e){ console.error(e); toastError.show(); }
+        showSuccess('✅ تم حفظ جميع التعديلات');
+        await loadCommittees(); // لإعادة الفرز ووضع السجلات الجديدة في أماكنها
+      }catch(e){console.error(e);showError('❌ خطأ أثناء حفظ الكل');}
     });
 
-    // تفريغ عند النقر فقط (لا تفريغ تلقائي إطلاقًا)
-    document.getElementById('resetBtn').addEventListener('click',()=>location.reload());
+    /* ====== بحث باسم اللجنة ====== */
+    function applyCommitteeSearch(){
+      const searchTerm=document.getElementById("committeeSearch").value.trim().toLowerCase();
+      document.querySelectorAll("#committeesTable tr").forEach(row=>{
+        const committee=row.querySelector('[data-field="committee_name"] select')?.value||'';
+        row.style.display=committee.toLowerCase().includes(searchTerm)?'':'none';
+      });
+    }
+    document.getElementById('committeeSearch').addEventListener('input',()=>{applyCommitteeSearch();updateCompletionRate();});
+    document.getElementById('collegeFilter').addEventListener('change',loadCommittees);
+    document.getElementById('auditorFilter').addEventListener('change',loadCommittees);
+    document.getElementById('reloadBtn').addEventListener('click',loadCommittees);
+
+    /* ====== مودال موحّد: فتح/حفظ ====== */
+    let EDITING_ROW=null;
+    function openUnifiedModal(tr){
+      EDITING_ROW=tr;
+      fillSelect(document.getElementById('er_college'),LIST_COLLEGES,'— الكلية —');
+      fillSelect(document.getElementById('er_committee'),LIST_COMMITTEES,'— اسم اللجنة —');
+      fillSelect(document.getElementById('er_auditor'),LIST_AUDITORS,'— اسم المدقق —');
+
+      document.getElementById('er_college').value   = tr.querySelector('[data-field="college"] select')?.value || '';
+      document.getElementById('er_committee').value = tr.querySelector('[data-field="committee_name"] select')?.value || '';
+      document.getElementById('er_auditor').value   = tr.querySelector('[data-field="auditor_name"] select')?.value || '';
+      document.getElementById('er_date').value      = tr.querySelector('[data-field="audit_date"] input')?.value || '';
+
+      const html=tr.__notesHTML||'';
+      document.getElementById('viewNotes').innerHTML = html || '<i class="muted">لا توجد ملاحظات</i>';
+      document.getElementById('er_editor').innerHTML = html || '';
+
+      new bootstrap.Modal(document.getElementById('editUnifiedModal')).show();
+    }
+    document.getElementById('committeesTable').addEventListener('click',async(e)=>{
+      const tr=e.target.closest('tr'); if(!tr) return;
+      if(e.target.closest('.btn-edit-open')){ openUnifiedModal(tr); return; }
+
+      const btnSave=e.target.closest('.save-row');
+      const btnDelete=e.target.closest('.delete-row');
+
+      if(btnSave){
+        const payload=collectRowData(tr);
+        const date=payload.audit_date?.trim();
+        if(date && !/^\d{4}-\d{2}-\d{2}$/.test(date)){showError('⚠️ صيغة التاريخ يجب أن تكون YYYY-MM-DD');return;}
+        try{
+          if(tr.dataset.new==="1"){
+            await axios.post(`${API_BASE}/api/committees`,payload,{withCredentials:true});
+          }else{
+            const id=tr.dataset.id;
+            await axios.put(`${API_BASE}/api/committees/${id}`,payload,{withCredentials:true});
+          }
+          showSuccess("✅ تم حفظ التعديلات");
+          await loadCommittees(); // لإعادة الفرز فورًا
+        }catch(err){console.error(err);showError("❌ خطأ أثناء الحفظ");}
+        return;
+      }
+      if(btnDelete){
+        // إذا كان صف جديد وغير محفوظ بعد، نحذفه محليًا فقط
+        if(tr.dataset.new==="1" && !tr.dataset.id){
+          tr.remove(); renumberRows(); updateCompletionRate();
+          return;
+        }
+        showConfirm("⚠️ هل أنت متأكد من الحذف؟",async()=>{
+          try{
+            await axios.delete(`${API_BASE}/api/committees/${tr.dataset.id}`,{withCredentials:true});
+            showSuccess("🗑️ تم حذف السجل بنجاح");
+            loadCommittees();
+          }catch(err){console.error(err);showError("❌ فشل الحذف");}
+        });
+      }
+    });
+
+    document.getElementById('saveUnifiedBtn').addEventListener('click',()=>{
+      if(!EDITING_ROW) return;
+      EDITING_ROW.querySelector('[data-field="college"] select').value        = document.getElementById('er_college').value || '';
+      EDITING_ROW.querySelector('[data-field="committee_name"] select').value = document.getElementById('er_committee').value || '';
+      EDITING_ROW.querySelector('[data-field="auditor_name"] select').value   = document.getElementById('er_auditor').value || '';
+      EDITING_ROW.querySelector('[data-field="audit_date"] input').value      = document.getElementById('er_date').value || '';
+
+      const newHtml=document.getElementById('er_editor').innerHTML;
+      EDITING_ROW.__notesHTML=newHtml||'';
+      const notesCell=EDITING_ROW.querySelector('[data-field="notes"]');
+      if(stripHtml(EDITING_ROW.__notesHTML)) notesCell.innerHTML='<button class="btn btn-sm btn-secondary btn-edit-open">عرض الملاحظات</button>';
+      else notesCell.innerHTML='<span class="text-muted">لا توجد ملاحظات</span>';
+
+      markRowChanged(EDITING_ROW);
+      bootstrap.Modal.getInstance(document.getElementById('editUnifiedModal')).hide();
+      showSuccess('تم تحديث الصف (تحتاج حفظ الصف)');
+    });
+
+    /* ====== جمع بيانات صف ====== */
+    function collectRowData(row){
+      const data={};
+      data.college=row.querySelector('[data-field="college"] select')?.value?.trim()||'';
+      data.committee_name=row.querySelector('[data-field="committee_name"] select')?.value?.trim()||'';
+      data.auditor_name=row.querySelector('[data-field="auditor_name"] select')?.value?.trim()||'';
+      data.audit_date=row.querySelector('[data-field="audit_date"] input')?.value||'';
+
+      NUMERIC_FIELDS.forEach(f=>{
+        const inp=row.querySelector(`[data-field="${f}"] input`); if(!inp) return;
+        const clamped=clamp01(inp.value);
+        data[f]=(clamped===null)?0:clamped;
+      });
+
+      const availabilityCell=row.querySelector('.availability-cell');
+      data.availability_score=parseFloat(availabilityCell?.innerText)||0;
+      data.notes=row.__notesHTML||'';
+      return data;
+    }
 
     /* ====== بدء التشغيل ====== */
     (async function init(){
       try{
         await ensureAuth();
+        document.getElementById('homeBtn').href=go('/committees-home.html');
         await loadDatalists();
-        await loadDefaultsFromSettings(); // تعبئة العام/الفصل إن كانا محفوظين + محاولة تهيئة
-        refreshSummary();
-        setGDriveState(false);
+        await loadSettings();
+        await loadCommittees();
       }catch{}
     })();
   </script>
