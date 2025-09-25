@@ -253,6 +253,10 @@ const settingsSchema = new mongoose.Schema({
   selectedVisits: [String],
   term: { type: String, default: '' },
   academicYear: { type: String, default: '' },
+
+  // ⬅️ جديد: علم نشر النتائج
+  publishResults: { type: Boolean, default: false },
+
   updatedAt: { type: Date, default: Date.now }
 });
 const Settings = mongoose.model('Settings', settingsSchema);
@@ -1317,7 +1321,12 @@ app.get('/api/settings', async (req, res) => {
   try {
     let settings = await Settings.findOne();
     if (!settings) {
-      settings = new Settings({ visibleColumns: [], selectedVisits: [] });
+      settings = new Settings({
+        visibleColumns: [],
+        selectedVisits: [],
+        // ⬅️ جديد: القيمة الافتراضية
+        publishResults: false
+      });
       await settings.save();
     }
     res.json(settings);
@@ -1325,11 +1334,18 @@ app.get('/api/settings', async (req, res) => {
     res.status(500).json({ message: '❌ خطأ في جلب الإعدادات', error: err.message });
   }
 });
+
 app.put('/api/settings', authRequired, requireRole('admin'), async (req, res) => {
   try {
     let settings = await Settings.findOne();
     if (!settings) {
-      settings = new Settings(req.body);
+      // عند الإنشاء الأول خُذ القيمة من الجسم إن وُجدت وإلا false
+      settings = new Settings({
+        ...req.body,
+        publishResults: typeof req.body.publishResults === 'boolean'
+          ? req.body.publishResults
+          : false
+      });
       await settings.save();
       await logAudit(req, {
         model: 'Settings',
@@ -1339,28 +1355,41 @@ app.put('/api/settings', authRequired, requireRole('admin'), async (req, res) =>
       });
       return res.json(settings);
     }
+
     const before = settings.toObject();
+
     settings.visibleColumns = Array.isArray(req.body.visibleColumns)
       ? req.body.visibleColumns
       : (settings.visibleColumns || []);
+
     settings.selectedVisits = Array.isArray(req.body.selectedVisits)
       ? req.body.selectedVisits
       : (settings.selectedVisits || []);
+
     if (typeof req.body.term === 'string') settings.term = req.body.term.trim();
     if (typeof req.body.academicYear === 'string') settings.academicYear = req.body.academicYear.trim();
+
+    // ⬅️ جديد: تحديث publishResults
+    if (typeof req.body.publishResults === 'boolean') {
+      settings.publishResults = req.body.publishResults;
+    }
+
     settings.updatedAt = new Date();
     await settings.save();
+
     await logAudit(req, {
       model: 'Settings',
       action: 'update',
       docId: settings._id,
       payload: { before, after: settings.toObject() }
     });
+
     res.json(settings);
   } catch (err) {
     res.status(400).json({ message: '❌ خطأ في حفظ الإعدادات', error: err.message });
   }
 });
+
 
 /****************************************************
  * تابع لنظام اللجان: سجلات التدقيق (قائمة/حذف)
