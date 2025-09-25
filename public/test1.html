@@ -56,14 +56,14 @@
 
     /* حالة "غير متوفر" */
     #notAvailable{
-      min-height:60vh; display:none;
+      min-height:60vh;
       align-items:center; justify-content:center; text-align:center;
     }
   </style>
 </head>
 <body>
   <!-- رسالة النتائج غير متوفرة -->
-  <div id="notAvailable" class="container d-flex">
+  <div id="notAvailable" class="container d-none">
     <div class="mx-auto">
       <div class="display-6 mb-2">نتائج تقييم لجان الكليات غير متوفرة حاليًا</div>
       <p class="text-muted mb-0">يرجى العودة لاحقًا.</p>
@@ -71,7 +71,7 @@
   </div>
 
   <!-- محتوى الصفحة الحقيقي -->
-  <div id="pageContent" class="container-fluid" style="display:none">
+  <div id="pageContent" class="container-fluid d-none">
     <div class="sticky-header">
       <h3 class="text-center mb-4">نتائج تقييم اللجان</h3>
 
@@ -300,6 +300,8 @@
     async function loadSettings(){
       const semesterEl=document.getElementById('semesterInfo');
       const visitsEl  =document.getElementById('selectedVisitsContainer');
+      const na = document.getElementById('notAvailable');
+      const pc = document.getElementById('pageContent');
 
       try{
         const {data} = await axios.get('/api/settings');
@@ -307,16 +309,18 @@
         // متغير التحكم بالنشر
         PUBLISH_RESULTS = !!settingsCache.publishResults;
 
-        // إن لم يكن النشر مفعّل => إظهار الرسالة فقط وإيقاف كل شيء
         if(!PUBLISH_RESULTS){
-          document.getElementById('pageContent').style.display='none';
-          document.getElementById('notAvailable').style.display='flex';
+          // إظهار الرسالة فقط
+          na.classList.remove('d-none');
+          na.classList.add('d-flex');
+          pc.classList.add('d-none');
           return false;
         }
 
-        // مفعّل => إظهار الصفحة والاستمرار
-        document.getElementById('notAvailable').style.display='none';
-        document.getElementById('pageContent').style.display='block';
+        // مفعّل => إظهار الصفحة وإخفاء الرسالة
+        na.classList.add('d-none');
+        na.classList.remove('d-flex');
+        pc.classList.remove('d-none');
 
         savedVisibleColumns = settingsCache.visibleColumns || [];
 
@@ -334,8 +338,9 @@
         return true;
       }catch(e){
         // في حالة الخطأ نتصرف كأن النشر غير مفعّل (أكثر أمانًا)
-        document.getElementById('pageContent').style.display='none';
-        document.getElementById('notAvailable').style.display='flex';
+        na.classList.remove('d-none');
+        na.classList.add('d-flex');
+        pc.classList.add('d-none');
         return false;
       }
     }
