@@ -39,7 +39,7 @@
       margin:auto
     }
     th,td{text-align:center;vertical-align:middle}
-    th{background:#f8f9fa;color:#000}
+    th{background:#f8f9fa;color:#000;font-weight:700} /* جعل العناوين bold */
     td.invalid{background:#fde2e1!important}
     .highlight{background:#d4edda!important;transition:background-color 1s ease}
     .hidden-col{display:none!important}
@@ -49,19 +49,21 @@
 
     /* ========= تحسينات تثبيت الترويسة (Sticky) ========= */
     :root{ --table-header-bg:#f8f9fa; }
-    /* اجعل تمرير الصفحة رأسيًا فقط — لا تُنشئ حاوية تمرير عمودية حول الجدول */
-    .table-responsive{ overflow-y: visible !important; }
+
+    /* لا تجعل .table-responsive سلف تمرير؛ اترك التمرير للصفحة */
+    .table-responsive{ overflow: visible !important; }
+
     /* فعّل sticky على thead وعلى th لضمان التوافق عبر المتصفحات */
     #evaluationsTableWrapper thead{
       position: sticky;
       top: 0;
-      z-index: 100;                 /* أقل بقليل من th */
+      z-index: 100; /* أقل بقليل من th */
       background: var(--table-header-bg);
     }
     #evaluationsTableWrapper thead th{
       position: sticky;
       top: 0;
-      z-index: 101;                 /* فوق باقي خلايا الجدول */
+      z-index: 101; /* فوق باقي خلايا الجدول */
       background: var(--table-header-bg);
       color:#000;
       /* حدود ظل خفيفة أسفل الترويسة عند الالتصاق */
@@ -336,7 +338,7 @@
   <div class="toast-container">
     <div id="toastSuccess" class="toast align-items-center text-bg-success border-0 mb-2" role="alert">
       <div class="d-flex"><div class="toast-body">✅ العملية نجحت</div><button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button></div>
-      </div>
+    </div>
     <div id="toastError" class="toast align-items-center text-bg-danger border-0 mb-2" role="alert">
       <div class="d-flex"><div class="toast-body">❌ حدث خطأ</div><button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button></div>
     </div>
