@@ -49,16 +49,23 @@
 
     /* أدوات أعلى الجدول */
     .toolbar{gap:.5rem}
-/* تحرير مباشر داخل الجدول */
-.inline-edit{
-  font-size:.9rem;
-  padding:.25rem .5rem;
-  height:2rem;
-}
-.cell-saving{ opacity:.6; }
 
-    
-/* اجعل شارة معلومات المستخدم بارتفاع زر "خروج" */
+    /* تحرير مباشر داخل الجدول */
+    .inline-edit{
+      font-size:.9rem;
+      padding:.25rem .5rem;
+      height:2rem;
+    }
+    .cell-saving{ opacity:.6; }
+
+    /* ✅ جديد: تمييز الحقول المعدّلة قبل الحفظ */
+    .field-dirty{
+      outline: 2px solid rgba(255,193,7,.75);   /* أصفر */
+      background: #fff8e1;                      /* أصفر فاتح */
+      transition: outline .2s, background .2s;
+    }
+
+    /* اجعل شارة معلومات المستخدم بارتفاع زر "خروج" */
 .user-chip.badge{
   display: inline-flex;
   align-items: center;
@@ -72,7 +79,6 @@
 
 /* لتجنّب تصغيرها مرة أخرى إن وُجد تعريف سابق */
 .user-chip{ font-size: 1rem !important; }
-
 
     /* اجعل نص الشارة عريضًا، مع استثناء شارة الدور الداخلية */
 .user-chip.badge{
@@ -152,11 +158,12 @@
         </div>
         <div class="col-md-3">
           <label class="form-label">الدور</label>
+         <!-- ✅ مُعدّل: جعل الدور الافتراضي subuser-member -->
          <select class="form-select" name="role" required>
-  <option value="user">user</option>
-  <option value="admin">admin</option>
-  <option value="subuser-member">subuser-member</option>
-</select>
+           <option value="user">user</option>
+           <option value="admin">admin</option>
+           <option value="subuser-member" selected>subuser-member</option><!-- ✅ افتراضي -->
+         </select>
         </div>
         <div class="col-12">
           <button class="btn btn-primary" id="addBtn">
@@ -235,6 +242,10 @@
 </ul>
 
             </div>
+
+            <!-- ✅ جديد: زر إضافة سجل أعلى الجدول مباشرة -->
+            <button class="btn btn-sm btn-primary" id="btnAddRow"><i class="bi bi-plus-circle"></i> إضافة سجل</button>
+
             <button class="btn btn-sm btn-outline-danger" id="bulkDelete" disabled><i class="bi bi-trash3"></i> حذف المحدد</button>
           </div>
           <div class="text-muted"><span id="countSpan">—</span></div>
@@ -251,8 +262,8 @@
                 <th>البريد</th>
                 <th>الدور</th>
                 <th>الحالة</th>
-                <th>آخر إجراء</th>       <!-- ✅ جديد -->
-                <th>آخر دخول</th>        <!-- ✅ جديد -->
+                <th>آخر إجراء</th>
+                <th>آخر دخول</th>
                 <th>الإنشاء</th>
                 <th>إجراءات</th>
               </tr>
@@ -291,8 +302,12 @@
         <div class="modal-body">
           <div class="mb-2">سيتم تعيين كلمة مرور جديدة للمستخدم: <strong id="resetTargetName">—</strong></div>
           <label class="form-label">كلمة المرور الجديدة</label>
+          <!-- ✅ مُعدّل: إدخال + زر إظهار/إخفاء -->
           <div class="input-group">
-            <input type="text" id="newPwInput" class="form-control" autocomplete="off">
+            <input type="password" id="newPwInput" class="form-control" autocomplete="off">
+            <button type="button" class="btn btn-outline-secondary toggle-pwd" data-target="#newPwInput" title="إظهار/إخفاء">
+              <i class="bi bi-eye"></i>
+            </button>
           </div>
           <div class="form-text">انسخها وأبلغ المستخدم بها بأمان.</div>
         </div>
@@ -314,7 +329,13 @@
       </div>
       <div class="modal-body">
         <label class="form-label">كلمة المرور الجديدة</label>
-        <input type="text" id="bulkNewPw" class="form-control" placeholder="أدخل كلمة مرور موحدة للجميع (باستثناء admin)">
+        <!-- ✅ مُعدّل: إدخال + زر إظهار/إخفاء -->
+        <div class="input-group">
+          <input type="password" id="bulkNewPw" class="form-control" placeholder="أدخل كلمة مرور موحدة للجميع (باستثناء admin)">
+          <button type="button" class="btn btn-outline-secondary toggle-pwd" data-target="#bulkNewPw" title="إظهار/إخفاء">
+            <i class="bi bi-eye"></i>
+          </button>
+        </div>
         <div class="form-text">سيتم تطبيق هذه الكلمة على جميع المستخدمين ما عدا من دورهم <code>admin</code>.</div>
       </div>
       <div class="modal-footer">
@@ -487,9 +508,10 @@ function confirmToast({ message='هل تريد المتابعة؟', confirmText=
     };
 
 // ====== مسودة تغييرات محلية (بدون حفظ تلقائي) ======
-const drafts = new Map(); // key: userId, value: { name?, username?, email?, role?, isActive? }
+const drafts = new Map(); // key: userId, value: { name?, username?, email?, role?, isActive?, __isNew? }
+let newRowCounter = 0;    // ✅ جديد: عدّاد صفوف جديدة مؤقتة
 
-function markDirty(id, patch) {
+function markDirty(id, patch, fieldEl) {
   const current = drafts.get(id) || {};
   Object.assign(current, patch || {});
   drafts.set(id, current);
@@ -497,6 +519,9 @@ function markDirty(id, patch) {
   // وسم الصف بصريًا
   const row = document.querySelector(`#usersTbody tr[data-id="${CSS.escape(id)}"]`);
   if (row) row.classList.add('row-highlight');
+
+  // ✅ جديد: تمييز الحقل نفسه إن تم تمرير مرجع له
+  if (fieldEl) fieldEl.classList.add('field-dirty');
 
   // تفعيل أزرار الحفظ/الإلغاء
   document.getElementById('btnSaveChanges').disabled = drafts.size === 0;
@@ -509,6 +534,7 @@ function markDirty(id, patch) {
 function clearDrafts() {
   drafts.clear();
   document.querySelectorAll('#usersTbody tr.row-highlight').forEach(tr => tr.classList.remove('row-highlight'));
+  document.querySelectorAll('#usersTbody .field-dirty').forEach(el => el.classList.remove('field-dirty')); // ✅ جديد: إزالة التمييز
   document.getElementById('btnSaveChanges').disabled = true;
   document.getElementById('btnDiscardChanges').disabled = true;
   updateBulkBar(); // لتحديث النص
@@ -681,15 +707,38 @@ window.addEventListener('beforeunload', (e) => {
         const data = await r.json();
         state.items = data.data || data;
         state.total = data?.meta?.total ?? state.items.length;
+
+        // ✅ لا ندمج الصفوف المؤقتة هنا، سيتم دمجها بعد العرض إن وُجدت
         document.getElementById('pageNum').textContent = state.page;
         renderRows(state.items, (state.page-1)*state.limit);
+
+        // ✅ إبقاء أي صفوف جديدة مؤقتة (NEW-*) في أعلى الجدول بعد كل تحديث
+        const tempRows = Array.from(drafts.keys()).filter(id => String(id).startsWith('NEW-'));
+        if (tempRows.length){
+          // أضف صفوف مؤقتة في البداية
+          const currentRows = state.items.slice();
+          tempRows.reverse().forEach(id=>{
+            const d = drafts.get(id) || {};
+            currentRows.unshift({
+              _id: id,
+              name: d.name || '',
+              username: d.username || '',
+              email: d.email || '',
+              role: d.role || 'subuser-member',
+              isActive: d.isActive !== false,
+              createdAt: new Date().toISOString()
+            });
+          });
+          renderRows(currentRows, 0);
+        }
+
       }catch(e){
         tbody.innerHTML = `<tr class="text-center text-danger"><td colspan="11">حدث خطأ في جلب المستخدمين</td></tr>`;
         console.error('fetchUsers error:', e);
       }
     }
 
-    /* ====== تعديل فوري: الدور/الحالة ====== */
+    /* ====== تعديل فوري: الدور/الحالة (لم يعد فوريًا، يُدرج بالمسودات) ====== */
     async function updateUserPartial(id, patch){
       const row = tbody.querySelector(`tr[data-id="${id}"]`);
       row?.classList.add('saving');
@@ -788,14 +837,44 @@ async function saveAllDrafts(){
   // احفظ على التوالي لتفادي ضغط السيرفر
   for (const [id, patch] of drafts.entries()){
     try{
-      const r = await apiFetch('/api/users/'+id,{
-        method:'PUT',
-        headers:{'Content-Type':'application/json'},
-        body: JSON.stringify(patch)
-      });
-      const data = await r.json().catch(()=> ({}));
-      if(!r.ok) throw new Error(data?.message || 'فشل التعديل');
-      okCount++;
+      if (String(id).startsWith('NEW-')) {
+        // ✅ جديد: إنشاء مستخدم جديد بكلمة مرور افتراضية 12345678
+        const payload = {
+          name: String(patch.name||'').trim(),
+          username: String(patch.username||'').trim(),
+          email: String(patch.email||'').trim(),
+          role: ['admin','user','subuser-member'].includes(patch.role) ? patch.role : 'subuser-member',
+          password: '12345678' // ✅ كلمة المرور الافتراضية
+        };
+        // تحقق أساسي قبل الإرسال
+        if (!payload.name || !payload.username || !payload.email){
+          throw new Error('يجب تعبئة الاسم واسم المستخدم والبريد للصف الجديد');
+        }
+        const r = await apiFetch('/auth/committees/register', {
+          method:'POST',
+          headers:{'Content-Type':'application/json'},
+          body: JSON.stringify(payload)
+        });
+        const data = await r.json().catch(()=> ({}));
+        if(!r.ok) throw new Error(data?.message || 'فشل إنشاء المستخدم');
+        okCount++;
+      } else {
+        // تعديل مستخدم موجود
+        const r = await apiFetch('/api/users/'+id,{
+          method:'PUT',
+          headers:{'Content-Type':'application/json'},
+          body: JSON.stringify({
+            name: patch.name,
+            username: patch.username,
+            email: patch.email,
+            role: patch.role,
+            isActive: patch.isActive
+          })
+        });
+        const data = await r.json().catch(()=> ({}));
+        if(!r.ok) throw new Error(data?.message || 'فشل التعديل');
+        okCount++;
+      }
     }catch(err){
       failCount++;
       console.error('saveAllDrafts error for', id, err);
@@ -902,6 +981,10 @@ document.getElementById('btnDiscardChanges').addEventListener('click', discardAl
     function exportCSV(rows){
       const header = ['name','username','email','role','isActive','lastAction.action','lastAction.model','lastAction.createdAt','lastLogin','createdAt','updatedAt'];
       const toCSV = s => `"${String(s??'').replace(/"/g,'""')}"`;
+
+      // ✅ جديد: إضافة BOM لإظهار العربية بشكل صحيح في Excel
+      const BOM = '\uFEFF';
+
       const lines = [header.join(',')].concat(rows.map(r =>{
         const la = r.lastAction || {};
         return [
@@ -912,7 +995,9 @@ document.getElementById('btnDiscardChanges').addEventListener('click', discardAl
           r.updatedAt?new Date(r.updatedAt).toISOString():''
         ].map(toCSV).join(',');
       }));
-      const blob = new Blob([lines.join('\n')], {type:'text/csv;charset=utf-8;'});
+      const csv = BOM + lines.join('\n'); // ✅ إدراج BOM هنا
+
+      const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a'); a.href = url; a.download = 'users.csv'; a.click();
       URL.revokeObjectURL(url);
@@ -951,12 +1036,12 @@ document.getElementById('btnDiscardChanges').addEventListener('click', discardAl
         document.getElementById('chkAll').checked = (all.length>0 && all.every(x=>x.checked));
         updateBulkBar();
       } else if(t.classList.contains('inline-role')){
-  const id = t.dataset.id;
-  markDirty(id, { role: t.value });
-} else if(t.classList.contains('inline-active')){
-  const id = t.dataset.id;
-  markDirty(id, { isActive: t.checked });
-}
+        const id = t.dataset.id;
+        markDirty(id, { role: t.value }, t); // ✅ تمييز الحقل
+      } else if(t.classList.contains('inline-active')){
+        const id = t.dataset.id;
+        markDirty(id, { isActive: t.checked }, t); // ✅ تمييز الحقل
+      }
     });
 
     tbodyEl.addEventListener('click', (e)=>{
@@ -978,7 +1063,7 @@ function queueInline(inputEl){
   const field = inputEl.dataset.field;
   const value = inputEl.value.trim();
   if(!id || !field) return;
-  markDirty(id, { [field]: value });
+  markDirty(id, { [field]: value }, inputEl); // ✅ تمييز الحقل
 }
 
 tbodyEl.addEventListener('blur', (e)=>{
@@ -1066,7 +1151,67 @@ document.getElementById('applyBulkPwBtn').addEventListener('click', async ()=>{
   }
 });
 
-    
+/* =======================
+   ✅ جديد: زر "إضافة سجل" 
+   - يضيف صفًا مؤقتًا أعلى الجدول
+   - الدور الافتراضي subuser-member
+   - كلمة المرور ستكون 12345678 عند الحفظ
+======================= */
+document.getElementById('btnAddRow').addEventListener('click', ()=>{
+  const tempId = `NEW-${Date.now()}-${++newRowCounter}`;
+  // أضف مسودة أولية
+  drafts.set(tempId, {
+    __isNew: true,
+    name: '',
+    username: '',
+    email: '',
+    role: 'subuser-member',
+    isActive: true
+  });
+
+  // أنشئ عنصر صف في الواجهة أعلى الجدول
+  const current = state.items.slice();
+  current.unshift({
+    _id: tempId,
+    name: '',
+    username: '',
+    email: '',
+    role: 'subuser-member',
+    isActive: true,
+    createdAt: new Date().toISOString()
+  });
+  renderRows(current, 0);
+
+  // فعّل أزرار الحفظ/الإلغاء
+  document.getElementById('btnSaveChanges').disabled = drafts.size === 0 ? true : false;
+  document.getElementById('btnDiscardChanges').disabled = drafts.size === 0 ? true : false;
+
+  // تمييز الحقول الفارغة للانتباه
+  const row = tbody.querySelector(`tr[data-id="${CSS.escape(tempId)}"]`);
+  row?.querySelectorAll('input.inline-edit, select.inline-role').forEach(el => el.classList.add('field-dirty'));
+});
+
+
+/* =======================
+   ✅ جديد: تبديل إظهار/إخفاء كلمة المرور في المودالات
+======================= */
+document.addEventListener('click', (e) => {
+  const btn = e.target.closest('.toggle-pwd');
+  if (!btn) return;
+  const input = document.querySelector(btn.dataset.target);
+  if (!input) return;
+
+  const isPassword = input.type === 'password';
+  input.type = isPassword ? 'text' : 'password';
+
+  const icon = btn.querySelector('i');
+  if (icon) {
+    icon.classList.toggle('bi-eye', !isPassword);
+    icon.classList.toggle('bi-eye-slash', isPassword);
+  }
+});
+
+
   </script>
 </body>
 </html>
