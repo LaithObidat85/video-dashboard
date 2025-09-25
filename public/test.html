@@ -9,8 +9,24 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
   <style>
     body{background:#f8f9fa;font-family:'Segoe UI',sans-serif}
-    /* نزّل الهيدر مثل صفحة المدققين */
-    .container{margin-top:40px;max-width:98vw}
+
+    /* اجعل جميع الحاويات بعرض كامل دائمًا */
+    .container,
+    .container-sm,
+    .container-md,
+    .container-lg,
+    .container-xl,
+    .container-xxl,
+    .container-fluid{
+      max-width:100% !important;
+      width:100% !important;
+      padding-left:var(--bs-gutter-x,.75rem) !important;
+      padding-right:var(--bs-gutter-x,.75rem) !important;
+    }
+
+    /* نزّل الهيدر */
+    .page-wrap{margin-top:40px}
+
     .user-chip{display:inline-flex;align-items:center;gap:.25rem;font-size:1rem!important;padding:.375rem .75rem!important;line-height:1.5!important;border-radius:.375rem;font-weight:700!important}
     .user-chip.badge #userRole{font-weight:500!important}
 
@@ -21,7 +37,7 @@
     .highlight{background:#d4edda!important;transition:background-color 1s ease}
     .hidden-col{display:none!important}
 
-    .sticky-header{background:#f8f9fa;padding-top:10px}
+    .sticky-header{background:#f8f9fa;padding-top:10px;position:sticky;top:0;z-index:40}
     #evaluationsTableWrapper thead th{position:sticky;top:0;z-index:9;background:#f8f9fa;color:#000}
     #evaluationsTableWrapper th.date-col,#evaluationsTableWrapper td.date-col{direction:ltr;text-align:center;width:140px;max-width:140px}
 
@@ -33,46 +49,26 @@
     .toast-container{position:fixed;top:20px;left:50%;transform:translateX(-50%);z-index:2000}
     #completionRateContainer,#selectedVisitsContainer,#termBadge{text-align:center;font-weight:bold;margin:5px 0;font-size:16px;min-height:24px}
     #termBadge .badge{font-size:.95rem}
+    .muted{color:#6c757d}
 
-    .filters{margin-bottom:12px;width:99%;margin-left:auto;margin-right:auto}
-
+    /* Mini editor */
     .mini-toolbar{display:flex;gap:.25rem;margin-bottom:.5rem;flex-wrap:wrap}
     .mini-toolbar button{border:1px solid #ced4da;background:#f8f9fa;padding:.25rem .5rem;border-radius:.375rem}
     .mini-editor{border:1px solid #ced4da;border-radius:.5rem;padding:.5rem;min-height:180px;background:#fff}
-    .muted{color:#6c757d}
 
     /* شريط الإجراءات */
     .bulk-bar{display:flex;gap:.5rem;flex-wrap:wrap;align-items:center;justify-content:flex-start}
     .bulk-title{font-weight:700;margin-inline-end:.25rem}
-    .form-switch .form-check-input{cursor:pointer}
 
     /* تمييز الصف الجديد مؤقتًا */
     tr.is-new{background:#e9f7ff}
 
-/* اجعل جميع حاويات Bootstrap بعرض كامل دائمًا */
-.container,
-.container-sm,
-.container-md,
-.container-lg,
-.container-xl,
-.container-xxl{
-  max-width: 100% !important;
-  width: 100% !important;
-  padding-left: var(--bs-gutter-x, .75rem) !important;
-  padding-right: var(--bs-gutter-x, .75rem) !important;
-}
-
-/* للتأكيد: أي غلاف جدول أو كروت يمتد 100% */
-.table-responsive,
-.card,
-.card-body{
-  width: 100%;
-}
-    
+    /* الفلاتر – توزيع عبر العرض */
+    .filters .form-label{font-weight:600}
   </style>
 </head>
 <body>
-  <div class="container">
+  <div class="container-fluid page-wrap">
     <!-- Header -->
     <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-2">
       <h4 class="mb-0">إدارة تقييم اللجان</h4>
@@ -94,87 +90,95 @@
     </div>
 
     <div class="sticky-header">
-      <!-- فلاتر -->
-      <div class="filters row">
-        <div class="col-md-3 mb-2">
+      <!-- الفلاتر: ثلاث قوائم منسدلة موزّعة على عرض الصفحة -->
+      <div class="filters row g-3 mb-3">
+        <div class="col-12 col-sm-6 col-lg-4">
           <label class="form-label">الكلية</label>
           <select id="collegeFilter" class="form-select">
             <option value="">جميع الكليات</option>
           </select>
         </div>
-        <div class="col-md-3 mb-2">
+        <div class="col-12 col-sm-6 col-lg-4">
           <label class="form-label">اسم المدقق</label>
           <select id="auditorFilter" class="form-select">
             <option value="">جميع المدققين</option>
           </select>
         </div>
-        <div class="col-md-3 mb-2">
-          <label class="form-label">بحث باسم اللجنة</label>
-          <input type="text" id="committeeSearch" class="form-control" placeholder="اكتب للبحث...">
-        </div>
-        <div class="col-md-3 mb-2"><!-- خانة احتياط/موازنة --></div>
-      </div>
-
-      <!-- مجموعة الزيارات/الأعمدة/الفصل/العام (Admin فقط) -->
-      <div class="card mb-3 d-none" id="visitsCard">
-        <div class="card-body d-flex flex-wrap justify-content-center gap-3">
-          <div class="form-check"><input class="form-check-input visit-toggle" type="checkbox" id="visit1" value="الزيارة الأولى"><label class="form-check-label" for="visit1">الزيارة الأولى</label></div>
-          <div class="form-check"><input class="form-check-input visit-toggle" type="checkbox" id="visit2" value="الزيارة الثانية"><label class="form-check-label" for="visit2">الزيارة الثانية</label></div>
-          <div class="form-check"><input class="form-check-input visit-toggle" type="checkbox" id="visit3" value="الزيارة الثالثة"><label class="form-check-label" for="visit3">الزيارة الثالثة</label></div>
-          <div class="form-check"><input class="form-check-input visit-toggle" type="checkbox" id="visit4" value="الزيارة الرابعة"><label class="form-check-label" for="visit4">الزيارة الرابعة</label></div>
-          <div class="form-check"><input class="form-check-input visit-toggle" type="checkbox" id="visit5" value="الزيارة النهائية"><label class="form-check-label" for="visit5">الزيارة النهائية</label></div>
-
-          <!-- ✅ جديد: خيار عرض البيانات في صفحة النتائج -->
-          <div class="form-check">
-            <input class="form-check-input" type="checkbox" id="publishResults">
-            <label class="form-check-label" for="publishResults">عرض البيانات في صفحة «نتائج تقييم اللجان»</label>
-          </div>
-
-          <button class="btn btn-sm btn-success" id="saveSettingsBtn" title="حفظ الإعدادات">💾</button>
+        <div class="col-12 col-sm-6 col-lg-4">
+          <label class="form-label">اسم اللجنة</label>
+          <select id="committeeFilter" class="form-select">
+            <option value="">جميع اللجان</option>
+          </select>
         </div>
       </div>
 
-      <div class="card mb-3 d-none" id="termCard">
-        <div class="card-body row g-3 align-items-end">
-          <div class="col-md-4">
-            <label class="form-label">الفصل</label>
-            <select id="termSelect" class="form-select">
-              <option value="">— اختر الفصل —</option>
-              <option value="الفصل الأول">الفصل الأول</option>
-              <option value="الفصل الثاني">الفصل الثاني</option>
-              <option value="الفصل الصيفي">الفصل الصيفي</option>
-            </select>
-          </div>
-          <div class="col-md-4">
-            <label class="form-label">العام الجامعي</label>
-            <input type="text" id="academicYearInput" class="form-control" placeholder="مثال: 2024-2025 أو 2024/2025">
-          </div>
-          <div class="col-md-4">
-            <button class="btn btn-primary w-100" id="saveTermBtn">حفظ الفصل/العام</button>
+      <!-- بطاقة إعدادات موحّدة -->
+      <div class="card mb-3 d-none" id="settingsCard">
+        <div class="card-header fw-bold">
+          ⚙️ إعدادات
+        </div>
+        <div class="card-body">
+          <div class="row g-3 align-items-end">
+            <!-- مجموعة الزيارات -->
+            <div class="col-12">
+              <div class="d-flex flex-wrap gap-3 align-items-center">
+                <div class="form-check"><input class="form-check-input visit-toggle" type="checkbox" id="visit1" value="الزيارة الأولى"><label class="form-check-label" for="visit1">الزيارة الأولى</label></div>
+                <div class="form-check"><input class="form-check-input visit-toggle" type="checkbox" id="visit2" value="الزيارة الثانية"><label class="form-check-label" for="visit2">الزيارة الثانية</label></div>
+                <div class="form-check"><input class="form-check-input visit-toggle" type="checkbox" id="visit3" value="الزيارة الثالثة"><label class="form-check-label" for="visit3">الزيارة الثالثة</label></div>
+                <div class="form-check"><input class="form-check-input visit-toggle" type="checkbox" id="visit4" value="الزيارة الرابعة"><label class="form-check-label" for="visit4">الزيارة الرابعة</label></div>
+                <div class="form-check"><input class="form-check-input visit-toggle" type="checkbox" id="visit5" value="الزيارة النهائية"><label class="form-check-label" for="visit5">الزيارة النهائية</label></div>
+
+                <!-- نشر النتائج في صفحة "نتائج تقييم اللجان" -->
+                <div class="form-check ms-lg-3">
+                  <input class="form-check-input" type="checkbox" id="publishResults">
+                  <label class="form-check-label" for="publishResults">عرض البيانات في صفحة «نتائج تقييم اللجان»</label>
+                </div>
+              </div>
+            </div>
+
+            <!-- الفصل والعام -->
+            <div class="col-12 col-md-4">
+              <label class="form-label">الفصل الدراسي</label>
+              <select id="termSelect" class="form-select">
+                <option value="">— اختر الفصل —</option>
+                <option value="الفصل الأول">الفصل الأول</option>
+                <option value="الفصل الثاني">الفصل الثاني</option>
+                <option value="الفصل الصيفي">الفصل الصيفي</option>
+              </select>
+            </div>
+            <div class="col-12 col-md-4">
+              <label class="form-label">العام الجامعي</label>
+              <input type="text" id="academicYearInput" class="form-control" placeholder="مثال: 2024-2025 أو 2024/2025">
+            </div>
+
+            <!-- خيارات الأعمدة -->
+            <div class="col-12">
+              <div class="fw-semibold mb-2">إظهار/إخفاء الأعمدة</div>
+              <div class="d-flex flex-wrap justify-content-start gap-3 align-items-center" id="columnToggles">
+                <div class="form-check"><input class="form-check-input col-toggle" type="checkbox" data-field="formation_decision" checked><label class="form-check-label">قرار التشكيل</label></div>
+                <div class="form-check"><input class="form-check-input col-toggle" type="checkbox" data-field="work_plan" checked><label class="form-check-label">خطة العمل</label></div>
+                <div class="form-check"><input class="form-check-input col-toggle" type="checkbox" data-field="performance_indicators" checked><label class="form-check-label">مؤشرات الأداء</label></div>
+                <div class="form-check"><input class="form-check-input col-toggle" type="checkbox" data-field="meetings" checked><label class="form-check-label">عدد الاجتماعات</label></div>
+                <div class="form-check"><input class="form-check-input col-toggle" type="checkbox" data-field="consistency" checked><label class="form-check-label">التوافق بين الدعوات والاجتماعات</label></div>
+                <div class="form-check"><input class="form-check-input col-toggle" type="checkbox" data-field="coverage_books" checked><label class="form-check-label">كتب التغطية</label></div>
+                <div class="form-check"><input class="form-check-input col-toggle" type="checkbox" data-field="report1" checked><label class="form-check-label">تقرير إنجاز 1</label></div>
+                <div class="form-check"><input class="form-check-input col-toggle" type="checkbox" data-field="report2" checked><label class="form-check-label">تقرير إنجاز 2</label></div>
+                <div class="form-check"><input class="form-check-input col-toggle" type="checkbox" data-field="report3" checked><label class="form-check-label">تقرير إنجاز 3</label></div>
+                <div class="form-check"><input class="form-check-input col-toggle" type="checkbox" data-field="statistical_analysis" checked><label class="form-check-label">التحليل الإحصائي</label></div>
+              </div>
+            </div>
+
+            <!-- زر حفظ واحد -->
+            <div class="col-12">
+              <button class="btn btn-primary" id="saveAllSettingsBtn">💾 حفظ الإعدادات</button>
+            </div>
           </div>
         </div>
       </div>
 
-      <div class="card mb-2 d-none" id="columnsCard">
-        <div class="card-body d-flex flex-wrap justify-content-center gap-3 align-items-center" id="columnToggles">
-          <div class="form-check"><input class="form-check-input col-toggle" type="checkbox" data-field="formation_decision" checked><label class="form-check-label">قرار التشكيل</label></div>
-          <div class="form-check"><input class="form-check-input col-toggle" type="checkbox" data-field="work_plan" checked><label class="form-check-label">خطة العمل</label></div>
-          <div class="form-check"><input class="form-check-input col-toggle" type="checkbox" data-field="performance_indicators" checked><label class="form-check-label">مؤشرات الأداء</label></div>
-          <div class="form-check"><input class="form-check-input col-toggle" type="checkbox" data-field="meetings" checked><label class="form-check-label">عدد الاجتماعات</label></div>
-          <div class="form-check"><input class="form-check-input col-toggle" type="checkbox" data-field="consistency" checked><label class="form-check-label">التوافق بين الدعوات والاجتماعات</label></div>
-          <div class="form-check"><input class="form-check-input col-toggle" type="checkbox" data-field="coverage_books" checked><label class="form-check-label">كتب التغطية</label></div>
-          <div class="form-check"><input class="form-check-input col-toggle" type="checkbox" data-field="report1" checked><label class="form-check-label">تقرير إنجاز 1</label></div>
-          <div class="form-check"><input class="form-check-input col-toggle" type="checkbox" data-field="report2" checked><label class="form-check-label">تقرير إنجاز 2</label></div>
-          <div class="form-check"><input class="form-check-input col-toggle" type="checkbox" data-field="report3" checked><label class="form-check-label">تقرير إنجاز 3</label></div>
-          <div class="form-check"><input class="form-check-input col-toggle" type="checkbox" data-field="statistical_analysis" checked><label class="form-check-label">التحليل الإحصائي</label></div>
-        </div>
-      </div>
-
-      <!-- شارة الفصل/العام -->
+      <!-- شارة الفصل/العام + الزيارات المختارة + نسبة الاكتمال -->
       <div id="termBadge"></div>
-      <!-- نص الزيارات يظهر هنا -->
       <div id="selectedVisitsContainer"></div>
-      <!-- نسبة الاكتمال -->
       <div id="completionRateContainer"></div>
 
       <!-- شريط الإجراءات -->
@@ -189,38 +193,40 @@
     </div>
 
     <!-- جدول -->
-    <table class="table table-bordered table-striped table-responsive" id="evaluationsTableWrapper">
-      <thead>
-        <tr>
-          <th>#</th>
-          <th class="w-wide">الكلية</th>
-          <th class="w-wide">اسم اللجنة</th>
-          <th class="w-wide">اسم المدقق</th>
-          <th class="date-col">تاريخ التدقيق</th>
+    <div class="table-responsive">
+      <table class="table table-bordered table-striped" id="evaluationsTableWrapper">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th class="w-wide">الكلية</th>
+            <th class="w-wide">اسم اللجنة</th>
+            <th class="w-wide">اسم المدقق</th>
+            <th class="date-col">تاريخ التدقيق</th>
 
-          <th class="col-formation_decision w-narrow">قرار التشكيل</th>
-          <th class="col-work_plan w-narrow">خطة العمل</th>
-          <th class="col-performance_indicators w-narrow">مؤشرات الأداء</th>
-          <th class="col-meetings w-narrow">عدد الاجتماعات</th>
-          <th class="col-consistency w-narrow">التوافق بين الدعوات والاجتماعات</th>
-          <th class="col-coverage_books w-narrow">كتب التغطية</th>
-          <th class="col-report1 w-narrow">تقرير إنجاز 1</th>
-          <th class="col-report2 w-narrow">تقرير إنجاز 2</th>
-          <th class="col-report3 w-narrow">تقرير إنجاز 3</th>
-          <th class="col-statistical_analysis w-narrow">التحليل الإحصائي</th>
+            <th class="col-formation_decision w-narrow">قرار التشكيل</th>
+            <th class="col-work_plan w-narrow">خطة العمل</th>
+            <th class="col-performance_indicators w-narrow">مؤشرات الأداء</th>
+            <th class="col-meetings w-narrow">عدد الاجتماعات</th>
+            <th class="col-consistency w-narrow">التوافق بين الدعوات والاجتماعات</th>
+            <th class="col-coverage_books w-narrow">كتب التغطية</th>
+            <th class="col-report1 w-narrow">تقرير إنجاز 1</th>
+            <th class="col-report2 w-narrow">تقرير إنجاز 2</th>
+            <th class="col-report3 w-narrow">تقرير إنجاز 3</th>
+            <th class="col-statistical_analysis w-narrow">التحليل الإحصائي</th>
 
-          <th id="availabilityHeader" class="w-narrow">درجة التوفر من (9)</th>
-          <th class="w-wide">الملاحظات</th>
-          <th class="w-narrow">إجراءات</th>
-        </tr>
-      </thead>
-      <tbody id="committeesTable">
-        <tr><td colspan="18" class="text-center">جاري التحميل...</td></tr>
-      </tbody>
-    </table>
+            <th id="availabilityHeader" class="w-narrow">درجة التوفر من (9)</th>
+            <th class="w-wide">الملاحظات</th>
+            <th class="w-narrow">إجراءات</th>
+          </tr>
+        </thead>
+        <tbody id="committeesTable">
+          <tr><td colspan="18" class="text-center">جاري التحميل...</td></tr>
+        </tbody>
+      </table>
+    </div>
   </div>
 
-  <!-- datalist/مصادر -->
+  <!-- datalist/مصادر (غير مستعملة بصريًا الآن لكن نبقيها إن احتجت لاحقًا) -->
   <datalist id="dl_colleges"></datalist>
   <datalist id="dl_committees"></datalist>
   <datalist id="dl_auditors"></datalist>
@@ -337,9 +343,8 @@
         }
         CURRENT_USER=j.user;renderUser(j.user);
         const isAdmin=(j.user?.role||'').toLowerCase()==='admin';
-        document.getElementById('visitsCard').classList.toggle('d-none',!isAdmin);
-        document.getElementById('columnsCard').classList.toggle('d-none',!isAdmin);
-        document.getElementById('termCard').classList.toggle('d-none',!isAdmin);
+        // بطاقة الإعدادات تظهر فقط للأدمن
+        document.getElementById('settingsCard').classList.toggle('d-none',!isAdmin);
       }catch{throw 0;}
     }
     document.getElementById('homeBtn').href=go('/committees-home.html');
@@ -387,9 +392,13 @@
 
         const collegeFilter=document.getElementById('collegeFilter');
         const auditorFilter=document.getElementById('auditorFilter');
-        (LIST_COLLEGES||[]).forEach(c=>{const n=normalizeName(c);if(!n)return;const opt=document.createElement('option');opt.value=n;opt.textContent=n;collegeFilter.appendChild(opt);});
-        (LIST_AUDITORS||[]).forEach(a=>{const n=normalizeName(a);if(!n)return;const opt=document.createElement('option');opt.value=n;opt.textContent=n;auditorFilter.appendChild(opt);});
+        const committeeFilter=document.getElementById('committeeFilter');
 
+        fillSelect(collegeFilter,LIST_COLLEGES,'جميع الكليات');
+        fillSelect(auditorFilter,LIST_AUDITORS,'جميع المدققين');
+        fillSelect(committeeFilter,LIST_COMMITTEES,'جميع اللجان');
+
+        // تعبئة مودال التحرير
         fillSelect(document.getElementById('er_college'),LIST_COLLEGES,'— الكلية —');
         fillSelect(document.getElementById('er_committee'),LIST_COMMITTEES,'— اسم اللجنة —');
         fillSelect(document.getElementById('er_auditor'),LIST_AUDITORS,'— اسم المدقق —');
@@ -456,7 +465,7 @@
       document.getElementById("completionRateContainer").innerHTML=`📌 نسبة الاكتمال لـ <b>${lastCollege}</b> = ${pct}% — <span class="muted">عدد اللجان: ${numCommittees}</span>`;
     }
 
-    /* ====== إظهار/إخفاء الأعمدة ====== */
+    /* ====== إظهار/إخفاء الأعمدة (فوري) ====== */
     function applyColumnVisibilityInstant(){
       document.querySelectorAll('.col-toggle').forEach(cb=>{
         const field=cb.dataset.field; const show=cb.checked;
@@ -467,8 +476,9 @@
       recalcAllAvailability();
       updateCompletionRate();
     }
-    document.getElementById('columnsCard')?.addEventListener('change',(e)=>{
+    document.getElementById('settingsCard')?.addEventListener('change',(e)=>{
       if(e.target.classList.contains('col-toggle')) applyColumnVisibilityInstant();
+      if(e.target.classList.contains('visit-toggle')) updateSelectedVisits();
     });
 
     /* ====== تحميل الإعدادات + شارة الفصل/العام ====== */
@@ -481,23 +491,31 @@
           document.querySelectorAll('.visit-toggle').forEach(cb=>{cb.checked=settings.selectedVisits.includes(cb.value)});
         }
 
-        // ✅ نشر النتائج
+        // نشر النتائج
         document.getElementById('publishResults').checked = !!settings?.publishResults;
 
-        // حالة الأعمدة
+        // حالة الأعمدة (visibleColumns)
         if(Array.isArray(settings?.visibleColumns) && settings.visibleColumns.length){
           document.querySelectorAll('.col-toggle').forEach(cb=>{cb.checked=settings.visibleColumns.includes(cb.dataset.field)});
+        }else{
+          // إن لم تكن محفوظة من قبل، اترك الافتراضيات (كلها مفعّلة)
+          document.querySelectorAll('.col-toggle').forEach(cb=>cb.checked=true);
         }
         applyColumnVisibilityInstant();
 
         // الشارة
         const term=settings?.term||''; const ay=settings?.academicYear||'';
-        let html=''; if(term||ay){html=`<span class="badge text-bg-info">📚 الفصل الحالي: <b>${term||'—'}</b> — العام: <b>${ay||'—'}</b></span>`;}
-        document.getElementById('termBadge').innerHTML=html;
+        if(term||ay){
+          document.getElementById('termBadge').innerHTML=`<span class="badge text-bg-info">📚 الفصل الحالي: <b>${term||'—'}</b> — العام: <b>${ay||'—'}</b></span>`;
+        }else{
+          document.getElementById('termBadge').innerHTML='';
+        }
 
-        // ✅ نص الزيارات أعلى نسبة الاكتمال
+        // عبّئ حقول الفصل/العام في البطاقة
+        document.getElementById('termSelect').value = term || '';
+        document.getElementById('academicYearInput').value = ay || '';
+
         updateSelectedVisits();
-
       }catch(e){ /* تجاهل */ }
     }
 
@@ -506,40 +524,35 @@
       document.getElementById('selectedVisitsContainer').innerHTML=selected.length?("الزيارات: "+selected.join(' | ')):'';
     }
 
-    // حفظ الإعدادات (الأعمدة/الزيارات/النشر)
-    document.getElementById('saveSettingsBtn')?.addEventListener('click',async()=>{
+    // زر حفظ الإعدادات الموحّد
+    document.getElementById('saveAllSettingsBtn')?.addEventListener('click',async()=>{
       try{
         const visibleColumns=Array.from(document.querySelectorAll('.col-toggle:checked')).map(cb=>cb.getAttribute('data-field'));
         const selectedVisits=Array.from(document.querySelectorAll('.visit-toggle:checked')).map(cb=>cb.value);
         const publishResults = document.getElementById('publishResults').checked;
-        await axios.put(`${API_BASE}/api/settings`,{visibleColumns,selectedVisits,publishResults},{withCredentials:true});
-        showSuccess("✅ تم حفظ الإعدادات بنجاح");
-        updateSelectedVisits();
-        applyColumnVisibilityInstant();
-      }catch(err){console.error(err);showError("❌ خطأ في حفظ الإعدادات")}
-    });
-
-    // ✅ زر حفظ الفصل/العام
-    document.getElementById('saveTermBtn')?.addEventListener('click', async ()=>{
-      try{
         const term = document.getElementById('termSelect').value.trim();
         const academicYear = document.getElementById('academicYearInput').value.trim();
-        const rx = /^(20\d{2})[\/-](20\d{2})$/;
+
+        const rx=/^(20\d{2})[\/-](20\d{2})$/;
         if(academicYear && !rx.test(academicYear)){
           showError('⚠️ صيغة العام الجامعي يجب أن تكون 2024-2025 أو 2024/2025');
           return;
         }
-        const payload = { term, academicYear };
-        const r = await axios.put(`${API_BASE}/api/settings`, payload, { withCredentials:true });
-        const s = r.data || {};
-        const t = s.term || term || '—';
-        const ay = s.academicYear || academicYear || '—';
-        document.getElementById('termBadge').innerHTML = `<span class="badge text-bg-info">📚 الفصل الحالي: <b>${t}</b> — العام: <b>${ay}</b></span>`;
-        showSuccess('✅ تم حفظ الفصل/العام');
-      }catch(e){
-        console.error(e);
-        showError('❌ خطأ في حفظ الفصل/العام');
-      }
+
+        const payload={visibleColumns,selectedVisits,publishResults,term,academicYear};
+        await axios.put(`${API_BASE}/api/settings`,payload,{withCredentials:true});
+
+        // طبّق فورًا على الواجهة
+        applyColumnVisibilityInstant();
+        updateSelectedVisits();
+        if(term||academicYear){
+          document.getElementById('termBadge').innerHTML=`<span class="badge text-bg-info">📚 الفصل الحالي: <b>${term||'—'}</b> — العام: <b>${academicYear||'—'}</b></span>`;
+        }else{
+          document.getElementById('termBadge').innerHTML='';
+        }
+
+        showSuccess("✅ تم حفظ الإعدادات بنجاح");
+      }catch(err){console.error(err);showError("❌ خطأ في حفظ الإعدادات")}
     });
 
     /* ====== إنشاء صف ====== */
@@ -560,7 +573,7 @@
         <td class="w-wide" data-field="auditor_name"></td>
 
         <td class="date-col" data-field="audit_date">
-          <input type="date" class="form-control form-control-sm" value="${c.audit_date ? c.audit_date.split('T')[0] : ''}">
+          <input type="date" class="form-control form-control-sm" value="${c.audit_date ? String(c.audit_date).slice(0,10) : ''}">
         </td>
 
         <td class="w-narrow col-formation_decision" data-field="formation_decision"><input type="text" class="form-control form-control-sm" value="${c.formation_decision ?? 0}"></td>
@@ -628,7 +641,7 @@
         });
       });
       tr.querySelectorAll('select,input[type="date"]').forEach(el=>{
-        el.addEventListener('change',()=>{ markRowChanged(tr); if(el.type!=='date'){} });
+        el.addEventListener('change',()=>{ markRowChanged(tr); });
       });
     }
     function markRowChanged(tr){tr.dataset.dirty="1";tr.classList.add('table-warning')}
@@ -678,12 +691,18 @@
           return;
         }
 
-        arr.sort((a,b)=>(a.college||'').localeCompare(b.college||'','ar') || (a.committee_name||'').localeCompare(b.committee_name||'','ar'));
+        // فلترة باسم اللجنة (إن تم اختيارها من الفلتر الثالث)
+        const committeeSel=document.getElementById('committeeFilter').value;
+        let data=arr;
+        if(committeeSel){
+          data=arr.filter(x=>(x?.committee_name||'')===committeeSel);
+        }
 
-        arr.forEach((c,idx)=>{ const tr=buildRow(c,idx); document.getElementById('committeesTable').appendChild(tr); });
+        data.sort((a,b)=>(a.college||'').localeCompare(b.college||'','ar') || (a.committee_name||'').localeCompare(b.committee_name||'','ar'));
+
+        data.forEach((c,idx)=>{ const tr=buildRow(c,idx); document.getElementById('committeesTable').appendChild(tr); });
 
         applyColumnVisibilityInstant();
-        applyCommitteeSearch();
         updateCompletionRate();
         renumberRows();
       }catch(err){
@@ -711,21 +730,14 @@
           }
         }
         showSuccess('✅ تم حفظ جميع التعديلات');
-        await loadCommittees(); // لإعادة الفرز ووضع السجلات الجديدة في أماكنها
+        await loadCommittees();
       }catch(e){console.error(e);showError('❌ خطأ أثناء حفظ الكل');}
     });
 
-    /* ====== بحث باسم اللجنة ====== */
-    function applyCommitteeSearch(){
-      const searchTerm=document.getElementById("committeeSearch").value.trim().toLowerCase();
-      document.querySelectorAll("#committeesTable tr").forEach(row=>{
-        const committee=row.querySelector('[data-field="committee_name"] select')?.value||'';
-        row.style.display=committee.toLowerCase().includes(searchTerm)?'':'none';
-      });
-    }
-    document.getElementById('committeeSearch').addEventListener('input',()=>{applyCommitteeSearch();updateCompletionRate();});
+    // الفلاتر — إعادة تحميل عند التغيير
     document.getElementById('collegeFilter').addEventListener('change',loadCommittees);
     document.getElementById('auditorFilter').addEventListener('change',loadCommittees);
+    document.getElementById('committeeFilter').addEventListener('change',loadCommittees);
     document.getElementById('reloadBtn').addEventListener('click',loadCommittees);
 
     /* ====== مودال موحّد: فتح/حفظ ====== */
@@ -766,12 +778,11 @@
             await axios.put(`${API_BASE}/api/committees/${id}`,payload,{withCredentials:true});
           }
           showSuccess("✅ تم حفظ التعديلات");
-          await loadCommittees(); // لإعادة الفرز فورًا
+          await loadCommittees();
         }catch(err){console.error(err);showError("❌ خطأ أثناء الحفظ");}
         return;
       }
       if(btnDelete){
-        // إذا كان صف جديد وغير محفوظ بعد، نحذفه محليًا فقط
         if(tr.dataset.new==="1" && !tr.dataset.id){
           tr.remove(); renumberRows(); updateCompletionRate();
           return;
