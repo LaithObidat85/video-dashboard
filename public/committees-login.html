@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <title>تسجيل الدخول - نظام اللجان</title>
-  <link rel="icon" type="image/png" href="https://www.dropbox.com/scl/fi/f283e4rvv5cf9x12a1cic/my-website-logo.png?rlkey=yia776im7klypy27af32m0scy&e=1&st=vhaprvzh&dl=1"
+  <link rel="icon" type="image/png" href="https://www.dropbox.com/scl/fi/f283e4rvv5cf9x12a1cic/my-website-logo.png?rlkey=yia776im7klypy27af32m0scy&e=1&st=vhaprvzh&dl=1">
   <meta name="viewport" content="width=device-width, initial-scale=1">
 
   <!-- Bootstrap (RTL) + Icons -->
@@ -48,19 +48,21 @@
     <div class="login-body">
       <form id="loginForm" novalidate>
         <div class="mb-3">
-          <label class="form-label" for="username">اسم المستخدم</label>
+          <!-- ✅ تعديل النص ليُفهم أنه يمكن استخدام أيهما -->
+          <label class="form-label" for="username">اسم المستخدم أو البريد الإلكتروني</label>
           <input
             type="text"
             id="username"
             class="form-control"
-            placeholder="مثال: b01578"
-            autocomplete="username"
+            placeholder="مثال: b01578 أو name@iu.edu.jo"
+            autocomplete="username email"
             autocapitalize="none"
             spellcheck="false"
-            inputmode="text"
+            inputmode="email"
             required
           >
-          <div class="invalid-feedback">يرجى إدخال اسم المستخدم.</div>
+          <div class="form-text">سجّل دخولك باستخدام اسم المستخدم أو بريدك الإلكتروني.</div>
+          <div class="invalid-feedback">يرجى إدخال اسم المستخدم أو البريد الإلكتروني.</div>
         </div>
 
         <div class="mb-2">
@@ -114,8 +116,9 @@
         <button type="button" class="btn-close btn-close-white m-2 me-3" data-bs-dismiss="toast" aria-label="Close"></button>
       </div>
     </div>
-    <div id="toastInfo" class="toast text-bg-primary border-0" role="status" aria-live="polite" aria-atomic="true" data-bs-delay="2500" data-bs-autohide="true">
+    <div id="toastInfo" class="toast text-bg-primary border-0" role="status" aria-live="polite" data-bs-delay="3500" data-bs-autohide="true">
       <div class="d-flex">
+        <!-- ✅ سنغيّر الرسالة برمجيًا عند التحميل -->
         <div class="toast-body">ℹ️</div>
         <button type="button" class="btn-close btn-close-white m-2 me-3" data-bs-dismiss="toast" aria-label="Close"></button>
       </div>
@@ -142,17 +145,20 @@
     function showError(msg){ setToast(TError, msg); TError.show(); }
     function showInfo(msg){ setToast(TInfo, msg); TInfo.show(); }
 
+    /* ✅ رسالة توضيحية عند فتح الصفحة */
+    document.addEventListener('DOMContentLoaded', () => {
+      showInfo('ℹ️ سجّل دخولك باستخدام اسم المستخدم أو بريد إلكتروني.');
+    });
+
     /* === Password toggle (ثابتة وتعمل مع الأيقونة) === */
     const pwInput = document.getElementById('password');
     const togglePwBtn = document.getElementById('togglePwBtn');
     togglePwBtn.addEventListener('click', () => {
       const isPw = pwInput.type === 'password';
       pwInput.type = isPw ? 'text' : 'password';
-      // تبديل الأيقونة ونص الوصولية
       const icon = togglePwBtn.querySelector('i');
       icon.className = isPw ? 'bi bi-eye-slash' : 'bi bi-eye';
       togglePwBtn.setAttribute('aria-label', isPw ? 'إخفاء كلمة المرور' : 'إظهار كلمة المرور');
-      // إبقاء التركيز داخل الحقل لتجربة أفضل
       pwInput.focus({ preventScroll: true });
     });
 
@@ -197,7 +203,12 @@
       } catch { /* تجاهل */ }
     })();
 
-    /* === إرسال النموذج (بدون مستمع Enter إضافي لمنع الإرسال المزدوج) === */
+    /* ✅ دالة مساعدة: تحديد ما إذا كانت القيمة بريدًا إلكترونيًا */
+    function looksLikeEmail(v){
+      return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(v).trim());
+    }
+
+    /* === إرسال النموذج === */
     document.getElementById('loginForm').addEventListener('submit', async (e) => {
       e.preventDefault();
 
@@ -215,26 +226,29 @@
 
       try {
         setSubmitting(true);
+
+        /* ✅ إرسال username أو email بناءً على المُدخل */
+        const payload = looksLikeEmail(u.value)
+          ? { email: u.value.trim(), password: p.value }
+          : { username: u.value.trim(), password: p.value };
+
         const res = await fetchWithTimeout(`${API_BASE}/auth/committees/login`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           credentials: 'include',
           timeout: 10000,
-          body: JSON.stringify({ username: u.value.trim(), password: p.value })
+          body: JSON.stringify(payload)
         });
 
         let data = {};
         try { data = await res.json(); } catch { /* تجاهل */ }
 
         if (!res.ok) {
-          // تخصيص الرسائل حسب الحالة
           if (res.status === 400) {
             markInvalid(u, !u.value.trim());
             markInvalid(p, !p.value.trim());
             showError(data?.message || '❌ اسم المستخدم/البريد وكلمة المرور مطلوبة');
           } else if (res.status === 401) {
-            // الخادم لا يُفصح إن كان الحساب معطَّل أو البيانات خاطئة،
-            // لكن إن أرسل رسالة واضحة نُظهرها كما هي.
             const msg = (data?.message || '').toLowerCase();
             if (msg.includes('معطل') || msg.includes('غير نشط') || msg.includes('inactive')) {
               showError('🚫 حسابك معطّل. الرجاء التواصل مع المشرف لتفعيله.');
