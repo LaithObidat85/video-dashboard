@@ -34,18 +34,25 @@
   <div class="container">
     <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-2">
       <h3 class="mb-0">لوحة نظام اللجان</h3>
-      <div class="d-flex align-items-center gap-2">
-        <span id="userInfo" class="user-chip badge bg-light text-dark border">
-          <i class="bi bi-person"></i>
-          <span id="userUsername">—</span>
-          <span class="mx-1">—</span>
-          <span id="userFullName">—</span>
-          <span class="ms-2 badge bg-secondary" id="userRole">—</span>
-        </span>
-        <button id="logoutBtn" class="btn btn-danger">
-          <i class="bi bi-box-arrow-right"></i> خروج
-        </button>
-      </div>
+      <!-- داخل الهيدر أعلى الصفحة -->
+<div class="d-flex align-items-center gap-2">
+  <span id="userInfo" class="user-chip badge bg-light text-dark border">
+    <i class="bi bi-person"></i>
+    <span id="userUsername">—</span>
+    <span class="mx-1">—</span>
+    <span id="userFullName">—</span>
+    <span class="ms-2 badge bg-secondary" id="userRole">—</span>
+  </span>
+
+  <!-- زر تغيير كلمة المرور (جديد) -->
+  <button class="btn btn-warning" data-bs-toggle="modal" data-bs-target="#changePwdModal">
+    <i class="bi bi-key"></i> تغيير كلمة المرور
+  </button>
+
+  <button id="logoutBtn" class="btn btn-danger">
+    <i class="bi bi-box-arrow-right"></i> خروج
+  </button>
+</div>
     </div>
 
     <!-- لودر يظهر إلى أن نتأكد من الدور -->
@@ -186,6 +193,35 @@
     </div>
   </div>
 
+  <!-- Modal: تغيير كلمة المرور (جديد) -->
+<div class="modal fade" id="changePwdModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <form id="changePwdForm" class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="bi bi-key"></i> تغيير كلمة المرور</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="إغلاق"></button>
+      </div>
+      <div class="modal-body">
+        <div class="mb-3">
+          <label class="form-label">كلمة المرور الحالية</label>
+          <input type="password" class="form-control" name="currentPassword" required minlength="6" autocomplete="current-password">
+        </div>
+        <div class="mb-3">
+          <label class="form-label">كلمة المرور الجديدة (6 أحرف فأكثر)</label>
+          <input type="password" class="form-control" name="newPassword" required minlength="6" autocomplete="new-password">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-light" data-bs-dismiss="modal">إلغاء</button>
+        <button type="submit" class="btn btn-primary">
+          <i class="bi bi-check2-circle"></i> حفظ التغيير
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
   <script>
     const toastSuccess = new bootstrap.Toast(document.getElementById('toastSuccess'));
@@ -295,6 +331,45 @@
 
     document.getElementById('logoutBtn').addEventListener('click', logout);
     ensureAuth();
+
+    // معالجة تغيير كلمة المرور (جديد)
+document.getElementById('changePwdForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const fd = new FormData(e.target);
+  const currentPassword = fd.get('currentPassword');
+  const newPassword     = fd.get('newPassword');
+
+  try {
+    const res = await fetch('/auth/committees/change-password', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ currentPassword, newPassword })
+    });
+
+    if (!res.ok) {
+      const j = await res.json().catch(() => ({}));
+      setToast(toastError, j?.message || '❌ تعذّر تغيير كلمة المرور');
+      toastError.show();
+      return;
+    }
+
+    // نجاح: الخادم يقوم بإتلاف الجلسة؛ نغلق المودال ونحوّل لصفحة تسجيل الدخول
+    bootstrap.Modal.getInstance(document.getElementById('changePwdModal'))?.hide();
+    setToast(toastSuccess, '✅ تم تغيير كلمة المرور، سيتم تسجيل الخروج…');
+    toastSuccess.show();
+    setTimeout(() => {
+      window.location.href = '/committees-login.html';
+    }, 800);
+  } catch {
+    setToast(toastError, '❌ خطأ في الاتصال بالخادم'); 
+    toastError.show();
+  }
+});
+
+document.getElementById('logoutBtn').addEventListener('click', logout);
+ensureAuth();
+
   </script>
 </body>
 </html>
