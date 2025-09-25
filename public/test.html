@@ -48,6 +48,27 @@
 
     /* تمييز الصف الجديد مؤقتًا */
     tr.is-new{background:#e9f7ff}
+
+/* اجعل جميع حاويات Bootstrap بعرض كامل دائمًا */
+.container,
+.container-sm,
+.container-md,
+.container-lg,
+.container-xl,
+.container-xxl{
+  max-width: 100% !important;
+  width: 100% !important;
+  padding-left: var(--bs-gutter-x, .75rem) !important;
+  padding-right: var(--bs-gutter-x, .75rem) !important;
+}
+
+/* للتأكيد: أي غلاف جدول أو كروت يمتد 100% */
+.table-responsive,
+.card,
+.card-body{
+  width: 100%;
+}
+    
   </style>
 </head>
 <body>
