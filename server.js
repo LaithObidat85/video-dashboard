@@ -998,6 +998,49 @@ app.post('/api/users/bulk', authRequired, requireRole('admin'), async (req, res)
 });
 
 /****************************************************
+ * تابع لنظام اللجان: تغيير كلمات المرور للجميع (استثناء admin)
+ ****************************************************/
+app.post('/api/users/passwords/bulk', authRequired, requireRole('admin'), async (req, res) => {
+  try {
+    const { newPassword } = req.body || {};
+    if (!newPassword || String(newPassword).trim().length < 6) {
+      return res.status(400).json({ message: 'كلمة المرور الجديدة مطلوبة وبحد أدنى 6 أحرف' });
+    }
+
+    // اجلب كل المستخدمين باستثناء admins
+    const users = await User.find({ role: { $ne: 'admin' } }, '_id password name username email role');
+
+    let updatedCount = 0;
+    for (const u of users) {
+      const hash = await bcrypt.hash(String(newPassword), 10); // هاش لكل مستخدم بسالت مختلفة
+      u.password = hash;
+      await u.save();
+      updatedCount++;
+    }
+
+    // Audit
+    await logAudit(req, {
+      model: 'User',
+      action: 'update',
+      docId: undefined,
+      payload: {
+        bulkPasswordReset: true,
+        excludedRole: 'admin',
+        updatedCount
+      }
+    });
+
+    return res.json({ message: '✅ تم تغيير كلمات المرور جماعيًا (مع استثناء admin)', updatedCount });
+  } catch (err) {
+    console.error('bulk passwords error:', err);
+    return res.status(500).json({ message: '❌ فشل في التغيير الجماعي لكلمات المرور', error: err.message });
+  }
+});
+
+
+
+
+/****************************************************
  * تابع لنظام اللجان: الخروج/المستخدم الحالي
  ****************************************************/
 app.post('/auth/committees/logout', (req, res) => {
@@ -1824,7 +1867,7 @@ app.post('/auth/login', (req, res) => {
     req.session.videoUser = { email };
     return res.redirect(`/protected?id=${id}`);
   } else {
-    return res.send('❌ يجب إدخال بريد ينتهي بـ @iu.edu.jو');
+    return res.send('❌ يجب إدخال بريد ينتهي بـ @iu.edu.jo');
   }
 });
 
