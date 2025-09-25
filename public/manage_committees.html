@@ -7,7 +7,15 @@
   <link rel="icon" type="image/png" href="https://www.dropbox.com/scl/fi/f283e4rvv5cf9x12a1cic/my-website-logo.png?rlkey=yia776im7klypy27af32m0scy&e=1&st=vhaprvzh&dl=1">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.rtl.min.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
+
+  <!-- يضيف كلاس التحميل مبكراً جداً لتجنّب أي وميض للمحتوى -->
+  <script>document.documentElement.classList.add('app-loading');</script>
+
   <style>
+    /* ستار التحميل: اخفاء كامل للمحتوى حتى يكتمل init() */
+    html.app-loading body{opacity:0; visibility:hidden; pointer-events:none}
+    html.app-ready body{opacity:1; visibility:visible; pointer-events:auto; transition:opacity .2s ease}
+
     body{background:#f8f9fa;font-family:'Segoe UI',sans-serif}
 
     /* اجعل جميع الحاويات بعرض كامل دائمًا */
@@ -39,7 +47,7 @@
       margin:auto
     }
     th,td{text-align:center;vertical-align:middle}
-    th{background:#f8f9fa;color:#000}
+    th{background:#f8f9fa;color:#000;font-weight:700} /* جعل العناوين bold */
     td.invalid{background:#fde2e1!important}
     .highlight{background:#d4edda!important;transition:background-color 1s ease}
     .hidden-col{display:none!important}
@@ -47,13 +55,27 @@
     /* شريط الإعدادات لم يعد sticky */
     .sticky-header{background:#f8f9fa;padding-top:10px}
 
-    /* ✅ ترويسة الجدول مثبّتة أعلى الشاشة تمامًا */
+    /* ========= تحسينات تثبيت الترويسة (Sticky) ========= */
+    :root{ --table-header-bg:#f8f9fa; }
+
+    /* لا تجعل .table-responsive سلف تمرير؛ اترك التمرير للصفحة */
+    .table-responsive{ overflow: visible !important; }
+
+    /* فعّل sticky على thead وعلى th لضمان التوافق عبر المتصفحات */
+    #evaluationsTableWrapper thead{
+      position: sticky;
+      top: 0;
+      z-index: 100; /* أقل بقليل من th */
+      background: var(--table-header-bg);
+    }
     #evaluationsTableWrapper thead th{
-      position:sticky;
-      top:0;
-      z-index:9;
-      background:#f8f9fa;
+      position: sticky;
+      top: 0;
+      z-index: 101; /* فوق باقي خلايا الجدول */
+      background: var(--table-header-bg);
       color:#000;
+      /* حدود ظل خفيفة أسفل الترويسة عند الالتصاق */
+      box-shadow: 0 1px 0 rgba(0,0,0,.06);
     }
 
     #evaluationsTableWrapper th.date-col,#evaluationsTableWrapper td.date-col{direction:ltr;text-align:center;width:140px;max-width:140px}
@@ -85,6 +107,14 @@
 
     /* الفلاتر – توزيع عبر العرض */
     .filters .form-label{font-weight:600}
+
+    /* ========= تأثير تمرير (Hover) على صفوف الجدول ========= */
+    /* اجعل اللون واضحًا ويتغلب على ألوان striped من Bootstrap */
+    #committeesTable tr:hover > td,
+    #committeesTable tr:hover > th{
+      background-color:#fff6db !important; /* أصفر فاتح */
+      transition: background-color .15s ease-in-out;
+    }
   </style>
 </head>
 <body>
@@ -331,7 +361,7 @@
     </div>
   </div>
 
-  <!-- Scripts -->
+  <!-- Scripts (بدون تغيير في المنطق) -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
   <script>
@@ -343,20 +373,16 @@
     const isRender = hostname.endsWith('onrender.com');
     const isFile   = protocol === 'file:';
 
-    // أين نرسل الطلبات؟
     const API_BASE = (isGitHub || isFile) ? RENDER_BASE
                     : isRender           ? origin
                     : isLocal            ? 'http://localhost:3000'
                     : RENDER_BASE;
 
-    // لتوليد روابط تنقل لصفحات الاستضافة (GitHub/file يوجّه لRender)
     const go = (path) => (isGitHub || isFile) ? (RENDER_BASE + path) : path;
 
-    // fetch موحّد مع الكوكيز
     const apiFetch = (path, opts={}) =>
       fetch(`${API_BASE}${path}`, { credentials: 'include', ...opts });
 
-    // تتبّع مفيد للتشخيص
     window.addEventListener('error', e => console.error('WindowError:', e.message, e.filename, e.lineno));
     window.addEventListener('unhandledrejection', e => console.error('PromiseRejection:', e.reason));
     console.log('➡️ Host:', location.href, '\n➡️ API_BASE:', API_BASE);
@@ -386,10 +412,7 @@
         const r=await apiFetch('/auth/committees/me');
         const j=await r.json().catch(()=>null);
         if(!j || !j.authenticated){
-          // إن لم تتوفر صفحة تسجيل الدخول لديك، أظهر رسالة بدون تحويل قسري
           showError('الرجاء تسجيل الدخول أولاً');
-          // أو استخدم تحويلًا فعليًا إن كانت الصفحة موجودة لديك:
-          // location.href = go('/committees-login.html?next='+encodeURIComponent('/manage_committees.html'));
           throw 0;
         }
         if(j.user?.isActive===false){
@@ -572,15 +595,12 @@
       try{
         const res=await apiFetch('/api/settings'); const settings=await res.json();
 
-        // زيارات
         if(settings?.selectedVisits){
           document.querySelectorAll('.visit-toggle').forEach(cb=>{cb.checked=settings.selectedVisits.includes(cb.value)});
         }
 
-        // نشر النتائج
         document.getElementById('publishResults').checked = !!settings?.publishResults;
 
-        // (احترم []) كقيمة صالحة
         if(Array.isArray(settings?.visibleColumns)){
           document.querySelectorAll('.col-toggle').forEach(cb=>{
             cb.checked = settings.visibleColumns.includes(cb.dataset.field);
@@ -591,7 +611,6 @@
         applyColumnVisibilityInstant();
         setMasterTogglesState();
 
-        // الشارة
         const term=settings?.term||''; const ay=settings?.academicYear||'';
         if(term||ay){
           document.getElementById('termBadge').innerHTML=`<span class="badge text-bg-info">📚 الفصل الحالي: <b>${term||'—'}</b> — العام: <b>${ay||'—'}</b></span>`;
@@ -599,7 +618,6 @@
           document.getElementById('termBadge').innerHTML='';
         }
 
-        // حقول البطاقة
         document.getElementById('termSelect').value = term || '';
         document.getElementById('academicYearInput').value = ay || '';
 
@@ -612,7 +630,6 @@
       document.getElementById('selectedVisitsContainer').innerHTML=selected.length?("الزيارات: "+selected.join(' | ')):'';
     }
 
-    // زر حفظ الإعدادات
     document.getElementById('saveAllSettingsBtn')?.addEventListener('click',async()=>{
       try{
         const visibleColumns=Array.from(document.querySelectorAll('.col-toggle:checked')).map(cb=>cb.getAttribute('data-field'));
@@ -779,7 +796,6 @@
           return;
         }
 
-        // فلترة باسم اللجنة (إن تم اختيارها من الفلتر الثالث)
         const committeeSel=document.getElementById('committeeFilter').value;
         let data=arr;
         if(committeeSel){
@@ -822,7 +838,6 @@
       }catch(e){console.error(e);showError('❌ خطأ أثناء حفظ الكل');}
     });
 
-    // الفلاتر — إعادة تحميل عند التغيير
     document.getElementById('collegeFilter').addEventListener('change',loadCommittees);
     document.getElementById('auditorFilter').addEventListener('change',loadCommittees);
     document.getElementById('committeeFilter').addEventListener('change',loadCommittees);
@@ -931,7 +946,13 @@
         await loadDatalists();
         await loadSettings();
         await loadCommittees();
-      }catch{}
+      }catch{
+        // نعرض الصفحة حتى في حال الخطأ كي تظهر رسائل التوست
+      } finally {
+        // انهِ ستار التحميل بعد اكتمال كل شيء
+        document.documentElement.classList.remove('app-loading');
+        document.documentElement.classList.add('app-ready');
+      }
     })();
   </script>
 </body>
