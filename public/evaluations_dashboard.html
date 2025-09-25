@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
@@ -53,10 +54,25 @@
       thead{display:table-header-group}
       button,select,input{display:none!important}
     }
+
+    /* حالة "غير متوفر" */
+    #notAvailable{
+      min-height:60vh;
+      align-items:center; justify-content:center; text-align:center;
+    }
   </style>
 </head>
 <body>
-  <div class="container-fluid">
+  <!-- رسالة النتائج غير متوفرة -->
+  <div id="notAvailable" class="container d-none">
+    <div class="mx-auto">
+      <div class="display-6 mb-2">نتائج تقييم لجان الكليات غير متوفرة حاليًا</div>
+      <p class="text-muted mb-0">يرجى العودة لاحقًا.</p>
+    </div>
+  </div>
+
+  <!-- محتوى الصفحة الحقيقي -->
+  <div id="pageContent" class="container-fluid d-none">
     <div class="sticky-header">
       <h3 class="text-center mb-4">نتائج تقييم اللجان</h3>
 
@@ -117,7 +133,8 @@
           <th class="col-report3">تقرير إنجاز 3</th>
           <th class="col-statistical_analysis">التحليل الإحصائي</th>
           <th id="availabilityHeader">درجة التوفر من (9)</th>
-          <th>الملاحظات</th>
+          <!-- ✅ تمييز رأس عمود الملاحظات -->
+          <th class="col-notes">الملاحظات</th>
         </tr>
       </thead>
       <tbody id="committeesTable">
@@ -160,10 +177,12 @@
     const showSuccess  = (m='✅ العملية نجحت')=>{ document.querySelector('#toastSuccess .toast-body').innerText=m; toastSuccess.show(); };
     const showError    = (m='❌ حدث خطأ')     =>{ document.querySelector('#toastError .toast-body').innerText=m; toastError.show();   };
 
-    /* ===== حالة الصفحة ===== */
+    /* ===== أعلام الحالة ===== */
     let savedVisibleColumns = [];  // من الإعدادات
     let lastCollege = '';          // من الفلتر الحالي
-    let settingsCache = null;      // نخزن الإعدادات لاستخدامها في الطباعة
+    let settingsCache = null;      // نخزن الإعدادات للطباعة
+    let PUBLISH_RESULTS = false;   // الحقل الذي نتحكم به من /api/settings
+
     const availabilityFields = ["formation_decision","work_plan","performance_indicators","meetings","consistency","coverage_books","report1","report2","report3","statistical_analysis"];
 
     /* ===== تحميل القوائم ===== */
@@ -223,7 +242,7 @@
       }
     }
 
-    /* ===== نسبة الاكتمال + عدد اللجان (بدون أيقونات) ===== */
+    /* ===== نسبة الاكتمال + عدد اللجان ===== */
     function updateCompletionAndCounts(){
       const rows=[...document.querySelectorAll('#committeesTable tr')].filter(r=>r.style.display!=='none');
       let total=0;
@@ -259,6 +278,14 @@
         if(th) th.classList.toggle('hidden-col', !show);
       });
 
+      /* ✅ منطق إخفاء/إظهار عمود الملاحظات بناءً على الأعمدة المختارة */
+      const hideNotes = savedVisibleColumns.length === 0;
+      const notesHeader = document.querySelector('#evaluationsTableWrapper th.col-notes');
+      if (notesHeader) notesHeader.classList.toggle('hidden-col', hideNotes);
+      document.querySelectorAll('#evaluationsTableWrapper td[data-notes-col]').forEach(td=>{
+        td.classList.toggle('hidden-col', hideNotes);
+      });
+
       document.querySelectorAll('#committeesTable tr').forEach(updateAvailability);
       updateAvailabilityHeader();
       updateCompletionAndCounts();
@@ -279,29 +306,52 @@
     }
     document.getElementById('committeeSearch').addEventListener('input', applyCommitteeSearch);
 
-    /* ===== تحميل الإعدادات أولًا، ثم تحميل الجدول ===== */
+    /* ===== تحميل الإعدادات (تشمل publishResults) ===== */
     async function loadSettings(){
       const semesterEl=document.getElementById('semesterInfo');
       const visitsEl  =document.getElementById('selectedVisitsContainer');
+      const na = document.getElementById('notAvailable');
+      const pc = document.getElementById('pageContent');
+
       try{
         const {data} = await axios.get('/api/settings');
         settingsCache = data || {};
+        // متغير التحكم بالنشر
+        PUBLISH_RESULTS = !!settingsCache.publishResults;
+
+        if(!PUBLISH_RESULTS){
+          // إظهار الرسالة فقط
+          na.classList.remove('d-none');
+          na.classList.add('d-flex');
+          pc.classList.add('d-none');
+          return false;
+        }
+
+        // مفعّل => إظهار الصفحة وإخفاء الرسالة
+        na.classList.add('d-none');
+        na.classList.remove('d-flex');
+        pc.classList.remove('d-none');
+
         savedVisibleColumns = settingsCache.visibleColumns || [];
+
         // سطر الفصل/العام
         const t = settingsCache.term || '—';
         const ay= settingsCache.academicYear || '—';
         semesterEl.textContent = `${t} - ${ay}`;
+
         // الزيارات أعلى الجدول
         const visits = Array.isArray(settingsCache.selectedVisits) && settingsCache.selectedVisits.length
           ? settingsCache.selectedVisits.join(' | ')
           : 'لم يتم اختيار أي زيارة';
         visitsEl.textContent = `الزيارات: ${visits}`;
-        // بعد الإعدادات => حمل اللجان
-        await loadCommittees();
+
+        return true;
       }catch(e){
-        semesterEl.textContent='—';
-        document.getElementById('selectedVisitsContainer').textContent='الزيارات: لم يتم اختيار أي زيارة';
-        await loadCommittees();
+        // في حالة الخطأ نتصرف كأن النشر غير مفعّل (أكثر أمانًا)
+        na.classList.remove('d-none');
+        na.classList.add('d-flex');
+        pc.classList.add('d-none');
+        return false;
       }
     }
 
@@ -354,7 +404,8 @@
             <td data-field="report3">${c.report3 ?? 0}</td>
             <td data-field="statistical_analysis">${c.statistical_analysis ?? 0}</td>
             <td class="availability-cell">${c.availability_score ?? 0}</td>
-            <td>
+            <!-- ✅ وسم خلية الملاحظات لسهولة التحكم -->
+            <td data-notes-col>
               <span class="notes-screen">
                 ${
                   hasNotes
@@ -373,7 +424,7 @@
               new bootstrap.Modal(document.getElementById('notesModal')).show();
             });
           }
-          tbody.appendChild(tr);
+          document.getElementById('committeesTable').appendChild(tr);
           updateAvailability(tr);
         });
 
@@ -391,19 +442,32 @@
 
     /* ===== طباعة ===== */
     document.getElementById('printBtn').addEventListener('click', ()=> {
-      // قبل الطباعة: نتأكد أن الحاسبات والنصوص محدثة
       updateCompletionAndCounts();
       window.print();
     });
 
     /* ===== أحداث عامة ===== */
-    document.getElementById('collegeFilter').addEventListener('change', loadCommittees);
-    document.getElementById('reloadBtn').addEventListener('click', loadSettings);
+    document.getElementById('collegeFilter').addEventListener('change', async ()=>{
+      if(!PUBLISH_RESULTS) return;
+      await loadCommittees();
+    });
+    document.getElementById('reloadBtn').addEventListener('click', async ()=>{
+      const ok = await loadSettings();
+      if(ok){ // فقط إذا النشر مفعّل
+        await loadOptions(); // يمكن إعادة تحميل القوائم أيضًا عند الرغبة
+        await loadCommittees();
+      }
+    });
 
-    /* ===== تشغيل أولي: قوائم → إعدادات → جدول ===== */
+    /* ===== تشغيل أولي =====
+       1) قراءة الإعدادات لتحديد publishResults
+       2) إذا مفعّل: نحمّل القوائم ثم الجدول
+    */
     (async function init(){
+      const ok = await loadSettings();
+      if(!ok) return;
       await loadOptions();
-      await loadSettings(); // يضمن ملء الزيارات/الفصل/العام قبل الجدول
+      await loadCommittees();
     })();
   </script>
 </body>
