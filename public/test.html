@@ -2,48 +2,21 @@
 <html lang="ar" dir="rtl">
 <head>
   <meta charset="UTF-8" />
-  <title>إدارة المستخدمين - نظام اللجان</title>
+  <title>نسخ نظام اللجان الاحتياطية</title>
   <link rel="icon" type="image/png" href="https://www.dropbox.com/scl/fi/f283e4rvv5cf9x12a1cic/my-website-logo.png?rlkey=yia776im7klypy27af32m0scy&e=1&st=vhaprvzh&dl=1">
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1" />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.rtl.min.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
   <style>
-    /* مساواة ارتفاع شارة معلومات المستخدم بزر "خروج" */
-    .user-chip{
-      display:inline-flex;align-items:center;gap:.25rem;font-size:1rem;padding:.375rem .75rem;line-height:1.5;border-radius:.375rem;
-    }
     body{background:#f8f9fa;font-family:'Segoe UI',sans-serif}
     .container{max-width:1200px;margin-top:40px}
     .card{border-radius:16px;box-shadow:0 6px 18px rgba(0,0,0,.06)}
-    .muted{opacity:.75}
-
-    /* سكلتون */
-    .skeleton{position:relative;overflow:hidden;background:linear-gradient(90deg,#eee 25%,#f5f5f5 37%,#eee 63%);background-size:400% 100%;animation:shimmer 1.2s infinite}
-    @keyframes shimmer{0%{background-position:100% 0}100%{background-position:-100% 0}}
-
-    .badge-active{background:#1987541a;color:#198754}
-    .badge-inactive{background:#dc35451a;color:#dc3545}
-
-    .saving{opacity:.5;pointer-events:none}
-    .row-highlight{animation:flash .8s ease}
-    @keyframes flash{0%{background:#fff3cd}100%{background:transparent}}
-
-    .table-responsive{max-height:540px;overflow:auto}
-    thead th{position:sticky;top:0;z-index:1;background:#fff}
-
-    .pw-meter{height:6px;border-radius:6px;overflow:hidden;background:#e9ecef}
-    .pw-meter>div{height:100%}
-
+    .user-chip{display:inline-flex;align-items:center;gap:.25rem;font-size:1rem;padding:.375rem .75rem;line-height:1.5;border-radius:.375rem;}
     .toolbar{gap:.5rem}
-
-    .inline-edit{font-size:.9rem;padding:.25rem .5rem;height:2rem;}
-    .cell-saving{opacity:.6;}
-
-    .field-dirty{outline:2px solid rgba(255,193,7,.75);background:#fff8e1;transition:outline .2s,background .2s;}
-
-    .user-chip.badge{display:inline-flex;align-items:center;gap:.25rem;padding:.375rem .75rem !important;font-size:1rem !important;line-height:1.5 !important;border-radius:.375rem;font-weight:700 !important}
-    .user-chip.badge #userRole{font-weight:500 !important}
-    .inline-role{min-width:160px;}
+    .backup-card{background:#fff;padding:14px;border-radius:10px;border:1px solid #eee;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+    .details{font-size:.9rem;color:#6c757d}
+    .summary{color:#6c757d}
+    #loadingOverlay{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;align-items:center;justify-content:center;flex-direction:column;z-index:2000;color:#fff}
   </style>
 </head>
 <body>
@@ -51,7 +24,7 @@
     <!-- Header -->
     <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-2">
       <div class="d-flex align-items-center gap-2">
-        <h3 class="mb-0">إدارة المستخدمين</h3>
+        <h3 class="mb-0">نسخ نظام اللجان الاحتياطية</h3>
       </div>
       <div class="d-flex align-items-center gap-2">
         <span id="userInfo" class="user-chip badge bg-light text-dark border">
@@ -72,251 +45,62 @@
       </div>
     </div>
 
-    <!-- إضافة مستخدم (قابلة للطي) -->
-    <div class="card mb-4">
-      <div class="card-header p-0">
-        <button type="button" class="btn btn-link w-100 text-start p-3 d-flex justify-content-between align-items-center"
-                data-bs-toggle="collapse" data-bs-target="#addUserCollapse"
-                aria-expanded="false" aria-controls="addUserCollapse">
-          <span class="fw-semibold"><i class="bi bi-person-plus"></i> إضافة مستخدم جديد</span>
-          <i class="bi bi-plus-lg" id="addFormToggleIcon"></i>
-        </button>
-      </div>
-      <div id="addUserCollapse" class="collapse">
-        <div class="card-body">
-          <form id="addUserForm" class="row g-3">
-            <div class="col-md-3">
-              <label class="form-label">اسم المستخدم</label>
-              <input type="text" class="form-control" name="username" autocomplete="username" required>
-              <div class="form-text" id="userCheckHint"></div>
-            </div>
-            <div class="col-md-3">
-              <label class="form-label">الاسم الكامل</label>
-              <input type="text" class="form-control" name="name" required>
-            </div>
-            <div class="col-md-3">
-              <label class="form-label">البريد الإلكتروني</label>
-              <input type="email" class="form-control" name="email" autocomplete="email" required>
-              <div class="form-text" id="emailCheckHint"></div>
-            </div>
-            <div class="col-md-3">
-              <label class="form-label">كلمة المرور</label>
-              <div class="input-group">
-                <input type="password" class="form-control" name="password" id="pwInput" minlength="8" required>
-                <button type="button" class="btn btn-outline-secondary" id="togglePwBtn" title="إظهار/إخفاء">
-                  <i class="bi bi-eye"></i>
-                </button>
-              </div>
-              <div class="pw-meter mt-2"><div id="pwBar"></div></div>
-            </div>
-            <div class="col-md-3">
-              <label class="form-label">الدور</label>
-              <select class="form-select" name="role" required>
-                <option value="user">user</option>
-                <option value="admin">admin</option>
-                <option value="subuser-member" selected>subuser-member</option>
-              </select>
-            </div>
-            <div class="col-12">
-              <button class="btn btn-primary" id="addBtn">
-                <span class="btn-label"><i class="bi bi-check2-circle"></i> إضافة</span>
-              </button>
-            </div>
-          </form>
-        </div>
-      </div>
-    </div>
-
-    <!-- أدوات الجدول -->
+    <!-- أدوات الصفحة -->
     <div class="card mb-3">
       <div class="card-body d-flex flex-wrap align-items-end toolbar">
-        <div>
-          <label class="form-label">بحث</label>
-          <input type="text" id="q" class="form-control" placeholder="اسم/اسم مستخدم/بريد">
-        </div>
-        <div>
-          <label class="form-label">الدور</label>
-          <select id="fRole" class="form-select">
-            <option value="">الكل</option>
-            <option value="admin">admin</option>
-            <option value="user">user</option>
-            <option value="subuser-member">subuser-member</option>
-          </select>
-        </div>
-        <div>
-          <label class="form-label">الحالة</label>
-          <select id="fActive" class="form-select">
-            <option value="">الكل</option>
-            <option value="true">نشط</option>
-            <option value="false">معطّل</option>
-          </select>
-        </div>
-        <div>
-          <label class="form-label">الترتيب</label>
-          <select id="sort" class="form-select">
-            <option value="-createdAt">الأحدث أولًا</option>
-            <option value="createdAt">الأقدم أولًا</option>
-            <option value="name">الاسم (أ-ي)</option>
-            <option value="-name">الاسم (ي-أ)</option>
-          </select>
-        </div>
-        <div>
-          <label class="form-label">لكل صفحة</label>
-          <select id="limit" class="form-select">
-            <option>10</option><option selected>20</option><option>50</option>
-          </select>
-        </div>
-        <div class="ms-auto d-flex gap-2">
-          <button class="btn btn-success" id="btnSaveChanges" disabled><i class="bi bi-save"></i> حفظ التغييرات</button>
-          <button class="btn btn-outline-secondary" id="btnDiscardChanges" disabled><i class="bi bi-x-circle"></i> إلغاء التغييرات</button>
-          <button class="btn btn-outline-dark" id="btnBulkPw"><i class="bi bi-key-fill"></i> تغيير كلمات المرور للجميع</button>
-          <button class="btn btn-outline-secondary" id="btnExport"><i class="bi bi-filetype-csv"></i> تصدير CSV</button>
-          <button class="btn btn-outline-secondary" id="btnReload"><i class="bi bi-arrow-repeat"></i> تحديث</button>
+        <button class="btn btn-primary" id="btnCreate"><i class="bi bi-cloud-plus"></i> إنشاء نسخة احتياطية</button>
+        <button class="btn btn-outline-danger" id="btnDeleteSel"><i class="bi bi-trash3"></i> حذف المحدد</button>
+
+        <form id="uploadForm" class="d-flex align-items-center gap-2" enctype="multipart/form-data">
+          <input type="file" class="form-control" id="backupFile" name="backupFile" accept=".json">
+          <button class="btn btn-success" type="submit"><i class="bi bi-upload"></i> رفع نسخة</button>
+        </form>
+
+        <div class="form-check ms-auto">
+          <input class="form-check-input" type="checkbox" id="selectAll">
+          <label class="form-check-label" for="selectAll">تحديد الكل</label>
         </div>
       </div>
     </div>
 
-    <!-- الجدول -->
+    <!-- قائمة النسخ -->
     <div class="card">
       <div class="card-body">
-        <!-- شريط إجراءات جماعية -->
-        <div class="d-flex justify-content-between align-items-center mb-2">
-          <div class="d-flex flex-wrap gap-2">
-            <button class="btn btn-sm btn-outline-success" id="bulkActivate" disabled><i class="bi bi-toggle-on"></i> تفعيل</button>
-            <button class="btn btn-sm btn-outline-warning" id="bulkDeactivate" disabled><i class="bi bi-toggle-off"></i> تعطيل</button>
-
-            <div class="btn-group">
-              <button class="btn btn-sm btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown"><i class="bi bi-person-gear"></i> تغيير الدور</button>
-              <ul class="dropdown-menu">
-                <li><a class="dropdown-item" href="#" data-role="admin">اجعلهم admin</a></li>
-                <li><a class="dropdown-item" href="#" data-role="user">اجعلهم user</a></li>
-                <li><a class="dropdown-item" href="#" data-role="subuser-member">اجعلهم subuser-member</a></li>
-              </ul>
-            </div>
-
-            <!-- ✅ إضافة سجل + تحميل آخر سجل -->
-            <button class="btn btn-sm btn-primary" id="btnAddRow"><i class="bi bi-plus-circle"></i> إضافة سجل</button>
-            <button class="btn btn-sm btn-outline-primary" id="btnLoadLast"><i class="bi bi-download"></i> تحميل آخر سجل</button>
-
-            <button class="btn btn-sm btn-outline-danger" id="bulkDelete" disabled><i class="bi bi-trash3"></i> حذف المحدد</button>
-
-            <!-- ✅ جديد: حفظ مسودة + حذف مسودة محليًا -->
-            <button class="btn btn-sm btn-outline-secondary" id="btnSaveDraftsLocal"><i class="bi bi-save2"></i> حفظ مسودة</button>
-            <button class="btn btn-sm btn-outline-secondary" id="btnDeleteDraftsLocal"><i class="bi bi-eraser"></i> حذف مسودة محليًا</button>
-          </div>
-          <div class="text-muted"><span id="countSpan">—</span></div>
-        </div>
-
-        <div class="table-responsive">
-          <table class="table table-hover align-middle">
-            <thead class="table-light">
-              <tr>
-                <th style="width:40px" class="text-center"><input class="form-check-input" type="checkbox" id="chkAll"></th>
-                <th>#</th>
-                <th>الاسم الكامل</th>
-                <th>اسم المستخدم</th>
-                <th>البريد</th>
-                <th>الدور</th>
-                <th>الحالة</th>
-                <th>آخر إجراء</th>
-                <th>آخر دخول</th>
-                <th>الإنشاء</th>
-                <th>إجراءات</th>
-              </tr>
-            </thead>
-            <tbody id="usersTbody">
-              <tr><td colspan="11">
-                <div class="skeleton" style="height:18px;margin:8px 0;"></div>
-                <div class="skeleton" style="height:18px;margin:8px 0;"></div>
-                <div class="skeleton" style="height:18px;margin:8px 0;"></div>
-              </td></tr>
-            </tbody>
-          </table>
-        </div>
-
-        <div class="d-flex justify-content-between align-items-center mt-3">
-          <div class="text-muted">الصفحة <span id="pageNum">1</span></div>
-          <div class="btn-group">
-            <button class="btn btn-outline-secondary btn-sm" id="prevPage"><i class="bi bi-chevron-right"></i> السابق</button>
-            <button class="btn btn-outline-secondary btn-sm" id="nextPage">التالي <i class="bi bi-chevron-left"></i></button>
-          </div>
-        </div>
+        <div class="summary mb-2" id="summary">—</div>
+        <div id="backupList"></div>
       </div>
     </div>
   </div>
 
-  <!-- Modal: إعادة كلمة مرور -->
-  <div class="modal fade" id="resetPwModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog"><div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title">إعادة تعيين كلمة المرور</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-      </div>
-      <div class="modal-body">
-        <div class="mb-2">سيتم تعيين كلمة مرور جديدة للمستخدم: <strong id="resetTargetName">—</strong></div>
-        <label class="form-label">كلمة المرور الجديدة</label>
-        <div class="input-group">
-          <input type="password" id="newPwInput" class="form-control" autocomplete="off">
-          <button type="button" class="btn btn-outline-secondary toggle-pwd" data-target="#newPwInput" title="إظهار/إخفاء">
-            <i class="bi bi-eye"></i>
-          </button>
-        </div>
-        <div class="form-text">انسخها وأبلغ المستخدم بها بأمان.</div>
-      </div>
-      <div class="modal-footer">
-        <button class="btn btn-secondary" data-bs-dismiss="modal">إغلاق</button>
-        <button class="btn btn-primary" id="applyResetBtn"><i class="bi bi-check2-circle"></i> تطبيق</button>
-      </div>
-    </div></div>
-  </div>
-
-  <!-- Modal: تغيير كلمات المرور للجميع (استثناء admin) -->
-  <div class="modal fade" id="bulkPwModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog"><div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title"><i class="bi bi-key-fill me-1"></i> تغيير كلمات المرور للجميع (مع استثناء admin)</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-      </div>
-      <div class="modal-body">
-        <label class="form-label">كلمة المرور الجديدة</label>
-        <div class="input-group">
-          <input type="password" id="bulkNewPw" class="form-control" placeholder="أدخل كلمة مرور موحدة للجميع (باستثناء admin)">
-          <button type="button" class="btn btn-outline-secondary toggle-pwd" data-target="#bulkNewPw" title="إظهار/إخفاء">
-            <i class="bi bi-eye"></i>
-          </button>
-        </div>
-        <div class="form-text">سيتم تطبيق هذه الكلمة على جميع المستخدمين ما عدا من دورهم <code>admin</code>.</div>
-      </div>
-      <div class="modal-footer">
-        <button class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
-        <button class="btn btn-primary" id="applyBulkPwBtn"><i class="bi bi-check2-circle"></i> تطبيق</button>
-      </div>
-    </div></div>
+  <!-- Overlay تحميل -->
+  <div id="loadingOverlay">
+    <div class="spinner-border text-light" style="width:3rem;height:3rem" role="status"></div>
+    <div class="mt-3">جاري التحميل… ⏳</div>
   </div>
 
   <!-- Toasts -->
   <div class="toast-container position-fixed top-0 start-50 translate-middle-x p-3" style="z-index:2000">
-    <div id="toastSuccess" class="toast align-items-center text-bg-success border-0 mb-2" role="alert" aria-live="assertive" aria-atomic="true">
+    <div id="toastSuccess" class="toast align-items-center text-bg-success border-0 mb-2" role="alert">
       <div class="d-flex">
         <div class="toast-body">✅ تم التنفيذ بنجاح</div>
         <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
       </div>
     </div>
-    <div id="toastError" class="toast align-items-center text-bg-danger border-0 mb-2" role="alert" aria-live="assertive" aria-atomic="true">
+    <div id="toastError" class="toast align-items-center text-bg-danger border-0 mb-2" role="alert">
       <div class="d-flex">
         <div class="toast-body">❌ حدث خطأ</div>
         <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
       </div>
     </div>
-    <div id="toastInfo" class="toast align-items-center text-bg-primary border-0 mb-2" role="status" aria-live="polite">
+    <div id="toastInfo" class="toast align-items-center text-bg-primary border-0 mb-2" role="status">
       <div class="d-flex">
         <div class="toast-body">ℹ️ معلومات</div>
         <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
       </div>
     </div>
 
-    <!-- Toast: تأكيد -->
-    <div id="toastConfirm" class="toast text-bg-warning border-0 mb-2" role="alert" aria-live="assertive" aria-atomic="true">
+    <!-- Toast تأكيد -->
+    <div id="toastConfirm" class="toast text-bg-warning border-0 mb-2" role="alert" aria-atomic="true">
       <div class="d-flex align-items-start">
         <div class="toast-body">
           <div id="toastConfirmMsg">هل تريد المتابعة؟</div>
@@ -333,22 +117,11 @@
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
   <script>
-  document.addEventListener('DOMContentLoaded', () => {
-    const collapseEl = document.getElementById('addUserCollapse');
-    const iconEl = document.getElementById('addFormToggleIcon');
-    collapseEl.addEventListener('show.bs.collapse', () => iconEl.className = 'bi bi-dash-lg');
-    collapseEl.addEventListener('hide.bs.collapse', () => iconEl.className = 'bi bi-plus-lg');
-  });
-  </script>
-
-  <script>
-    /* ====== API BASE & fetch مغلّف ====== */
+    /* ====== API BASE ====== */
     const RENDER_BASE = 'https://vdash-qkyv.onrender.com';
     const host = location.hostname;
     const isGithub = host.endsWith('github.io');
-    const isRender = host.endsWith('onrender.com');
     const isLocal  = host === 'localhost' || host === '127.0.0.1';
-
     const API_BASE = isGithub ? RENDER_BASE : (isLocal ? 'http://localhost:3000' : '');
     const go = (path) => isGithub ? (RENDER_BASE + path) : path;
     const apiFetch = (path, opts = {}) => fetch(`${API_BASE}${path}`, { credentials: 'include', ...opts });
@@ -358,42 +131,40 @@
       if (homeBtn) homeBtn.href = go('/committees-home.html');
     });
 
-    /* ====== Toasts ====== */
+    /* ====== Toasts / Confirm ====== */
     const toastSuccess = new bootstrap.Toast(document.getElementById('toastSuccess'));
     const toastError   = new bootstrap.Toast(document.getElementById('toastError'));
     const toastInfo    = new bootstrap.Toast(document.getElementById('toastInfo'));
-    const toastConfirmEl  = document.getElementById('toastConfirm');
-    const toastConfirm    = new bootstrap.Toast(toastConfirmEl, { autohide: false });
-    const confirmMsgEl    = toastConfirmEl.querySelector('#toastConfirmMsg');
-    const confirmYesBtn   = toastConfirmEl.querySelector('#toastConfirmYes');
-    const confirmNoBtn    = toastConfirmEl.querySelector('#toastConfirmNo');
+    const toastConfirmEl = document.getElementById('toastConfirm');
+    const toastConfirm   = new bootstrap.Toast(toastConfirmEl, { autohide:false });
+    const confirmMsgEl   = document.getElementById('toastConfirmMsg');
+    const confirmYesBtn  = document.getElementById('toastConfirmYes');
+    const confirmNoBtn   = document.getElementById('toastConfirmNo');
+    const setToast = (el,msg)=>{ el._element.querySelector('.toast-body').innerText = msg; };
 
-    function confirmToast({ message='هل تريد المتابعة؟', confirmText='تأكيد', cancelText='إلغاء' } = {}){
+    function confirmToast({message='هل تريد المتابعة؟',confirmText='تأكيد',cancelText='إلغاء'}={}) {
       return new Promise((resolve)=>{
         confirmMsgEl.textContent = message;
         confirmYesBtn.textContent = confirmText;
-        confirmNoBtn.textContent  = cancelText;
+        confirmNoBtn.textContent = cancelText;
 
-        const onYes = () => { cleanup(); toastConfirm.hide(); resolve(true); };
-        const onNo  = () => { cleanup(); resolve(false); };
-        const onHidden = () => { cleanup(); resolve(false); };
+        const onYes=()=>{ cleanup(); toastConfirm.hide(); resolve(true); };
+        const onNo =()=>{ cleanup(); resolve(false); };
+        const onHidden=()=>{ cleanup(); resolve(false); };
 
         function cleanup(){
           confirmYesBtn.removeEventListener('click', onYes);
           confirmNoBtn.removeEventListener('click', onNo);
           toastConfirmEl.removeEventListener('hidden.bs.toast', onHidden);
         }
-
-        confirmYesBtn.addEventListener('click', onYes, { once:true });
-        confirmNoBtn.addEventListener('click', onNo,  { once:true });
-        toastConfirmEl.addEventListener('hidden.bs.toast', onHidden, { once:true });
-
+        confirmYesBtn.addEventListener('click', onYes, {once:true});
+        confirmNoBtn.addEventListener('click', onNo, {once:true});
+        toastConfirmEl.addEventListener('hidden.bs.toast', onHidden, {once:true});
         toastConfirm.show();
       });
     }
-    const setToast = (el,msg)=>{ el._element.querySelector('.toast-body').innerText = msg; };
 
-    /* ====== Auth ====== */
+    /* ====== Auth للأدمن فقط ====== */
     async function fetchMe(){
       try{
         const r = await apiFetch('/auth/committees/me');
@@ -402,7 +173,7 @@
       }catch{ return {authenticated:false}; }
     }
     function renderUser(user){
-      const username = user?.username || (user?.email? user.email.split('@')[0] : '—');
+      const username = user?.username || (user?.email ? user.email.split('@')[0] : '—');
       document.getElementById('userUsername').textContent = username;
       document.getElementById('userFullName').textContent = user?.name || '—';
       const roleRaw = (user?.role || '').toLowerCase();
@@ -411,14 +182,14 @@
     async function ensureAdmin(){
       const me = await fetchMe();
       if(!me.authenticated){
-        const next = encodeURIComponent('/users-manage.html');
+        const next = encodeURIComponent('/committees-backups.html');
         location.href = go(`/committees-login.html?next=${next}`);
-        return Promise.reject();
+        throw new Error('auth');
       }
       if((me.user?.role||'').toLowerCase()!=='admin'){
         setToast(toastError,'❌ هذه الصفحة للمشرفين فقط'); toastError.show();
-        setTimeout(()=>location.href=go('/committees-home.html'),1000);
-        return Promise.reject();
+        setTimeout(()=>location.href=go('/committees-home.html'),900);
+        throw new Error('forbidden');
       }
       renderUser(me.user);
       return me.user;
@@ -431,735 +202,200 @@
       }catch{ setToast(toastError,'❌ خطأ في الاتصال'); toastError.show(); }
     });
 
-    /* ====== Helpers ====== */
-    const qs = {
-      get(){ return new URLSearchParams(location.search); },
-      set(obj){
-        const p = new URLSearchParams();
-        Object.entries(obj).forEach(([k,v])=>{ if(v!=='' && v!=null) p.set(k,v); });
-        history.replaceState(null,'','?'+p.toString());
-      }
-    };
-    const state = { page:1, limit:20, sort:'-createdAt', search:'', role:'', active:'', total:0, items:[], selected:new Set() };
+    /* ====== UI refs ====== */
+    const loading = document.getElementById('loadingOverlay');
+    const listEl  = document.getElementById('backupList');
+    const summary = document.getElementById('summary');
+    const selectAllEl = document.getElementById('selectAll');
 
-    /* ====== مسودات محلية ====== */
-    const DRAFTS_KEY = 'users.drafts.v1';
-    const drafts = new Map(); // id -> patch {name,username,email,role,isActive,__isNew}
-    let newRowCounter = 0;
+    let backups = [];
 
-    function saveDraftsToLocal(){
-      const obj = Array.from(drafts.entries()).map(([id,data])=>({id,data}));
-      localStorage.setItem(DRAFTS_KEY, JSON.stringify({savedAt:Date.now(), items:obj}));
-      setToast(toastSuccess,'💾 تم حفظ المسودات محليًا'); toastSuccess.show();
-    }
-    function loadDraftsFromLocal(){
+    function showLoading(on){ loading.style.display = on ? 'flex' : 'none'; }
+
+    /* ====== CRUD Committees Backups (cbackups) ====== */
+    async function fetchBackups(){
+      showLoading(true);
       try{
-        const raw = localStorage.getItem(DRAFTS_KEY);
-        if(!raw) return;
-        const parsed = JSON.parse(raw);
-        (parsed.items||[]).forEach(({id,data})=>{
-          if(id && data) drafts.set(id, data);
-        });
-      }catch{}
-    }
-    function clearDraftsLocalStorage(){
-      localStorage.removeItem(DRAFTS_KEY);
-    }
-
-    /* ====== تحكم التفعيل لأزرار الحفظ/الإلغاء والعداد ====== */
-    function updateBulkBar(){
-      const any = state.selected.size>0;
-      document.getElementById('bulkActivate').disabled = !any;
-      document.getElementById('bulkDeactivate').disabled = !any;
-      document.getElementById('bulkDelete').disabled = !any;
-      const dirty = drafts.size;
-      document.getElementById('btnSaveChanges').disabled = dirty === 0;
-      document.getElementById('btnDiscardChanges').disabled = dirty === 0;
-      document.getElementById('countSpan').textContent =
-        `المحدّد: ${state.selected.size} | الإجمالي: ${state.total}${dirty ? ` | تعديلات غير محفوظة: ${dirty}` : ''}`;
-    }
-
-    function markDirty(id, patch, fieldEl){
-      const current = drafts.get(id) || {};
-      Object.assign(current, patch || {});
-      drafts.set(id, current);
-
-      const row = document.querySelector(`#usersTbody tr[data-id="${CSS.escape(id)}"]`);
-      if (row) row.classList.add('row-highlight');
-      if (fieldEl) fieldEl.classList.add('field-dirty');
-
-      updateBulkBar();
-    }
-    function clearDrafts(){
-      drafts.clear();
-      document.querySelectorAll('#usersTbody tr.row-highlight').forEach(tr=>tr.classList.remove('row-highlight'));
-      document.querySelectorAll('#usersTbody .field-dirty').forEach(el=>el.classList.remove('field-dirty'));
-      updateBulkBar();
-    }
-
-    window.addEventListener('beforeunload', (e)=>{
-      if(drafts.size>0){ e.preventDefault(); e.returnValue=''; }
-    });
-
-    /* ====== فلاتر محفوظة ====== */
-    function saveFilters(){
-      localStorage.setItem('users.filters', JSON.stringify({
-        search: state.search, role: state.role, active: state.active, sort: state.sort, limit: state.limit
-      }));
-    }
-    function loadFilters(){
-      try{
-        const o = JSON.parse(localStorage.getItem('users.filters')||'{}');
-        if(o.search!=null) document.getElementById('q').value = o.search;
-        if(o.role!=null)   document.getElementById('fRole').value = o.role;
-        if(o.active!=null) document.getElementById('fActive').value = o.active;
-        if(o.sort!=null)   document.getElementById('sort').value = o.sort;
-        if(o.limit!=null)  document.getElementById('limit').value = o.limit;
-      }catch{}
-    }
-
-    /* ====== بناء الصفوف ====== */
-    const tbody = document.getElementById('usersTbody');
-    const esc = s => String(s ?? '').replace(/"/g,'&quot;');
-
-    function rowCheckbox(id, checked){ return `<input class="form-check-input chkRow" type="checkbox" value="${id}" ${checked?'checked':''}>`; }
-    function roleSelect(id, role){
-      return `
-        <select class="form-select form-select-sm inline-role" data-id="${id}" title="سيُحفظ عند الضغط على «حفظ التغييرات»">
-          <option value="user" ${role==='user'?'selected':''}>user</option>
-          <option value="admin" ${role==='admin'?'selected':''}>admin</option>
-          <option value="subuser-member" ${role==='subuser-member'?'selected':''}>subuser-member</option>
-        </select>`;
-    }
-    function activeToggle(id, isActive){ return `
-      <div class="form-check form-switch">
-        <input class="form-check-input inline-active" type="checkbox" role="switch" data-id="${id}" ${isActive?'checked':''} title="سيُحفظ عند الضغط على «حفظ التغييرات">
-      </div>`; }
-
-    const pageAr = m => ({Evaluation:'تقييم اللجان',College:'الكليات',Auditor:'المدققون',Committee:'أسماء اللجان',Settings:'الإعدادات',User:'المستخدمون'})[m] || (m||'—');
-    const actionAr = a => a==='create'?'إضافة':(a==='update'?'تعديل':(a==='delete'?'حذف':(a||'—')));
-
-    function renderLastActionCell(u){
-      const la = u.lastAction;
-      if(!la) return '—';
-      const when = la.createdAt ? new Date(la.createdAt).toLocaleString('ar-EG') : '—';
-      return `${actionAr(la.action)} على صفحة ${pageAr(la.model)}<br><small class="text-muted">${when}</small>`;
-    }
-    function renderLastLoginCell(u){
-      return u.lastLogin ? new Date(u.lastLogin).toLocaleString('ar-EG') : '—';
-    }
-
-    function renderRows(users, offset=0){
-      if(!Array.isArray(users) || users.length===0){
-        tbody.innerHTML = `<tr class="text-center text-muted"><td colspan="11">لا يوجد نتائج</td></tr>`;
-        return;
-      }
-      tbody.innerHTML = users.map((u,i)=>`
-        <tr data-id="${u._id||u.id}">
-          <td class="text-center"><input class="form-check-input chkRow" type="checkbox" value="${u._id||u.id}" ${state.selected.has(u._id||u.id)?'checked':''}></td>
-          <td>${offset + i + 1}</td>
-
-          <td><input class="form-control form-control-sm inline-edit" data-id="${u._id||u.id}" data-field="name" value="${esc(u.name)}" placeholder="—"></td>
-          <td><input class="form-control form-control-sm inline-edit" data-id="${u._id||u.id}" data-field="username" value="${esc(u.username)}" placeholder="—"></td>
-          <td><input class="form-control form-control-sm inline-edit" data-id="${u._id||u.id}" data-field="email" value="${esc(u.email)}" placeholder="—"></td>
-
-          <td style="width:180px">${roleSelect(u._id||u.id, u.role||'user')}</td>
-          <td style="width:110px">
-            ${u.isActive===false?'<span class="badge badge-inactive">معطّل</span>':'<span class="badge badge-active">نشط</span>'}
-            ${activeToggle(u._id||u.id, u.isActive!==false)}
-          </td>
-
-          <td class="cell-lastaction">${renderLastActionCell(u)}</td>
-          <td class="cell-lastlogin">${renderLastLoginCell(u)}</td>
-          <td class="cell-created">${ (u.updatedAt||u.createdAt) ? new Date(u.updatedAt||u.createdAt).toLocaleString('ar-EG') : '—' }</td>
-
-          <td>
-            <button class="btn btn-sm btn-outline-primary resetBtn" data-id="${u._id||u.id}" data-name="${u.name||u.username||'—'}"><i class="bi bi-key"></i></button>
-            <button class="btn btn-sm btn-outline-danger delBtn" data-id="${u._id||u.id}" data-name="${u.name||u.username||'—'}"><i class="bi bi-trash3"></i></button>
-          </td>
-        </tr>
-      `).join('');
-      applyDraftsToDOM();
-      updateBulkBar();
-    }
-
-    /* ====== تطبيق المسودات على الـDOM بعد كل render ====== */
-    function applyDraftsToDOM(){
-      // 1) صفوف NEW-* تُعرض أعلى (سيتم حقنها في fetchUsers)
-      // 2) تعديلات على صفوف موجودة: نطبّق القيم ونميز الحقول
-      drafts.forEach((data, id)=>{
-        const isNew = String(id).startsWith('NEW-');
-        if(isNew) return; // تمت معالجتها في الحقن
-        const row = tbody.querySelector(`tr[data-id="${CSS.escape(id)}"]`);
-        if(!row) return;
-
-        if('name' in data){
-          const el=row.querySelector('input.inline-edit[data-field="name"]'); if(el){ el.value = data.name ?? ''; el.classList.add('field-dirty'); }
-        }
-        if('username' in data){
-          const el=row.querySelector('input.inline-edit[data-field="username"]'); if(el){ el.value = data.username ?? ''; el.classList.add('field-dirty'); }
-        }
-        if('email' in data){
-          const el=row.querySelector('input.inline-edit[data-field="email"]'); if(el){ el.value = data.email ?? ''; el.classList.add('field-dirty'); }
-        }
-        if('role' in data){
-          const el=row.querySelector('select.inline-role'); if(el){ el.value = data.role ?? el.value; el.classList.add('field-dirty'); }
-        }
-        if('isActive' in data){
-          const el=row.querySelector('input.inline-active'); if(el){ el.checked = !!data.isActive; el.classList.add('field-dirty'); }
-        }
-        row.classList.add('row-highlight');
-      });
-    }
-
-    /* ====== تحميل المستخدمين ====== */
-    async function fetchUsers(){
-      state.search = document.getElementById('q').value.trim();
-      state.role   = document.getElementById('fRole').value;
-      state.active = document.getElementById('fActive').value;
-      state.sort   = document.getElementById('sort').value;
-      state.limit  = parseInt(document.getElementById('limit').value,10) || 20;
-
-      saveFilters();
-      qs.set({ q: state.search, role: state.role, active: state.active, sort: state.sort, limit: state.limit, page: state.page });
-
-      tbody.innerHTML = `<tr><td colspan="11">
-        <div class="skeleton" style="height:18px;margin:8px 0;"></div>
-        <div class="skeleton" style="height:18px;margin:8px 0;"></div>
-        <div class="skeleton" style="height:18px;margin:8px 0;"></div>
-      </td></tr>`;
-      try{
-        const params = new URLSearchParams();
-        if(state.search) params.set('search',state.search);
-        if(state.role)   params.set('role',state.role);
-        if(state.active) params.set('active',state.active);
-        if(state.sort)   params.set('sort',state.sort);
-        params.set('page', state.page);
-        params.set('limit', state.limit);
-
-        const r = await apiFetch('/api/users?'+params.toString());
+        const r = await apiFetch('/api/cbackups');
         if(r.status===401 || r.status===403){
           setToast(toastError,'❌ انتهت الجلسة أو لا تملك صلاحية'); toastError.show();
           setTimeout(()=>location.href=go('/committees-login.html'),900);
           return;
         }
-        if(!r.ok) throw new Error('HTTP '+r.status);
         const data = await r.json();
-        state.items = data.data || data;
-        state.total = data?.meta?.total ?? state.items.length;
-
-        // حقن المسودات NEW-* أعلى الجدول (بدون إرسال للخادم)
-        const currentRows = state.items.slice();
-        const tempRows = Array.from(drafts.keys()).filter(id => String(id).startsWith('NEW-'));
-        // كل NEW-* من المخزن
-        tempRows.reverse().forEach(id=>{
-          const d = drafts.get(id) || {};
-          currentRows.unshift({
-            _id: id,
-            name: d.name || '',
-            username: d.username || '',
-            email: d.email || '',
-            role: d.role || 'subuser-member',
-            isActive: d.isActive !== false,
-            createdAt: new Date().toISOString()
-          });
-        });
-
-        document.getElementById('pageNum').textContent = state.page;
-        renderRows(currentRows, 0);
-      }catch(e){
-        tbody.innerHTML = `<tr class="text-center text-danger"><td colspan="11">حدث خطأ في جلب المستخدمين</td></tr>`;
-        console.error('fetchUsers error:', e);
-      }
-    }
-
-    /* ====== تحديث جزئي (موجود مسبقًا) ====== */
-    async function updateUserPartial(id, patch){
-      const row = tbody.querySelector(`tr[data-id="${id}"]`);
-      row?.classList.add('saving');
-      try{
-        const r = await apiFetch('/api/users/'+id,{
-          method:'PUT',
-          headers:{'Content-Type':'application/json'},
-          body: JSON.stringify(patch)
-        });
-        const data = await r.json().catch(()=> ({}));
-        if(!r.ok) throw new Error(data?.message || 'فشل التعديل');
-        row?.classList.add('row-highlight');
-        setTimeout(()=>row?.classList.remove('row-highlight'),600);
-        return true;
-      }catch(err){
-        setToast(toastError,'❌ '+(err.message||'فشل التعديل')); toastError.show();
-        return false;
+        backups = Array.isArray(data) ? data : [];
+        renderBackups();
+      }catch{
+        setToast(toastError,'❌ فشل في جلب نسخ اللجان'); toastError.show();
       }finally{
-        row?.classList.remove('saving');
-        fetchUsers();
+        showLoading(false);
       }
     }
 
-    /* ====== حذف مستخدم ====== */
-    async function deleteUser(id, name){
-      const ok = await confirmToast({
-        message: `سيتم حذف المستخدم: ${name}\nلا يمكن التراجع.`,
-        confirmText: 'نعم، احذف',
-        cancelText: 'إلغاء'
+    function renderBackups(){
+      listEl.innerHTML = '';
+      summary.textContent = '';
+
+      if(!backups.length){
+        listEl.innerHTML = '<div class="alert alert-info text-center mb-0">لا توجد نسخ احتياطية لنظام اللجان حالياً.</div>';
+        return;
+      }
+
+      let totalKB = 0;
+      backups.forEach((b,idx)=>{
+        const sizeKB = (
+          JSON.stringify(b.evaluations||[]).length +
+          JSON.stringify(b.colleges||[]).length +
+          JSON.stringify(b.committeesMaster||[]).length +
+          JSON.stringify(b.auditors||[]).length +
+          JSON.stringify(b.settings||{}).length +
+          JSON.stringify(b.committeeFiles||[]).length +
+          JSON.stringify(b.committeeAssignments||[]).length
+        ) / 1024;
+        totalKB += sizeKB;
+
+        const evN  = (b.evaluations||[]).length;
+        const colN = (b.colleges||[]).length;
+        const dicN = (b.committeesMaster||[]).length;
+        const audN = (b.auditors||[]).length;
+        const cfsN = (b.committeeFiles||[]).length;
+        const asgN = (b.committeeAssignments||[]).length;
+
+        const st  = b.settings || {};
+        const when = b.date ? new Date(b.date).toLocaleString('ar-EG',{dateStyle:'full', timeStyle:'short'}) : '—';
+
+        const card = document.createElement('div');
+        card.className = 'backup-card mb-2';
+        card.innerHTML = `
+          <div class="d-flex align-items-start gap-2">
+            <input type="checkbox" class="form-check-input backup-check" data-id="${b._id}">
+            <div>
+              <div>
+                <strong>نسخة رقم #${idx+1}</strong>
+                <small class="text-muted">(${sizeKB.toFixed(2)} KB)</small>
+              </div>
+              <div class="text-muted">${when}</div>
+              <div class="details mt-1">
+                📝 التقييمات: ${evN} |
+                🏫 الكليات: ${colN} |
+                📚 قاموس اللجان: ${dicN} |
+                👤 المدققون: ${audN} |
+                📎 ملفات اللجان: ${cfsN} |
+                🧩 التعيينات: ${asgN}
+              </div>
+              <div class="details mt-1">
+                ⚙️ الإعدادات:
+                Term: ${st.term ? st.term : '—'} |
+                Year: ${st.academicYear ? st.academicYear : '—'} |
+                نشر النتائج: ${(typeof st.publishResults==='boolean') ? (st.publishResults ? 'نعم' : 'لا') : '—'}
+              </div>
+            </div>
+          </div>
+          <div class="d-flex gap-2">
+            <a class="btn btn-success btn-sm" href="${go('/api/cbackups/download/'+b._id)}">⬇️ تنزيل</a>
+            <button class="btn btn-warning btn-sm btn-restore" data-id="${b._id}">♻️ استرجاع</button>
+          </div>
+        `;
+        listEl.appendChild(card);
       });
+
+      summary.textContent = `عدد النسخ: ${backups.length} – الحجم الكلي: ${totalKB.toFixed(2)} KB`;
+    }
+
+    async function createBackup(){
+      showLoading(true);
+      try{
+        const r = await apiFetch('/api/cbackups/create',{method:'POST'});
+        const data = await r.json().catch(()=>({}));
+        if(!r.ok) throw new Error(data?.message || 'فشل إنشاء النسخة');
+        setToast(toastSuccess, data.message || '✅ تم إنشاء نسخة اللجان'); toastSuccess.show();
+        await fetchBackups();
+      }catch(err){
+        setToast(toastError, '❌ ' + (err.message||'فشل إنشاء النسخة')); toastError.show();
+      }finally{
+        showLoading(false);
+      }
+    }
+
+    async function restoreBackup(id){
+      const ok = await confirmToast({message:'سيتم استرجاع هذه النسخة إلى قاعدة بيانات اللجان.\nلا يمكن التراجع.', confirmText:'نعم، استرجع', cancelText:'إلغاء'});
+      if(!ok){ setToast(toastInfo,'تم الإلغاء'); toastInfo.show(); return; }
+      showLoading(true);
+      try{
+        const r = await apiFetch('/api/cbackups/restore/'+id,{method:'POST'});
+        const data = await r.json().catch(()=>({}));
+        if(!r.ok) throw new Error(data?.message || 'فشل الاسترجاع');
+        setToast(toastSuccess, data.message || '♻️ تم الاسترجاع بنجاح'); toastSuccess.show();
+      }catch(err){
+        setToast(toastError, '❌ ' + (err.message||'فشل الاسترجاع')); toastError.show();
+      }finally{
+        showLoading(false);
+      }
+    }
+
+    async function deleteSelected(){
+      const ids = [...document.querySelectorAll('.backup-check:checked')].map(cb=>cb.dataset.id);
+      if(!ids.length){ setToast(toastInfo,'اختر نسخة واحدة على الأقل'); toastInfo.show(); return; }
+      const ok = await confirmToast({message:`سيتم حذف ${ids.length} نسخة احتياطية. لا يمكن التراجع.`, confirmText:'نعم، احذف', cancelText:'إلغاء'});
       if(!ok){ setToast(toastInfo,'تم الإلغاء'); toastInfo.show(); return; }
 
+      showLoading(true);
       try{
-        const r = await apiFetch('/api/users/'+id,{ method:'DELETE' });
-        const data = await r.json().catch(()=> ({}));
-        if(!r.ok) throw new Error(data?.message || 'فشل الحذف');
-        setToast(toastSuccess,'🗑️ تم حذف المستخدم'); toastSuccess.show();
-        state.selected.delete(id);
-        fetchUsers();
-      }catch(err){
-        setToast(toastError,'❌ '+(err.message||'فشل الحذف')); toastError.show();
-      }
-    }
-
-    /* ====== إعادة تعيين كلمة مرور ====== */
-    const resetModal = new bootstrap.Modal(document.getElementById('resetPwModal'));
-    let resetTargetId = null;
-    document.getElementById('applyResetBtn').addEventListener('click', async ()=>{
-      const pw = document.getElementById('newPwInput').value.trim();
-      if(!pw){ setToast(toastInfo,'أدخل كلمة مرور جديدة'); toastInfo.show(); return; }
-      try{
-        const r = await apiFetch('/api/users/'+resetTargetId+'/password',{
-          method:'PUT',
-          headers:{'Content-Type':'application/json'},
-          body: JSON.stringify({ newPassword: pw })
-        });
-        const data = await r.json().catch(()=> ({}));
-        if(!r.ok) throw new Error(data?.message || 'فشل التغيير');
-        setToast(toastSuccess,'✅ تم تغيير كلمة المرور'); toastSuccess.show();
-        resetModal.hide();
-      }catch(err){
-        setToast(toastError,'❌ '+(err.message||'فشل تغيير كلمة المرور')); toastError.show();
-      }
-    });
-
-    /* ====== Bulk actions ====== */
-    async function bulkAction(payload, okMsg){
-      if(state.selected.size===0) return;
-      try{
-        const r = await apiFetch('/api/users/bulk',{
-          method:'POST',
-          headers:{'Content-Type':'application/json'},
-          body: JSON.stringify({ ids:[...state.selected], ...payload })
-        });
-        const data = await r.json().catch(()=> ({}));
-        if(!r.ok) throw new Error(data?.message || 'فشل التنفيذ');
-        setToast(toastSuccess, okMsg); toastSuccess.show();
-        state.selected.clear();
-        fetchUsers();
-      }catch(err){
-        setToast(toastError,'❌ '+(err.message||'فشل التنفيذ')); toastError.show();
-      }
-    }
-
-    /* ====== حفظ كل المسودات للخادم ====== */
-    async function saveAllDrafts(){
-      if(drafts.size === 0) return;
-      document.getElementById('btnSaveChanges').disabled = true;
-
-      let okCount = 0, failCount = 0;
-
-      for (const [id, patch] of drafts.entries()){
-        try{
-          if (String(id).startsWith('NEW-')) {
-            const payload = {
-              name: String(patch.name||'').trim(),
-              username: String(patch.username||'').trim(),
-              email: String(patch.email||'').trim(),
-              role: ['admin','user','subuser-member'].includes(patch.role) ? patch.role : 'subuser-member',
-              password: '12345678'
-            };
-            if (!payload.name || !payload.username || !payload.email){
-              throw new Error('يجب تعبئة الاسم واسم المستخدم والبريد للصف الجديد');
-            }
-            const r = await apiFetch('/auth/committees/register', {
-              method:'POST',
-              headers:{'Content-Type':'application/json'},
-              body: JSON.stringify(payload)
-            });
-            const data = await r.json().catch(()=> ({}));
-            if(!r.ok) throw new Error(data?.message || 'فشل إنشاء المستخدم');
-            okCount++;
-          } else {
-            const r = await apiFetch('/api/users/'+id,{
-              method:'PUT',
-              headers:{'Content-Type':'application/json'},
-              body: JSON.stringify({
-                name: patch.name,
-                username: patch.username,
-                email: patch.email,
-                role: patch.role,
-                isActive: patch.isActive
-              })
-            });
-            const data = await r.json().catch(()=> ({}));
-            if(!r.ok) throw new Error(data?.message || 'فشل التعديل');
-            okCount++;
-          }
-        }catch(err){
-          failCount++;
-          console.error('saveAllDrafts error for', id, err);
+        for(const id of ids){
+          await apiFetch('/api/cbackups/'+id, {method:'DELETE'});
         }
-      }
-
-      if(failCount === 0){
-        setToast(toastSuccess, `✅ تم حفظ ${okCount} تغييرًا`); toastSuccess.show();
-        clearDrafts();
-        clearDraftsLocalStorage();  // مسح المسودات المحلية بعد النجاح
-        fetchUsers();
-      }else{
-        setToast(toastError, `❌ فشل حفظ ${failCount} من ${drafts.size}`); toastError.show();
-        document.getElementById('btnSaveChanges').disabled = false;
+        setToast(toastSuccess,'🗑️ تم حذف النسخ المحددة'); toastSuccess.show();
+        selectAllEl.checked = false;
+        await fetchBackups();
+      }catch{
+        setToast(toastError,'❌ فشل حذف بعض العناصر'); toastError.show();
+      }finally{
+        showLoading(false);
       }
     }
-    function discardAllDrafts(){
-      clearDrafts();
-      fetchUsers();
-    }
 
-    document.getElementById('btnSaveChanges').addEventListener('click', saveAllDrafts);
-    document.getElementById('btnDiscardChanges').addEventListener('click', discardAllDrafts);
-
-    /* ====== إضافة مستخدم (فورم علوي) ====== */
-    const addForm = document.getElementById('addUserForm');
-    const addBtn = document.getElementById('addBtn');
-
-    const pwInput = document.getElementById('pwInput');
-    const togglePwBtn = document.getElementById('togglePwBtn');
-    togglePwBtn.addEventListener('click', ()=>{
-      const isPw = pwInput.type === 'password';
-      pwInput.type = isPw ? 'text' : 'password';
-      togglePwBtn.innerHTML = isPw ? '<i class="bi bi-eye-slash"></i>' : '<i class="bi bi-eye"></i>';
-      pwInput.focus();
-    });
-
-    function pwStrength(pw){
-      let s=0;
-      if(pw.length>=8) s++;
-      if(/[A-Z]/.test(pw) && /[a-z]/.test(pw)) s++;
-      if(/\d/.test(pw)) s++;
-      if(/[^A-Za-z0-9]/.test(pw)) s++;
-      if(pw.length>=12) s++;
-      return Math.min(s,5);
-    }
-    function renderPwMeter(){
-      const pw = pwInput.value;
-      const score = pwStrength(pw);
-      const bar = document.getElementById('pwBar');
-      const colors = ['#dc3545','#fd7e14','#ffc107','#20c997','#198754'];
-      bar.style.width = (score*20)+'%';
-      bar.style.background = colors[Math.max(0,score-1)] || '#e9ecef';
-    }
-    pwInput.addEventListener('input', renderPwMeter);
-
-    let _debTimer;
-    function debounce(fn,ms){ return (...a)=>{ clearTimeout(_debTimer); _debTimer=setTimeout(()=>fn(...a),ms); }; }
-    const checkUnique = debounce(async ()=>{
-      const u = addForm.username.value.trim();
-      const e = addForm.email.value.trim();
-      if(!u && !e) return;
-      try{
-        const params = new URLSearchParams({ search: u||e, limit: 5 });
-        const r = await apiFetch('/api/users?'+params.toString());
-        if(!r.ok) return;
-        const data = await r.json();
-        const arr = data.data || data;
-        const uTaken = u && arr.some(x => (x.username||'').toLowerCase()===u.toLowerCase());
-        const eTaken = e && arr.some(x => (x.email||'').toLowerCase()===e.toLowerCase());
-        document.getElementById('userCheckHint').textContent = uTaken ? '⚠️ اسم المستخدم مستخدم' : '';
-        document.getElementById('emailCheckHint').textContent = eTaken ? '⚠️ البريد مستخدم' : '';
-      }catch{}
-    }, 450);
-    addForm.username.addEventListener('blur', checkUnique);
-    addForm.email.addEventListener('blur', checkUnique);
-
-    addForm.addEventListener('submit', async (e)=>{
+    async function uploadBackup(e){
       e.preventDefault();
-      addBtn.disabled = true; addBtn.classList.add('saving');
+      const fileInput = document.getElementById('backupFile');
+      if(!fileInput.files.length){ setToast(toastInfo,'اختر ملف JSON أولًا'); toastInfo.show(); return; }
+      const fd = new FormData(); fd.append('backupFile', fileInput.files[0]);
+      showLoading(true);
       try{
-        const fd = new FormData(addForm);
-        const payload = Object.fromEntries(fd.entries());
-        const r = await apiFetch('/auth/committees/register', {
-          method:'POST', headers:{'Content-Type':'application/json'},
-          body: JSON.stringify(payload)
-        });
-        const data = await r.json().catch(()=> ({}));
-        if(!r.ok) throw new Error(data?.message || 'فشل الإضافة');
-        setToast(toastSuccess,'✅ تم إنشاء المستخدم'); toastSuccess.show();
-        addForm.reset(); renderPwMeter();
-        state.page = 1; fetchUsers();
+        const r = await apiFetch('/api/cbackups/upload', {method:'POST', body:fd});
+        const data = await r.json().catch(()=>({}));
+        if(!r.ok) throw new Error(data?.message || 'فشل رفع النسخة');
+        setToast(toastSuccess, data.message || '✅ تم الرفع والحفظ'); toastSuccess.show();
+        fileInput.value='';
+        await fetchBackups();
       }catch(err){
-        setToast(toastError,'❌ '+(err.message||'فشل الإضافة')); toastError.show();
+        setToast(toastError,'❌ ' + (err.message||'فشل الرفع')); toastError.show();
       }finally{
-        addBtn.disabled = false; addBtn.classList.remove('saving');
+        showLoading(false);
       }
-    });
-
-    function exportCSV(rows){
-      const header = ['name','username','email','role','isActive','lastAction.action','lastAction.model','lastAction.createdAt','lastLogin','createdAt','updatedAt'];
-      const toCSV = s => `"${String(s??'').replace(/"/g,'""')}"`;
-      const BOM = '\uFEFF';
-      const lines = [header.join(',')].concat(rows.map(r =>{
-        const la = r.lastAction || {};
-        return [
-          r.name, r.username, r.email, r.role, r.isActive!==false,
-          la.action||'', la.model||'', la.createdAt?new Date(la.createdAt).toISOString():'',
-          r.lastLogin?new Date(r.lastLogin).toISOString():'',
-          r.createdAt?new Date(r.createdAt).toISOString():'',
-          r.updatedAt?new Date(r.updatedAt).toISOString():''
-        ].map(toCSV).join(',');
-      }));
-      const csv = BOM + lines.join('\n');
-      const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a'); a.href = url; a.download = 'users.csv'; a.click();
-      URL.revokeObjectURL(url);
     }
 
-    /* ====== أحداث الفلاتر والجدول ====== */
-    document.getElementById('btnReload').addEventListener('click', ()=>{ state.page=1; fetchUsers(); });
-    document.getElementById('btnExport').addEventListener('click', ()=> exportCSV(state.items));
+    /* ====== Events ====== */
+    document.getElementById('btnCreate').addEventListener('click', createBackup);
+    document.getElementById('btnDeleteSel').addEventListener('click', deleteSelected);
+    document.getElementById('uploadForm').addEventListener('submit', uploadBackup);
 
-    document.getElementById('q').addEventListener('input', debounce(()=>{ state.page=1; fetchUsers(); }, 400));
-    document.getElementById('fRole').addEventListener('change', ()=>{ state.page=1; fetchUsers(); });
-    document.getElementById('fActive').addEventListener('change', ()=>{ state.page=1; fetchUsers(); });
-    document.getElementById('sort').addEventListener('change', ()=>{ state.page=1; fetchUsers(); });
-    document.getElementById('limit').addEventListener('change', ()=>{ state.page=1; fetchUsers(); });
-
-    document.getElementById('prevPage').addEventListener('click', ()=>{ if(state.page>1){ state.page--; fetchUsers(); } });
-    document.getElementById('nextPage').addEventListener('click', ()=>{ if(state.items.length===state.limit){ state.page++; fetchUsers(); } });
-
-    document.getElementById('chkAll').addEventListener('change', (e)=>{
-      const ch = e.target.checked;
-      document.querySelectorAll('.chkRow').forEach(x=>{
-        x.checked = ch;
-        const id = x.value;
-        if(ch) state.selected.add(id); else state.selected.delete(id);
-      });
-      updateBulkBar();
+    selectAllEl.addEventListener('change', (e)=>{
+      document.querySelectorAll('.backup-check').forEach(cb => cb.checked = e.target.checked);
     });
 
-    const tbodyEl = document.getElementById('usersTbody');
-    tbodyEl.addEventListener('change', (e)=>{
-      const t = e.target;
-      if(t.classList.contains('chkRow')){
-        const id = t.value;
-        if(t.checked) state.selected.add(id); else state.selected.delete(id);
-        const all = Array.from(tbodyEl.querySelectorAll('.chkRow'));
-        document.getElementById('chkAll').checked = (all.length>0 && all.every(x=>x.checked));
-        updateBulkBar();
-      } else if(t.classList.contains('inline-role')){
-        const id = t.dataset.id;
-        markDirty(id, { role: t.value }, t);
-      } else if(t.classList.contains('inline-active')){
-        const id = t.dataset.id;
-        markDirty(id, { isActive: t.checked }, t);
-      }
-    });
-
-    tbodyEl.addEventListener('click', (e)=>{
-      const btn = e.target.closest('button');
+    document.getElementById('backupList').addEventListener('click', (e)=>{
+      const btn = e.target.closest('.btn-restore');
       if(!btn) return;
-      if(btn.classList.contains('delBtn')){
-        deleteUser(btn.dataset.id, btn.dataset.name);
-      }else if(btn.classList.contains('resetBtn')){
-        resetTargetId = btn.dataset.id;
-        document.getElementById('resetTargetName').textContent = btn.dataset.name;
-        document.getElementById('newPwInput').value = '';
-        resetModal.show();
-      }
+      restoreBackup(btn.dataset.id);
     });
 
-    function queueInline(inputEl){
-      const id    = inputEl.dataset.id;
-      const field = inputEl.dataset.field;
-      const value = inputEl.value.trim();
-      if(!id || !field) return;
-      markDirty(id, { [field]: value }, inputEl);
-    }
-    tbodyEl.addEventListener('blur', (e)=>{
-      const t = e.target;
-      if(t.classList.contains('inline-edit')){
-        queueInline(t);
-      }
-    }, true);
-    tbodyEl.addEventListener('keydown', (e)=>{
-      const t = e.target;
-      if(t.classList.contains('inline-edit') && e.key === 'Enter'){
-        e.preventDefault();
-        t.blur();
-      }
-    });
-
-    document.querySelectorAll('.dropdown-menu [data-role]').forEach(a=>{
-      a.addEventListener('click', (e)=>{
-        e.preventDefault();
-        const role = a.dataset.role;
-        if(state.selected.size===0) return;
-        bulkAction({ action:'set-role', role }, '✅ تم تغيير الأدوار');
-      });
-    });
-    document.getElementById('bulkActivate').addEventListener('click', ()=> bulkAction({ action:'activate' }, '✅ تم تفعيل المحددين'));
-    document.getElementById('bulkDeactivate').addEventListener('click', ()=> bulkAction({ action:'deactivate' }, '✅ تم تعطيل المحددين'));
-    document.getElementById('bulkDelete').addEventListener('click', async ()=>{
-      if(state.selected.size === 0){
-        setToast(toastInfo,'لم يتم تحديد مستخدمين'); toastInfo.show();
-        return;
-      }
-      const ok = await confirmToast({
-        message: `سيتم حذف ${state.selected.size} مستخدم/ين. لا يمكن التراجع.`,
-        confirmText: 'نعم، احذف',
-        cancelText: 'إلغاء'
-      });
-      if(!ok){ setToast(toastInfo,'تم الإلغاء'); toastInfo.show(); return; }
-      bulkAction({ action:'delete' }, '🗑️ تم حذف المحددين');
-    });
-
-    /* ====== جديد: زر "إضافة سجل" يضيف مسودة في كل نقرة ====== */
-    document.getElementById('btnAddRow').addEventListener('click', ()=>{
-      const tempId = `NEW-${Date.now()}-${++newRowCounter}`;
-      drafts.set(tempId, {
-        __isNew: true, name:'', username:'', email:'', role:'subuser-member', isActive:true
-      });
-      // أعد العرض مع حقن المسودات بالأعلى
-      fetchUsers().then(()=>{
-        const row = tbody.querySelector(`tr[data-id="${CSS.escape(tempId)}"]`);
-        row?.querySelectorAll('input.inline-edit, select.inline-role').forEach(el => el.classList.add('field-dirty'));
-      });
-    });
-
-    /* ====== جديد: زر "تحميل آخر سجل" ====== */
-    document.getElementById('btnLoadLast').addEventListener('click', async ()=>{
-      try{
-        const r = await apiFetch('/api/users?limit=1&sort=-createdAt');
-        if(!r.ok) throw new Error('فشل الجلب');
-        const data = await r.json();
-        const last = (data?.data && data.data[0]) || data?.[0];
-        if(!last){ setToast(toastInfo,'لا يوجد مستخدمون محفوظون بعد'); toastInfo.show(); return; }
-
-        // ابحث عن مسودات NEW-*
-        const newIds = Array.from(drafts.keys()).filter(id=>String(id).startsWith('NEW-'));
-        if(newIds.length===0){
-          // أنشئ مسودة واحدة معبّأة
-          const tempId = `NEW-${Date.now()}-${++newRowCounter}`;
-          drafts.set(tempId, {
-            __isNew:true,
-            name: last.name || '',
-            username: last.username || '',
-            email: last.email || '',
-            role: last.role || 'subuser-member',
-            isActive: last.isActive!==false
-          });
-        }else{
-          // املأ كل المسودات بقيم آخر سجل
-          newIds.forEach(id=>{
-            const d = drafts.get(id)||{};
-            drafts.set(id, {
-              __isNew:true,
-              name: last.name || d.name || '',
-              username: last.username || d.username || '',
-              email: last.email || d.email || '',
-              role: last.role || d.role || 'subuser-member',
-              isActive: (last.isActive!==false)
-            });
-          });
-        }
-        setToast(toastSuccess,'⬇️ تم تحميل آخر سجل وملء المسودات'); toastSuccess.show();
-        fetchUsers();
-      }catch(err){
-        setToast(toastError,'❌ فشل تحميل آخر سجل'); toastError.show();
-      }
-    });
-
-    /* ====== جديد: حفظ مسودات محليًا ====== */
-    document.getElementById('btnSaveDraftsLocal').addEventListener('click', ()=>{
-      if(drafts.size===0){ setToast(toastInfo,'لا توجد مسودات لحفظها'); toastInfo.show(); return; }
-      saveDraftsToLocal();
-    });
-
-    /* ====== جديد: حذف مسودات محليًا ====== */
-    document.getElementById('btnDeleteDraftsLocal').addEventListener('click', async ()=>{
-      // حدّد المسودات NEW-* المختارة
-      const selectedNew = Array.from(state.selected).filter(id=>String(id).startsWith('NEW-'));
-      if(selectedNew.length>0){
-        selectedNew.forEach(id=>drafts.delete(id));
-        setToast(toastSuccess,`🧹 تم حذف ${selectedNew.length} مسودة محددة`); toastSuccess.show();
-        // أعد البناء
-        state.selected.clear();
-        fetchUsers();
-        saveDraftsToLocal(); // تحديث التخزين المحلي
-        return;
-      }
-      // لا يوجد تحديد → حذف كل المسودات المحلية (NEW-* + تعديلات موجودة)
-      const ok = await confirmToast({
-        message:'سيتم حذف جميع المسودات المحلية (لا إرسال للخادم).',
-        confirmText:'نعم، احذف',
-        cancelText:'إلغاء'
-      });
-      if(!ok){ setToast(toastInfo,'تم الإلغاء'); toastInfo.show(); return; }
-      clearDrafts();
-      clearDraftsLocalStorage();
-      fetchUsers();
-      setToast(toastSuccess,'🧽 تم مسح كل المسودات المحلية'); toastSuccess.show();
-    });
-
-    /* ====== تغيير كلمات المرور للجميع (مودال) ====== */
-    const bulkPwModal = new bootstrap.Modal(document.getElementById('bulkPwModal'));
-    document.getElementById('btnBulkPw').addEventListener('click', ()=>{
-      document.getElementById('bulkNewPw').value = '';
-      bulkPwModal.show();
-    });
-    document.getElementById('applyBulkPwBtn').addEventListener('click', async ()=>{
-      const pw = document.getElementById('bulkNewPw').value.trim();
-      if(!pw){ setToast(toastInfo, 'أدخل كلمة مرور'); toastInfo.show(); return; }
-      try{
-        const r = await apiFetch('/api/users/passwords/bulk', {
-          method: 'POST',
-          headers: {'Content-Type':'application/json'},
-          body: JSON.stringify({ newPassword: pw })
-        });
-        const data = await r.json().catch(()=> ({}));
-        if(!r.ok) throw new Error(data?.message || 'فشل التغيير الجماعي');
-        setToast(toastSuccess, `✅ ${data.updatedCount||0} حساب تم تغيير كلمة مروره (مع استثناء admin)`); toastSuccess.show();
-        bulkPwModal.hide();
-      }catch(err){
-        setToast(toastError, '❌ '+(err.message||'فشل التغيير الجماعي')); toastError.show();
-      }
-    });
-
-    /* ====== تبديل إظهار/إخفاء كلمة المرور في المودالات ====== */
-    document.addEventListener('click', (e)=>{
-      const btn = e.target.closest('.toggle-pwd');
-      if (!btn) return;
-      const input = document.querySelector(btn.dataset.target);
-      if (!input) return;
-      const isPassword = input.type === 'password';
-      input.type = isPassword ? 'text' : 'password';
-      const icon = btn.querySelector('i');
-      if (icon) {
-        icon.classList.toggle('bi-eye', !isPassword);
-        icon.classList.toggle('bi-eye-slash', isPassword);
-      }
-    });
-
-    /* ====== تهيئة ====== */
+    /* ====== Init ====== */
     (async function init(){
       try{
         await ensureAdmin();
-        loadFilters();
-        loadDraftsFromLocal();    // ← استرجاع المسودات المحلية
-        const urlp = new URLSearchParams(location.search);
-        state.page  = parseInt(urlp.get('page')||'1',10);
-        renderPwMeter();
-        await fetchUsers();
+        await fetchBackups();
       }catch(e){
-        console.error('init error:', e);
+        // تم التحويل/المنع أعلى
       }
     })();
   </script>
