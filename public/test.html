@@ -61,7 +61,7 @@
     .hidden-col{display:none!important}
 
     /* شريط الإعدادات لم يعد sticky */
-    .sticky-header{background:#f8f9fa;padding-top:10px}
+   .sticky-header { background:#fff; padding-top:10px; }
 
     /* ========= تحسينات تثبيت الترويسة (Sticky) ========= */
     :root{ --table-header-bg:#f8f9fa; }
@@ -144,7 +144,7 @@
 
   <div class="container-fluid page-wrap">
     <!-- Header -->
-    <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-2 full-bleed">
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-2 full-bleed bg-white">
       <h4 class="mb-0">إدارة تقييم اللجان</h4>
       <div class="d-flex align-items-center gap-2">
         <span id="userInfo" class="user-chip badge bg-light text-dark border">
@@ -163,7 +163,7 @@
       </div>
     </div>
 
-    <div class="sticky-header full-bleed">
+    <div class="sticky-header full-bleed bg-white">
       <!-- الفلاتر -->
       <div class="filters row g-3 mb-3">
         <div class="col-12 col-sm-6 col-lg-4">
@@ -265,7 +265,7 @@
       <div id="completionRateContainer"></div>
 
       <!-- شريط الإجراءات -->
-      <div class="card p-2 mb-2">
+      <div class="card p-2 mb-2 full-bleed">
         <div class="bulk-bar">
           <span class="bulk-title">إجراءات سريعة</span>
           <button class="btn btn-sm btn-primary" id="addRowBtn" title="إضافة سجل جديد">➕ إضافة سجل</button>
