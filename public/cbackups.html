@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <title>النسخ الاحتياطية - نظام اللجان </title>
+  <link rel="icon" type="image/png" href="https://www.dropbox.com/scl/fi/f283e4rvv5cf9x12a1cic/my-website-logo.png?rlkey=yia776im7klypy27af32m0scy&e=1&st=vhaprvzh&dl=1">
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.rtl.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
+  <style>
+    body{background:#f8f9fa;font-family:'Segoe UI',sans-serif}
+    .container{max-width:1200px;margin-top:40px}
+    .card{border-radius:16px;box-shadow:0 6px 18px rgba(0,0,0,.06)}
+    .user-chip{display:inline-flex;align-items:center;gap:.25rem;font-size:1rem;padding:.375rem .75rem;line-height:1.5;border-radius:.375rem;}
+    .toolbar{gap:.5rem}
+    .backup-card{background:#fff;padding:14px;border-radius:10px;border:1px solid #eee;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+    .details{font-size:.9rem;color:#6c757d}
+    .summary{color:#6c757d}
+    #loadingOverlay{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;align-items:center;justify-content:center;flex-direction:column;z-index:2000;color:#fff}
+  </style>
+</head>
+<body>
+  <div class="container-fluid" style="padding-top:40px">
+    <!-- Header -->
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-2">
+      <div class="d-flex align-items-center gap-2">
+        <h3 class="mb-0">نسخ نظام اللجان الاحتياطية</h3>
+      </div>
+      <div class="d-flex align-items-center gap-2">
+        <span id="userInfo" class="user-chip badge bg-light text-dark border">
+          <i class="bi bi-person"></i>
+          <span id="userUsername">—</span>
+          <span class="mx-1">—</span>
+          <span id="userFullName">—</span>
+          <span class="ms-2 badge bg-secondary" id="userRole">—</span>
+        </span>
+
+        <a class="btn btn-outline-primary" id="homeBtn" href="/committees-home.html">
+          <i class="bi bi-grid"></i> لوحة التحكم
+        </a>
+
+        <button id="logoutBtn" class="btn btn-danger">
+          <i class="bi bi-box-arrow-right"></i> خروج
+        </button>
+      </div>
+    </div>
+
+    <!-- أدوات الصفحة -->
+    <div class="card mb-3">
+      <div class="card-body d-flex flex-wrap align-items-end toolbar">
+        <button class="btn btn-primary" id="btnCreate"><i class="bi bi-cloud-plus"></i> إنشاء نسخة احتياطية</button>
+        <button class="btn btn-outline-danger" id="btnDeleteSel"><i class="bi bi-trash3"></i> حذف المحدد</button>
+
+        <form id="uploadForm" class="d-flex align-items-center gap-2" enctype="multipart/form-data">
+          <input type="file" class="form-control" id="backupFile" name="backupFile" accept=".json">
+          <button class="btn btn-success" type="submit"><i class="bi bi-upload"></i> رفع نسخة</button>
+        </form>
+
+        <div class="form-check ms-auto">
+          <input class="form-check-input" type="checkbox" id="selectAll">
+          <label class="form-check-label" for="selectAll">تحديد الكل</label>
+        </div>
+      </div>
+    </div>
+
+    <!-- قائمة النسخ -->
+    <div class="card">
+      <div class="card-body">
+        <div class="summary mb-2" id="summary">—</div>
+        <div id="backupList"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Overlay تحميل -->
+  <div id="loadingOverlay">
+    <div class="spinner-border text-light" style="width:3rem;height:3rem" role="status"></div>
+    <div class="mt-3">جاري التحميل… ⏳</div>
+  </div>
+
+  <!-- Toasts -->
+  <div class="toast-container position-fixed top-0 start-50 translate-middle-x p-3" style="z-index:2000">
+    <div id="toastSuccess" class="toast align-items-center text-bg-success border-0 mb-2" role="alert">
+      <div class="d-flex">
+        <div class="toast-body">✅ تم التنفيذ بنجاح</div>
+        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+      </div>
+    </div>
+    <div id="toastError" class="toast align-items-center text-bg-danger border-0 mb-2" role="alert">
+      <div class="d-flex">
+        <div class="toast-body">❌ حدث خطأ</div>
+        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+      </div>
+    </div>
+    <div id="toastInfo" class="toast align-items-center text-bg-primary border-0 mb-2" role="status">
+      <div class="d-flex">
+        <div class="toast-body">ℹ️ معلومات</div>
+        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+      </div>
+    </div>
+
+    <!-- Toast تأكيد -->
+    <div id="toastConfirm" class="toast text-bg-warning border-0 mb-2" role="alert" aria-atomic="true">
+      <div class="d-flex align-items-start">
+        <div class="toast-body">
+          <div id="toastConfirmMsg">هل تريد المتابعة؟</div>
+          <div class="mt-2 pt-2 border-top d-flex gap-2">
+            <button type="button" class="btn btn-danger btn-sm" id="toastConfirmYes">تأكيد</button>
+            <button type="button" class="btn btn-light btn-sm" id="toastConfirmNo" data-bs-dismiss="toast">إلغاء</button>
+          </div>
+        </div>
+        <button type="button" class="btn-close btn-close-white m-2" data-bs-dismiss="toast"></button>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+  <script>
+    /* ====== API BASE ====== */
+    const RENDER_BASE = 'https://vdash-qkyv.onrender.com';
+    const host = location.hostname;
+    const isGithub = host.endsWith('github.io');
+    const isLocal  = host === 'localhost' || host === '127.0.0.1';
+    const API_BASE = isGithub ? RENDER_BASE : (isLocal ? 'http://localhost:3000' : '');
+    const go = (path) => isGithub ? (RENDER_BASE + path) : path;
+    const apiFetch = (path, opts = {}) => fetch(`${API_BASE}${path}`, { credentials: 'include', ...opts });
+
+    document.addEventListener('DOMContentLoaded', () => {
+      const homeBtn = document.getElementById('homeBtn');
+      if (homeBtn) homeBtn.href = go('/committees-home.html');
+    });
+
+    /* ====== Toasts / Confirm ====== */
+    const toastSuccess = new bootstrap.Toast(document.getElementById('toastSuccess'));
+    const toastError   = new bootstrap.Toast(document.getElementById('toastError'));
+    const toastInfo    = new bootstrap.Toast(document.getElementById('toastInfo'));
+    const toastConfirmEl = document.getElementById('toastConfirm');
+    const toastConfirm   = new bootstrap.Toast(toastConfirmEl, { autohide:false });
+    const confirmMsgEl   = document.getElementById('toastConfirmMsg');
+    const confirmYesBtn  = document.getElementById('toastConfirmYes');
+    const confirmNoBtn   = document.getElementById('toastConfirmNo');
+    const setToast = (el,msg)=>{ el._element.querySelector('.toast-body').innerText = msg; };
+
+    function confirmToast({message='هل تريد المتابعة؟',confirmText='تأكيد',cancelText='إلغاء'}={}) {
+      return new Promise((resolve)=>{
+        confirmMsgEl.textContent = message;
+        confirmYesBtn.textContent = confirmText;
+        confirmNoBtn.textContent = cancelText;
+
+        const onYes=()=>{ cleanup(); toastConfirm.hide(); resolve(true); };
+        const onNo =()=>{ cleanup(); resolve(false); };
+        const onHidden=()=>{ cleanup(); resolve(false); };
+
+        function cleanup(){
+          confirmYesBtn.removeEventListener('click', onYes);
+          confirmNoBtn.removeEventListener('click', onNo);
+          toastConfirmEl.removeEventListener('hidden.bs.toast', onHidden);
+        }
+        confirmYesBtn.addEventListener('click', onYes, {once:true});
+        confirmNoBtn.addEventListener('click', onNo, {once:true});
+        toastConfirmEl.addEventListener('hidden.bs.toast', onHidden, {once:true});
+        toastConfirm.show();
+      });
+    }
+
+    /* ====== Auth للأدمن فقط ====== */
+    async function fetchMe(){
+      try{
+        const r = await apiFetch('/auth/committees/me');
+        if(!r.ok) throw 0;
+        return await r.json();
+      }catch{ return {authenticated:false}; }
+    }
+    function renderUser(user){
+      const username = user?.username || (user?.email ? user.email.split('@')[0] : '—');
+      document.getElementById('userUsername').textContent = username;
+      document.getElementById('userFullName').textContent = user?.name || '—';
+      const roleRaw = (user?.role || '').toLowerCase();
+      document.getElementById('userRole').textContent = roleRaw==='user' ? 'member' : (user?.role || '—');
+    }
+    async function ensureAdmin(){
+      const me = await fetchMe();
+      if(!me.authenticated){
+        const next = encodeURIComponent('/committees-backups.html');
+        location.href = go(`/committees-login.html?next=${next}`);
+        throw new Error('auth');
+      }
+      if((me.user?.role||'').toLowerCase()!=='admin'){
+        setToast(toastError,'❌ هذه الصفحة للمشرفين فقط'); toastError.show();
+        setTimeout(()=>location.href=go('/committees-home.html'),900);
+        throw new Error('forbidden');
+      }
+      renderUser(me.user);
+      return me.user;
+    }
+    document.getElementById('logoutBtn').addEventListener('click', async ()=>{
+      try{
+        const r = await apiFetch('/auth/committees/logout',{method:'POST',headers:{'Content-Type':'application/json'}});
+        if(r.ok){ setToast(toastSuccess,'✅ تم تسجيل الخروج'); toastSuccess.show(); setTimeout(()=>location.href=go('/committees-login.html'),700); }
+        else{ setToast(toastError,'❌ تعذر تسجيل الخروج'); toastError.show(); }
+      }catch{ setToast(toastError,'❌ خطأ في الاتصال'); toastError.show(); }
+    });
+
+    /* ====== UI refs ====== */
+    const loading = document.getElementById('loadingOverlay');
+    const listEl  = document.getElementById('backupList');
+    const summary = document.getElementById('summary');
+    const selectAllEl = document.getElementById('selectAll');
+
+    let backups = [];
+
+    function showLoading(on){ loading.style.display = on ? 'flex' : 'none'; }
+
+    /* ====== CRUD Committees Backups (cbackups) ====== */
+    async function fetchBackups(){
+      showLoading(true);
+      try{
+        const r = await apiFetch('/api/cbackups');
+        if(r.status===401 || r.status===403){
+          setToast(toastError,'❌ انتهت الجلسة أو لا تملك صلاحية'); toastError.show();
+          setTimeout(()=>location.href=go('/committees-login.html'),900);
+          return;
+        }
+        const data = await r.json();
+        backups = Array.isArray(data) ? data : [];
+        renderBackups();
+      }catch{
+        setToast(toastError,'❌ فشل في جلب نسخ اللجان'); toastError.show();
+      }finally{
+        showLoading(false);
+      }
+    }
+
+    function renderBackups(){
+      listEl.innerHTML = '';
+      summary.textContent = '';
+
+      if(!backups.length){
+        listEl.innerHTML = '<div class="alert alert-info text-center mb-0">لا توجد نسخ احتياطية لنظام اللجان حالياً.</div>';
+        return;
+      }
+
+      let totalKB = 0;
+      backups.forEach((b,idx)=>{
+        const sizeKB = (
+          JSON.stringify(b.evaluations||[]).length +
+          JSON.stringify(b.colleges||[]).length +
+          JSON.stringify(b.committeesMaster||[]).length +
+          JSON.stringify(b.auditors||[]).length +
+          JSON.stringify(b.settings||{}).length +
+          JSON.stringify(b.committeeFiles||[]).length +
+          JSON.stringify(b.committeeAssignments||[]).length +
+          /* جديد: المستخدمون + سجل العمليات */
+          JSON.stringify(b.users||[]).length +
+          JSON.stringify(b.auditLogs||[]).length
+        ) / 1024;
+        totalKB += sizeKB;
+
+        const evN   = (b.evaluations||[]).length;
+        const colN  = (b.colleges||[]).length;
+        const dicN  = (b.committeesMaster||[]).length;
+        const audN  = (b.auditors||[]).length;
+        const cfsN  = (b.committeeFiles||[]).length;
+        const asgN  = (b.committeeAssignments||[]).length;
+        const usrN  = (b.users||[]).length;          // 👥
+        const logsN = (b.auditLogs||[]).length;      // 🧾
+
+        const st  = b.settings || {};
+        const when = b.date ? new Date(b.date).toLocaleString('ar-EG',{dateStyle:'full', timeStyle:'short'}) : '—';
+
+        const card = document.createElement('div');
+        card.className = 'backup-card mb-2';
+        card.innerHTML = `
+          <div class="d-flex align-items-start gap-2">
+            <input type="checkbox" class="form-check-input backup-check" data-id="${b._id}">
+            <div>
+              <div>
+                <strong>نسخة رقم #${idx+1}</strong>
+                <small class="text-muted">(${sizeKB.toFixed(2)} KB)</small>
+              </div>
+              <div class="text-muted">${when}</div>
+              <div class="details mt-1">
+                📝 التقييمات: ${evN} |
+                🏫 الكليات: ${colN} |
+                📚 قاموس اللجان: ${dicN} |
+                👤 المدققون: ${audN} |
+                📎 ملفات اللجان: ${cfsN} |
+                🧩 التعيينات: ${asgN}
+              </div>
+              <div class="details mt-1">
+                👥 المستخدمون: ${usrN} |
+                🧾 سجلّ العمليات: ${logsN}
+              </div>
+              <div class="details mt-1">
+                ⚙️ الإعدادات:
+                Term: ${st.term ? st.term : '—'} |
+                Year: ${st.academicYear ? st.academicYear : '—'} |
+                نشر النتائج: ${(typeof st.publishResults==='boolean') ? (st.publishResults ? 'نعم' : 'لا') : '—'}
+              </div>
+            </div>
+          </div>
+          <div class="d-flex gap-2">
+            <a class="btn btn-success btn-sm" href="${go('/api/cbackups/download/'+b._id)}">⬇️ تنزيل</a>
+            <button class="btn btn-warning btn-sm btn-restore" data-id="${b._id}">♻️ استرجاع</button>
+          </div>
+        `;
+        listEl.appendChild(card);
+      });
+
+      summary.textContent = `عدد النسخ: ${backups.length} – الحجم الكلي: ${totalKB.toFixed(2)} KB`;
+    }
+
+    async function createBackup(){
+      showLoading(true);
+      try{
+        const r = await apiFetch('/api/cbackups/create',{method:'POST'});
+        const data = await r.json().catch(()=>({}));
+        if(!r.ok) throw new Error(data?.message || 'فشل إنشاء النسخة');
+        setToast(toastSuccess, data.message || '✅ تم إنشاء نسخة اللجان'); toastSuccess.show();
+        await fetchBackups();
+      }catch(err){
+        setToast(toastError, '❌ ' + (err.message||'فشل إنشاء النسخة')); toastError.show();
+      }finally{
+        showLoading(false);
+      }
+    }
+
+    async function restoreBackup(id){
+      const ok = await confirmToast({
+        message:'سيتم استرجاع هذه النسخة كاملة إلى قاعدة بيانات اللجان، بما في ذلك المستخدمون وسجلّ العمليات.\nلا يمكن التراجع.',
+        confirmText:'نعم، استرجع',
+        cancelText:'إلغاء'
+      });
+      if(!ok){ setToast(toastInfo,'تم الإلغاء'); toastInfo.show(); return; }
+      showLoading(true);
+      try{
+        const r = await apiFetch('/api/cbackups/restore/'+id,{method:'POST'});
+        const data = await r.json().catch(()=>({}));
+        if(!r.ok) throw new Error(data?.message || 'فشل الاسترجاع');
+        setToast(toastSuccess, data.message || '♻️ تم الاسترجاع بنجاح'); toastSuccess.show();
+      }catch(err){
+        setToast(toastError, '❌ ' + (err.message||'فشل الاسترجاع')); toastError.show();
+      }finally{
+        showLoading(false);
+      }
+    }
+
+    async function deleteSelected(){
+      const ids = [...document.querySelectorAll('.backup-check:checked')].map(cb=>cb.dataset.id);
+      if(!ids.length){ setToast(toastInfo,'اختر نسخة واحدة على الأقل'); toastInfo.show(); return; }
+      const ok = await confirmToast({message:`سيتم حذف ${ids.length} نسخة احتياطية. لا يمكن التراجع.`, confirmText:'نعم، احذف', cancelText:'إلغاء'});
+      if(!ok){ setToast(toastInfo,'تم الإلغاء'); toastInfo.show(); return; }
+
+      showLoading(true);
+      try{
+        for(const id of ids){
+          await apiFetch('/api/cbackups/'+id, {method:'DELETE'});
+        }
+        setToast(toastSuccess,'🗑️ تم حذف النسخ المحددة'); toastSuccess.show();
+        selectAllEl.checked = false;
+        await fetchBackups();
+      }catch{
+        setToast(toastError,'❌ فشل حذف بعض العناصر'); toastError.show();
+      }finally{
+        showLoading(false);
+      }
+    }
+
+    async function uploadBackup(e){
+      e.preventDefault();
+      const fileInput = document.getElementById('backupFile');
+      if(!fileInput.files.length){ setToast(toastInfo,'اختر ملف JSON أولًا'); toastInfo.show(); return; }
+      const fd = new FormData(); fd.append('backupFile', fileInput.files[0]);
+      showLoading(true);
+      try{
+        const r = await apiFetch('/api/cbackups/upload', {method:'POST', body:fd});
+        const data = await r.json().catch(()=>({}));
+        if(!r.ok) throw new Error(data?.message || 'فشل رفع النسخة');
+        setToast(toastSuccess, data.message || '✅ تم الرفع والحفظ'); toastSuccess.show();
+        fileInput.value='';
+        await fetchBackups();
+      }catch(err){
+        setToast(toastError,'❌ ' + (err.message||'فشل الرفع')); toastError.show();
+      }finally{
+        showLoading(false);
+      }
+    }
+
+    /* ====== Events ====== */
+    document.getElementById('btnCreate').addEventListener('click', createBackup);
+    document.getElementById('btnDeleteSel').addEventListener('click', deleteSelected);
+    document.getElementById('uploadForm').addEventListener('submit', uploadBackup);
+
+    selectAllEl.addEventListener('change', (e)=>{
+      document.querySelectorAll('.backup-check').forEach(cb => cb.checked = e.target.checked);
+    });
+
+    document.getElementById('backupList').addEventListener('click', (e)=>{
+      const btn = e.target.closest('.btn-restore');
+      if(!btn) return;
+      restoreBackup(btn.dataset.id);
+    });
+
+    /* ====== Init ====== */
+    (async function init(){
+      try{
+        await ensureAdmin();
+        await fetchBackups();
+      }catch(e){
+        // تم التحويل/المنع أعلى
+      }
+    })();
+  </script>
+</body>
+</html>
