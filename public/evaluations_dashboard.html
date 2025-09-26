@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
@@ -7,17 +6,48 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.rtl.min.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
+
+  <!-- تفعيل حالة التحميل مبكرًا -->
+  <script>document.documentElement.classList.add('app-loading');</script>
+
   <style>
+    /* شاشة “جاري التحميل…” */
+    #appLoader{
+      position:fixed; inset:0; display:flex; align-items:center; justify-content:center;
+      gap:.75rem; background:#ffffff; z-index:3000; font-weight:700; color:#333;
+      font-family:'Segoe UI',sans-serif;
+    }
+    html.app-ready #appLoader{ display:none; }
+
+    /* أثناء التحميل: أخفِ كل المحتوى */
+    html.app-loading #pageContent,
+    html.app-loading #notAvailable,
+    html.app-loading .toast-container{ display:none !important; }
+
     body{background:#f8f9fa;font-family:'Segoe UI',sans-serif}
     .container-fluid{margin-top:30px}
+
     table{background:#fff;border-radius:10px;overflow:hidden;font-size:14px;width:100%;margin:auto}
-    th{text-align:center;vertical-align:middle;background:#f8f9fa;color:#000}
-    td{text-align:center;vertical-align:middle}
+    th,td{ text-align:center; vertical-align:middle }
+
+    /* توحيد ستايل ترويسة الجدول (مطابق لصفحة الإدارة) */
+    th{
+      background:#f8f9fa; color:#000; font-weight:700;
+      padding:.75rem .5rem; line-height:1.25;
+    }
+    /* Sticky header مثل صفحة الإدارة */
+    #evaluationsTableWrapper thead{
+      position:sticky; top:0; z-index:100; background:#f8f9fa;
+    }
+    #evaluationsTableWrapper thead th{
+      position:sticky; top:0; z-index:101; background:#f8f9fa; color:#000;
+      box-shadow:0 1px 0 rgba(0,0,0,.06);
+    }
+
     .highlight{background:#d4edda!important;transition:background-color 1s ease}
     .hidden-col{display:none!important}
     .filters{margin-bottom:20px;text-align:center}
     .sticky-header{background:#f8f9fa;padding-top:10px}
-    #evaluationsTableWrapper thead th{position:sticky;top:0;z-index:99;background:#f8f9fa;color:#000}
 
     /* أعمدة التاريخ (اتجاه يسار لليمين) */
     #evaluationsTableWrapper th.date-col,
@@ -26,7 +56,9 @@
     }
 
     /* مساحات معلومات أعلى الجدول (بالأسود كما طُلب) */
-    #completionRateContainer,#selectedVisitsContainer{font-weight:bold;margin:5px 0;font-size:18px;color:#000;min-height:24px}
+    #completionRateContainer,#selectedVisitsContainer{
+      font-weight:bold;margin:5px 0;font-size:18px;color:#000;min-height:24px
+    }
     #infoContainer{font-weight:bold;margin:15px 0;font-size:18px;color:#000;text-align:center}
 
     /* ملاحظات: ما يظهر على الشاشة/الطباعة */
@@ -42,27 +74,64 @@
       box-shadow: inset 0 0 0 9999px rgba(13,110,253,.06);
     }
 
-    /* عناصر لا تُطبع */
-    .no-print{}
-    @media print{
-      body{background:#fff}
-      .no-print,.toast-container,.modal{display:none!important}
-      .container-fluid{max-width:none;width:100%}
-      .print-header{display:block;margin-bottom:10px}
-      .notes-screen{display:none!important}
-      .print-notes{display:block!important;white-space:normal}
-      thead{display:table-header-group}
-      button,select,input{display:none!important}
-    }
-
     /* حالة "غير متوفر" */
     #notAvailable{
       min-height:60vh;
       align-items:center; justify-content:center; text-align:center;
     }
+
+    /* ======== تحسينات الطباعة ======== */
+    @media print{
+      /* اجعل الجدول يلتزم بالعرض ويمنع الانقسام قدر الإمكان */
+      @page{ size: A4 landscape; margin: 10mm; }
+      body{background:#fff}
+      .no-print,.toast-container,.modal{display:none!important}
+      .container-fluid{max-width:none;width:100%;margin:0}
+      .print-header{display:block;margin-bottom:10px}
+
+      /* تكرار رأس الجدول في كل صفحة */
+      thead{ display:table-header-group }
+      tfoot{ display:table-footer-group }
+
+      /* منع انقسام الصف عبر الصفحات قدر الإمكان */
+      table{ table-layout:fixed; border-collapse:collapse; width:100%; }
+      tr{ page-break-inside: avoid; }
+      td,th{
+        white-space:normal; overflow-wrap:anywhere; word-break:break-word;
+        padding:.45rem .35rem; /* تقليل بسيط لتناسب العرض */
+        font-size:12px; line-height:1.25;
+      }
+
+      /* إظهار نسخة الطباعة من الملاحظات */
+      .notes-screen{display:none!important}
+      .print-notes{display:block!important;white-space:normal}
+
+      /* ضمان بقاء الأعمدة داخل الصفحة */
+      .col-college{width:12%}
+      .date-col{width:9%}
+      .col-formation_decision,
+      .col-work_plan,
+      .col-performance_indicators,
+      .col-meetings,
+      .col-consistency,
+      .col-coverage_books,
+      .col-report1,
+      .col-report2,
+      .col-report3,
+      .col-statistical_analysis{ width:5.5% }
+      #availabilityHeader, .availability-cell{ width:6% }
+      .col-notes{ width:18% }
+    }
   </style>
 </head>
 <body>
+
+  <!-- شاشة “جاري التحميل…” -->
+  <div id="appLoader" aria-live="polite">
+    <div class="spinner-border" role="status" aria-hidden="true"></div>
+    <span>جاري التحميل…</span>
+  </div>
+
   <!-- رسالة النتائج غير متوفرة -->
   <div id="notAvailable" class="container d-none">
     <div class="mx-auto">
@@ -133,7 +202,6 @@
           <th class="col-report3">تقرير إنجاز 3</th>
           <th class="col-statistical_analysis">التحليل الإحصائي</th>
           <th id="availabilityHeader">درجة التوفر من (9)</th>
-          <!-- ✅ تمييز رأس عمود الملاحظات -->
           <th class="col-notes">الملاحظات</th>
         </tr>
       </thead>
@@ -208,7 +276,6 @@
         while(walker.nextNode()){
           const el=walker.currentNode;
           if(!allowed.includes(el.tagName)) toRemove.push(el);
-          // إزالة الخصائص الخطرة
           for(const a of Array.from(el.attributes||[])){
             const name=a.name.toLowerCase();
             if(name.startsWith('on') || name==='style') el.removeAttribute(a.name);
@@ -264,13 +331,11 @@
 
     /* ===== تطبيق رؤية الأعمدة ===== */
     function applyColumnVisibility(){
-      // الكلية
       const showCollege=document.getElementById('toggle_college').checked;
       document.querySelectorAll('.col-college').forEach(el=>el.classList.toggle('hidden-col',!showCollege));
-      // التاريخ
       const showDate=document.getElementById('toggle_date').checked;
       document.querySelectorAll('.date-col').forEach(el=>el.classList.toggle('hidden-col',!showDate));
-      // الحقول العددية حسب الإعدادات
+
       availabilityFields.forEach(f=>{
         const show = savedVisibleColumns.includes(f);
         document.querySelectorAll(`[data-field="${f}"]`).forEach(td=>td.classList.toggle('hidden-col', !show));
@@ -278,7 +343,7 @@
         if(th) th.classList.toggle('hidden-col', !show);
       });
 
-      /* ✅ منطق إخفاء/إظهار عمود الملاحظات بناءً على الأعمدة المختارة */
+      /* منطق إخفاء/إظهار عمود الملاحظات */
       const hideNotes = savedVisibleColumns.length === 0;
       const notesHeader = document.querySelector('#evaluationsTableWrapper th.col-notes');
       if (notesHeader) notesHeader.classList.toggle('hidden-col', hideNotes);
@@ -290,10 +355,7 @@
       updateAvailabilityHeader();
       updateCompletionAndCounts();
     }
-
-    document.querySelectorAll('.simple-toggle').forEach(cb=>{
-      cb.addEventListener('change', applyColumnVisibility);
-    });
+    document.querySelectorAll('.simple-toggle').forEach(cb=>cb.addEventListener('change', applyColumnVisibility));
 
     /* ===== البحث باسم اللجنة ===== */
     function applyCommitteeSearch(){
@@ -316,30 +378,23 @@
       try{
         const {data} = await axios.get('/api/settings');
         settingsCache = data || {};
-        // متغير التحكم بالنشر
         PUBLISH_RESULTS = !!settingsCache.publishResults;
 
         if(!PUBLISH_RESULTS){
-          // إظهار الرسالة فقط
-          na.classList.remove('d-none');
-          na.classList.add('d-flex');
+          na.classList.remove('d-none'); na.classList.add('d-flex');
           pc.classList.add('d-none');
           return false;
         }
 
-        // مفعّل => إظهار الصفحة وإخفاء الرسالة
-        na.classList.add('d-none');
-        na.classList.remove('d-flex');
+        na.classList.add('d-none'); na.classList.remove('d-flex');
         pc.classList.remove('d-none');
 
         savedVisibleColumns = settingsCache.visibleColumns || [];
 
-        // سطر الفصل/العام
         const t = settingsCache.term || '—';
         const ay= settingsCache.academicYear || '—';
         semesterEl.textContent = `${t} - ${ay}`;
 
-        // الزيارات أعلى الجدول
         const visits = Array.isArray(settingsCache.selectedVisits) && settingsCache.selectedVisits.length
           ? settingsCache.selectedVisits.join(' | ')
           : 'لم يتم اختيار أي زيارة';
@@ -347,9 +402,7 @@
 
         return true;
       }catch(e){
-        // في حالة الخطأ نتصرف كأن النشر غير مفعّل (أكثر أمانًا)
-        na.classList.remove('d-none');
-        na.classList.add('d-flex');
+        na.classList.remove('d-none'); na.classList.add('d-flex');
         pc.classList.add('d-none');
         return false;
       }
@@ -378,10 +431,8 @@
           return;
         }
 
-        // ترتيب افتراضي حسب الكلية
         arr.sort((a,b)=>(a.college||'').localeCompare(b.college||'','ar'));
 
-        // رسم الصفوف
         arr.forEach((c,idx)=>{
           const tr=document.createElement('tr');
           const dateTxt = c.audit_date ? new Date(c.audit_date).toLocaleDateString('ar-EG'): '-';
@@ -404,19 +455,16 @@
             <td data-field="report3">${c.report3 ?? 0}</td>
             <td data-field="statistical_analysis">${c.statistical_analysis ?? 0}</td>
             <td class="availability-cell">${c.availability_score ?? 0}</td>
-            <!-- ✅ وسم خلية الملاحظات لسهولة التحكم -->
             <td data-notes-col>
               <span class="notes-screen">
-                ${
-                  hasNotes
-                  ? `<button class="btn btn-sm btn-info" title="عرض الملاحظات" data-notes="1">🔍</button>`
-                  : '<span class="text-muted">لا توجد ملاحظات</span>'
-                }
+                ${ hasNotes
+                    ? `<button class="btn btn-sm btn-info" title="عرض الملاحظات" data-notes="1">🔍</button>`
+                    : '<span class="text-muted">لا توجد ملاحظات</span>' }
               </span>
               <div class="print-notes">${hasNotes ? sanitizeNotes(notesHtml) : '—'}</div>
             </td>
           `;
-          // زر عرض الملاحظات (شاشة فقط)
+
           const btn = tr.querySelector('[data-notes]');
           if(btn){
             btn.addEventListener('click',()=>{
@@ -428,9 +476,7 @@
           updateAvailability(tr);
         });
 
-        // تطبيق رؤية الأعمدة (حسب الإعدادات الحالية والتبديلات)
         applyColumnVisibility();
-        // تطبيق البحث الحالي
         applyCommitteeSearch();
       }catch(err){
         console.error(err);
@@ -441,7 +487,7 @@
     }
 
     /* ===== طباعة ===== */
-    document.getElementById('printBtn').addEventListener('click', ()=> {
+    document.getElementById('printBtn').addEventListener('click', ()=>{
       updateCompletionAndCounts();
       window.print();
     });
@@ -453,8 +499,8 @@
     });
     document.getElementById('reloadBtn').addEventListener('click', async ()=>{
       const ok = await loadSettings();
-      if(ok){ // فقط إذا النشر مفعّل
-        await loadOptions(); // يمكن إعادة تحميل القوائم أيضًا عند الرغبة
+      if(ok){
+        await loadOptions();
         await loadCommittees();
       }
     });
@@ -462,12 +508,20 @@
     /* ===== تشغيل أولي =====
        1) قراءة الإعدادات لتحديد publishResults
        2) إذا مفعّل: نحمّل القوائم ثم الجدول
+       3) إنهاء شاشة التحميل دائمًا في النهاية
     */
     (async function init(){
-      const ok = await loadSettings();
-      if(!ok) return;
-      await loadOptions();
-      await loadCommittees();
+      try{
+        const ok = await loadSettings();
+        if(ok){
+          await loadOptions();
+          await loadCommittees();
+        }
+      } finally {
+        // إنهاء شاشة "جاري التحميل…" وإظهار ما يلزم (محتوى/رسالة غير متوفر)
+        document.documentElement.classList.remove('app-loading');
+        document.documentElement.classList.add('app-ready');
+      }
     })();
   </script>
 </body>
