@@ -31,7 +31,7 @@
     table{
       background:#fff;
       border-radius:10px;
-      overflow:visible;            /* كان hidden */
+      overflow:visible;
       font-size:14px;
       width:100%;
       margin:auto
@@ -56,9 +56,11 @@
     /* ===== ترويسة لاصقة + ارتفاع أكبر (مطابق لصفحة الإدارة) ===== */
     #evaluationsTableWrapper thead{
       position:sticky; top:0; z-index:99; background:#f8f9fa;
+      position:-webkit-sticky; /* دعم ويبكت */
     }
     #evaluationsTableWrapper thead th{
       position:sticky; top:0; z-index:100; background:#f8f9fa; color:#000;
+      position:-webkit-sticky; /* دعم ويبكت */
       box-shadow:0 1px 0 rgba(0,0,0,.06);
       padding-block: 1rem;           /* ↑ ارتفاع أكبر للرأس على الشاشة */
       line-height:1.25;
@@ -174,7 +176,7 @@
       <!-- الفلاتر -->
       <div class="filters row justify-content-center no-print">
         <div class="col-md-3 mb-2 text-center">
-          <label class="form-label d-block">الكلية</label> <!-- تم تصحيح d-block -->
+          <label class="form-label d-block">الكلية</label>
           <select id="collegeFilter" class="form-select">
             <option value="">جميع الكليات</option>
           </select>
@@ -332,10 +334,12 @@
         }
         toRemove.forEach(n=>n.replaceWith(document.createTextNode(n.textContent||'')));
         return tmp.innerHTML.trim() || '—';
-      }catch{return '—'}
+      }catch(e){
+        return '—';
+      }
     }
 
-    /* ===== تعيين عنوان "درجة التوفر" متعدد الأسطر مع رقم ديناميكي ===== */
+    /* ===== تعيين عنوان "Degree of Availability" متعدد الأسطر مع رقم ديناميكي ===== */
     function renderAvailabilityHeader(n){
       const h = document.getElementById('availabilityHeader');
       h.innerHTML = `
@@ -356,7 +360,7 @@
     function updateAvailability(row){
       let sum=0;
       availabilityFields.forEach(f=>{
-        const cell=row.querySelector(\`[data-field="\${f}"]\`);
+        const cell=row.querySelector(`[data-field="${f}"]`);
         if(cell && !cell.classList.contains('hidden-col')){
           sum += parseFloat(cell.innerText)||0;
         }
@@ -381,11 +385,11 @@
       const countDiv=document.getElementById('committeesCountContainer');
       const lc = lastCollege || 'جميع الكليات';
       if(lc && lc!=='جميع الكليات'){
-        completionDiv.innerHTML = \`نسبة الاكتمال لكلية \${lc} = \${pct}%\`;
-        countDiv.innerHTML      = \`عدد لجان كلية \${lc} = \${rows.length}\`;
+        completionDiv.innerHTML = `نسبة الاكتمال لكلية ${lc} = ${pct}%`;
+        countDiv.innerHTML      = `عدد لجان كلية ${lc} = ${rows.length}`;
       }else{
-        completionDiv.innerHTML = \`نسبة الاكتمال لجميع الكليات = \${pct}%\`;
-        countDiv.innerHTML      = \`عدد لجان جميع الكليات = \${rows.length}\`;
+        completionDiv.innerHTML = `نسبة الاكتمال لجميع الكليات = ${pct}%`;
+        countDiv.innerHTML      = `عدد لجان جميع الكليات = ${rows.length}`;
       }
     }
 
@@ -399,8 +403,8 @@
 
       availabilityFields.forEach(f=>{
         const show = savedVisibleColumns.includes(f);
-        document.querySelectorAll(\`[data-field="\${f}"]\`).forEach(td=>td.classList.toggle('hidden-col', !show));
-        const th=document.querySelector(\`.col-\${f}\`);
+        document.querySelectorAll(`[data-field="${f}"]`).forEach(td=>td.classList.toggle('hidden-col', !show));
+        const th=document.querySelector(`.col-${f}`);
         if(th) th.classList.toggle('hidden-col', !show);
       });
 
@@ -426,7 +430,7 @@
       const term=document.getElementById('committeeSearch').value.trim().toLowerCase();
       document.querySelectorAll('#committeesTable tr').forEach(row=>{
         const name=row.querySelector('td.col-committee')?.innerText.trim().toLowerCase()||'';
-        row.style.display = name.includes(term)? '': 'none';
+        row.style.display = name.includes(term)? '' : 'none';
       });
       updateCompletionAndCounts();
     }
@@ -458,12 +462,12 @@
 
         const t = settingsCache.term || '—';
         const ay= settingsCache.academicYear || '—';
-        semesterEl.textContent = \`\${t} - \${ay}\`;
+        semesterEl.textContent = `${t} - ${ay}`;
 
         const visits = Array.isArray(settingsCache.selectedVisits) && settingsCache.selectedVisits.length
           ? settingsCache.selectedVisits.join(' | ')
           : 'لم يتم اختيار أي زيارة';
-        visitsEl.textContent = \`الزيارات: \${visits}\`;
+        visitsEl.textContent = `الزيارات: ${visits}`;
 
         return true;
       }catch(e){
