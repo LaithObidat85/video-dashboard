@@ -1,163 +1,58 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-  <meta charset="UTF-8">
-  <title>إدارة تقييم اللجان - نظام اللجان</title>
-  <!-- تم تحديث الـ viewport ليشمل viewport-fit=cover لدعم حواف الأمان على iOS -->
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta charset="UTF-8" />
+  <title>إدارة المستخدمين - نظام اللجان</title>
   <link rel="icon" type="image/png" href="https://www.dropbox.com/scl/fi/f283e4rvv5cf9x12a1cic/my-website-logo.png?rlkey=yia776im7klypy27af32m0scy&e=1&st=vhaprvzh&dl=1">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.rtl.min.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
-
-  <!-- نفعل ستاتس التحميل مبكراً -->
-  <script>document.documentElement.classList.add('app-loading');</script>
-
   <style>
-    /* شاشة "جاري التحميل..." */
-    #appLoader{
-      position:fixed; inset:0; display:flex; align-items:center; justify-content:center;
-      gap:.75rem; background:#ffffff; z-index:3000; font-weight:700; color:#333;
+    /* مساواة ارتفاع شارة معلومات المستخدم بزر "خروج" */
+    .user-chip{
+      display:inline-flex;align-items:center;gap:.25rem;font-size:1rem;padding:.375rem .75rem;line-height:1.5;border-radius:.375rem;
     }
-    html.app-ready #appLoader{ display:none; }
-
-    /* أثناء التحميل: اخفِ محتوى الصفحة فقط */
-    html.app-loading .page-wrap{ display:none !important; }
-    html.app-loading .toast-container{ display:none !important; }
-
     body{background:#f8f9fa;font-family:'Segoe UI',sans-serif}
+    .container{max-width:1200px;margin-top:40px}
+    .card{border-radius:16px;box-shadow:0 6px 18px rgba(0,0,0,.06)}
+    .muted{opacity:.75}
 
-    /* اجعل جميع الحاويات بعرض كامل دائمًا */
-    .container,
-    .container-sm,
-    .container-md,
-    .container-lg,
-    .container-xl,
-    .container-xxl,
-    .container-fluid{
-      max-width:100% !important;
-      width:100% !important;
-      padding-left:var(--bs-gutter-x,.75rem) !important;
-      padding-right:var(--bs-gutter-x,.75rem) !important;
-    }
+    /* سكلتون */
+    .skeleton{position:relative;overflow:hidden;background:linear-gradient(90deg,#eee 25%,#f5f5f5 37%,#eee 63%);background-size:400% 100%;animation:shimmer 1.2s infinite}
+    @keyframes shimmer{0%{background-position:100% 0}100%{background-position:-100% 0}}
 
-    /* نزّل الهيدر */
-    .page-wrap{margin-top:40px}
+    .badge-active{background:#1987541a;color:#198754}
+    .badge-inactive{background:#dc35451a;color:#dc3545}
 
-    .user-chip{display:inline-flex;align-items:center;gap:.25rem;font-size:1rem!important;padding:.375rem .75rem!important;line-height:1.5!important;border-radius:.375rem;font-weight:700!important}
-    .user-chip.badge #userRole{font-weight:500!important}
+    .saving{opacity:.5;pointer-events:none}
+    .row-highlight{animation:flash .8s ease}
+    @keyframes flash{0%{background:#fff3cd}100%{background:transparent}}
 
-    table{
-      background:#fff;
-      border-radius:12px;
-      /* لا تستخدم overflow:hidden حتى لا تلغي sticky */
-      font-size:14px;
-      width:100%;
-      margin:auto
-    }
-    th,td{text-align:center;vertical-align:middle}
-    th{background:#f8f9fa;color:#000;font-weight:700} /* جعل العناوين bold */
-    td.invalid{background:#fde2e1!important}
-    .highlight{background:#d4edda!important;transition:background-color 1s ease}
-    .hidden-col{display:none!important}
+    .table-responsive{max-height:540px;overflow:auto}
+    thead th{position:sticky;top:0;z-index:1;background:#fff}
 
-    /* شريط الإعدادات لم يعد sticky */
-    .sticky-header{background:#f8f9fa;padding-top:10px}
+    .pw-meter{height:6px;border-radius:6px;overflow:hidden;background:#e9ecef}
+    .pw-meter>div{height:100%}
 
-    /* ========= تحسينات تثبيت الترويسة (Sticky) ========= */
-    :root{ --table-header-bg:#f8f9fa; }
+    .toolbar{gap:.5rem}
 
-    /* لا تجعل .table-responsive سلف تمرير؛ اترك التمرير للصفحة */
-    .table-responsive{ overflow: visible !important; }
+    .inline-edit{font-size:.9rem;padding:.25rem .5rem;height:2rem;}
+    .cell-saving{opacity:.6;}
 
-    /* فعّل sticky على thead وعلى th لضمان التوافق عبر المتصفحات */
-    #evaluationsTableWrapper thead{
-      position: sticky;
-      top: 0;
-      z-index: 100; /* أقل بقليل من th */
-      background: var(--table-header-bg);
-    }
-    #evaluationsTableWrapper thead th{
-      position: sticky;
-      top: 0;
-      z-index: 101; /* فوق باقي خلايا الجدول */
-      background: var(--table-header-bg);
-      color:#000;
-      /* حدود ظل خفيفة أسفل الترويسة عند الالتصاق */
-      box-shadow: 0 1px 0 rgba(0,0,0,.06);
-    }
+    .field-dirty{outline:2px solid rgba(255,193,7,.75);background:#fff8e1;transition:outline .2s,background .2s;}
 
-    #evaluationsTableWrapper th.date-col,#evaluationsTableWrapper td.date-col{direction:ltr;text-align:center;width:140px;max-width:140px}
-
-    /* أحجام الأعمدة  */
-    th.w-wide, td.w-wide{min-width:200px}
-    th.w-narrow, td.w-narrow{min-width:70px;max-width:90px}
-    td.w-narrow input{padding:.125rem .25rem}
-
-    /* ✅ توسيع عمود الإجراءات */
-    th.actions-col, td.actions-col{min-width:160px}
-
-    .toast-container{position:fixed;top:20px;left:50%;transform:translateX(-50%);z-index:2000}
-    #completionRateContainer,#selectedVisitsContainer,#termBadge{text-align:center;font-weight:bold;margin:5px 0;font-size:16px;min-height:24px}
-    #termBadge .badge{font-size:.95rem}
-    .muted{color:#6c757d}
-
-    /* Mini editor */
-    .mini-toolbar{display:flex;gap:.25rem;margin-bottom:.5rem;flex-wrap:wrap}
-    .mini-toolbar button{border:1px solid #ced4da;background:#f8f9fa;padding:.25rem .5rem;border-radius:.375rem}
-    .mini-editor{border:1px solid #ced4da;border-radius:.5rem;padding:.5rem;min-height:180px;background:#fff}
-
-    /* شريط الإجراءات */
-    .bulk-bar{display:flex;gap:.5rem;flex-wrap:wrap;align-items:center;justify-content:flex-start}
-    .bulk-title{font-weight:700;margin-inline-end:.25rem}
-
-    /* تمييز الصف الجديد مؤقتًا */
-    tr.is-new{background:#e9f7ff}
-
-    /* الفلاتر – توزيع عبر العرض */
-    .filters .form-label{font-weight:600}
-
-    /* ========= تأثير تمرير (Hover) على صفوف الجدول ========= */
-    /* اجعل اللون واضحًا ويتغلب على ألوان striped من Bootstrap */
-    #committeesTable tr:hover > td,
-    #committeesTable tr:hover > th{
-      background-color:#fff6db !important; /* أصفر فاتح */
-      transition: background-color .15s ease-in-out;
-    }
-
-    /* ======== تعديل مخصص للموبايل فقط لتمديد الهيدر للحافة ======== */
-    :root{ --edge-pad: var(--bs-gutter-x, .75rem); }
-    @supports(padding: max(0px)){
-      :root{
-        /* نأخذ الأكبر بين الـ gutter العادي وحواف الأمان على iOS */
-        --edge-pad: max(var(--bs-gutter-x, .75rem), env(safe-area-inset-left), env(safe-area-inset-right));
-      }
-    }
-    /* كلاس يُطبَّق على الهيدر فقط */
-    @media (max-width: 575.98px){
-      .fullBleed-sm{
-        /* نلغي Padding الحاوية على الجانبين بإزاحة سالبة مساوية له */
-        margin-inline: calc(-1 * var(--edge-pad));
-        width: calc(100% + 2 * var(--edge-pad));
-        /* نُعيد padding داخلي لكي لا يلتصق المحتوى بالحافة */
-        padding-inline: var(--edge-pad);
-        background:#fff; /* لتفادي ظهور خلفية الصفحة الرمادية على الأطراف */
-      }
-    }
+    .user-chip.badge{display:inline-flex;align-items:center;gap:.25rem;padding:.375rem .75rem !important;font-size:1rem !important;line-height:1.5 !important;border-radius:.375rem;font-weight:700 !important}
+    .user-chip.badge #userRole{font-weight:500 !important}
+    .inline-role{min-width:160px;}
   </style>
 </head>
 <body>
-
-  <!-- شاشة "جاري التحميل..." -->
-  <div id="appLoader" aria-live="polite">
-    <div class="spinner-border" role="status" aria-hidden="true"></div>
-    <span>جاري التحميل…</span>
-  </div>
-
-  <div class="container-fluid page-wrap">
+  <div class="container-fluid" style="padding-top:40px">
     <!-- Header -->
-    <!-- تمت إضافة الكلاس fullBleed-sm فقط، ليؤثر على الموبايل دون تغيير سطح المكتب -->
-    <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-2 fullBleed-sm">
-      <h4 class="mb-0">إدارة تقييم اللجان</h4>
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-2">
+      <div class="d-flex align-items-center gap-2">
+        <h3 class="mb-0">إدارة المستخدمين</h3>
+      </div>
       <div class="d-flex align-items-center gap-2">
         <span id="userInfo" class="user-chip badge bg-light text-dark border">
           <i class="bi bi-person"></i>
@@ -166,824 +61,1105 @@
           <span id="userFullName">—</span>
           <span class="ms-2 badge bg-secondary" id="userRole">—</span>
         </span>
+
         <a class="btn btn-outline-primary" id="homeBtn" href="/committees-home.html">
           <i class="bi bi-grid"></i> لوحة التحكم
         </a>
+
         <button id="logoutBtn" class="btn btn-danger">
           <i class="bi bi-box-arrow-right"></i> خروج
         </button>
       </div>
     </div>
 
-    <div class="sticky-header">
-      <!-- الفلاتر -->
-      <div class="filters row g-3 mb-3">
-        <div class="col-12 col-sm-6 col-lg-4">
-          <label class="form-label">الكلية</label>
-          <select id="collegeFilter" class="form-select">
-            <option value="">جميع الكليات</option>
-          </select>
-        </div>
-        <div class="col-12 col-sm-6 col-lg-4">
-          <label class="form-label">اسم المدقق</label>
-          <select id="auditorFilter" class="form-select">
-            <option value="">جميع المدققين</option>
-          </select>
-        </div>
-        <div class="col-12 col-sm-6 col-lg-4">
-          <label class="form-label">اسم اللجنة</label>
-          <select id="committeeFilter" class="form-select">
-            <option value="">جميع اللجان</option>
-          </select>
-        </div>
+    <!-- إضافة مستخدم (قابلة للطي) -->
+    <div class="card mb-4">
+      <div class="card-header p-0">
+        <button type="button" class="btn btn-link w-100 text-start p-3 d-flex justify-content-between align-items-center"
+                data-bs-toggle="collapse" data-bs-target="#addUserCollapse"
+                aria-expanded="false" aria-controls="addUserCollapse">
+          <span class="fw-semibold"><i class="bi bi-person-plus"></i> إضافة مستخدم جديد</span>
+          <i class="bi bi-plus-lg" id="addFormToggleIcon"></i>
+        </button>
       </div>
-
-      <!-- بطاقة إعدادات (أدمن فقط) -->
-      <div class="card mb-3 d-none" id="settingsCard">
-        <div class="card-header fw-bold">⚙️ إعدادات</div>
+      <div id="addUserCollapse" class="collapse">
         <div class="card-body">
-          <div class="row g-3 align-items-end">
-            <!-- الزيارات -->
-            <div class="col-12">
-              <div class="d-flex flex-wrap gap-3 align-items-center">
-                <div class="form-check"><input class="form-check-input visit-toggle" type="checkbox" id="visit1" value="الزيارة الأولى"><label class="form-check-label" for="visit1">الزيارة الأولى</label></div>
-                <div class="form-check"><input class="form-check-input visit-toggle" type="checkbox" id="visit2" value="الزيارة الثانية"><label class="form-check-label" for="visit2">الزيارة الثانية</label></div>
-                <div class="form-check"><input class="form-check-input visit-toggle" type="checkbox" id="visit3" value="الزيارة الثالثة"><label class="form-check-label" for="visit3">الزيارة الثالثة</label></div>
-                <div class="form-check"><input class="form-check-input visit-toggle" type="checkbox" id="visit4" value="الزيارة الرابعة"><label class="form-check-label" for="visit4">الزيارة الرابعة</label></div>
-                <div class="form-check"><input class="form-check-input visit-toggle" type="checkbox" id="visit5" value="الزيارة النهائية"><label class="form-check-label" for="visit5">الزيارة النهائية</label></div>
-
-                <!-- نشر النتائج -->
-                <div class="form-check ms-lg-3">
-                  <input class="form-check-input" type="checkbox" id="publishResults">
-                  <label class="form-check-label" for="publishResults">عرض البيانات في صفحة «نتائج تقييم اللجان»</label>
-                </div>
-              </div>
+          <form id="addUserForm" class="row g-3">
+            <div class="col-md-3">
+              <label class="form-label">اسم المستخدم</label>
+              <input type="text" class="form-control" name="username" autocomplete="username" required>
+              <div class="form-text" id="userCheckHint"></div>
             </div>
-
-            <!-- الفصل والعام -->
-            <div class="col-12 col-md-4">
-              <label class="form-label">الفصل الدراسي</label>
-              <select id="termSelect" class="form-select">
-                <option value="">— اختر الفصل —</option>
-                <option value="الفصل الأول">الفصل الأول</option>
-                <option value="الفصل الثاني">الفصل الثاني</option>
-                <option value="الفصل الصيفي">الفصل الصيفي</option>
+            <div class="col-md-3">
+              <label class="form-label">الاسم الكامل</label>
+              <input type="text" class="form-control" name="name" required>
+            </div>
+            <div class="col-md-3">
+              <label class="form-label">البريد الإلكتروني</label>
+              <input type="email" class="form-control" name="email" autocomplete="email" required>
+              <div class="form-text" id="emailCheckHint"></div>
+            </div>
+            <div class="col-md-3">
+              <label class="form-label">كلمة المرور</label>
+              <div class="input-group">
+                <input type="password" class="form-control" name="password" id="pwInput" minlength="8" required>
+                <button type="button" class="btn btn-outline-secondary" id="togglePwBtn" title="إظهار/إخفاء">
+                  <i class="bi bi-eye"></i>
+                </button>
+              </div>
+              <div class="pw-meter mt-2"><div id="pwBar"></div></div>
+            </div>
+            <div class="col-md-3">
+              <label class="form-label">الدور</label>
+              <select class="form-select" name="role" required>
+                <option value="user">user</option>
+                <option value="admin">admin</option>
+                <option value="subuser-member" selected>subuser-member</option>
               </select>
             </div>
-            <div class="col-12 col-md-4">
-              <label class="form-label">العام الجامعي</label>
-              <input type="text" id="academicYearInput" class="form-control" placeholder="مثال: 2024-2025 أو 2024/2025">
-            </div>
-
-            <!-- خيارات الأعمدة -->
             <div class="col-12">
-              <div class="d-flex flex-wrap align-items-center gap-3 mb-2">
-                <div class="fw-semibold">إظهار/إخفاء الأعمدة</div>
-                <div class="form-check">
-                  <input class="form-check-input" type="checkbox" id="hideAllColumns">
-                  <label class="form-check-label" for="hideAllColumns">إخفاء جميع الأعمدة</label>
-                </div>
-                <div class="form-check">
-                  <input class="form-check-input" type="checkbox" id="showAllColumns">
-                  <label class="form-check-label" for="showAllColumns">إظهار جميع الأعمدة</label>
-                </div>
-              </div>
-
-              <div class="d-flex flex-wrap justify-content-start gap-3 align-items-center" id="columnToggles">
-                <div class="form-check"><input class="form-check-input col-toggle" type="checkbox" data-field="formation_decision" checked><label class="form-check-label">قرار التشكيل</label></div>
-                <div class="form-check"><input class="form-check-input col-toggle" type="checkbox" data-field="work_plan" checked><label class="form-check-label">خطة العمل</label></div>
-                <div class="form-check"><input class="form-check-input col-toggle" type="checkbox" data-field="performance_indicators" checked><label class="form-check-label">مؤشرات الأداء</label></div>
-                <div class="form-check"><input class="form-check-input col-toggle" type="checkbox" data-field="meetings" checked><label class="form-check-label">عدد الاجتماعات</label></div>
-                <div class="form-check"><input class="form-check-input col-toggle" type="checkbox" data-field="consistency" checked><label class="form-check-label">التوافق بين الدعوات والاجتماعات</label></div>
-                <div class="form-check"><input class="form-check-input col-toggle" type="checkbox" data-field="coverage_books" checked><label class="form-check-label">كتب التغطية</label></div>
-                <div class="form-check"><input class="form-check-input col-toggle" type="checkbox" data-field="report1" checked><label class="form-check-label">تقرير إنجاز 1</label></div>
-                <div class="form-check"><input class="form-check-input col-toggle" type="checkbox" data-field="report2" checked><label class="form-check-label">تقرير إنجاز 2</label></div>
-                <div class="form-check"><input class="form-check-input col-toggle" type="checkbox" data-field="report3" checked><label class="form-check-label">تقرير إنجاز 3</label></div>
-                <div class="form-check"><input class="form-check-input col-toggle" type="checkbox" data-field="statistical_analysis" checked><label class="form-check-label">التحليل الإحصائي</label></div>
-              </div>
+              <button class="btn btn-primary" id="addBtn">
+                <span class="btn-label"><i class="bi bi-check2-circle"></i> إضافة</span>
+              </button>
             </div>
-
-            <!-- زر حفظ واحد -->
-            <div class="col-12">
-              <button class="btn btn-primary" id="saveAllSettingsBtn">💾 حفظ الإعدادات</button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- شارات ومؤشرات -->
-      <div id="termBadge"></div>
-      <div id="selectedVisitsContainer"></div>
-      <div id="completionRateContainer"></div>
-
-      <!-- شريط الإجراءات -->
-      <div class="card p-2 mb-2">
-        <div class="bulk-bar">
-          <span class="bulk-title">إجراءات سريعة</span>
-          <button class="btn btn-sm btn-primary" id="addRowBtn" title="إضافة سجل جديد">➕ إضافة سجل</button>
-          <button class="btn btn-sm btn-success" id="saveAllBtn" title="حفظ جميع الصفوف المعدلة">💾 حفظ الكل</button>
-          <button class="btn btn-sm btn-outline-secondary" id="reloadBtn">تحديث</button>
+          </form>
         </div>
       </div>
     </div>
 
-    <!-- جدول -->
-    <div class="table-responsive">
-      <table class="table table-bordered table-striped" id="evaluationsTableWrapper">
-        <thead>
-          <tr>
-            <th>#</th>
-            <th class="w-wide">الكلية</th>
-            <th class="w-wide">اسم اللجنة</th>
-            <th class="w-wide">اسم المدقق</th>
-            <th class="date-col">تاريخ التدقيق</th>
+    <!-- أدوات الجدول -->
+    <div class="card mb-3">
+      <div class="card-body d-flex flex-wrap align-items-end toolbar">
+        <div>
+          <label class="form-label">بحث</label>
+          <input type="text" id="q" class="form-control" placeholder="اسم/اسم مستخدم/بريد">
+        </div>
+        <div>
+          <label class="form-label">الدور</label>
+          <select id="fRole" class="form-select">
+            <option value="">الكل</option>
+            <option value="admin">admin</option>
+            <option value="user">user</option>
+            <option value="subuser-member">subuser-member</option>
+          </select>
+        </div>
+        <div>
+          <label class="form-label">الحالة</label>
+          <select id="fActive" class="form-select">
+            <option value="">الكل</option>
+            <option value="true">نشط</option>
+            <option value="false">معطّل</option>
+          </select>
+        </div>
+        <div>
+          <label class="form-label">الترتيب</label>
+          <select id="sort" class="form-select">
+            <option value="-createdAt">الأحدث أولًا</option>
+            <option value="createdAt">الأقدم أولًا</option>
+            <option value="name">الاسم (أ-ي)</option>
+            <option value="-name">الاسم (ي-أ)</option>
+          </select>
+        </div>
+        <div>
+          <label class="form-label">لكل صفحة</label>
+          <select id="limit" class="form-select">
+            <option>10</option><option selected>20</option><option>50</option>
+          </select>
+        </div>
+        <div class="ms-auto d-flex gap-2">
+          <button class="btn btn-success" id="btnSaveChanges" disabled><i class="bi bi-save"></i> حفظ التغييرات</button>
+          <button class="btn btn-outline-secondary" id="btnDiscardChanges" disabled><i class="bi bi-x-circle"></i> إلغاء التغييرات</button>
+          <button class="btn btn-outline-dark" id="btnBulkPw"><i class="bi bi-key-fill"></i> تغيير كلمات المرور للجميع</button>
+          <button class="btn btn-outline-secondary" id="btnExport"><i class="bi bi-filetype-csv"></i> تصدير CSV</button>
+          <button class="btn btn-outline-secondary" id="btnReload"><i class="bi bi-arrow-repeat"></i> تحديث</button>
+        </div>
+      </div>
+    </div>
 
-            <th class="col-formation_decision w-narrow">قرار التشكيل</th>
-            <th class="col-work_plan w-narrow">خطة العمل</th>
-            <th class="col-performance_indicators w-narrow">مؤشرات الأداء</th>
-            <th class="col-meetings w-narrow">عدد الاجتماعات</th>
-            <th class="col-consistency w-narrow">التوافق بين الدعوات والاجتماعات</th>
-            <th class="col-coverage_books w-narrow">كتب التغطية</th>
-            <th class="col-report1 w-narrow">تقرير إنجاز 1</th>
-            <th class="col-report2 w-narrow">تقرير إنجاز 2</th>
-            <th class="col-report3 w-narrow">تقرير إنجاز 3</th>
-            <th class="col-statistical_analysis w-narrow">التحليل الإحصائي</th>
+    <!-- الجدول -->
+    <div class="card">
+      <div class="card-body">
+        <!-- شريط إجراءات جماعية -->
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <div class="d-flex flex-wrap gap-2">
+            <button class="btn btn-sm btn-outline-success" id="bulkActivate" disabled><i class="bi bi-toggle-on"></i> تفعيل</button>
+            <button class="btn btn-sm btn-outline-warning" id="bulkDeactivate" disabled><i class="bi bi-toggle-off"></i> تعطيل</button>
 
-            <th id="availabilityHeader" class="w-narrow">درجة التوفر من (9)</th>
-            <th class="w-wide">الملاحظات</th>
-            <th class="w-narrow actions-col">إجراءات</th>
-          </tr>
-        </thead>
-        <tbody id="committeesTable">
-          <tr><td colspan="18" class="text-center">جاري التحميل...</td></tr>
-        </tbody>
-      </table>
+            <div class="btn-group">
+              <button class="btn btn-sm btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown"><i class="bi bi-person-gear"></i> تغيير الدور</button>
+              <ul class="dropdown-menu">
+                <li><a class="dropdown-item" href="#" data-role="admin">اجعلهم admin</a></li>
+                <li><a class="dropdown-item" href="#" data-role="user">اجعلهم user</a></li>
+                <li><a class="dropdown-item" href="#" data-role="subuser-member">اجعلهم subuser-member</a></li>
+              </ul>
+            </div>
+
+            <!-- ✅ إضافة سجل + تحميل آخر سجل -->
+            <button class="btn btn-sm btn-primary" id="btnAddRow"><i class="bi bi-plus-circle"></i> إضافة سجل</button>
+            <button class="btn btn-sm btn-outline-primary" id="btnLoadLast"><i class="bi bi-download"></i> تحميل آخر سجل</button>
+
+            <button class="btn btn-sm btn-outline-danger" id="bulkDelete" disabled><i class="bi bi-trash3"></i> حذف المحدد</button>
+
+            <!-- ✅ جديد: حفظ مسودة + حذف مسودة محليًا -->
+            <button class="btn btn-sm btn-outline-secondary" id="btnSaveDraftsLocal"><i class="bi bi-save2"></i> حفظ مسودة</button>
+            <button class="btn btn-sm btn-outline-secondary" id="btnDeleteDraftsLocal"><i class="bi bi-eraser"></i> حذف مسودة محليًا</button>
+          </div>
+          <div class="text-muted"><span id="countSpan">—</span></div>
+        </div>
+
+        <div class="table-responsive">
+          <table class="table table-hover align-middle">
+            <thead class="table-light">
+              <tr>
+                <th style="width:40px" class="text-center"><input class="form-check-input" type="checkbox" id="chkAll"></th>
+                <th>#</th>
+                <th>الاسم الكامل</th>
+                <th>اسم المستخدم</th>
+                <th>البريد</th>
+                <th>الدور</th>
+                <th>الحالة</th>
+                <th>آخر إجراء</th>
+                <th>آخر دخول</th>
+                <th>الإنشاء</th>
+                <th>إجراءات</th>
+              </tr>
+            </thead>
+            <tbody id="usersTbody">
+              <tr><td colspan="11">
+                <div class="skeleton" style="height:18px;margin:8px 0;"></div>
+                <div class="skeleton" style="height:18px;margin:8px 0;"></div>
+                <div class="skeleton" style="height:18px;margin:8px 0;"></div>
+              </td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="d-flex justify-content-between align-items-center mt-3">
+          <div class="text-muted">الصفحة <span id="pageNum">1</span></div>
+          <div class="btn-group">
+            <button class="btn btn-outline-secondary btn-sm" id="prevPage"><i class="bi bi-chevron-right"></i> السابق</button>
+            <button class="btn btn-outline-secondary btn-sm" id="nextPage">التالي <i class="bi bi-chevron-left"></i></button>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 
-  <!-- datalist/مصادر -->
-  <datalist id="dl_colleges"></datalist>
-  <datalist id="dl_committees"></datalist>
-  <datalist id="dl_auditors"></datalist>
-
-  <!-- مودال موحّد: تفاصيل + ملاحظات -->
-  <div class="modal fade" id="editUnifiedModal" tabindex="-1">
-    <div class="modal-dialog modal-xl"><div class="modal-content">
+  <!-- Modal: إعادة كلمة مرور -->
+  <div class="modal fade" id="resetPwModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog"><div class="modal-content">
       <div class="modal-header">
-        <h5 class="modal-title">تعديل التقييم والملاحظات</h5>
+        <h5 class="modal-title">إعادة تعيين كلمة المرور</h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
       <div class="modal-body">
-        <!-- قسم تفاصيل التقييم -->
-        <div class="row g-3 mb-3">
-          <div class="col-md-4">
-            <label class="form-label">الكلية</label>
-            <select id="er_college" class="form-select"></select>
-          </div>
-          <div class="col-md-4">
-            <label class="form-label">اسم اللجنة</label>
-            <select id="er_committee" class="form-select"></select>
-          </div>
-          <div class="col-md-4">
-            <label class="form-label">اسم المدقق</label>
-            <select id="er_auditor" class="form-select"></select>
-          </div>
-          <div class="col-md-4">
-            <label class="form-label">تاريخ التدقيق</label>
-            <input type="date" id="er_date" class="form-control">
-          </div>
+        <div class="mb-2">سيتم تعيين كلمة مرور جديدة للمستخدم: <strong id="resetTargetName">—</strong></div>
+        <label class="form-label">كلمة المرور الجديدة</label>
+        <div class="input-group">
+          <input type="password" id="newPwInput" class="form-control" autocomplete="off">
+          <button type="button" class="btn btn-outline-secondary toggle-pwd" data-target="#newPwInput" title="إظهار/إخفاء">
+            <i class="bi bi-eye"></i>
+          </button>
         </div>
-
-        <hr class="my-2">
-
-        <!-- قسم الملاحظات -->
-        <h6 class="mb-2">📝 الملاحظات</h6>
-        <div id="viewNotes" class="mb-2"></div>
-        <div class="mini-toolbar">
-          <button type="button" data-cmd="bold"><b>B</b></button>
-          <button type="button" data-cmd="italic"><i>I</i></button>
-          <button type="button" data-cmd="underline"><u>U</u></button>
-          <button type="button" data-cmd="insertUnorderedList">• قائمة</button>
-        </div>
-        <div id="er_editor" class="mini-editor" contenteditable="true"></div>
+        <div class="form-text">انسخها وأبلغ المستخدم بها بأمان.</div>
       </div>
       <div class="modal-footer">
-        <button class="btn btn-primary" id="saveUnifiedBtn">💾 حفظ</button>
         <button class="btn btn-secondary" data-bs-dismiss="modal">إغلاق</button>
+        <button class="btn btn-primary" id="applyResetBtn"><i class="bi bi-check2-circle"></i> تطبيق</button>
+      </div>
+    </div></div>
+  </div>
+
+  <!-- Modal: تغيير كلمات المرور للجميع (استثناء admin) -->
+  <div class="modal fade" id="bulkPwModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog"><div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="bi bi-key-fill me-1"></i> تغيير كلمات المرور للجميع (مع استثناء admin)</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <label class="form-label">كلمة المرور الجديدة</label>
+        <div class="input-group">
+          <input type="password" id="bulkNewPw" class="form-control" placeholder="أدخل كلمة مرور موحدة للجميع (باستثناء admin)">
+          <button type="button" class="btn btn-outline-secondary toggle-pwd" data-target="#bulkNewPw" title="إظهار/إخفاء">
+            <i class="bi bi-eye"></i>
+          </button>
+        </div>
+        <div class="form-text">سيتم تطبيق هذه الكلمة على جميع المستخدمين ما عدا من دورهم <code>admin</code>.</div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+        <button class="btn btn-primary" id="applyBulkPwBtn"><i class="bi bi-check2-circle"></i> تطبيق</button>
       </div>
     </div></div>
   </div>
 
   <!-- Toasts -->
-  <div class="toast-container">
-    <div id="toastSuccess" class="toast align-items-center text-bg-success border-0 mb-2" role="alert">
-      <div class="d-flex"><div class="toast-body">✅ العملية نجحت</div><button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button></div>
-    </div>
-    <div id="toastError" class="toast align-items-center text-bg-danger border-0 mb-2" role="alert">
-      <div class="d-flex"><div class="toast-body">❌ حدث خطأ</div><button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button></div>
-    </div>
-    <div id="toastConfirm" class="toast align-items-center text-bg-warning border-0 mb-2" role="alert">
+  <div class="toast-container position-fixed top-0 start-50 translate-middle-x p-3" style="z-index:2000">
+    <div id="toastSuccess" class="toast align-items-center text-bg-success border-0 mb-2" role="alert" aria-live="assertive" aria-atomic="true">
       <div class="d-flex">
-        <div class="toast-body" id="toastConfirmMsg">⚠️ هل أنت متأكد؟</div>
-        <div class="me-2 m-auto">
-          <button type="button" class="btn btn-sm btn-danger" id="confirmYes">نعم</button>
-          <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="toast">إلغاء</button>
+        <div class="toast-body">✅ تم التنفيذ بنجاح</div>
+        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+      </div>
+    </div>
+    <div id="toastError" class="toast align-items-center text-bg-danger border-0 mb-2" role="alert" aria-live="assertive" aria-atomic="true">
+      <div class="d-flex">
+        <div class="toast-body">❌ حدث خطأ</div>
+        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+      </div>
+    </div>
+    <div id="toastInfo" class="toast align-items-center text-bg-primary border-0 mb-2" role="status" aria-live="polite">
+      <div class="d-flex">
+        <div class="toast-body">ℹ️ معلومات</div>
+        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+      </div>
+    </div>
+
+    <!-- Toast: تأكيد -->
+    <div id="toastConfirm" class="toast text-bg-warning border-0 mb-2" role="alert" aria-live="assertive" aria-atomic="true">
+      <div class="d-flex align-items-start">
+        <div class="toast-body">
+          <div id="toastConfirmMsg">هل تريد المتابعة؟</div>
+          <div class="mt-2 pt-2 border-top d-flex gap-2">
+            <button type="button" class="btn btn-danger btn-sm" id="toastConfirmYes">تأكيد</button>
+            <button type="button" class="btn btn-light btn-sm" id="toastConfirmNo" data-bs-dismiss="toast">إلغاء</button>
+          </div>
         </div>
+        <button type="button" class="btn-close btn-close-white m-2" data-bs-dismiss="toast"></button>
       </div>
     </div>
   </div>
 
-  <!-- Scripts (بدون تغيير في المنطق) -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+
   <script>
-    /* ====== إعداد أساس الربط مع الـAPI (إصلاح شامل) ====== */
+  document.addEventListener('DOMContentLoaded', () => {
+    const collapseEl = document.getElementById('addUserCollapse');
+    const iconEl = document.getElementById('addFormToggleIcon');
+    collapseEl.addEventListener('show.bs.collapse', () => iconEl.className = 'bi bi-dash-lg');
+    collapseEl.addEventListener('hide.bs.collapse', () => iconEl.className = 'bi bi-plus-lg');
+  });
+  </script>
+
+  <script>
+    /* ====== API BASE & fetch مغلّف ====== */
     const RENDER_BASE = 'https://vdash-qkyv.onrender.com';
-    const { protocol, hostname, origin } = location;
-    const isGitHub = hostname.endsWith('github.io');
-    const isLocal  = hostname === 'localhost' || hostname === '127.0.0.1';
-    const isRender = hostname.endsWith('onrender.com');
-    const isFile   = protocol === 'file:';
+    const host = location.hostname;
+    const isGithub = host.endsWith('github.io');
+    const isRender = host.endsWith('onrender.com');
+    const isLocal  = host === 'localhost' || host === '127.0.0.1';
 
-    const API_BASE = (isGitHub || isFile) ? RENDER_BASE
-                    : isRender           ? origin
-                    : isLocal            ? 'http://localhost:3000'
-                    : RENDER_BASE;
+    const API_BASE = isGithub ? RENDER_BASE : (isLocal ? 'http://localhost:3000' : '');
+    const go = (path) => isGithub ? (RENDER_BASE + path) : path;
+    const apiFetch = (path, opts = {}) => fetch(`${API_BASE}${path}`, { credentials: 'include', ...opts });
 
-    const go = (path) => (isGitHub || isFile) ? (RENDER_BASE + path) : path;
-
-    const apiFetch = (path, opts={}) =>
-      fetch(`${API_BASE}${path}`, { credentials: 'include', ...opts });
-
-    window.addEventListener('error', e => console.error('WindowError:', e.message, e.filename, e.lineno));
-    window.addEventListener('unhandledrejection', e => console.error('PromiseRejection:', e.reason));
-    console.log('➡️ Host:', location.href, '\n➡️ API_BASE:', API_BASE);
+    document.addEventListener('DOMContentLoaded', () => {
+      const homeBtn = document.getElementById('homeBtn');
+      if (homeBtn) homeBtn.href = go('/committees-home.html');
+    });
 
     /* ====== Toasts ====== */
-    const toastSuccess=new bootstrap.Toast(document.getElementById('toastSuccess'));
-    const toastError  =new bootstrap.Toast(document.getElementById('toastError'));
-    const toastConfirmEl=document.getElementById('toastConfirm');
-    const toastConfirm=new bootstrap.Toast(toastConfirmEl);
-    let confirmCallback=null;
+    const toastSuccess = new bootstrap.Toast(document.getElementById('toastSuccess'));
+    const toastError   = new bootstrap.Toast(document.getElementById('toastError'));
+    const toastInfo    = new bootstrap.Toast(document.getElementById('toastInfo'));
+    const toastConfirmEl  = document.getElementById('toastConfirm');
+    const toastConfirm    = new bootstrap.Toast(toastConfirmEl, { autohide: false });
+    const confirmMsgEl    = toastConfirmEl.querySelector('#toastConfirmMsg');
+    const confirmYesBtn   = toastConfirmEl.querySelector('#toastConfirmYes');
+    const confirmNoBtn    = toastConfirmEl.querySelector('#toastConfirmNo');
 
-    function showSuccess(msg="✅ العملية نجحت"){document.querySelector("#toastSuccess .toast-body").innerText=msg;toastSuccess.show()}
-    function showError(msg="❌ حدث خطأ"){document.querySelector("#toastError .toast-body").innerText=msg;toastError.show()}
-    function showConfirm(msg,cb){document.getElementById("toastConfirmMsg").innerText=msg;confirmCallback=cb;toastConfirm.show()}
-    document.getElementById("confirmYes").addEventListener("click",()=>{toastConfirm.hide();if(confirmCallback)confirmCallback()})
+    function confirmToast({ message='هل تريد المتابعة؟', confirmText='تأكيد', cancelText='إلغاء' } = {}){
+      return new Promise((resolve)=>{
+        confirmMsgEl.textContent = message;
+        confirmYesBtn.textContent = confirmText;
+        confirmNoBtn.textContent  = cancelText;
 
-    /* ====== شارة المستخدم + صلاحيات ====== */
-    let CURRENT_USER=null;
-    function renderUser(u){
-      const username=u?.username||(u?.email?u.email.split('@')[0]:'—');
-      document.getElementById('userUsername').textContent=username||'—';
-      document.getElementById('userFullName').textContent=u?.name||'—';
-      document.getElementById('userRole').textContent=u?.role||'—';
-    }
-    async function ensureAuth(){
-      try{
-        const r=await apiFetch('/auth/committees/me');
-        const j=await r.json().catch(()=>null);
-        if(!j || !j.authenticated){
-          showError('الرجاء تسجيل الدخول أولاً');
-          throw 0;
+        const onYes = () => { cleanup(); toastConfirm.hide(); resolve(true); };
+        const onNo  = () => { cleanup(); resolve(false); };
+        const onHidden = () => { cleanup(); resolve(false); };
+
+        function cleanup(){
+          confirmYesBtn.removeEventListener('click', onYes);
+          confirmNoBtn.removeEventListener('click', onNo);
+          toastConfirmEl.removeEventListener('hidden.bs.toast', onHidden);
         }
-        if(j.user?.isActive===false){
-          showError('🚫 حسابك معطّل. الرجاء التواصل مع المشرف.');
-          setTimeout(()=>location.href=go('/committees-home.html'),1200);throw 0;
-        }
-        CURRENT_USER=j.user;renderUser(j.user);
-        const isAdmin=(j.user?.role||'').toLowerCase()==='admin';
-        document.getElementById('settingsCard').classList.toggle('d-none',!isAdmin);
-      }catch{throw 0;}
-    }
-    document.getElementById('homeBtn').href=go('/committees-home.html');
-    document.getElementById('logoutBtn').addEventListener('click',async()=>{
-      try{
-        const r=await apiFetch('/auth/committees/logout',{method:'POST',headers:{'Content-Type':'application/json'}});
-        if(r.ok){showSuccess('✅ تم تسجيل الخروج');setTimeout(()=>location.href=go('/committees-login.html'),700)}
-        else{showError('❌ تعذر تسجيل الخروج')}
-      }catch{showError('❌ خطأ في الاتصال')}
-    });
 
-    /* ====== أدوات مساعدة للقوائم ====== */
-    function normalizeName(item){
-      if(typeof item==='string')return item;
-      return item?.name??item?.committee_name??item?.college??item?.auditor_name??'';
-    }
-    function fillSelect(sel,arr,placeholder='— اختر —'){
-      sel.innerHTML=`<option value="">${placeholder}</option>`;
-      (arr||[]).forEach(v=>{const val=normalizeName(v);if(!val)return;const o=document.createElement('option');o.value=o.textContent=val;sel.appendChild(o);});
-    }
-    function buildSelect(optionsArray,current,field){
-      const sel=document.createElement('select');
-      sel.className='form-select form-select-sm';
-      sel.dataset.field=field;
-      const opts=(optionsArray||[]).map(normalizeName).filter(Boolean);
-      const set=new Set(opts);
-      if(current && !set.has(current)) set.add(current);
-      sel.innerHTML=`<option value=""></option>`+Array.from(set).map(v=>`<option value="${v}"${v===current?' selected':''}>${v}</option>`).join('');
-      if(current) sel.value=current;
-      return sel;
-    }
+        confirmYesBtn.addEventListener('click', onYes, { once:true });
+        confirmNoBtn.addEventListener('click', onNo,  { once:true });
+        toastConfirmEl.addEventListener('hidden.bs.toast', onHidden, { once:true });
 
-    /* ====== مصادر (قوائم) ====== */
-    let LIST_COLLEGES=[],LIST_AUDITORS=[],LIST_COMMITTEES=[];
-    async function loadDatalists(){
-      try{
-        const [cR,aR,mR]=await Promise.all([
-          apiFetch('/api/colleges'),
-          apiFetch('/api/auditors'),
-          apiFetch('/api/committee-names?q=').catch(()=>apiFetch('/api/committees-master'))
-        ]);
-        LIST_COLLEGES=await cR.json().catch(()=>[]);
-        LIST_AUDITORS=await aR.json().catch(()=>[]);
-        LIST_COMMITTEES=await mR.json().catch(()=>[]);
-
-        const collegeFilter=document.getElementById('collegeFilter');
-        const auditorFilter=document.getElementById('auditorFilter');
-        const committeeFilter=document.getElementById('committeeFilter');
-
-        fillSelect(collegeFilter,LIST_COLLEGES,'جميع الكليات');
-        fillSelect(auditorFilter,LIST_AUDITORS,'جميع المدققين');
-        fillSelect(committeeFilter,LIST_COMMITTEES,'جميع اللجان');
-
-        // تعبئة مودال التحرير
-        fillSelect(document.getElementById('er_college'),LIST_COLLEGES,'— الكلية —');
-        fillSelect(document.getElementById('er_committee'),LIST_COMMITTEES,'— اسم اللجنة —');
-        fillSelect(document.getElementById('er_auditor'),LIST_AUDITORS,'— اسم المدقق —');
-      }catch(e){console.warn('datalist load error',e);}
-    }
-
-    /* ====== Mini Editor ====== */
-    document.addEventListener('click',(e)=>{
-      const btn=e.target.closest('[data-cmd]'); if(!btn) return;
-      const cmd=btn.getAttribute('data-cmd'); document.execCommand(cmd,false,null);
-      const mm=document.getElementById('er_editor'); if(mm) mm.focus();
-    });
-    function stripHtml(html){const tmp=document.createElement('div');tmp.innerHTML=html;return (tmp.textContent||tmp.innerText||'').trim();}
-
-    /* ====== الحقول العددية ====== */
-    const NUMERIC_FIELDS=["formation_decision","work_plan","performance_indicators","meetings","consistency","coverage_books","report1","report2","report3","statistical_analysis"];
-    function getVisibleNumericFields(){
-      return NUMERIC_FIELDS.filter(f=>{
-        const th=document.querySelector(`th.col-${f}`);
-        return th && !th.classList.contains('hidden-col');
+        toastConfirm.show();
       });
     }
-    function clamp01(val){
-      let v=Number(String(val).replace(',', '.'));
-      if(isNaN(v)) return null;
-      if(v<0) v=0; if(v>1) v=1;
-      return Math.round(v*100)/100;
-    }
+    const setToast = (el,msg)=>{ el._element.querySelector('.toast-body').innerText = msg; };
 
-    function updateAvailabilityHeader(){
-      const n=getVisibleNumericFields().length;
-      document.getElementById("availabilityHeader").innerText=`درجة التوفر من (${n})`;
-    }
-    function updateAvailability(row){
-      const fields=getVisibleNumericFields();
-      let sum=0;
-      fields.forEach(f=>{
-        const cell=row.querySelector(`[data-field="${f}"]`);
-        if(!cell) return;
-        const v=parseFloat((cell.querySelector('input')?.value ?? cell.innerText ?? '').toString().replace(',', '.'));
-        if(!isNaN(v)) sum+=v;
-      });
-      const availabilityCell=row.querySelector(".availability-cell");
-      if(availabilityCell){
-        availabilityCell.innerText=(Math.round(sum*100)/100).toFixed(2);
-        availabilityCell.classList.add("highlight");
-        setTimeout(()=>availabilityCell.classList.remove("highlight"),800);
-      }
-    }
-    function recalcAllAvailability(){
-      document.querySelectorAll('#committeesTable tr').forEach(updateAvailability);
-    }
-    function updateCompletionRate(){
-      const rows=document.querySelectorAll('#committeesTable tr');
-      let totalAvailability=0,numCommittees=0;
-      rows.forEach(row=>{
-        if(row.style.display==='none') return;
-        const availabilityCell=row.querySelector('.availability-cell');
-        if(availabilityCell){ totalAvailability+=parseFloat(availabilityCell.innerText)||0; numCommittees++; }
-      });
-      const denominator=numCommittees * getVisibleNumericFields().length;
-      const pct=denominator>0 ? ((totalAvailability/denominator)*100).toFixed(2) : '0.00';
-      const lastCollege=document.getElementById('collegeFilter').value || 'جميع الكليات';
-      document.getElementById("completionRateContainer").innerHTML=`📌 نسبة الاكتمال لـ <b>${lastCollege}</b> = ${pct}% — <span class="muted">عدد اللجان: ${numCommittees}</span>`;
-    }
-
-    /* ====== إظهار/إخفاء الأعمدة (فوري) ====== */
-    function applyColumnVisibilityInstant(){
-      document.querySelectorAll('.col-toggle').forEach(cb=>{
-        const field=cb.dataset.field; const show=cb.checked;
-        document.querySelectorAll(`th.col-${field}`).forEach(el=>el.classList.toggle('hidden-col',!show));
-        document.querySelectorAll(`#committeesTable td[data-field="${field}"]`).forEach(el=>el.classList.toggle('hidden-col',!show));
-      });
-      updateAvailabilityHeader();
-      recalcAllAvailability();
-      updateCompletionRate();
-    }
-
-    /* ====== منطق زري "إخفاء جميع الأعمدة" و"إظهار جميع الأعمدة" ====== */
-    const hideAllEl = document.getElementById('hideAllColumns');
-    const showAllEl = document.getElementById('showAllColumns');
-
-    function setMasterTogglesState(){
-      const toggles=[...document.querySelectorAll('.col-toggle')];
-      const anyChecked = toggles.some(cb=>cb.checked);
-      const allChecked = toggles.every(cb=>cb.checked);
-      hideAllEl.checked = !anyChecked;
-      showAllEl.checked = allChecked;
-    }
-
-    hideAllEl?.addEventListener('change', ()=>{
-      if(hideAllEl.checked){
-        showAllEl.checked=false;
-        document.querySelectorAll('.col-toggle').forEach(cb=>cb.checked=false);
-        applyColumnVisibilityInstant();
-      }
-    });
-
-    showAllEl?.addEventListener('change', ()=>{
-      if(showAllEl.checked){
-        hideAllEl.checked=false;
-        document.querySelectorAll('.col-toggle').forEach(cb=>cb.checked=true);
-        applyColumnVisibilityInstant();
-      }
-    });
-
-    document.getElementById('settingsCard')?.addEventListener('change',(e)=>{
-      if(e.target.classList.contains('col-toggle')){
-        applyColumnVisibilityInstant();
-        setMasterTogglesState();
-      }
-      if(e.target.classList.contains('visit-toggle')) updateSelectedVisits();
-    });
-
-    /* ====== تحميل الإعدادات + شارة الفصل/العام ====== */
-    async function loadSettings(){
+    /* ====== Auth ====== */
+    async function fetchMe(){
       try{
-        const res=await apiFetch('/api/settings'); const settings=await res.json();
-
-        if(settings?.selectedVisits){
-          document.querySelectorAll('.visit-toggle').forEach(cb=>{cb.checked=settings.selectedVisits.includes(cb.value)});
-        }
-
-        document.getElementById('publishResults').checked = !!settings?.publishResults;
-
-        if(Array.isArray(settings?.visibleColumns)){
-          document.querySelectorAll('.col-toggle').forEach(cb=>{
-            cb.checked = settings.visibleColumns.includes(cb.dataset.field);
-          });
-        }else{
-          document.querySelectorAll('.col-toggle').forEach(cb=>cb.checked=true);
-        }
-        applyColumnVisibilityInstant();
-        setMasterTogglesState();
-
-        const term=settings?.term||''; const ay=settings?.academicYear||'';
-        if(term||ay){
-          document.getElementById('termBadge').innerHTML=`<span class="badge text-bg-info">📚 الفصل الحالي: <b>${term||'—'}</b> — العام: <b>${ay||'—'}</b></span>`;
-        }else{
-          document.getElementById('termBadge').innerHTML='';
-        }
-
-        document.getElementById('termSelect').value = term || '';
-        document.getElementById('academicYearInput').value = ay || '';
-
-        updateSelectedVisits();
-      }catch(e){ /* تجاهل */ }
+        const r = await apiFetch('/auth/committees/me');
+        if(!r.ok) throw 0;
+        return await r.json();
+      }catch{ return {authenticated:false}; }
     }
-
-    function updateSelectedVisits(){
-      const selected=Array.from(document.querySelectorAll('.visit-toggle:checked')).map(cb=>cb.value);
-      document.getElementById('selectedVisitsContainer').innerHTML=selected.length?("الزيارات: "+selected.join(' | ')):'';
+    function renderUser(user){
+      const username = user?.username || (user?.email? user.email.split('@')[0] : '—');
+      document.getElementById('userUsername').textContent = username;
+      document.getElementById('userFullName').textContent = user?.name || '—';
+      const roleRaw = (user?.role || '').toLowerCase();
+      document.getElementById('userRole').textContent = roleRaw==='user' ? 'member' : (user?.role || '—');
     }
-
-    document.getElementById('saveAllSettingsBtn')?.addEventListener('click',async()=>{
+    async function ensureAdmin(){
+      const me = await fetchMe();
+      if(!me.authenticated){
+        const next = encodeURIComponent('/users-manage.html');
+        location.href = go(`/committees-login.html?next=${next}`);
+        return Promise.reject();
+      }
+      if((me.user?.role||'').toLowerCase()!=='admin'){
+        setToast(toastError,'❌ هذه الصفحة للمشرفين فقط'); toastError.show();
+        setTimeout(()=>location.href=go('/committees-home.html'),1000);
+        return Promise.reject();
+      }
+      renderUser(me.user);
+      return me.user;
+    }
+    document.getElementById('logoutBtn').addEventListener('click', async ()=>{
       try{
-        const visibleColumns=Array.from(document.querySelectorAll('.col-toggle:checked')).map(cb=>cb.getAttribute('data-field'));
-        const selectedVisits=Array.from(document.querySelectorAll('.visit-toggle:checked')).map(cb=>cb.value);
-        const publishResults = document.getElementById('publishResults').checked;
-        const term = document.getElementById('termSelect').value.trim();
-        const academicYear = document.getElementById('academicYearInput').value.trim();
-
-        const rx=/^(20\d{2})[\/-](20\d{2})$/;
-        if(academicYear && !rx.test(academicYear)){
-          showError('⚠️ صيغة العام الجامعي يجب أن تكون 2024-2025 أو 2024/2025');
-          return;
-        }
-
-        const payload={visibleColumns,selectedVisits,publishResults,term,academicYear};
-        await axios.put(`${API_BASE}/api/settings`,payload,{withCredentials:true});
-
-        applyColumnVisibilityInstant();
-        setMasterTogglesState();
-        updateSelectedVisits();
-        if(term||academicYear){
-          document.getElementById('termBadge').innerHTML=`<span class="badge text-bg-info">📚 الفصل الحالي: <b>${term||'—'}</b> — العام: <b>${academicYear||'—'}</b></span>`;
-        }else{
-          document.getElementById('termBadge').innerHTML='';
-        }
-
-        showSuccess("✅ تم حفظ الإعدادات بنجاح");
-      }catch(err){console.error(err);showError("❌ خطأ في حفظ الإعدادات")}
+        const r = await apiFetch('/auth/committees/logout',{method:'POST',headers:{'Content-Type':'application/json'}});
+        if(r.ok){ setToast(toastSuccess,'✅ تم تسجيل الخروج'); toastSuccess.show(); setTimeout(()=>location.href=go('/committees-login.html'),700); }
+        else{ setToast(toastError,'❌ تعذر تسجيل الخروج'); toastError.show(); }
+      }catch{ setToast(toastError,'❌ خطأ في الاتصال'); toastError.show(); }
     });
 
-    /* ====== إنشاء صف ====== */
-    function buildRow(c,idx){
-      const tr=document.createElement('tr');
-      tr.dataset.id=c._id||'';
-      if(c.__isNew) { tr.dataset.new="1"; tr.classList.add('is-new','table-info'); }
+    /* ====== Helpers ====== */
+    const qs = {
+      get(){ return new URLSearchParams(location.search); },
+      set(obj){
+        const p = new URLSearchParams();
+        Object.entries(obj).forEach(([k,v])=>{ if(v!=='' && v!=null) p.set(k,v); });
+        history.replaceState(null,'','?'+p.toString());
+      }
+    };
+    const state = { page:1, limit:20, sort:'-createdAt', search:'', role:'', active:'', total:0, items:[], selected:new Set() };
 
-      const selCollege=buildSelect(LIST_COLLEGES,c.college,'college');
-      const selCommittee=buildSelect(LIST_COMMITTEES,c.committee_name,'committee_name');
-      const selAuditor=buildSelect(LIST_AUDITORS,c.auditor_name,'auditor_name');
+    /* ====== مسودات محلية ====== */
+    const DRAFTS_KEY = 'users.drafts.v1';
+    const drafts = new Map(); // id -> patch {name,username,email,role,isActive,__isNew}
+    let newRowCounter = 0;
 
-      tr.innerHTML=`
-        <td class="row-idx">${idx+1}</td>
-
-        <td class="w-wide" data-field="college"></td>
-        <td class="w-wide" data-field="committee_name"></td>
-        <td class="w-wide" data-field="auditor_name"></td>
-
-        <td class="date-col" data-field="audit_date">
-          <input type="date" class="form-control form-control-sm" value="${c.audit_date ? String(c.audit_date).slice(0,10) : ''}">
-        </td>
-
-        <td class="w-narrow col-formation_decision" data-field="formation_decision"><input type="text" class="form-control form-control-sm" value="${c.formation_decision ?? 0}"></td>
-        <td class="w-narrow col-work_plan" data-field="work_plan"><input type="text" class="form-control form-control-sm" value="${c.work_plan ?? 0}"></td>
-        <td class="w-narrow col-performance_indicators" data-field="performance_indicators"><input type="text" class="form-control form-control-sm" value="${c.performance_indicators ?? 0}"></td>
-        <td class="w-narrow col-meetings" data-field="meetings"><input type="text" class="form-control form-control-sm" value="${c.meetings ?? 0}"></td>
-        <td class="w-narrow col-consistency" data-field="consistency"><input type="text" class="form-control form-control-sm" value="${c.consistency ?? 0}"></td>
-        <td class="w-narrow col-coverage_books" data-field="coverage_books"><input type="text" class="form-control form-control-sm" value="${c.coverage_books ?? 0}"></td>
-        <td class="w-narrow col-report1" data-field="report1"><input type="text" class="form-control form-control-sm" value="${c.report1 ?? 0}"></td>
-        <td class="w-narrow col-report2" data-field="report2"><input type="text" class="form-control form-control-sm" value="${c.report2 ?? 0}"></td>
-        <td class="w-narrow col-report3" data-field="report3"><input type="text" class="form-control form-control-sm" value="${c.report3 ?? 0}"></td>
-        <td class="w-narrow col-statistical_analysis" data-field="statistical_analysis"><input type="text" class="form-control form-control-sm" value="${c.statistical_analysis ?? 0}"></td>
-
-        <td class="availability-cell w-narrow">${c.availability_score ?? 0}</td>
-
-        <td class="w-wide" data-field="notes">
-          ${
-            (c.notes && stripHtml(c.notes))
-            ? `<button class="btn btn-sm btn-secondary btn-edit-open">عرض الملاحظات</button>`
-            : `<span class="text-muted">لا توجد ملاحظات</span>`
-          }
-        </td>
-
-        <td class="w-narrow actions-col">
-          <div class="d-flex justify-content-center align-items-center gap-1">
-            <button class="btn btn-sm btn-primary btn-edit-open" title="تعديل"><i class="bi bi-pencil-square"></i></button>
-            <button class="btn btn-sm btn-success save-row" title="حفظ"><i class="bi bi-save"></i></button>
-            <button class="btn btn-sm btn-danger delete-row" title="حذف"><i class="bi bi-trash"></i></button>
-          </div>
-        </td>
-      `;
-
-      tr.querySelector('[data-field="college"]').appendChild(selCollege);
-      tr.querySelector('[data-field="committee_name"]').appendChild(selCommittee);
-      tr.querySelector('[data-field="auditor_name"]').appendChild(selAuditor);
-
-      tr.__notesHTML=c.notes||'';
-      attachInputListeners(tr);
-      updateAvailability(tr);
-      return tr;
+    function saveDraftsToLocal(){
+      const obj = Array.from(drafts.entries()).map(([id,data])=>({id,data}));
+      localStorage.setItem(DRAFTS_KEY, JSON.stringify({savedAt:Date.now(), items:obj}));
+      setToast(toastSuccess,'💾 تم حفظ المسودات محليًا'); toastSuccess.show();
     }
-
-    function renumberRows(){
-      document.querySelectorAll('#committeesTable tr .row-idx').forEach((td,i)=>{td.textContent=i+1;});
-    }
-
-    function attachInputListeners(tr){
-      const numericFieldsSet=new Set(NUMERIC_FIELDS);
-      tr.querySelectorAll('[data-field] input').forEach(inp=>{
-        const field=inp.closest('td').dataset.field;
-        if(!numericFieldsSet.has(field) && field!=='audit_date') return;
-
-        inp.addEventListener('input',()=>{
-          if(numericFieldsSet.has(field)){
-            const clamped=clamp01(inp.value);
-            const invalid=(clamped===null);
-            inp.classList.toggle('is-invalid',invalid);
-            if(!invalid) inp.value=clamped;
-            markRowChanged(tr);
-            updateAvailability(tr);
-            updateCompletionRate();
-          }else{
-            markRowChanged(tr);
-          }
+    function loadDraftsFromLocal(){
+      try{
+        const raw = localStorage.getItem(DRAFTS_KEY);
+        if(!raw) return;
+        const parsed = JSON.parse(raw);
+        (parsed.items||[]).forEach(({id,data})=>{
+          if(id && data) drafts.set(id, data);
         });
-      });
-      tr.querySelectorAll('select,input[type="date"]').forEach(el=>{
-        el.addEventListener('change',()=>{ markRowChanged(tr); });
-      });
+      }catch{}
     }
-    function markRowChanged(tr){tr.dataset.dirty="1";tr.classList.add('table-warning')}
-    function clearRowChanged(tr){delete tr.dataset.dirty;tr.classList.remove('table-warning','is-new','table-info')}
+    function clearDraftsLocalStorage(){
+      localStorage.removeItem(DRAFTS_KEY);
+    }
 
-    /* ====== إضافة سجل جديد ====== */
-    document.getElementById('addRowBtn').addEventListener('click',()=>{
-      const tbody=document.getElementById('committeesTable');
-      const c={
-        __isNew:true,
-        college:'',
-        committee_name:'',
-        auditor_name:'',
-        audit_date:'',
-        formation_decision:0,work_plan:0,performance_indicators:0,meetings:0,consistency:0,
-        coverage_books:0,report1:0,report2:0,report3:0,statistical_analysis:0,
-        availability_score:0,notes:''
-      };
-      const tr=buildRow(c,0);
-      tbody.prepend(tr);
-      renumberRows();
-      applyColumnVisibilityInstant();
-      updateCompletionRate();
+    /* ====== تحكم التفعيل لأزرار الحفظ/الإلغاء والعداد ====== */
+    function updateBulkBar(){
+      const any = state.selected.size>0;
+      document.getElementById('bulkActivate').disabled = !any;
+      document.getElementById('bulkDeactivate').disabled = !any;
+      document.getElementById('bulkDelete').disabled = !any;
+      const dirty = drafts.size;
+      document.getElementById('btnSaveChanges').disabled = dirty === 0;
+      document.getElementById('btnDiscardChanges').disabled = dirty === 0;
+      document.getElementById('countSpan').textContent =
+        `المحدّد: ${state.selected.size} | الإجمالي: ${state.total}${dirty ? ` | تعديلات غير محفوظة: ${dirty}` : ''}`;
+    }
+
+    function markDirty(id, patch, fieldEl){
+      const current = drafts.get(id) || {};
+      Object.assign(current, patch || {});
+      drafts.set(id, current);
+
+      const row = document.querySelector(`#usersTbody tr[data-id="${CSS.escape(id)}"]`);
+      if (row) row.classList.add('row-highlight');
+      if (fieldEl) fieldEl.classList.add('field-dirty');
+
+      updateBulkBar();
+    }
+    function clearDrafts(){
+      drafts.clear();
+      document.querySelectorAll('#usersTbody tr.row-highlight').forEach(tr=>tr.classList.remove('row-highlight'));
+      document.querySelectorAll('#usersTbody .field-dirty').forEach(el=>el.classList.remove('field-dirty'));
+      updateBulkBar();
+    }
+
+    window.addEventListener('beforeunload', (e)=>{
+      if(drafts.size>0){ e.preventDefault(); e.returnValue=''; }
     });
 
-    /* ====== تحميل السجلات ====== */
-    async function loadCommittees(){
+    /* ====== فلاتر محفوظة ====== */
+    function saveFilters(){
+      localStorage.setItem('users.filters', JSON.stringify({
+        search: state.search, role: state.role, active: state.active, sort: state.sort, limit: state.limit
+      }));
+    }
+    function loadFilters(){
       try{
-        const college=document.getElementById('collegeFilter').value;
-        const auditor=document.getElementById('auditorFilter').value;
-        let url='/api/committees';
-        const params=[];
-        if(college) params.push('college='+encodeURIComponent(college));
-        if(auditor) params.push('auditor_name='+encodeURIComponent(auditor));
-        if(params.length) url+='?'+params.join('&');
-
-        const res=await apiFetch(url);
-        const arr=await res.json();
-
-        const tbody=document.getElementById('committeesTable');
-        tbody.innerHTML='';
-
-        if(!Array.isArray(arr)||arr.length===0){
-          tbody.innerHTML=`<tr><td colspan="18" class="text-center">لا توجد بيانات</td></tr>`;
-          document.getElementById("completionRateContainer").innerHTML='';
-          document.getElementById("selectedVisitsContainer").innerHTML='';
-          return;
-        }
-
-        const committeeSel=document.getElementById('committeeFilter').value;
-        let data=arr;
-        if(committeeSel){
-          data=arr.filter(x=>(x?.committee_name||'')===committeeSel);
-        }
-
-        data.sort((a,b)=>(a.college||'').localeCompare(b.college||'','ar') || (a.committee_name||'').localeCompare(b.committee_name||'','ar'));
-
-        data.forEach((c,idx)=>{ const tr=buildRow(c,idx); document.getElementById('committeesTable').appendChild(tr); });
-
-        applyColumnVisibilityInstant();
-        updateCompletionRate();
-        renumberRows();
-      }catch(err){
-        console.error(err);
-        showError('❌ فشل تحميل البيانات');
-        const tbody=document.getElementById('committeesTable');
-        tbody.innerHTML=`<tr><td colspan="18" class="text-center text-danger">فشل الجلب</td></tr>`;
-      }
+        const o = JSON.parse(localStorage.getItem('users.filters')||'{}');
+        if(o.search!=null) document.getElementById('q').value = o.search;
+        if(o.role!=null)   document.getElementById('fRole').value = o.role;
+        if(o.active!=null) document.getElementById('fActive').value = o.active;
+        if(o.sort!=null)   document.getElementById('sort').value = o.sort;
+        if(o.limit!=null)  document.getElementById('limit').value = o.limit;
+      }catch{}
     }
 
-    /* ====== حفظ كل المعدل ====== */
-    document.getElementById('saveAllBtn').addEventListener('click',async()=>{
-      try{
-        const rows=Array.from(document.querySelectorAll('#committeesTable tr.table-warning, #committeesTable tr.is-new'));
-        if(!rows.length){showError('لا توجد تعديلات');return;}
-        for(const tr of rows){
-          const payload=collectRowData(tr);
-          const date=payload.audit_date?.trim();
-          if(date && !/^\d{4}-\d{2}-\d{2}$/.test(date)){showError('⚠️ صيغة التاريخ يجب أن تكون YYYY-MM-DD');return;}
-          if(tr.dataset.new==="1"){
-            await axios.post(`${API_BASE}/api/committees`,payload,{withCredentials:true});
-          }else{
-            const id=tr.dataset.id;
-            await axios.put(`${API_BASE}/api/committees/${id}`,payload,{withCredentials:true});
-          }
-        }
-        showSuccess('✅ تم حفظ جميع التعديلات');
-        await loadCommittees();
-      }catch(e){console.error(e);showError('❌ خطأ أثناء حفظ الكل');}
-    });
+    /* ====== بناء الصفوف ====== */
+    const tbody = document.getElementById('usersTbody');
+    const esc = s => String(s ?? '').replace(/"/g,'&quot;');
 
-    document.getElementById('collegeFilter').addEventListener('change',loadCommittees);
-    document.getElementById('auditorFilter').addEventListener('change',loadCommittees);
-    document.getElementById('committeeFilter').addEventListener('change',loadCommittees);
-    document.getElementById('reloadBtn').addEventListener('click',loadCommittees);
-
-    /* ====== مودال موحّد: فتح/حفظ ====== */
-    let EDITING_ROW=null;
-    function openUnifiedModal(tr){
-      EDITING_ROW=tr;
-      fillSelect(document.getElementById('er_college'),LIST_COLLEGES,'— الكلية —');
-      fillSelect(document.getElementById('er_committee'),LIST_COMMITTEES,'— اسم اللجنة —');
-      fillSelect(document.getElementById('er_auditor'),LIST_AUDITORS,'— اسم المدقق —');
-
-      document.getElementById('er_college').value   = tr.querySelector('[data-field="college"] select')?.value || '';
-      document.getElementById('er_committee').value = tr.querySelector('[data-field="committee_name"] select')?.value || '';
-      document.getElementById('er_auditor').value   = tr.querySelector('[data-field="auditor_name"] select')?.value || '';
-      document.getElementById('er_date').value      = tr.querySelector('[data-field="audit_date"] input')?.value || '';
-
-      const html=tr.__notesHTML||'';
-      document.getElementById('viewNotes').innerHTML = html || '<i class="muted">لا توجد ملاحظات</i>';
-      document.getElementById('er_editor').innerHTML = html || '';
-
-      new bootstrap.Modal(document.getElementById('editUnifiedModal')).show();
+    function rowCheckbox(id, checked){ return `<input class="form-check-input chkRow" type="checkbox" value="${id}" ${checked?'checked':''}>`; }
+    function roleSelect(id, role){
+      return `
+        <select class="form-select form-select-sm inline-role" data-id="${id}" title="سيُحفظ عند الضغط على «حفظ التغييرات»">
+          <option value="user" ${role==='user'?'selected':''}>user</option>
+          <option value="admin" ${role==='admin'?'selected':''}>admin</option>
+          <option value="subuser-member" ${role==='subuser-member'?'selected':''}>subuser-member</option>
+        </select>`;
     }
-    document.getElementById('committeesTable').addEventListener('click',async(e)=>{
-      const tr=e.target.closest('tr'); if(!tr) return;
-      if(e.target.closest('.btn-edit-open')){ openUnifiedModal(tr); return; }
+    function activeToggle(id, isActive){ return `
+      <div class="form-check form-switch">
+        <input class="form-check-input inline-active" type="checkbox" role="switch" data-id="${id}" ${isActive?'checked':''} title="سيُحفظ عند الضغط على «حفظ التغييرات">
+      </div>`; }
 
-      const btnSave=e.target.closest('.save-row');
-      const btnDelete=e.target.closest('.delete-row');
+    const pageAr = m => ({Evaluation:'تقييم اللجان',College:'الكليات',Auditor:'المدققون',Committee:'أسماء اللجان',Settings:'الإعدادات',User:'المستخدمون'})[m] || (m||'—');
+    const actionAr = a => a==='create'?'إضافة':(a==='update'?'تعديل':(a==='delete'?'حذف':(a||'—')));
 
-      if(btnSave){
-        const payload=collectRowData(tr);
-        const date=payload.audit_date?.trim();
-        if(date && !/^\d{4}-\d{2}-\d{2}$/.test(date)){showError('⚠️ صيغة التاريخ يجب أن تكون YYYY-MM-DD');return;}
-        try{
-          if(tr.dataset.new==="1"){
-            await axios.post(`${API_BASE}/api/committees`,payload,{withCredentials:true});
-          }else{
-            const id=tr.dataset.id;
-            await axios.put(`${API_BASE}/api/committees/${id}`,payload,{withCredentials:true});
-          }
-          showSuccess("✅ تم حفظ التعديلات");
-          await loadCommittees();
-        }catch(err){console.error(err);showError("❌ خطأ أثناء الحفظ");}
+    function renderLastActionCell(u){
+      const la = u.lastAction;
+      if(!la) return '—';
+      const when = la.createdAt ? new Date(la.createdAt).toLocaleString('ar-EG') : '—';
+      return `${actionAr(la.action)} على صفحة ${pageAr(la.model)}<br><small class="text-muted">${when}</small>`;
+    }
+    function renderLastLoginCell(u){
+      return u.lastLogin ? new Date(u.lastLogin).toLocaleString('ar-EG') : '—';
+    }
+
+    function renderRows(users, offset=0){
+      if(!Array.isArray(users) || users.length===0){
+        tbody.innerHTML = `<tr class="text-center text-muted"><td colspan="11">لا يوجد نتائج</td></tr>`;
         return;
       }
-      if(btnDelete){
-        if(tr.dataset.new==="1" && !tr.dataset.id){
-          tr.remove(); renumberRows(); updateCompletionRate();
+      tbody.innerHTML = users.map((u,i)=>`
+        <tr data-id="${u._id||u.id}">
+          <td class="text-center"><input class="form-check-input chkRow" type="checkbox" value="${u._id||u.id}" ${state.selected.has(u._id||u.id)?'checked':''}></td>
+          <td>${offset + i + 1}</td>
+
+          <td><input class="form-control form-control-sm inline-edit" data-id="${u._id||u.id}" data-field="name" value="${esc(u.name)}" placeholder="—"></td>
+          <td><input class="form-control form-control-sm inline-edit" data-id="${u._id||u.id}" data-field="username" value="${esc(u.username)}" placeholder="—"></td>
+          <td><input class="form-control form-control-sm inline-edit" data-id="${u._id||u.id}" data-field="email" value="${esc(u.email)}" placeholder="—"></td>
+
+          <td style="width:180px">${roleSelect(u._id||u.id, u.role||'user')}</td>
+          <td style="width:110px">
+            ${u.isActive===false?'<span class="badge badge-inactive">معطّل</span>':'<span class="badge badge-active">نشط</span>'}
+            ${activeToggle(u._id||u.id, u.isActive!==false)}
+          </td>
+
+          <td class="cell-lastaction">${renderLastActionCell(u)}</td>
+          <td class="cell-lastlogin">${renderLastLoginCell(u)}</td>
+          <td class="cell-created">${ (u.updatedAt||u.createdAt) ? new Date(u.updatedAt||u.createdAt).toLocaleString('ar-EG') : '—' }</td>
+
+          <td>
+            <button class="btn btn-sm btn-outline-primary resetBtn" data-id="${u._id||u.id}" data-name="${u.name||u.username||'—'}"><i class="bi bi-key"></i></button>
+            <button class="btn btn-sm btn-outline-danger delBtn" data-id="${u._id||u.id}" data-name="${u.name||u.username||'—'}"><i class="bi bi-trash3"></i></button>
+          </td>
+        </tr>
+      `).join('');
+      applyDraftsToDOM();
+      updateBulkBar();
+    }
+
+    /* ====== تطبيق المسودات على الـDOM بعد كل render ====== */
+    function applyDraftsToDOM(){
+      // 1) صفوف NEW-* تُعرض أعلى (سيتم حقنها في fetchUsers)
+      // 2) تعديلات على صفوف موجودة: نطبّق القيم ونميز الحقول
+      drafts.forEach((data, id)=>{
+        const isNew = String(id).startsWith('NEW-');
+        if(isNew) return; // تمت معالجتها في الحقن
+        const row = tbody.querySelector(`tr[data-id="${CSS.escape(id)}"]`);
+        if(!row) return;
+
+        if('name' in data){
+          const el=row.querySelector('input.inline-edit[data-field="name"]'); if(el){ el.value = data.name ?? ''; el.classList.add('field-dirty'); }
+        }
+        if('username' in data){
+          const el=row.querySelector('input.inline-edit[data-field="username"]'); if(el){ el.value = data.username ?? ''; el.classList.add('field-dirty'); }
+        }
+        if('email' in data){
+          const el=row.querySelector('input.inline-edit[data-field="email"]'); if(el){ el.value = data.email ?? ''; el.classList.add('field-dirty'); }
+        }
+        if('role' in data){
+          const el=row.querySelector('select.inline-role'); if(el){ el.value = data.role ?? el.value; el.classList.add('field-dirty'); }
+        }
+        if('isActive' in data){
+          const el=row.querySelector('input.inline-active'); if(el){ el.checked = !!data.isActive; el.classList.add('field-dirty'); }
+        }
+        row.classList.add('row-highlight');
+      });
+    }
+
+    /* ====== تحميل المستخدمين ====== */
+    async function fetchUsers(){
+      state.search = document.getElementById('q').value.trim();
+      state.role   = document.getElementById('fRole').value;
+      state.active = document.getElementById('fActive').value;
+      state.sort   = document.getElementById('sort').value;
+      state.limit  = parseInt(document.getElementById('limit').value,10) || 20;
+
+      saveFilters();
+      qs.set({ q: state.search, role: state.role, active: state.active, sort: state.sort, limit: state.limit, page: state.page });
+
+      tbody.innerHTML = `<tr><td colspan="11">
+        <div class="skeleton" style="height:18px;margin:8px 0;"></div>
+        <div class="skeleton" style="height:18px;margin:8px 0;"></div>
+        <div class="skeleton" style="height:18px;margin:8px 0;"></div>
+      </td></tr>`;
+      try{
+        const params = new URLSearchParams();
+        if(state.search) params.set('search',state.search);
+        if(state.role)   params.set('role',state.role);
+        if(state.active) params.set('active',state.active);
+        if(state.sort)   params.set('sort',state.sort);
+        params.set('page', state.page);
+        params.set('limit', state.limit);
+
+        const r = await apiFetch('/api/users?'+params.toString());
+        if(r.status===401 || r.status===403){
+          setToast(toastError,'❌ انتهت الجلسة أو لا تملك صلاحية'); toastError.show();
+          setTimeout(()=>location.href=go('/committees-login.html'),900);
           return;
         }
-        showConfirm("⚠️ هل أنت متأكد من الحذف؟",async()=>{
-          try{
-            await axios.delete(`${API_BASE}/api/committees/${tr.dataset.id}`,{withCredentials:true});
-            showSuccess("🗑️ تم حذف السجل بنجاح");
-            loadCommittees();
-          }catch(err){console.error(err);showError("❌ فشل الحذف");}
+        if(!r.ok) throw new Error('HTTP '+r.status);
+        const data = await r.json();
+        state.items = data.data || data;
+        state.total = data?.meta?.total ?? state.items.length;
+
+        // حقن المسودات NEW-* أعلى الجدول (بدون إرسال للخادم)
+        const currentRows = state.items.slice();
+        const tempRows = Array.from(drafts.keys()).filter(id => String(id).startsWith('NEW-'));
+        // كل NEW-* من المخزن
+        tempRows.reverse().forEach(id=>{
+          const d = drafts.get(id) || {};
+          currentRows.unshift({
+            _id: id,
+            name: d.name || '',
+            username: d.username || '',
+            email: d.email || '',
+            role: d.role || 'subuser-member',
+            isActive: d.isActive !== false,
+            createdAt: new Date().toISOString()
+          });
         });
+
+        document.getElementById('pageNum').textContent = state.page;
+        renderRows(currentRows, 0);
+      }catch(e){
+        tbody.innerHTML = `<tr class="text-center text-danger"><td colspan="11">حدث خطأ في جلب المستخدمين</td></tr>`;
+        console.error('fetchUsers error:', e);
+      }
+    }
+
+    /* ====== تحديث جزئي (موجود مسبقًا) ====== */
+    async function updateUserPartial(id, patch){
+      const row = tbody.querySelector(`tr[data-id="${id}"]`);
+      row?.classList.add('saving');
+      try{
+        const r = await apiFetch('/api/users/'+id,{
+          method:'PUT',
+          headers:{'Content-Type':'application/json'},
+          body: JSON.stringify(patch)
+        });
+        const data = await r.json().catch(()=> ({}));
+        if(!r.ok) throw new Error(data?.message || 'فشل التعديل');
+        row?.classList.add('row-highlight');
+        setTimeout(()=>row?.classList.remove('row-highlight'),600);
+        return true;
+      }catch(err){
+        setToast(toastError,'❌ '+(err.message||'فشل التعديل')); toastError.show();
+        return false;
+      }finally{
+        row?.classList.remove('saving');
+        fetchUsers();
+      }
+    }
+
+    /* ====== حذف مستخدم ====== */
+    async function deleteUser(id, name){
+      const ok = await confirmToast({
+        message: `سيتم حذف المستخدم: ${name}\nلا يمكن التراجع.`,
+        confirmText: 'نعم، احذف',
+        cancelText: 'إلغاء'
+      });
+      if(!ok){ setToast(toastInfo,'تم الإلغاء'); toastInfo.show(); return; }
+
+      try{
+        const r = await apiFetch('/api/users/'+id,{ method:'DELETE' });
+        const data = await r.json().catch(()=> ({}));
+        if(!r.ok) throw new Error(data?.message || 'فشل الحذف');
+        setToast(toastSuccess,'🗑️ تم حذف المستخدم'); toastSuccess.show();
+        state.selected.delete(id);
+        fetchUsers();
+      }catch(err){
+        setToast(toastError,'❌ '+(err.message||'فشل الحذف')); toastError.show();
+      }
+    }
+
+    /* ====== إعادة تعيين كلمة مرور ====== */
+    const resetModal = new bootstrap.Modal(document.getElementById('resetPwModal'));
+    let resetTargetId = null;
+    document.getElementById('applyResetBtn').addEventListener('click', async ()=>{
+      const pw = document.getElementById('newPwInput').value.trim();
+      if(!pw){ setToast(toastInfo,'أدخل كلمة مرور جديدة'); toastInfo.show(); return; }
+      try{
+        const r = await apiFetch('/api/users/'+resetTargetId+'/password',{
+          method:'PUT',
+          headers:{'Content-Type':'application/json'},
+          body: JSON.stringify({ newPassword: pw })
+        });
+        const data = await r.json().catch(()=> ({}));
+        if(!r.ok) throw new Error(data?.message || 'فشل التغيير');
+        setToast(toastSuccess,'✅ تم تغيير كلمة المرور'); toastSuccess.show();
+        resetModal.hide();
+      }catch(err){
+        setToast(toastError,'❌ '+(err.message||'فشل تغيير كلمة المرور')); toastError.show();
       }
     });
 
-    document.getElementById('saveUnifiedBtn').addEventListener('click',()=>{
-      if(!EDITING_ROW) return;
-      EDITING_ROW.querySelector('[data-field="college"] select').value        = document.getElementById('er_college').value || '';
-      EDITING_ROW.querySelector('[data-field="committee_name"] select').value = document.getElementById('er_committee').value || '';
-      EDITING_ROW.querySelector('[data-field="auditor_name"] select').value   = document.getElementById('er_auditor').value || '';
-      EDITING_ROW.querySelector('[data-field="audit_date"] input').value      = document.getElementById('er_date').value || '';
-
-      const newHtml=document.getElementById('er_editor').innerHTML;
-      EDITING_ROW.__notesHTML=newHtml||'';
-      const notesCell=EDITING_ROW.querySelector('[data-field="notes"]');
-      if(stripHtml(EDITING_ROW.__notesHTML)) notesCell.innerHTML='<button class="btn btn-sm btn-secondary btn-edit-open">عرض الملاحظات</button>';
-      else notesCell.innerHTML='<span class="text-muted">لا توجد ملاحظات</span>';
-
-      markRowChanged(EDITING_ROW);
-      bootstrap.Modal.getInstance(document.getElementById('editUnifiedModal')).hide();
-      showSuccess('تم تحديث الصف (تحتاج حفظ الصف)');
-    });
-
-    /* ====== جمع بيانات صف ====== */
-    function collectRowData(row){
-      const data={};
-      data.college=row.querySelector('[data-field="college"] select')?.value?.trim()||'';
-      data.committee_name=row.querySelector('[data-field="committee_name"] select')?.value?.trim()||'';
-      data.auditor_name=row.querySelector('[data-field="auditor_name"] select')?.value?.trim()||'';
-      data.audit_date=row.querySelector('[data-field="audit_date"] input')?.value||'';
-
-      NUMERIC_FIELDS.forEach(f=>{
-        const inp=row.querySelector(`[data-field="${f}"] input`); if(!inp) return;
-        const clamped=clamp01(inp.value);
-        data[f]=(clamped===null)?0:clamped;
-      });
-
-      const availabilityCell=row.querySelector('.availability-cell');
-      data.availability_score=parseFloat(availabilityCell?.innerText)||0;
-      data.notes=row.__notesHTML||'';
-      return data;
+    /* ====== Bulk actions ====== */
+    async function bulkAction(payload, okMsg){
+      if(state.selected.size===0) return;
+      try{
+        const r = await apiFetch('/api/users/bulk',{
+          method:'POST',
+          headers:{'Content-Type':'application/json'},
+          body: JSON.stringify({ ids:[...state.selected], ...payload })
+        });
+        const data = await r.json().catch(()=> ({}));
+        if(!r.ok) throw new Error(data?.message || 'فشل التنفيذ');
+        setToast(toastSuccess, okMsg); toastSuccess.show();
+        state.selected.clear();
+        fetchUsers();
+      }catch(err){
+        setToast(toastError,'❌ '+(err.message||'فشل التنفيذ')); toastError.show();
+      }
     }
 
-    /* ====== بدء التشغيل ====== */
+    /* ====== حفظ كل المسودات للخادم ====== */
+    async function saveAllDrafts(){
+      if(drafts.size === 0) return;
+      document.getElementById('btnSaveChanges').disabled = true;
+
+      let okCount = 0, failCount = 0;
+
+      for (const [id, patch] of drafts.entries()){
+        try{
+          if (String(id).startsWith('NEW-')) {
+            const payload = {
+              name: String(patch.name||'').trim(),
+              username: String(patch.username||'').trim(),
+              email: String(patch.email||'').trim(),
+              role: ['admin','user','subuser-member'].includes(patch.role) ? patch.role : 'subuser-member',
+              password: '12345678'
+            };
+            if (!payload.name || !payload.username || !payload.email){
+              throw new Error('يجب تعبئة الاسم واسم المستخدم والبريد للصف الجديد');
+            }
+            const r = await apiFetch('/auth/committees/register', {
+              method:'POST',
+              headers:{'Content-Type':'application/json'},
+              body: JSON.stringify(payload)
+            });
+            const data = await r.json().catch(()=> ({}));
+            if(!r.ok) throw new Error(data?.message || 'فشل إنشاء المستخدم');
+            okCount++;
+          } else {
+            const r = await apiFetch('/api/users/'+id,{
+              method:'PUT',
+              headers:{'Content-Type':'application/json'},
+              body: JSON.stringify({
+                name: patch.name,
+                username: patch.username,
+                email: patch.email,
+                role: patch.role,
+                isActive: patch.isActive
+              })
+            });
+            const data = await r.json().catch(()=> ({}));
+            if(!r.ok) throw new Error(data?.message || 'فشل التعديل');
+            okCount++;
+          }
+        }catch(err){
+          failCount++;
+          console.error('saveAllDrafts error for', id, err);
+        }
+      }
+
+      if(failCount === 0){
+        setToast(toastSuccess, `✅ تم حفظ ${okCount} تغييرًا`); toastSuccess.show();
+        clearDrafts();
+        clearDraftsLocalStorage();  // مسح المسودات المحلية بعد النجاح
+        fetchUsers();
+      }else{
+        setToast(toastError, `❌ فشل حفظ ${failCount} من ${drafts.size}`); toastError.show();
+        document.getElementById('btnSaveChanges').disabled = false;
+      }
+    }
+    function discardAllDrafts(){
+      clearDrafts();
+      fetchUsers();
+    }
+
+    document.getElementById('btnSaveChanges').addEventListener('click', saveAllDrafts);
+    document.getElementById('btnDiscardChanges').addEventListener('click', discardAllDrafts);
+
+    /* ====== إضافة مستخدم (فورم علوي) ====== */
+    const addForm = document.getElementById('addUserForm');
+    const addBtn = document.getElementById('addBtn');
+
+    const pwInput = document.getElementById('pwInput');
+    const togglePwBtn = document.getElementById('togglePwBtn');
+    togglePwBtn.addEventListener('click', ()=>{
+      const isPw = pwInput.type === 'password';
+      pwInput.type = isPw ? 'text' : 'password';
+      togglePwBtn.innerHTML = isPw ? '<i class="bi bi-eye-slash"></i>' : '<i class="bi bi-eye"></i>';
+      pwInput.focus();
+    });
+
+    function pwStrength(pw){
+      let s=0;
+      if(pw.length>=8) s++;
+      if(/[A-Z]/.test(pw) && /[a-z]/.test(pw)) s++;
+      if(/\d/.test(pw)) s++;
+      if(/[^A-Za-z0-9]/.test(pw)) s++;
+      if(pw.length>=12) s++;
+      return Math.min(s,5);
+    }
+    function renderPwMeter(){
+      const pw = pwInput.value;
+      const score = pwStrength(pw);
+      const bar = document.getElementById('pwBar');
+      const colors = ['#dc3545','#fd7e14','#ffc107','#20c997','#198754'];
+      bar.style.width = (score*20)+'%';
+      bar.style.background = colors[Math.max(0,score-1)] || '#e9ecef';
+    }
+    pwInput.addEventListener('input', renderPwMeter);
+
+    let _debTimer;
+    function debounce(fn,ms){ return (...a)=>{ clearTimeout(_debTimer); _debTimer=setTimeout(()=>fn(...a),ms); }; }
+    const checkUnique = debounce(async ()=>{
+      const u = addForm.username.value.trim();
+      const e = addForm.email.value.trim();
+      if(!u && !e) return;
+      try{
+        const params = new URLSearchParams({ search: u||e, limit: 5 });
+        const r = await apiFetch('/api/users?'+params.toString());
+        if(!r.ok) return;
+        const data = await r.json();
+        const arr = data.data || data;
+        const uTaken = u && arr.some(x => (x.username||'').toLowerCase()===u.toLowerCase());
+        const eTaken = e && arr.some(x => (x.email||'').toLowerCase()===e.toLowerCase());
+        document.getElementById('userCheckHint').textContent = uTaken ? '⚠️ اسم المستخدم مستخدم' : '';
+        document.getElementById('emailCheckHint').textContent = eTaken ? '⚠️ البريد مستخدم' : '';
+      }catch{}
+    }, 450);
+    addForm.username.addEventListener('blur', checkUnique);
+    addForm.email.addEventListener('blur', checkUnique);
+
+    addForm.addEventListener('submit', async (e)=>{
+      e.preventDefault();
+      addBtn.disabled = true; addBtn.classList.add('saving');
+      try{
+        const fd = new FormData(addForm);
+        const payload = Object.fromEntries(fd.entries());
+        const r = await apiFetch('/auth/committees/register', {
+          method:'POST', headers:{'Content-Type':'application/json'},
+          body: JSON.stringify(payload)
+        });
+        const data = await r.json().catch(()=> ({}));
+        if(!r.ok) throw new Error(data?.message || 'فشل الإضافة');
+        setToast(toastSuccess,'✅ تم إنشاء المستخدم'); toastSuccess.show();
+        addForm.reset(); renderPwMeter();
+        state.page = 1; fetchUsers();
+      }catch(err){
+        setToast(toastError,'❌ '+(err.message||'فشل الإضافة')); toastError.show();
+      }finally{
+        addBtn.disabled = false; addBtn.classList.remove('saving');
+      }
+    });
+
+    function exportCSV(rows){
+      const header = ['name','username','email','role','isActive','lastAction.action','lastAction.model','lastAction.createdAt','lastLogin','createdAt','updatedAt'];
+      const toCSV = s => `"${String(s??'').replace(/"/g,'""')}"`;
+      const BOM = '\uFEFF';
+      const lines = [header.join(',')].concat(rows.map(r =>{
+        const la = r.lastAction || {};
+        return [
+          r.name, r.username, r.email, r.role, r.isActive!==false,
+          la.action||'', la.model||'', la.createdAt?new Date(la.createdAt).toISOString():'',
+          r.lastLogin?new Date(r.lastLogin).toISOString():'',
+          r.createdAt?new Date(r.createdAt).toISOString():'',
+          r.updatedAt?new Date(r.updatedAt).toISOString():''
+        ].map(toCSV).join(',');
+      }));
+      const csv = BOM + lines.join('\n');
+      const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a'); a.href = url; a.download = 'users.csv'; a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    /* ====== أحداث الفلاتر والجدول ====== */
+    document.getElementById('btnReload').addEventListener('click', ()=>{ state.page=1; fetchUsers(); });
+    document.getElementById('btnExport').addEventListener('click', ()=> exportCSV(state.items));
+
+    document.getElementById('q').addEventListener('input', debounce(()=>{ state.page=1; fetchUsers(); }, 400));
+    document.getElementById('fRole').addEventListener('change', ()=>{ state.page=1; fetchUsers(); });
+    document.getElementById('fActive').addEventListener('change', ()=>{ state.page=1; fetchUsers(); });
+    document.getElementById('sort').addEventListener('change', ()=>{ state.page=1; fetchUsers(); });
+    document.getElementById('limit').addEventListener('change', ()=>{ state.page=1; fetchUsers(); });
+
+    document.getElementById('prevPage').addEventListener('click', ()=>{ if(state.page>1){ state.page--; fetchUsers(); } });
+    document.getElementById('nextPage').addEventListener('click', ()=>{ if(state.items.length===state.limit){ state.page++; fetchUsers(); } });
+
+    document.getElementById('chkAll').addEventListener('change', (e)=>{
+      const ch = e.target.checked;
+      document.querySelectorAll('.chkRow').forEach(x=>{
+        x.checked = ch;
+        const id = x.value;
+        if(ch) state.selected.add(id); else state.selected.delete(id);
+      });
+      updateBulkBar();
+    });
+
+    const tbodyEl = document.getElementById('usersTbody');
+    tbodyEl.addEventListener('change', (e)=>{
+      const t = e.target;
+      if(t.classList.contains('chkRow')){
+        const id = t.value;
+        if(t.checked) state.selected.add(id); else state.selected.delete(id);
+        const all = Array.from(tbodyEl.querySelectorAll('.chkRow'));
+        document.getElementById('chkAll').checked = (all.length>0 && all.every(x=>x.checked));
+        updateBulkBar();
+      } else if(t.classList.contains('inline-role')){
+        const id = t.dataset.id;
+        markDirty(id, { role: t.value }, t);
+      } else if(t.classList.contains('inline-active')){
+        const id = t.dataset.id;
+        markDirty(id, { isActive: t.checked }, t);
+      }
+    });
+
+    tbodyEl.addEventListener('click', (e)=>{
+      const btn = e.target.closest('button');
+      if(!btn) return;
+      if(btn.classList.contains('delBtn')){
+        deleteUser(btn.dataset.id, btn.dataset.name);
+      }else if(btn.classList.contains('resetBtn')){
+        resetTargetId = btn.dataset.id;
+        document.getElementById('resetTargetName').textContent = btn.dataset.name;
+        document.getElementById('newPwInput').value = '';
+        resetModal.show();
+      }
+    });
+
+    function queueInline(inputEl){
+      const id    = inputEl.dataset.id;
+      const field = inputEl.dataset.field;
+      const value = inputEl.value.trim();
+      if(!id || !field) return;
+      markDirty(id, { [field]: value }, inputEl);
+    }
+    tbodyEl.addEventListener('blur', (e)=>{
+      const t = e.target;
+      if(t.classList.contains('inline-edit')){
+        queueInline(t);
+      }
+    }, true);
+    tbodyEl.addEventListener('keydown', (e)=>{
+      const t = e.target;
+      if(t.classList.contains('inline-edit') && e.key === 'Enter'){
+        e.preventDefault();
+        t.blur();
+      }
+    });
+
+    document.querySelectorAll('.dropdown-menu [data-role]').forEach(a=>{
+      a.addEventListener('click', (e)=>{
+        e.preventDefault();
+        const role = a.dataset.role;
+        if(state.selected.size===0) return;
+        bulkAction({ action:'set-role', role }, '✅ تم تغيير الأدوار');
+      });
+    });
+    document.getElementById('bulkActivate').addEventListener('click', ()=> bulkAction({ action:'activate' }, '✅ تم تفعيل المحددين'));
+    document.getElementById('bulkDeactivate').addEventListener('click', ()=> bulkAction({ action:'deactivate' }, '✅ تم تعطيل المحددين'));
+    document.getElementById('bulkDelete').addEventListener('click', async ()=>{
+      if(state.selected.size === 0){
+        setToast(toastInfo,'لم يتم تحديد مستخدمين'); toastInfo.show();
+        return;
+      }
+      const ok = await confirmToast({
+        message: `سيتم حذف ${state.selected.size} مستخدم/ين. لا يمكن التراجع.`,
+        confirmText: 'نعم، احذف',
+        cancelText: 'إلغاء'
+      });
+      if(!ok){ setToast(toastInfo,'تم الإلغاء'); toastInfo.show(); return; }
+      bulkAction({ action:'delete' }, '🗑️ تم حذف المحددين');
+    });
+
+    /* ====== جديد: زر "إضافة سجل" يضيف مسودة في كل نقرة ====== */
+    document.getElementById('btnAddRow').addEventListener('click', ()=>{
+      const tempId = `NEW-${Date.now()}-${++newRowCounter}`;
+      drafts.set(tempId, {
+        __isNew: true, name:'', username:'', email:'', role:'subuser-member', isActive:true
+      });
+      // أعد العرض مع حقن المسودات بالأعلى
+      fetchUsers().then(()=>{
+        const row = tbody.querySelector(`tr[data-id="${CSS.escape(tempId)}"]`);
+        row?.querySelectorAll('input.inline-edit, select.inline-role').forEach(el => el.classList.add('field-dirty'));
+      });
+    });
+
+    /* ====== جديد: زر "تحميل آخر سجل" ====== */
+    document.getElementById('btnLoadLast').addEventListener('click', async ()=>{
+      try{
+        const r = await apiFetch('/api/users?limit=1&sort=-createdAt');
+        if(!r.ok) throw new Error('فشل الجلب');
+        const data = await r.json();
+        const last = (data?.data && data.data[0]) || data?.[0];
+        if(!last){ setToast(toastInfo,'لا يوجد مستخدمون محفوظون بعد'); toastInfo.show(); return; }
+
+        // ابحث عن مسودات NEW-*
+        const newIds = Array.from(drafts.keys()).filter(id=>String(id).startsWith('NEW-'));
+        if(newIds.length===0){
+          // أنشئ مسودة واحدة معبّأة
+          const tempId = `NEW-${Date.now()}-${++newRowCounter}`;
+          drafts.set(tempId, {
+            __isNew:true,
+            name: last.name || '',
+            username: last.username || '',
+            email: last.email || '',
+            role: last.role || 'subuser-member',
+            isActive: last.isActive!==false
+          });
+        }else{
+          // املأ كل المسودات بقيم آخر سجل
+          newIds.forEach(id=>{
+            const d = drafts.get(id)||{};
+            drafts.set(id, {
+              __isNew:true,
+              name: last.name || d.name || '',
+              username: last.username || d.username || '',
+              email: last.email || d.email || '',
+              role: last.role || d.role || 'subuser-member',
+              isActive: (last.isActive!==false)
+            });
+          });
+        }
+        setToast(toastSuccess,'⬇️ تم تحميل آخر سجل وملء المسودات'); toastSuccess.show();
+        fetchUsers();
+      }catch(err){
+        setToast(toastError,'❌ فشل تحميل آخر سجل'); toastError.show();
+      }
+    });
+
+    /* ====== جديد: حفظ مسودات محليًا ====== */
+    document.getElementById('btnSaveDraftsLocal').addEventListener('click', ()=>{
+      if(drafts.size===0){ setToast(toastInfo,'لا توجد مسودات لحفظها'); toastInfo.show(); return; }
+      saveDraftsToLocal();
+    });
+
+    /* ====== جديد: حذف مسودات محليًا ====== */
+    document.getElementById('btnDeleteDraftsLocal').addEventListener('click', async ()=>{
+      // حدّد المسودات NEW-* المختارة
+      const selectedNew = Array.from(state.selected).filter(id=>String(id).startsWith('NEW-'));
+      if(selectedNew.length>0){
+        selectedNew.forEach(id=>drafts.delete(id));
+        setToast(toastSuccess,`🧹 تم حذف ${selectedNew.length} مسودة محددة`); toastSuccess.show();
+        // أعد البناء
+        state.selected.clear();
+        fetchUsers();
+        saveDraftsToLocal(); // تحديث التخزين المحلي
+        return;
+      }
+      // لا يوجد تحديد → حذف كل المسودات المحلية (NEW-* + تعديلات موجودة)
+      const ok = await confirmToast({
+        message:'سيتم حذف جميع المسودات المحلية (لا إرسال للخادم).',
+        confirmText:'نعم، احذف',
+        cancelText:'إلغاء'
+      });
+      if(!ok){ setToast(toastInfo,'تم الإلغاء'); toastInfo.show(); return; }
+      clearDrafts();
+      clearDraftsLocalStorage();
+      fetchUsers();
+      setToast(toastSuccess,'🧽 تم مسح كل المسودات المحلية'); toastSuccess.show();
+    });
+
+    /* ====== تغيير كلمات المرور للجميع (مودال) ====== */
+    const bulkPwModal = new bootstrap.Modal(document.getElementById('bulkPwModal'));
+    document.getElementById('btnBulkPw').addEventListener('click', ()=>{
+      document.getElementById('bulkNewPw').value = '';
+      bulkPwModal.show();
+    });
+    document.getElementById('applyBulkPwBtn').addEventListener('click', async ()=>{
+      const pw = document.getElementById('bulkNewPw').value.trim();
+      if(!pw){ setToast(toastInfo, 'أدخل كلمة مرور'); toastInfo.show(); return; }
+      try{
+        const r = await apiFetch('/api/users/passwords/bulk', {
+          method: 'POST',
+          headers: {'Content-Type':'application/json'},
+          body: JSON.stringify({ newPassword: pw })
+        });
+        const data = await r.json().catch(()=> ({}));
+        if(!r.ok) throw new Error(data?.message || 'فشل التغيير الجماعي');
+        setToast(toastSuccess, `✅ ${data.updatedCount||0} حساب تم تغيير كلمة مروره (مع استثناء admin)`); toastSuccess.show();
+        bulkPwModal.hide();
+      }catch(err){
+        setToast(toastError, '❌ '+(err.message||'فشل التغيير الجماعي')); toastError.show();
+      }
+    });
+
+    /* ====== تبديل إظهار/إخفاء كلمة المرور في المودالات ====== */
+    document.addEventListener('click', (e)=>{
+      const btn = e.target.closest('.toggle-pwd');
+      if (!btn) return;
+      const input = document.querySelector(btn.dataset.target);
+      if (!input) return;
+      const isPassword = input.type === 'password';
+      input.type = isPassword ? 'text' : 'password';
+      const icon = btn.querySelector('i');
+      if (icon) {
+        icon.classList.toggle('bi-eye', !isPassword);
+        icon.classList.toggle('bi-eye-slash', isPassword);
+      }
+    });
+
+    /* ====== تهيئة ====== */
     (async function init(){
       try{
-        await ensureAuth();
-        document.getElementById('homeBtn').href=go('/committees-home.html');
-        await loadDatalists();
-        await loadSettings();
-        await loadCommittees();
-      }catch{
-        // نعرض الصفحة حتى في حال الخطأ كي تظهر رسائل التوست
-      } finally {
-        // إنهاء شاشة "جاري التحميل..." وإظهار الصفحة
-        document.documentElement.classList.remove('app-loading');
-        document.documentElement.classList.add('app-ready');
+        await ensureAdmin();
+        loadFilters();
+        loadDraftsFromLocal();    // ← استرجاع المسودات المحلية
+        const urlp = new URLSearchParams(location.search);
+        state.page  = parseInt(urlp.get('page')||'1',10);
+        renderPwMeter();
+        await fetchUsers();
+      }catch(e){
+        console.error('init error:', e);
       }
     })();
   </script>
