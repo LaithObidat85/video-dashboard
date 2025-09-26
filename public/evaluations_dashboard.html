@@ -64,6 +64,9 @@
       line-height:1.25;
     }
 
+    /* احتياطي في حال استخدمت .table-responsive لاحقًا */
+    .table-responsive{ overflow:visible !important; }
+
     /* أعمدة التاريخ (اتجاه يسار لليمين) */
     #evaluationsTableWrapper th.date-col,
     #evaluationsTableWrapper td.date-col{
@@ -171,7 +174,7 @@
       <!-- الفلاتر -->
       <div class="filters row justify-content-center no-print">
         <div class="col-md-3 mb-2 text-center">
-          <label class="form-label d-block">الكلية</label>
+          <label class="form-label d-block">الكلية</label> <!-- تم تصحيح d-block -->
           <select id="collegeFilter" class="form-select">
             <option value="">جميع الكليات</option>
           </select>
@@ -279,6 +282,10 @@
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
   <script>
+    /* ===== سجلات أخطاء عامة للمساعدة في التشخيص ===== */
+    window.addEventListener('error', e => console.error('WindowError:', e.message, e.filename, e.lineno));
+    window.addEventListener('unhandledrejection', e => console.error('PromiseRejection:', e.reason));
+
     /* ===== توستات ===== */
     const toastSuccess = new bootstrap.Toast(document.getElementById('toastSuccess'));
     const toastError   = new bootstrap.Toast(document.getElementById('toastError'));
@@ -305,10 +312,10 @@
           opt.value=c.name; opt.textContent=c.name;
           collegeFilter.appendChild(opt);
         });
-      }catch(e){ /* صامت */ }
+      }catch(e){ console.warn('loadOptions error', e); }
     }
 
-    /* ===== Sanitizer بسيط للملاحظات للطباعة ===== */
+    /* ===== Sanitizer للملاحظات (للشاشة والطباعة) ===== */
     function sanitizeNotes(html=''){
       try{
         const allowed=['P','UL','OL','LI','B','STRONG','I','EM','U','BR'];
@@ -460,6 +467,7 @@
 
         return true;
       }catch(e){
+        console.warn('loadSettings error', e);
         // في حالة الخطأ نتصرف كأن النشر غير مفعّل (أكثر أمانًا)
         na.classList.remove('d-none'); na.classList.add('d-flex');
         pc.classList.add('d-none');
@@ -523,11 +531,11 @@
               <div class="print-notes">${hasNotes ? sanitizeNotes(notesHtml) : '—'}</div>
             </td>
           `;
-          // زر عرض الملاحظات (شاشة فقط)
+          // زر عرض الملاحظات (شاشة فقط) — مُعقّم
           const btn = tr.querySelector('[data-notes]');
           if(btn){
             btn.addEventListener('click',()=>{
-              document.getElementById('notesContent').innerHTML = notesHtml || '<i>لا توجد ملاحظات</i>';
+              document.getElementById('notesContent').innerHTML = hasNotes ? sanitizeNotes(notesHtml) : '<i>لا توجد ملاحظات</i>';
               new bootstrap.Modal(document.getElementById('notesModal')).show();
             });
           }
@@ -538,7 +546,7 @@
         applyColumnVisibility();
         applyCommitteeSearch();
       }catch(err){
-        console.error(err);
+        console.error('loadCommittees error', err);
         showError('❌ فشل تحميل البيانات');
         const tbody=document.getElementById('committeesTable');
         tbody.innerHTML=`<tr><td colspan="16" class="text-center text-danger">فشل الجلب</td></tr>`;
@@ -572,6 +580,10 @@
           await loadOptions();
           await loadCommittees();
         }
+        // جهّز عنوان "درجة التوفر" حتى قبل الجلب الأول
+        updateAvailabilityHeader();
+      }catch(e){
+        console.error('init error:', e);
       }finally{
         // إنهاء شاشة التحميل بغضّ النظر عن الحالة
         document.documentElement.classList.remove('app-loading');
