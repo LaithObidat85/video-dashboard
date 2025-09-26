@@ -210,10 +210,10 @@
             <input class="form-check-input simple-toggle" type="checkbox" id="toggle_college" checked>
             <label class="form-check-label" for="toggle_college">إظهار الكلية</label>
           </div>
-          <div class="form-check">
+        <!--  <div class="form-check">
             <input class="form-check-input simple-toggle" type="checkbox" id="toggle_date">
             <label class="form-check-label" for="toggle_date">إظهار تاريخ التدقيق</label>
-          </div>
+          </div> -->
           <button class="btn btn-secondary" id="printBtn" title="طباعة"><i class="bi bi-printer"></i></button>
           <button class="btn btn-info" id="reloadBtn" title="إعادة تحميل الإعدادات والجدول"><i class="bi bi-arrow-repeat"></i></button>
         </div>
@@ -414,8 +414,8 @@
       const showCollege=document.getElementById('toggle_college').checked;
       document.querySelectorAll('.col-college, td.col-college').forEach(el=>el.classList.toggle('hidden-col',!showCollege));
 
-      const showDate=document.getElementById('toggle_date').checked;
-      document.querySelectorAll('.date-col').forEach(el=>el.classList.toggle('hidden-col',!showDate));
+     /* const showDate=document.getElementById('toggle_date').checked;
+      document.querySelectorAll('.date-col').forEach(el=>el.classList.toggle('hidden-col',!showDate)); */
 
       availabilityFields.forEach(f=>{
         const show = savedVisibleColumns.includes(f);
