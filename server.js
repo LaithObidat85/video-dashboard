@@ -2231,7 +2231,7 @@ function registerRoutes() {
       req.session.videoUser = { email };
       return res.redirect(`/protected?id=${id}`);
     } else {
-      return res.send('❌ يجب إدخال بريد ينتهي بـ @iu.edu.jو');
+      return res.send('❌ يجب إدخال بريد ينتهي بـ @iu.edu.jo');
     }
   });
 
