@@ -4,44 +4,48 @@
   <meta charset="UTF-8">
   <title>نتائج تقييم اللجان</title>
   <meta name="viewport" content="width=device-width,initial-scale=1" />
+
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.rtl.min.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
 
-  <!-- تفعيل حالة التحميل مبكرًا -->
+  <!-- نفعل حالة التحميل مبكرًا -->
   <script>document.documentElement.classList.add('app-loading');</script>
 
   <style>
-    /* شاشة “جاري التحميل…” */
+    /* ================= شاشة التحميل ================= */
     #appLoader{
       position:fixed; inset:0; display:flex; align-items:center; justify-content:center;
       gap:.75rem; background:#ffffff; z-index:3000; font-weight:700; color:#333;
-      font-family:'Segoe UI',sans-serif;
     }
     html.app-ready #appLoader{ display:none; }
-
-    /* أثناء التحميل: أخفِ كل المحتوى */
+    /* أخفِ المحتوى أثناء التحميل فقط */
     html.app-loading #pageContent,
     html.app-loading #notAvailable,
     html.app-loading .toast-container{ display:none !important; }
 
+    /* ================= أساسيات ================= */
     body{background:#f8f9fa;font-family:'Segoe UI',sans-serif}
     .container-fluid{margin-top:30px}
 
-    table{background:#fff;border-radius:10px;overflow:hidden;font-size:14px;width:100%;margin:auto}
-    th,td{ text-align:center; vertical-align:middle }
+    /* مهم: لا نستخدم overflow:hidden على الجدول حتى لا يكسر sticky */
+    table{
+      background:#fff;
+      border-radius:10px;
+      overflow:visible;
+      font-size:14px;
+      width:100%;
+      margin:auto
+    }
 
-    /* توحيد ستايل ترويسة الجدول (مطابق لصفحة الإدارة) */
-    th{
-      background:#f8f9fa; color:#000; font-weight:700;
-      padding:.75rem .5rem; line-height:1.25;
-    }
-    /* Sticky header مثل صفحة الإدارة */
-    #evaluationsTableWrapper thead{
-      position:sticky; top:0; z-index:100; background:#f8f9fa;
-    }
+    th,td{text-align:center;vertical-align:middle}
+    th{background:#f8f9fa;color:#000;font-weight:700}
+
+    /* منع تكسّر الحروف العربية في عناوين الأعمدة */
     #evaluationsTableWrapper thead th{
-      position:sticky; top:0; z-index:101; background:#f8f9fa; color:#000;
-      box-shadow:0 1px 0 rgba(0,0,0,.06);
+      white-space: normal;
+      word-break: keep-all;
+      overflow-wrap: anywhere;
+      writing-mode: horizontal-tb; text-orientation: mixed;
     }
 
     .highlight{background:#d4edda!important;transition:background-color 1s ease}
@@ -49,84 +53,124 @@
     .filters{margin-bottom:20px;text-align:center}
     .sticky-header{background:#f8f9fa;padding-top:10px}
 
+    /* ===== ترويسة لاصقة + ارتفاع أكبر (مطابق لصفحة الإدارة) ===== */
+    #evaluationsTableWrapper thead{
+      position:sticky; top:0; z-index:99; background:#f8f9fa;
+      position:-webkit-sticky; /* دعم ويبكت */
+    }
+    #evaluationsTableWrapper thead th{
+      position:sticky; top:0; z-index:100; background:#f8f9fa; color:#000;
+      position:-webkit-sticky; /* دعم ويبكت */
+      box-shadow:0 1px 0 rgba(0,0,0,.06);
+      padding-block: 1rem;           /* ↑ ارتفاع أكبر للرأس على الشاشة */
+      line-height:1.25;
+    }
+
+    /* احتياطي في حال استخدمت .table-responsive لاحقًا */
+    .table-responsive{ overflow:visible !important; }
+
     /* أعمدة التاريخ (اتجاه يسار لليمين) */
     #evaluationsTableWrapper th.date-col,
     #evaluationsTableWrapper td.date-col{
       direction:ltr;text-align:center;width:110px;max-width:110px
     }
 
-    /* مساحات معلومات أعلى الجدول (بالأسود كما طُلب) */
-    #completionRateContainer,#selectedVisitsContainer{
-      font-weight:bold;margin:5px 0;font-size:18px;color:#000;min-height:24px
-    }
+    /* مساحات معلومات أعلى الجدول */
+    #completionRateContainer,#selectedVisitsContainer{font-weight:bold;margin:5px 0;font-size:18px;color:#000;min-height:24px}
     #infoContainer{font-weight:bold;margin:15px 0;font-size:18px;color:#000;text-align:center}
 
     /* ملاحظات: ما يظهر على الشاشة/الطباعة */
     .notes-screen{display:inline-block}
     .print-notes{display:none;text-align:start}
 
-    /* تأثير Hover على صفوف الجدول — استهداف الخلايا */
-    #evaluationsTableWrapper tbody tr > * {
-      transition: background-color .2s ease, box-shadow .2s ease;
-    }
+    /* تأثير Hover على صفوف الجدول */
+    #evaluationsTableWrapper tbody tr > * {transition: background-color .2s ease, box-shadow .2s ease;}
     #evaluationsTableWrapper tbody tr:hover > * {
-      background-color:#f1f7ff !important;
-      box-shadow: inset 0 0 0 9999px rgba(13,110,253,.06);
+      background-color:#f1f7ff !important; box-shadow: inset 0 0 0 9999px rgba(13,110,253,.06);
     }
 
-    /* حالة "غير متوفر" */
-    #notAvailable{
-      min-height:60vh;
-      align-items:center; justify-content:center; text-align:center;
-    }
+    /* رسالة "غير متوفر" */
+    #notAvailable{min-height:60vh; align-items:center; justify-content:center; text-align:center;}
 
-    /* ======== تحسينات الطباعة ======== */
+    /* ==== نسب عرض للأعمدة (شاشة) ==== */
+    th.col-idx, td.col-idx{width:3.5%}
+    th.col-college, td.col-college{width:9%}
+    th.col-committee, td.col-committee{width:20%}            /* اسم اللجنة */
+    th.col-date, td.col-date{width:8%}
+    th.col-consistency, td.col-consistency{width:13%}        /* التوافق بين الدعوات والاجتماعات (شاشة) */
+    th.col-notes, td[col-notes]{width:22%}                   /* الملاحظات (شاشة) */
+    /* الحقول الرقمية – نجعلها أضيق */
+    th.col-num, td.col-num{width:5%}
+
+    /* عناصر سطور العنوان القابلة للفصل في الطباعة */
+    .hline{display:inline}
+    .hline + .hline::before{content:" ";} /* مسافة بين الكلمات على الشاشة */
+
+    /* ================= الطباعة ================= */
     @media print{
-      /* اجعل الجدول يلتزم بالعرض ويمنع الانقسام قدر الإمكان */
-      @page{ size: A4 landscape; margin: 10mm; }
-      body{background:#fff}
+      @page{ size: A4 landscape; margin: 4mm; } /* هوامش صغيرة جدًا */
+
+      html,body{background:#fff}
       .no-print,.toast-container,.modal{display:none!important}
-      .container-fluid{max-width:none;width:100%;margin:0}
-      .print-header{display:block;margin-bottom:10px}
+      .container-fluid{margin-top:0; max-width:none; width:100%}
+      .print-header{display:block;margin-bottom:6px}
 
-      /* تكرار رأس الجدول في كل صفحة */
-      thead{ display:table-header-group }
-      tfoot{ display:table-footer-group }
-
-      /* منع انقسام الصف عبر الصفحات قدر الإمكان */
-      table{ table-layout:fixed; border-collapse:collapse; width:100%; }
-      tr{ page-break-inside: avoid; }
-      td,th{
-        white-space:normal; overflow-wrap:anywhere; word-break:break-word;
-        padding:.45rem .35rem; /* تقليل بسيط لتناسب العرض */
-        font-size:12px; line-height:1.25;
+      /* تخطيط ثابت ليلتزم بعروض الأعمدة */
+      #evaluationsTableWrapper{ table-layout: fixed; width:100%; }
+      #evaluationsTableWrapper thead th{
+        padding-block: .65rem;     /* رأس أقل ارتفاعًا في الطباعة */
+        font-size:12px;
+      }
+      #evaluationsTableWrapper th, #evaluationsTableWrapper td{
+        font-size:12px; padding:.35rem .25rem; line-height:1.25;
+        white-space:normal; overflow-wrap:anywhere; word-break:keep-all;
+        writing-mode: horizontal-tb !important; text-orientation: mixed !important;
       }
 
-      /* إظهار نسخة الطباعة من الملاحظات */
+      /* تفكيك العناوين إلى أسطر */
+      .hline{display:block}        /* كل جزء بسطر مستقل في الطباعة */
+      .hline + .hline::before{content:""}
+
+      /* ===== نسب العرض المطلوبة في الطباعة (بالمئة) ===== */
+      th.col-idx, td.col-idx{width:3.5%}
+      th.col-college, td.col-college{width:9%}
+      th.col-committee, td.col-committee{width:16%}
+      th.col-date, td.col-date{width:8%}
+
+      th.col-formation_decision, td[data-field="formation_decision"]{width:7%}
+      th.col-work_plan, td[data-field="work_plan"]{width:5%}
+      th.col-performance_indicators, td[data-field="performance_indicators"]{width:7%}
+      th.col-meetings, td[data-field="meetings"]{width:8%}
+
+      th.col-consistency, td.col-consistency{width:9.5%}
+
+      th.col-coverage_books, td[data-field="coverage_books"]{width:7%}
+
+      th.col-report1, td[data-field="report1"]{width:5%}
+      th.col-report2, td[data-field="report2"]{width:5%}
+      th.col-report3, td[data-field="report3"]{width:5%}
+
+      th.col-statistical_analysis, td[data-field="statistical_analysis"]{width:7%}
+
+      #availabilityHeader, td.availability-cell{width:5%}
+
+      th.col-notes, td[col-notes]{width:15%}
+
+      /* رأس الجدول يتكرر */
+      thead{display:table-header-group}
+
+      /* حاول منع انقسام الصف الواحد بين صفحتين */
+      tr{ page-break-inside: avoid; break-inside: avoid; }
+
+      /* إظهار محتوى الملاحظات للطباعة */
       .notes-screen{display:none!important}
       .print-notes{display:block!important;white-space:normal}
-
-      /* ضمان بقاء الأعمدة داخل الصفحة */
-      .col-college{width:12%}
-      .date-col{width:9%}
-      .col-formation_decision,
-      .col-work_plan,
-      .col-performance_indicators,
-      .col-meetings,
-      .col-consistency,
-      .col-coverage_books,
-      .col-report1,
-      .col-report2,
-      .col-report3,
-      .col-statistical_analysis{ width:5.5% }
-      #availabilityHeader, .availability-cell{ width:6% }
-      .col-notes{ width:18% }
     }
   </style>
 </head>
 <body>
 
-  <!-- شاشة “جاري التحميل…” -->
+  <!-- شاشة "جاري التحميل..." -->
   <div id="appLoader" aria-live="polite">
     <div class="spinner-border" role="status" aria-hidden="true"></div>
     <span>جاري التحميل…</span>
@@ -148,7 +192,7 @@
       <!-- الفلاتر -->
       <div class="filters row justify-content-center no-print">
         <div class="col-md-3 mb-2 text-center">
-          <label class="form-label د-block">الكلية</label>
+          <label class="form-label d-block">الكلية</label>
           <select id="collegeFilter" class="form-select">
             <option value="">جميع الكليات</option>
           </select>
@@ -175,7 +219,7 @@
         </div>
       </div>
 
-      <!-- رأس الطباعة (سُيملأ ديناميكيًا) -->
+      <!-- رأس الطباعة -->
       <div id="infoContainer" class="print-header">
         <div id="semesterInfo">—</div>
         <div id="selectedVisitsContainer">—</div>
@@ -184,24 +228,41 @@
       </div>
     </div>
 
-    <table class="table table-bordered table-striped table-responsive" id="evaluationsTableWrapper">
+    <table class="table table-bordered table-striped" id="evaluationsTableWrapper">
       <thead>
         <tr>
-          <th>#</th>
+          <th class="col-idx">#</th>
           <th class="col-college">الكلية</th>
-          <th>اسم اللجنة</th>
-          <th class="date-col hidden-col">تاريخ التدقيق</th>
-          <th class="col-formation_decision">قرار التشكيل</th>
-          <th class="col-work_plan">خطة العمل</th>
-          <th class="col-performance_indicators">مؤشرات الأداء</th>
-          <th class="col-meetings">عدد الاجتماعات</th>
-          <th class="col-consistency">التوافق بين الدعوات والاجتماعات</th>
-          <th class="col-coverage_books">كتب التغطية</th>
-          <th class="col-report1">تقرير إنجاز 1</th>
-          <th class="col-report2">تقرير إنجاز 2</th>
-          <th class="col-report3">تقرير إنجاز 3</th>
-          <th class="col-statistical_analysis">التحليل الإحصائي</th>
-          <th id="availabilityHeader">درجة التوفر من (9)</th>
+          <th class="col-committee">اسم اللجنة</th>
+          <th class="date-col col-date hidden-col">تاريخ التدقيق</th>
+
+          <th class="col-num col-formation_decision">
+            <span class="hline">قرار</span><span class="hline">التشكيل</span>
+          </th>
+          <th class="col-num col-work_plan">
+            <span class="hline">خطة</span><span class="hline">العمل</span>
+          </th>
+          <th class="col-num col-performance_indicators">
+            <span class="hline">مؤشرات</span><span class="hline">الأداء</span>
+          </th>
+          <th class="col-num col-meetings">
+            <span class="hline">عدد</span><span class="hline">الاجتماعات</span>
+          </th>
+          <th class="col-consistency">
+            <span class="hline">التوافق بين</span><span class="hline">الدعوات</span><span class="hline">والاجتماعات</span>
+          </th>
+          <th class="col-num col-coverage_books">
+            <span class="hline">كتب</span><span class="hline">التغطية</span>
+          </th>
+          <th class="col-num col-report1">تقرير إنجاز 1</th>
+          <th class="col-num col-report2">تقرير إنجاز 2</th>
+          <th class="col-num col-report3">تقرير إنجاز 3</th>
+          <th class="col-num col-statistical_analysis">
+            <span class="hline">التحليل</span><span class="hline">الإحصائي</span>
+          </th>
+
+          <!-- سنملؤه ديناميكياً بنفس البنية متعددة الأسطر -->
+          <th id="availabilityHeader" class="col-num"></th>
           <th class="col-notes">الملاحظات</th>
         </tr>
       </thead>
@@ -239,6 +300,10 @@
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
   <script>
+    /* ===== سجلات أخطاء عامة للمساعدة في التشخيص ===== */
+    window.addEventListener('error', e => console.error('WindowError:', e.message, e.filename, e.lineno));
+    window.addEventListener('unhandledrejection', e => console.error('PromiseRejection:', e.reason));
+
     /* ===== توستات ===== */
     const toastSuccess = new bootstrap.Toast(document.getElementById('toastSuccess'));
     const toastError   = new bootstrap.Toast(document.getElementById('toastError'));
@@ -258,15 +323,17 @@
       try{
         const { data } = await axios.get('/api/colleges');
         const collegeFilter = document.getElementById('collegeFilter');
+        // امسح الخيارات (عدا "جميع الكليات") عند إعادة التحميل
+        collegeFilter.querySelectorAll('option:not(:first-child)').forEach(o=>o.remove());
         (data||[]).forEach(c=>{
           const opt=document.createElement('option');
           opt.value=c.name; opt.textContent=c.name;
           collegeFilter.appendChild(opt);
         });
-      }catch(e){ /* صامت */ }
+      }catch(e){ console.warn('loadOptions error', e); }
     }
 
-    /* ===== Sanitizer بسيط للملاحظات للطباعة ===== */
+    /* ===== Sanitizer للملاحظات (للشاشة والطباعة) ===== */
     function sanitizeNotes(html=''){
       try{
         const allowed=['P','UL','OL','LI','B','STRONG','I','EM','U','BR'];
@@ -283,13 +350,26 @@
         }
         toRemove.forEach(n=>n.replaceWith(document.createTextNode(n.textContent||'')));
         return tmp.innerHTML.trim() || '—';
-      }catch{return '—'}
+      }catch(e){
+        return '—';
+      }
+    }
+
+    /* ===== تعيين عنوان "درجة التوفر" متعدد الأسطر مع رقم ديناميكي ===== */
+    function renderAvailabilityHeader(n){
+      const h = document.getElementById('availabilityHeader');
+      h.innerHTML = `
+        <span class="hline">درجة</span>
+        <span class="hline">التوفر</span>
+        <span class="hline">من</span>
+        <span class="hline">(${n})</span>
+      `;
     }
 
     /* ===== تحديث عنوان التوفر ===== */
     function updateAvailabilityHeader(){
       const n=savedVisibleColumns.length;
-      document.getElementById('availabilityHeader').innerText=`درجة التوفر من (${n})`;
+      renderAvailabilityHeader(n);
     }
 
     /* ===== حساب درجة التوفر للصف ===== */
@@ -332,7 +412,8 @@
     /* ===== تطبيق رؤية الأعمدة ===== */
     function applyColumnVisibility(){
       const showCollege=document.getElementById('toggle_college').checked;
-      document.querySelectorAll('.col-college').forEach(el=>el.classList.toggle('hidden-col',!showCollege));
+      document.querySelectorAll('.col-college, td.col-college').forEach(el=>el.classList.toggle('hidden-col',!showCollege));
+
       const showDate=document.getElementById('toggle_date').checked;
       document.querySelectorAll('.date-col').forEach(el=>el.classList.toggle('hidden-col',!showDate));
 
@@ -343,11 +424,11 @@
         if(th) th.classList.toggle('hidden-col', !show);
       });
 
-      /* منطق إخفاء/إظهار عمود الملاحظات */
+      // إخفاء/إظهار عمود الملاحظات لو لم توجد أعمدة رقمية ظاهرة
       const hideNotes = savedVisibleColumns.length === 0;
       const notesHeader = document.querySelector('#evaluationsTableWrapper th.col-notes');
       if (notesHeader) notesHeader.classList.toggle('hidden-col', hideNotes);
-      document.querySelectorAll('#evaluationsTableWrapper td[data-notes-col]').forEach(td=>{
+      document.querySelectorAll('#evaluationsTableWrapper td[data-notes-col], #evaluationsTableWrapper td[col-notes]').forEach(td=>{
         td.classList.toggle('hidden-col', hideNotes);
       });
 
@@ -355,20 +436,23 @@
       updateAvailabilityHeader();
       updateCompletionAndCounts();
     }
-    document.querySelectorAll('.simple-toggle').forEach(cb=>cb.addEventListener('change', applyColumnVisibility));
+
+    document.querySelectorAll('.simple-toggle').forEach(cb=>{
+      cb.addEventListener('change', applyColumnVisibility);
+    });
 
     /* ===== البحث باسم اللجنة ===== */
     function applyCommitteeSearch(){
       const term=document.getElementById('committeeSearch').value.trim().toLowerCase();
       document.querySelectorAll('#committeesTable tr').forEach(row=>{
-        const name=row.cells[2]?.innerText.trim().toLowerCase()||'';
-        row.style.display = name.includes(term)? '': 'none';
+        const name=row.querySelector('td.col-committee')?.innerText.trim().toLowerCase()||'';
+        row.style.display = name.includes(term)? '' : 'none';
       });
       updateCompletionAndCounts();
     }
     document.getElementById('committeeSearch').addEventListener('input', applyCommitteeSearch);
 
-    /* ===== تحميل الإعدادات (تشمل publishResults) ===== */
+    /* ===== تحميل الإعدادات ===== */
     async function loadSettings(){
       const semesterEl=document.getElementById('semesterInfo');
       const visitsEl  =document.getElementById('selectedVisitsContainer');
@@ -386,6 +470,7 @@
           return false;
         }
 
+        // مفعّل => إظهار الصفحة وإخفاء الرسالة
         na.classList.add('d-none'); na.classList.remove('d-flex');
         pc.classList.remove('d-none');
 
@@ -402,6 +487,8 @@
 
         return true;
       }catch(e){
+        console.warn('loadSettings error', e);
+        // في حالة الخطأ نتصرف كأن النشر غير مفعّل (أكثر أمانًا)
         na.classList.remove('d-none'); na.classList.add('d-flex');
         pc.classList.add('d-none');
         return false;
@@ -431,8 +518,10 @@
           return;
         }
 
+        // ترتيب افتراضي حسب الكلية
         arr.sort((a,b)=>(a.college||'').localeCompare(b.college||'','ar'));
 
+        // رسم الصفوف
         arr.forEach((c,idx)=>{
           const tr=document.createElement('tr');
           const dateTxt = c.audit_date ? new Date(c.audit_date).toLocaleDateString('ar-EG'): '-';
@@ -440,35 +529,33 @@
           const hasNotes  = !!notesHtml && notesHtml!=='<p><br></p>' && notesHtml!=='<br>';
 
           tr.innerHTML = `
-            <td>${idx+1}</td>
+            <td class="col-idx">${idx+1}</td>
             <td class="col-college">${c.college??''}</td>
-            <td>${c.committee_name??''}</td>
-            <td class="date-col hidden-col">${dateTxt}</td>
-            <td data-field="formation_decision">${c.formation_decision ?? 0}</td>
-            <td data-field="work_plan">${c.work_plan ?? 0}</td>
-            <td data-field="performance_indicators">${c.performance_indicators ?? 0}</td>
-            <td data-field="meetings">${c.meetings ?? 0}</td>
-            <td data-field="consistency">${c.consistency ?? 0}</td>
-            <td data-field="coverage_books">${c.coverage_books ?? 0}</td>
-            <td data-field="report1">${c.report1 ?? 0}</td>
-            <td data-field="report2">${c.report2 ?? 0}</td>
-            <td data-field="report3">${c.report3 ?? 0}</td>
-            <td data-field="statistical_analysis">${c.statistical_analysis ?? 0}</td>
-            <td class="availability-cell">${c.availability_score ?? 0}</td>
-            <td data-notes-col>
+            <td class="col-committee">${c.committee_name??''}</td>
+            <td class="date-col col-date hidden-col">${dateTxt}</td>
+            <td class="col-num" data-field="formation_decision">${c.formation_decision ?? 0}</td>
+            <td class="col-num" data-field="work_plan">${c.work_plan ?? 0}</td>
+            <td class="col-num" data-field="performance_indicators">${c.performance_indicators ?? 0}</td>
+            <td class="col-num" data-field="meetings">${c.meetings ?? 0}</td>
+            <td class="col-consistency" data-field="consistency">${c.consistency ?? 0}</td>
+            <td class="col-num" data-field="coverage_books">${c.coverage_books ?? 0}</td>
+            <td class="col-num" data-field="report1">${c.report1 ?? 0}</td>
+            <td class="col-num" data-field="report2">${c.report2 ?? 0}</td>
+            <td class="col-num" data-field="report3">${c.report3 ?? 0}</td>
+            <td class="col-num" data-field="statistical_analysis">${c.statistical_analysis ?? 0}</td>
+            <td class="col-num availability-cell">${c.availability_score ?? 0}</td>
+            <td col-notes data-notes-col>
               <span class="notes-screen">
-                ${ hasNotes
-                    ? `<button class="btn btn-sm btn-info" title="عرض الملاحظات" data-notes="1">🔍</button>`
-                    : '<span class="text-muted">لا توجد ملاحظات</span>' }
+                ${ hasNotes ? `<button class="btn btn-sm btn-info" title="عرض الملاحظات" data-notes="1">🔍</button>` : '<span class="text-muted">لا توجد ملاحظات</span>' }
               </span>
               <div class="print-notes">${hasNotes ? sanitizeNotes(notesHtml) : '—'}</div>
             </td>
           `;
-
+          // زر عرض الملاحظات (شاشة فقط) — مُعقّم
           const btn = tr.querySelector('[data-notes]');
           if(btn){
             btn.addEventListener('click',()=>{
-              document.getElementById('notesContent').innerHTML = notesHtml || '<i>لا توجد ملاحظات</i>';
+              document.getElementById('notesContent').innerHTML = hasNotes ? sanitizeNotes(notesHtml) : '<i>لا توجد ملاحظات</i>';
               new bootstrap.Modal(document.getElementById('notesModal')).show();
             });
           }
@@ -479,7 +566,7 @@
         applyColumnVisibility();
         applyCommitteeSearch();
       }catch(err){
-        console.error(err);
+        console.error('loadCommittees error', err);
         showError('❌ فشل تحميل البيانات');
         const tbody=document.getElementById('committeesTable');
         tbody.innerHTML=`<tr><td colspan="16" class="text-center text-danger">فشل الجلب</td></tr>`;
@@ -487,7 +574,7 @@
     }
 
     /* ===== طباعة ===== */
-    document.getElementById('printBtn').addEventListener('click', ()=>{
+    document.getElementById('printBtn').addEventListener('click', ()=> {
       updateCompletionAndCounts();
       window.print();
     });
@@ -505,11 +592,7 @@
       }
     });
 
-    /* ===== تشغيل أولي =====
-       1) قراءة الإعدادات لتحديد publishResults
-       2) إذا مفعّل: نحمّل القوائم ثم الجدول
-       3) إنهاء شاشة التحميل دائمًا في النهاية
-    */
+    /* ===== تشغيل أولي مع شاشة التحميل ===== */
     (async function init(){
       try{
         const ok = await loadSettings();
@@ -517,8 +600,12 @@
           await loadOptions();
           await loadCommittees();
         }
-      } finally {
-        // إنهاء شاشة "جاري التحميل…" وإظهار ما يلزم (محتوى/رسالة غير متوفر)
+        // جهّز عنوان "درجة التوفر" حتى قبل الجلب الأول
+        updateAvailabilityHeader();
+      }catch(e){
+        console.error('init error:', e);
+      }finally{
+        // إنهاء شاشة التحميل بغضّ النظر عن الحالة
         document.documentElement.classList.remove('app-loading');
         document.documentElement.classList.add('app-ready');
       }
