@@ -218,7 +218,9 @@ const cBackupSchema = new mongoose.Schema({
   auditors: Array,
   settings: Object,
   committeeFiles: Array,
-  committeeAssignments: Array
+  committeeAssignments: Array,
+  users: Array,
+  auditLogs: Array
 }, { collection: 'cbackups' }); // ← اسم المجموعة الصريح
 cBackupSchema.index({ date: -1 });
 const CBackup = mongoose.model('CBackup', cBackupSchema);
@@ -613,26 +615,36 @@ function registerRoutes() {
   // ===== Committees Backups (cbackups) =====
   app.post('/api/cbackups/create', authRequired, requireRole('admin'), async (req, res) => {
     try {
-      const [evaluations, colleges, committeesMaster, auditors, settings, committeeFiles, committeeAssignments] =
-        await Promise.all([
-          Evaluation.find().lean(),
-          College.find().lean(),
-          Committee.find().lean(),
-          Auditor.find().lean(),
-          Settings.findOne().lean(),
-          CommitteeFiles.find().lean(),
-          CommitteeAssignment.find().lean()
-        ]);
+      const [
+  evaluations, colleges, committeesMaster, auditors, settings, committeeFiles, committeeAssignments,
+  users, auditLogs
+] = await Promise.all([
+  Evaluation.find().lean(),
+  College.find().lean(),
+  Committee.find().lean(),
+  Auditor.find().lean(),
+  Settings.findOne().lean(),
+  CommitteeFiles.find().lean(),
+  CommitteeAssignment.find().lean(),
+  // ⬅️ جديد: كل المستخدمين (بما فيهم password الهاش)
+  User.find().lean(),
+  // ⬅️ جديد: كل سجلات التدقيق
+  AuditLog.find().lean()
+]);
 
-      const b = await CBackup.create({
-        evaluations,
-        colleges,
-        committeesMaster,
-        auditors,
-        settings: settings || {},
-        committeeFiles,
-        committeeAssignments
-      });
+const b = await CBackup.create({
+  evaluations,
+  colleges,
+  committeesMaster,
+  auditors,
+  settings: settings || {},
+  committeeFiles,
+  committeeAssignments,
+  // ⬅️ جديد
+  users,
+  auditLogs
+});
+
 
       res.json({ message: '✅ تم إنشاء نسخة احتياطية لنظام اللجان', id: b._id });
     } catch (err) {
@@ -677,24 +689,32 @@ function registerRoutes() {
 
       // ⚠️ الاسترجاع "يمسح ثم يملأ" — غيّر السلوك إن أردت دمجًا بدل المسح.
       await Promise.all([
-        Evaluation.deleteMany({}),
-        College.deleteMany({}),
-        Committee.deleteMany({}),
-        Auditor.deleteMany({}),
-        CommitteeFiles.deleteMany({}),
-        CommitteeAssignment.deleteMany({})
-      ]);
+  Evaluation.deleteMany({}),
+  College.deleteMany({}),
+  Committee.deleteMany({}),
+  Auditor.deleteMany({}),
+  CommitteeFiles.deleteMany({}),
+  CommitteeAssignment.deleteMany({}),
+  // ⬅️ جديد
+  User.deleteMany({}),
+  AuditLog.deleteMany({})
+]);
 
-      if (b.evaluations?.length)         await Evaluation.insertMany(b.evaluations);
-      if (b.colleges?.length)            await College.insertMany(b.colleges);
-      if (b.committeesMaster?.length)    await Committee.insertMany(b.committeesMaster);
-      if (b.auditors?.length)            await Auditor.insertMany(b.auditors);
-      if (b.committeeFiles?.length)      await CommitteeFiles.insertMany(b.committeeFiles);
-      if (b.committeeAssignments?.length)await CommitteeAssignment.insertMany(b.committeeAssignments);
-      if (b.settings) {
-        await Settings.deleteMany({});
-        await Settings.create(b.settings);
-      }
+if (b.evaluations?.length)           await Evaluation.insertMany(b.evaluations);
+if (b.colleges?.length)              await College.insertMany(b.colleges);
+if (b.committeesMaster?.length)      await Committee.insertMany(b.committeesMaster);
+if (b.auditors?.length)              await Auditor.insertMany(b.auditors);
+if (b.committeeFiles?.length)        await CommitteeFiles.insertMany(b.committeeFiles);
+if (b.committeeAssignments?.length)  await CommitteeAssignment.insertMany(b.committeeAssignments);
+
+if (b.users?.length)                 await User.insertMany(b.users);        // ⬅️ جديد
+if (b.auditLogs?.length)             await AuditLog.insertMany(b.auditLogs);// ⬅️ جديد
+
+if (b.settings) {
+  await Settings.deleteMany({});
+  await Settings.create(b.settings);
+}
+
 
       res.json({ message: '♻️ تم الاسترجاع الكامل لبيانات اللجان من النسخة' });
     } catch (err) {
@@ -710,15 +730,19 @@ function registerRoutes() {
       const json = JSON.parse(raw);
 
       const b = await CBackup.create({
-        date: json.date || new Date(),
-        evaluations: json.evaluations || [],
-        colleges: json.colleges || [],
-        committeesMaster: json.committeesMaster || [],
-        auditors: json.auditors || [],
-        settings: json.settings || {},
-        committeeFiles: json.committeeFiles || [],
-        committeeAssignments: json.committeeAssignments || []
-      });
+  date: json.date || new Date(),
+  evaluations: json.evaluations || [],
+  colleges: json.colleges || [],
+  committeesMaster: json.committeesMaster || [],
+  auditors: json.auditors || [],
+  settings: json.settings || {},
+  committeeFiles: json.committeeFiles || [],
+  committeeAssignments: json.committeeAssignments || [],
+  // ⬅️ جديد
+  users: json.users || [],
+  auditLogs: json.auditLogs || []
+});
+
 
       res.json({ message: '✅ تم رفع وحفظ نسخة اللجان', id: b._id });
     } catch (err) {
