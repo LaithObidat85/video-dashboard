@@ -2,720 +2,504 @@
 <html lang="ar" dir="rtl">
 <head>
   <meta charset="UTF-8" />
-  <title>سجل العمليات - نظام اللجان</title>
-  <link rel="icon" type="image/png" href="https://www.dropbox.com/scl/fi/f283e4rvv5cf9x12a1cic/my-website-logo.png?rlkey=yia776im7klypy27af32m0scy&e=1&st=vhaprvzh&dl=1">
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.rtl.min.css">
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
+  <title>سجلّ العمليات (Audit Logs)</title>
   <style>
-    :root{
-      --w-chk: 46px;   /* عمود التحديد */
-      --w-idx: 64px;   /* عمود الرقم */ 
-      --before-w: 35%;
-      --after-w: 35%;
-    }
-    .user-chip{
-      display:inline-flex;align-items:center;gap:.25rem;font-size:1rem;padding:.375rem .75rem;line-height:1.5;border-radius:.375rem
-    }
-    body{background:#f8f9fa;font-family:'Segoe UI',sans-serif}
-    .container{max-width:1200px;margin-top:40px}
-    .card{border-radius:16px;box-shadow:0 6px 18px rgba(0,0,0,.06)}
-    .table{table-layout:auto;width:100%}
-    .table thead th{vertical-align:middle;white-space:nowrap}
-    #logsTbody>tr>td{vertical-align:top}
-    .payload-card{background:#fff;border:1px solid #e9ecef;border-radius:12px;padding:10px;height:220px;overflow:auto;font-size:.9rem;line-height:1.35}
-    .payload-card dt{color:#6c757d;font-weight:600}
-    .payload-card dd{margin-bottom:.45rem}
-    .payload-json{direction:ltr;background:#f6f8fa;border-radius:8px;padding:8px;font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace}
-    .filters .form-control,.filters .form-select{min-width:160px}
-    .sticky-actions{position:sticky;bottom:0;background:#fff;border-top:1px solid #e9ecef;padding:12px;border-radius:0 0 16px 16px}
-    .count-badge{font-size:.85rem}
-    .diff-added{color:#198754;font-weight:600;background:rgba(25,135,84,.12);border-radius:6px;padding:2px 6px}
-    .diff-removed{color:#dc3545;font-weight:600;background:rgba(220,53,69,.12);border-radius:6px;padding:2px 6px}
-    .payload-card .table{table-layout:fixed;width:100%}
-    .payload-card .table th,.payload-card .table td{white-space:normal;word-break:break-word;overflow-wrap:anywhere}
-    .payload-card .badge{white-space:nowrap}
-    .payload-card{direction:rtl}
-    .payload-card .email,.payload-card code,.payload-card .payload-json{direction:ltr;unicode-bidi:plaintext;word-break:break-all}
-    .nochange-note{border:1px solid rgba(13,110,253,.25);background:rgba(13,110,253,.06);color:#0d6efd;border-radius:10px;padding:4px 8px;font-size:.85rem}
-    .payload-card .table thead th{white-space:nowrap}
-    .table thead th,.table tbody td{font-size:.9rem}
-    .date-cell .d,.date-cell .t{font-size:.9rem}
-    .date-cell .d{font-weight:600}
-    .date-cell .t{color:#6c757d;margin-top:2px}
+    :root { --bg:#f7f7f9; --card:#fff; --text:#222; --muted:#666; --pri:#145DA0; --pri-2:#0F4C81; --danger:#b00020; --border:#e3e3e7; }
+    * { box-sizing: border-box; }
+    body { margin:0; font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", "Apple Color Emoji", "Segoe UI Emoji"; background: var(--bg); color: var(--text); }
+    header { background: var(--card); border-bottom:1px solid var(--border); position: sticky; top:0; z-index: 5; }
+    .container { max-width:1100px; margin:0 auto; padding: 16px; }
+    h1 { font-size:20px; margin:0 0 8px; }
+    .topbar { display:flex; gap:12px; align-items:center; flex-wrap: wrap; }
+    select, input[type="date"], input[type="text"], input[type="number"] { padding:8px 10px; border:1px solid var(--border); border-radius:10px; background:#fff; min-width: 120px; }
+    input[type="text"]{ min-width:220px; }
+    button { padding:8px 12px; border:0; border-radius:10px; cursor:pointer; background:var(--pri); color:#fff; }
+    button.secondary { background:#eee; color:#111; border:1px solid var(--border); }
+    button.danger { background: var(--danger); }
+    .card { background:var(--card); border:1px solid var(--border); border-radius:14px; padding: 14px; }
+    .grid { display:grid; gap:12px; }
+    .filters { margin-top:10px; }
+    .filters .row { display:flex; gap:10px; flex-wrap:wrap; }
+    table { width:100%; border-collapse: collapse; background:var(--card); border-radius:14px; overflow:hidden; }
+    thead th { background:#fafafc; color:#333; font-weight:600; border-bottom:1px solid var(--border); padding:10px; text-align: right; }
+    tbody td { border-bottom:1px solid var(--border); padding:10px; vertical-align: top; }
+    .muted { color: var(--muted); font-size: 12px; }
+    .nowrap { white-space: nowrap; }
+    .payload { display:grid; gap:6px; }
+    .payload pre { margin:0; background:#fcfcfe; border:1px solid var(--border); padding:8px; border-radius:10px; max-height: 240px; overflow:auto; }
+    .row-actions { display:flex; gap:6px; align-items:center; }
+    .table-wrap { overflow:auto; border:1px solid var(--border); border-radius:14px; }
+    .toolbar { display:flex; justify-content: space-between; align-items:center; margin:12px 0; gap:10px; flex-wrap: wrap; }
+    .pagination { display:flex; gap:6px; align-items:center; }
+    .pill { display:inline-flex; align-items:center; gap:6px; font-size:12px; padding:4px 8px; background:#f0f4ff; color:#0F4C81; border-radius:999px; }
+    .danger-ghost { background:#fff5f6; color:#b00020; border:1px solid #ffd5da; }
+    .url-list { margin:0; padding:0 0 0 16px; }
+    .url-list li { margin:2px 0; }
+    .tag { background:#eef6fb; color:#0F4C81; padding:2px 6px; border-radius:8px; font-size: 11px; }
+    .k { color:#444; }
+    .v { color:#000; }
+    .subnav { display:flex; gap:8px; align-items:center; padding:8px 0 12px; }
+    .subnav select { min-width: 200px; }
   </style>
 </head>
 <body>
-<!--  <div class="container-fluid"> -->
-<div class="container-fluid" style="padding-top:40px">
 
-    <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-2">
-      <h3 class="mb-0">سجل العمليات</h3>
-      <div class="d-flex align-items-center gap-2">
-        <span id="userInfo" class="user-chip badge bg-light text-dark border">
-          <i class="bi bi-person"></i>
-          <span id="userUsername">—</span>
-          <span class="mx-1">—</span>
-          <span id="userFullName">—</span>
-          <span class="ms-2 badge bg-secondary" id="userRole">—</span>
-        </span>
-        <a id="homeLink" class="btn btn-outline-primary" href="#">
-          <i class="bi bi-grid"></i> لوحة التحكم
-        </a>
-        <button id="logoutBtn" class="btn btn-danger">
-          <i class="bi bi-box-arrow-right"></i> خروج
-        </button>
-      </div>
+<header>
+  <div class="container">
+    <h1>سجلّ العمليات (Audit Logs)</h1>
+
+    <!-- قائمة الصفحات (التنقل): تمت إضافة CommitteeAssignment و CommitteeFiles -->
+    <div class="subnav">
+      <label for="pageNav" class="muted">الانتقال إلى صفحة:</label>
+      <select id="pageNav">
+        <option value="">— اختر صفحة —</option>
+        <option value="/dashboard.html">لوحة التحكم (الفيديو)</option>
+        <option value="/links.html">روابط الفيديو</option>
+        <option value="/backups.html">النسخ الاحتياطية</option>
+        <option value="/committees-manage.html">إدارة أسماء اللجان</option>
+        <option value="/index.html">الصفحة الرئيسية</option>
+        <!-- إدخالات نظام اللجان -->
+        <option value="/committees.html">تقييمات اللجان (Evaluation)</option>
+        <option value="/committee-assignments.html">CommitteeAssignment</option>
+        <option value="/committees-files.html">CommitteeFiles</option>
+        <!-- هذه الصفحة -->
+        <option value="/audit-logs.html" selected>سجلّ العمليات</option>
+      </select>
+      <button class="secondary" id="goPage">اذهب</button>
     </div>
 
-    <div class="card mb-3">
-      <div class="card-body">
-        <div class="filters d-flex flex-wrap align-items-end gap-2">
-          <div>
-            <label class="form-label">الصفحة</label>
-            <select id="fModel" class="form-select">
-              <option value="">الكل</option>
-              <option value="Evaluation">تقييم اللجان</option>
-              <option value="College">الكليات</option>
-              <option value="Auditor">المدققون</option>
-              <option value="Committee">أسماء اللجان</option>
-              <option value="Settings">الإعدادات</option>
-              <option value="User">المستخدمون</option>
-            </select>
-          </div>
-          <div>
-            <label class="form-label">العملية</label>
-            <select id="fAction" class="form-select">
-              <option value="">الكل</option>
-              <option>create</option>
-              <option>update</option>
-              <option>delete</option>
-            </select>
-          </div>
-          <div>
-            <label class="form-label">بحث (اسم/إيميل/اسم مستخدم)</label>
-            <input id="fQuery" type="text" class="form-control" placeholder="مثل: laith أو b01578">
-          </div>
-          <div>
-            <label class="form-label">من تاريخ</label>
-            <input id="fFrom" type="date" class="form-control">
-          </div>
-          <div>
-            <label class="form-label">إلى تاريخ</label>
-            <input id="fTo" type="date" class="form-control">
-          </div>
-          <div class="ms-auto d-flex gap-2">
-            <button id="btnSearch" class="btn btn-primary"><i class="bi bi-search"></i> بحث</button>
-            <button id="btnClear" class="btn btn-outline-secondary"><i class="bi bi-x-circle"></i> تفريغ</button>
-          </div>
-        </div>
-      </div>
-    </div>
+    <div class="card filters">
+      <div class="grid">
+        <div class="row">
+          <!-- تمت إضافة CommitteeAssignment و CommitteeFiles في فلتر الـ Model -->
+          <select id="filterModel" title="النموذج">
+            <option value="">كل النماذج</option>
+            <option>Evaluation</option>
+            <option>User</option>
+            <option>Settings</option>
+            <option>College</option>
+            <option>Committee</option>
+            <option>Auditor</option>
+            <option>CommitteeFiles</option>
+            <option>CommitteeAssignment</option>
+          </select>
 
-    <div class="card">
-      <div class="card-body p-0">
-        <div class="table-responsive">
-          <table class="table table-hover mb-0">
-            <colgroup>
-              <col style="width:var(--w-chk)">
-              <col style="width:var(--w-idx)">
-              <col><col><col><col>
-              <col style="width:var(--before-w)">
-              <col style="width:var(--after-w)">
-            </colgroup>
-            <thead class="table-light">
-              <tr>
-                <th class="text-center"><input class="form-check-input" type="checkbox" id="chkAll" title="تحديد/إلغاء تحديد الكل"></th>
-                <th>#</th>
-                <th>الوقت</th>
-                <th>الصفحة</th>
-                <th>العملية</th>
-                <th>المستخدم</th>
-                <th>البيانات قبل</th>
-                <th>البيانات بعد</th>
-              </tr>
-            </thead>
-            <tbody id="logsTbody">
-              <tr class="text-center text-muted"><td colspan="8">جاري التحميل…</td></tr>
-            </tbody>
-          </table>
+          <select id="filterAction" title="الإجراء">
+            <option value="">كل الإجراءات</option>
+            <option>create</option>
+            <option>update</option>
+            <option>delete</option>
+            <option>upsert</option>
+          </select>
+
+          <input id="filterFrom" type="date" />
+          <input id="filterTo" type="date" />
+          <input id="filterQ" type="text" placeholder="بحث في المستخدم (اسم/بريد/اسم مستخدم)..." />
+          <label class="muted">حجم الصفحة</label>
+          <input id="filterLimit" type="number" min="1" max="100" value="20" />
+          <button id="btnApply">تطبيق</button>
+          <button id="btnReset" class="secondary">تصفير</button>
         </div>
 
-        <div class="sticky-actions d-flex flex-wrap justify-content-between align-items-center gap-2">
-          <div class="d-flex flex-wrap gap-2">
-            <button id="btnMore" class="btn btn-outline-secondary"><i class="bi bi-plus-circle"></i> تحميل المزيد</button>
-            <button id="btnLoadAll" class="btn btn-outline-primary"><i class="bi bi-cloud-download"></i> تحميل جميع السجلات</button>
-            <button id="btnPurge" class="btn btn-outline-danger"><i class="bi bi-trash3"></i> حذف كل السجلات</button>
-            <button id="btnPurgeRange" class="btn btn-outline-warning"><i class="bi bi-calendar-x"></i> حذف حسب التاريخ</button>
-            <button id="btnDeleteSelected" class="btn btn-danger" disabled><i class="bi bi-check2-square"></i> حذف السجلات المحددة</button>
-          </div>
-          <div><span class="badge text-bg-light count-badge">المحدد: <span id="selectedCount">0</span></span></div>
+        <div class="row">
+          <button id="btnDeleteRange" class="danger">حذف ضمن النطاق الزمني</button>
+          <button id="btnDeleteSelected" class="danger">حذف المحدد بالمعرفات</button>
+          <span class="muted">لن تُحذف سجلات بدون تحديد نطاق أو معرفات.</span>
         </div>
       </div>
     </div>
   </div>
+</header>
 
-  <div class="toast-container position-fixed top-0 start-50 translate-middle-x p-3" style="z-index:2000">
-    <div id="toastSuccess" class="toast align-items-center text-bg-success border-0 mb-2" role="alert" aria-live="assertive" aria-atomic="true">
-      <div class="d-flex">
-        <div class="toast-body">✅ تم التنفيذ بنجاح</div>
-        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
-      </div>
-    </div>
-    <div id="toastError" class="toast align-items-center text-bg-danger border-0 mb-2" role="alert" aria-live="assertive" aria-atomic="true">
-      <div class="d-flex">
-        <div class="toast-body">❌ حدث خطأ</div>
-        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
-      </div>
-    </div>
-    <div id="toastInfo" class="toast align-items-center text-bg-primary border-0 mb-2" role="status" aria-live="polite">
-      <div class="d-flex">
-        <div class="toast-body">ℹ️ معلومات</div>
-        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
-      </div>
+<main class="container">
+  <div class="toolbar">
+    <div class="pill"><strong id="totalCount">0</strong> إجمالي السجلات</div>
+    <div class="pagination">
+      <button id="prevPage" class="secondary">السابق</button>
+      <span class="muted">صفحة <span id="pageNum">1</span></span>
+      <button id="nextPage" class="secondary">التالي</button>
     </div>
   </div>
 
-  <div class="modal fade" id="confirmModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 id="confirmModalTitle" class="modal-title">تأكيد</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="إغلاق"></button>
-        </div>
-        <div class="modal-body" id="confirmModalBody">هل تريد المتابعة؟</div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
-          <button type="button" class="btn btn-danger" id="confirmModalConfirmBtn">تأكيد</button>
-        </div>
-      </div>
-    </div>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th style="width:34px;"><input id="selAll" type="checkbox" /></th>
+          <th>التاريخ</th>
+          <th>النموذج</th>
+          <th>الإجراء</th>
+          <th>المعرف</th>
+          <th>المستخدم</th>
+          <th>الحمولة (Payload)</th>
+        </tr>
+      </thead>
+      <tbody id="rows">
+        <tr><td colspan="7" class="muted" style="text-align:center;padding:18px;">لا توجد بيانات.</td></tr>
+      </tbody>
+    </table>
   </div>
+</main>
 
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+(function(){
+  const qs = (s,el=document)=>el.querySelector(s);
+  const qsa = (s,el=document)=>Array.from(el.querySelectorAll(s));
 
-  <script>
-  /* ===== المسارات ===== */
-  const API_BASE = location.hostname.endsWith('github.io') ? 'https://vdash-qkyv.onrender.com' : '';
-  const api = (p)=> API_BASE + p;
-  document.getElementById('homeLink').href = api('/committees-home.html');
-
-  /* ===== Toasts ===== */
-  const toastSuccess = new bootstrap.Toast(document.getElementById('toastSuccess'));
-  const toastError   = new bootstrap.Toast(document.getElementById('toastError'));
-  const toastInfo    = new bootstrap.Toast(document.getElementById('toastInfo'));
-  const setToast = (t,msg)=> t._element.querySelector('.toast-body').innerText = msg;
-
-  /* ===== Modal confirm ===== */
-  const confirmModalEl = document.getElementById('confirmModal');
-  const confirmModal   = new bootstrap.Modal(confirmModalEl);
-  const confirmTitle   = document.getElementById('confirmModalTitle');
-  const confirmBody    = document.getElementById('confirmModalBody');
-  const confirmBtn     = document.getElementById('confirmModalConfirmBtn');
-  const showConfirm = ({title='تأكيد',message='هل تريد المتابعة؟',confirmText='تأكيد',confirmBtnClass='btn-danger'}={})=>{
-    return new Promise(resolve=>{
-      confirmTitle.textContent=title; confirmBody.textContent=message;
-      confirmBtn.className='btn '+confirmBtnClass; confirmBtn.textContent=confirmText;
-      let ok=false;
-      const onConfirm=()=>{ ok=true; confirmModal.hide(); resolve(true); };
-      const onHidden =()=>{ confirmModalEl.removeEventListener('hidden.bs.modal',onHidden); confirmBtn.removeEventListener('click',onConfirm); if(!ok) resolve(false); };
-      confirmBtn.addEventListener('click',onConfirm,{once:true});
-      confirmModalEl.addEventListener('hidden.bs.modal',onHidden,{once:true});
-      confirmModal.show();
-    });
+  const state = {
+    page: 1,
+    limit: 20,
+    model: '',
+    action: '',
+    from: '',
+    to: '',
+    q: '',
+    hasMore: false,
+    total: 0,
+    items: []
   };
 
-  /* ===== أدوات شبكة ===== */
-  async function fetchJSON(url, options={}){
-    const r = await fetch(url, { credentials:'include', headers:{'Accept':'application/json', ...(options.headers||{})}, ...options });
-    const ctype = (r.headers.get('content-type')||'').toLowerCase();
-    if(!ctype.includes('application/json')) return { __nonJSON__: true, status: r.status };
-    let data;
-    try { data = await r.json(); }
-    catch { return { __badJSON__: true, status: r.status }; }
-    return { ok: r.ok, status: r.status, data };
+  // تنقل بين الصفحات (القائمة العلوية)
+  qs('#goPage').addEventListener('click', () => {
+    const v = qs('#pageNav').value;
+    if (v) location.href = v;
+  });
+
+  // تحميل من معلمات العنوان (للاستمرارية)
+  function parseUrlParams(){
+    const p = new URLSearchParams(location.search);
+    state.page   = parseInt(p.get('page')||'1',10) || 1;
+    state.limit  = parseInt(p.get('limit')||'20',10) || 20;
+    state.model  = p.get('model')||'';
+    state.action = p.get('action')||'';
+    state.from   = p.get('from')||'';
+    state.to     = p.get('to')||'';
+    state.q      = p.get('q')||'';
+    // اسقاط إلى الواجهة
+    qs('#filterLimit').value = state.limit;
+    qs('#filterModel').value = state.model;
+    qs('#filterAction').value= state.action;
+    qs('#filterFrom').value  = state.from;
+    qs('#filterTo').value    = state.to;
+    qs('#filterQ').value     = state.q;
+    qs('#pageNum').textContent = state.page;
   }
 
-  /* ===== مصادقة ===== */
-  const normalizeUser = (u)=>{
-    if(!u) return { name:'—', username:'—', email:'', role:'—' };
-    if(typeof u==='string') return { name:u, username:u, email:'', role:'' };
-    const username = u.username || (u.email ? u.email.split('@')[0] : (u.name||'—'));
-    return { name:u.name||'—', username, email:u.email||'', role:u.role||'—' };
-  };
-  function renderUser(uRaw){
-    const u = normalizeUser(uRaw);
-    document.getElementById('userUsername').textContent = u.username;
-    document.getElementById('userFullName').textContent = u.name;
-    document.getElementById('userRole').textContent     = u.role;
-  }
-  async function ensureAdmin(){
-    const meRes = await fetchJSON(api('/auth/committees/me'));
-    if(meRes.__nonJSON__ || meRes.__badJSON__ || !meRes.ok){
-      const rel = location.pathname + location.search + location.hash;
-      location.href = api(`/committees-login.html?next=${encodeURIComponent(rel)}`);
-      throw new Error('unauthenticated');
-    }
-    const me = meRes.data || {};
-    if(!me.authenticated){
-      const rel = location.pathname + location.search + location.hash;
-      location.href = api(`/committees-login.html?next=${encodeURIComponent(rel)}`);
-      throw new Error('unauthenticated');
-    }
-    const role = (me.user?.role||'').toLowerCase();
-    if(role!=='admin'){
-      setToast(toastError,'❌ هذه الصفحة للمشرفين فقط'); toastError.show();
-      setTimeout(()=>location.href=api('/committees-home.html'),900);
-      throw new Error('not-admin');
-    }
-    renderUser(me.user);
-    return me.user;
+  function pushUrlParams(){
+    const p = new URLSearchParams();
+    if (state.page>1) p.set('page', state.page);
+    if (state.limit!==20) p.set('limit', state.limit);
+    if (state.model) p.set('model', state.model);
+    if (state.action) p.set('action', state.action);
+    if (state.from) p.set('from', state.from);
+    if (state.to) p.set('to', state.to);
+    if (state.q) p.set('q', state.q);
+    history.replaceState(null, '', '?' + p.toString());
   }
 
-  async function logout(){
-    try{
-      const r = await fetch(api('/auth/committees/logout'),{ method:'POST', headers:{'Content-Type':'application/json'}, credentials:'include' });
-      if(r.ok){ setToast(toastSuccess,'✅ تم تسجيل الخروج'); toastSuccess.show(); setTimeout(()=>location.href=api('/committees-login.html'),700); }
-      else    { setToast(toastError,'❌ تعذر تسجيل الخروج'); toastError.show(); }
-    }catch{ setToast(toastError,'❌ خطأ في الاتصال'); toastError.show(); }
-  }
-  document.getElementById('logoutBtn').addEventListener('click', logout);
-
-  /* ===== مساعدات عرض ===== */
-  function modelToPage(m){ return ({Evaluation:'تقييم اللجان',College:'الكليات',Auditor:'المدققون',Committee:'أسماء اللجان',Settings:'الإعدادات',User:'المستخدمون'})[m] || (m||'—'); }
-  function badgeAction(a){
-    const cls = a==='delete'?'text-bg-danger':(a==='update'?'text-bg-warning':'text-bg-success');
-    return `<span class="badge ${cls}">${a||'—'}</span>`;
-  }
-  function fmtUser(uRaw){
-    const u = normalizeUser(uRaw);
-    return `${u.name||'—'}`;
-  }
-
-  /* ===== diff helpers ===== */
-  const colNameArMap={ committee_name:'اسم اللجنة', college:'الكلية', auditor_name:'المدقق', createdAt:'تاريخ الإنشاء', updatedAt:'تاريخ التحديث', notes:'ملاحظات', score:'النتيجة', work_plan:'خطة العمل', performance_indicators:'مؤشرات الاداء', meetings:'عدد الاجتماعات', consistency:'التوافق بين الدعوات والاجتماعات', coverage_books:'كتب التغطية', report1:'تقرير إنجاز 1', report2:'تقرير إنجاز 2', report3:'تقرير إنجاز 3', statistical_analysis:'التحليل الإحصائي', name:'الاسم', username:'اسم المستخدم', role:'الدور', email:'البريد', isActive:'الحالة', formation_decision:'قرار التشكيل', formationDecision:'قرار التشكيل', decision:'قرار التشكيل', decision_number:'قرار التشكيل', decisionNumber:'قرار التشكيل', formation_no:'قرار التشكيل', formationNo:'قرار التشكيل' };
-  const toArabicLabel=(k)=> colNameArMap[k]||k;
-  const escapeHtml=(s)=> String(s).replace(/[&<>"']/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
-  const normalizeValue=(v)=> v==null? '' : (v instanceof Date? v.toISOString() : (Array.isArray(v)||typeof v==='object')? JSON.stringify(v) : String(v));
-  function computeDiffKeys(b,a){ const B=b||{},A=a||{}; const keys=new Set([...Object.keys(B),...Object.keys(A)]); const changed=new Set(); keys.forEach(k=>{ if(normalizeValue(B[k])!==normalizeValue(A[k])) changed.add(k); }); return changed; }
-  const roleAr = (r)=> r==='admin'?'مدير (admin)':(r==='subuser-member'?'subuser-member':'مستخدم (user)');
-  function kv(label,val,key,diff,mode){ if(val==null||val==='') return ''; const cls=diff&&diff.has(key)?(mode==='before'?'diff-removed':'diff-added'):''; return `<dt>${label}</dt><dd class="${cls}">${escapeHtml(val)}</dd>`; }
-  function userActiveBadge(val,key,diff,mode){ const is=!!val; const base=is?'<span class="badge text-bg-success">نشط</span>':'<span class="badge text-bg-danger">معطّل</span>'; const cls=diff&&diff.has(key)?(mode==='before'?'diff-removed':'diff-added'):''; return `<dt>الحالة</dt><dd class="${cls}">${base}</dd>`; }
-
-  /* ===== تنسيق/تنظيف الملاحظات ===== */
-  function stripHtmlText(html){
-    const tmp=document.createElement('div'); tmp.innerHTML=html||'';
-    return (tmp.textContent||tmp.innerText||'').trim();
-  }
-  function sanitizeNotesHTML(html=''){
-    try{
-      const ALLOWED=new Set(['P','UL','OL','LI','B','STRONG','I','EM','U','BR','A']);
-      const tmp=document.createElement('div'); tmp.innerHTML=html||'';
-      const all=tmp.getElementsByTagName('*');
-      for(let i=all.length-1;i>=0;i--){
-        const el=all[i];
-        if(!ALLOWED.has(el.tagName)){
-          el.replaceWith(document.createTextNode(el.textContent||'')); continue;
-        }
-        for(const attr of Array.from(el.attributes)){
-          const name=attr.name.toLowerCase();
-          if(name.startsWith('on') || name==='style') el.removeAttribute(attr.name);
-          else if(el.tagName==='A' && name!=='href') el.removeAttribute(attr.name);
-        }
-        if(el.tagName==='A'){
-          const href=el.getAttribute('href')||'';
-          const safe=/^(https?:|mailto:)/i.test(href);
-          if(!safe){ el.replaceWith(document.createTextNode(el.textContent||'')); }
-          else { el.setAttribute('target','_blank'); el.setAttribute('rel','noopener noreferrer'); }
-        }
-      }
-      return tmp.innerHTML.trim() || '—';
-    }catch{ return '—'; }
-  }
-
-  /* === بطاقة خاصة لتغيير كلمة المرور === */
-  function renderPasswordChangeCard(p, mode){
-    const who = (p?.targetName || p?.targetUsername || p?.targetEmail || '—');
-    const un  = p?.targetUsername ? ` — ${escapeHtml(p.targetUsername)}` : '';
-    const em  = p?.targetEmail ? ` — <span class="email">${escapeHtml(p.targetEmail)}</span>` : '';
-    const title = 'تم تغيير كلمة المرور';
-    if(mode==='before'){
-      return `<div class="payload-card"><dl class="row mb-0">
-        <dt>المستخدم المستهدف</dt><dd>${escapeHtml(who)}${un}${em}</dd>
-      </dl></div>`;
-    }
-    return `<div class="payload-card"><dl class="row mb-0">
-      <dt>العملية</dt><dd class="diff-added">${title}</dd>
-      <dt>المستخدم المستهدف</dt><dd>${escapeHtml(who)}${un}${em}</dd>
-    </dl></div>`;
-  }
-
-  function renderCardFromObjectWithDiff(model,obj,diffKeys,mode,otherSide){
-    if(!obj) return '<div class="payload-card text-muted">—</div>';
-    let h='<div class="payload-card"><dl class="row mb-0">', d=obj, has=(k)=> d[k]!=null && d[k]!=='';    
-    if(model==='Evaluation'){
-      h+=kv('اسم اللجنة',d.committee_name,'committee_name',diffKeys,mode)
-        +kv('الكلية',d.college,'college',diffKeys,mode)
-        +kv('المدقق',d.auditor_name,'auditor_name',diffKeys,mode)
-        +kv('تاريخ الإنشاء', d.createdAt?new Date(d.createdAt).toLocaleString('ar-EG'):'','createdAt',diffKeys,mode)
-        +kv('النتيجة',d.score,'score',diffKeys,mode);
-      const decisionKey=['formation_decision','formationDecision','decision','decision_number','decisionNumber','formation_no','formationNo'].find(k=>k in d);
-      if(decisionKey) h+=kv('قرار التشكيل', d[decisionKey], decisionKey, diffKeys, mode);
-      ['work_plan','performance_indicators','meetings','consistency','coverage_books','report1','report2','report3','statistical_analysis']
-        .forEach(k=>{ if(has(k)) h+=kv(toArabicLabel(k),d[k],k,diffKeys,mode); });
-
-      { // notes
-        const thisHas = !!stripHtmlText(d.notes);
-        const otherHas = !!stripHtmlText(otherSide && otherSide.notes);
-        const changed = diffKeys && diffKeys.has('notes');
-        let cls='';
-        if(changed){ cls = (mode==='before') ? 'diff-removed' : (thisHas ? 'diff-added' : 'diff-removed'); }
-        const content = thisHas ? sanitizeNotesHTML(d.notes) : 'لا توجد ملاحظات';
-        h += `<dt>الملاحظات</dt><dd class="${cls}">${content}</dd>`;
-      }
-    }else if(model==='College' || model==='Auditor' || model==='Committee'){
-      const label = (model==='College') ? 'الكلية' : (model==='Auditor' ? 'المدقق' : 'اسم اللجنة');
-      h+=kv(label, d.name, 'name', diffKeys, mode);
-    }else if(model==='Settings'){
-      if(d.visibleColumns) h+=kv('الأعمدة المرئية',(d.visibleColumns||[]).map(toArabicLabel).join('، '),'visibleColumns',diffKeys,mode);
-      if(d.selectedVisits) h+=kv('الزيارات المحددة',(d.selectedVisits||[]).map(toArabicLabel).join('، '),'selectedVisits',diffKeys,mode);
-    }else if(model==='User'){
-      if(has('name'))h+=kv('الاسم',d.name,'name',diffKeys,mode);
-      if(has('username'))h+=kv('اسم المستخدم',d.username,'username',diffKeys,mode);
-      if(has('email'))h+=kv('البريد',d.email,'email',diffKeys,mode);
-      if(has('role'))h+=kv('الدور',roleAr(d.role),'role',diffKeys,mode);
-      if('isActive' in d) h+=userActiveBadge(d.isActive,'isActive',diffKeys,mode);
-    }else{
-      h+='</dl><div class="payload-json"><code>'+escapeHtml(JSON.stringify(obj,null,2))+'</code></div></div>'; 
-      return h;
-    }
-    h+='</dl>'; 
-    if(!/<dd[^>]*>/.test(h)){ h+='<div class="payload-json"><code>'+escapeHtml(JSON.stringify(obj,null,2))+'</code></div>'; } 
-    h+='</div>'; 
-    return h;
-  }
-
-  function synthesizeBulkAfter(p){
-    if (!Array.isArray(p?.before)) return null;
-    const action=p?.action;
-    if (action==='activate')   return p.before.map(u=>({...u,isActive:true}));
-    if (action==='deactivate') return p.before.map(u=>({...u,isActive:false}));
-    if (action==='set-role')   return p.before.map(u=>({...u,role: p.role==='admin'?'admin':'user'}));
-    if (action==='delete')     return p.before.map(u=>({...u,_deleted:true}));
-    return null;
-  }
-
-  function renderBulkUsersList(p,mode){
-    const listBefore=Array.isArray(p?.before)?p.before:[];
-    const listAfter =Array.isArray(p?.after)?p.after:synthesizeBulkAfter(p);
-    const action=p?.action;
-    const idsCount=Array.isArray(p?.ids)?p.ids.length:0;
-
-    if(listBefore.length===0){
-      const actionAr = action==='set-role' ? `تغيير الدور إلى ${roleAr(p.role)}`
-                    : action==='activate' ? 'تفعيل المستخدمين'
-                    : action==='deactivate' ? 'تعطيل المستخدمين'
-                    : (action || 'تعديل جماعي');
-      return `<div class="payload-card"><dl class="row mb-0">
-        <dt>عملية جماعية</dt><dd>${escapeHtml(actionAr)} (عدد: ${idsCount||'—'})</dd>
-        <dt>ملاحظة</dt><dd class="text-muted">لتفاصيل الأسماء سجّل الخادم <code>payload.before</code> (ويُفضّل أيضًا <code>payload.after</code>).</dd>
-      </dl></div>`;
-    }
-
-    let noChanges=false;
-    if(listAfter && listAfter.length===listBefore.length){
-      if(action==='activate' || action==='deactivate'){
-        noChanges=listBefore.every((u,i)=> !!u.isActive === !!(listAfter[i]?.isActive));
-      }else if(action==='set-role'){
-        noChanges=listBefore.every((u,i)=> (u.role||'user') === ((listAfter[i]?.role)||'user'));
-      }
-    }
-
-    const rows=listBefore.map((u,i)=>{
-      const a=(listAfter && listAfter[i])||{};
-      const U=normalizeUser(u);
-      let cell='—';
-      if(action==='activate' || action==='deactivate'){
-        const is=(mode==='before')?!!u.isActive:!!a.isActive;
-        cell = is ? '<span class="badge text-bg-success">نشط</span>' : '<span class="badge text-bg-danger">معطّل</span>';
-        if(mode==='after'){ cell=(is?'<span class="diff-added">نشط</span>':'<span class="diff-removed">معطّل</span>')+` <span class="ms-1">${cell}</span>`; }
-      }else if(action==='set-role'){
-        const roleTxt = roleAr((mode==='before'?u.role:a.role));
-        cell = mode==='after' ? `<span class="diff-added">${roleTxt}</span>` : `<span class="diff-removed">${roleTxt}</span>`;
-      }else if(action==='delete'){
-        cell = mode==='after' ? '<span class="badge text-bg-danger">تم الحذف</span>' : roleAr(u.role);
-      }
-      return `<tr>
-        <td>${U.name}</td>
-        <td class="text-nowrap">${cell}</td>
-      </tr>`;
-    }).join('');
-
-    const secondColTitle = (action==='set-role') ? 'الدور' : 'الحالة';
-    const title=(mode==='before')?`${secondColTitle} قبل`:`${secondColTitle} بعد`;
-    const headerRight=(mode==='after')?`<div class="d-flex align-items-center gap-2">${noChanges?'<span class="nochange-note">لا تغيير فعلي</span>':''}<span class="badge text-bg-light">عدد: ${idsCount || listBefore.length}</span></div>`:'';
-    const actionTitle=(action==='set-role')?('تغيير الدور → '+roleAr(p.role)):(action==='activate'?'تفعيل':(action==='deactivate'?'تعطيل':(action||'—')));
-
-    return `<div class="payload-card">
-      <div class="d-flex justify-content-between align-items-center mb-2">
-        <div>${mode==='after'?('<strong>عملية جماعية:</strong> '+actionTitle):''}</div>
-        ${headerRight}
-      </div>
-      <div class="table-responsive">
-        <table class="table table-sm mb-0">
-          <thead class="table-light"><tr><th>المستخدم</th><th>${title}</th></tr></thead>
-          <tbody>${rows}</tbody>
-        </table>
-      </div>
-    </div>`;
-  }
-
-  function isBulkUserPayload(log){
-    const p = log.payload || {};
-    return log.model==='User' &&
-           (p.bulk || Array.isArray(p.before) || Array.isArray(p.after) || Array.isArray(p.ids));
-  }
-
-  function renderSettingsDiff(before, after, mode){
-    const bCols = Array.isArray(before?.visibleColumns) ? before.visibleColumns : [];
-    const aCols = Array.isArray(after?.visibleColumns)  ? after.visibleColumns  : [];
-    const bVisits = Array.isArray(before?.selectedVisits) ? before.selectedVisits : [];
-    const aVisits = Array.isArray(after?.selectedVisits)  ? after.selectedVisits  : [];
-
-    const listWithDiff = (arrShown, arrOther, paintAdded) => {
-      if(!arrShown.length) return '—';
-      return arrShown.map(k=>{
-        const inOther = arrOther.includes(k);
-        const cls = (!inOther && paintAdded) ? 'diff-added' : (!inOther && !paintAdded ? 'diff-removed' : '');
-        return `<span class="${cls}">${toArabicLabel(k)}</span>`;
-      }).join('، ');
-    };
-
-    const colsHTML   = mode==='after' ? listWithDiff(aCols, bCols, true) : listWithDiff(bCols, aCols, false);
-    const visitsHTML = mode==='after' ? listWithDiff(aVisits, bVisits, true) : listWithDiff(bVisits, aVisits, false);
-
-    return `<div class="payload-card">
-      <dl class="row mb-0">
-        <dt>الأعمدة المرئية</dt><dd>${colsHTML || '—'}</dd>
-        <dt>الزيارات المحددة</dt><dd>${visitsHTML || '—'}</dd>
-      </dl>
-    </div>`;
-  }
-
-  function renderBeforeCell(log){
-    const p=log.payload||{};
-    if(log.model==='Settings'){
-      if(log.action==='create') return '<div class="payload-card text-muted">كانت فارغة</div>';
-      if(log.action==='delete') return renderSettingsDiff(p,{},'before');
-      if(p.before&&p.after)     return renderSettingsDiff(p.before,p.after,'before');
-      if(p.before)              return renderSettingsDiff(p.before,{},'before');
-      return '<div class="payload-card text-muted">—</div>';
-    }
-    if(log.model==='User' && p.passwordChanged){ return renderPasswordChangeCard(p,'before'); } // ✅
-    if(isBulkUserPayload(log)) return renderBulkUsersList(p,'before');
-    if(log.action==='create')  return '<div class="payload-card text-muted">كانت فارغة</div>';
-    if(log.action==='delete'){ const ks=p?new Set(Object.keys(p)):new Set(); return renderCardFromObjectWithDiff(log.model,p,ks,'before',{}); }
-    if(p.before&&p.after){ const diff=computeDiffKeys(p.before,p.after); return renderCardFromObjectWithDiff(log.model,p.before,diff,'before',p.after); }
-    if(p.before){ return renderCardFromObjectWithDiff(log.model,p.before,null,'before',{}); }
-    return '<div class="payload-card text-muted">—</div>';
-  }
-
-  function renderAfterCell(log){
-    const p=log.payload||{};
-    if(log.model==='Settings'){
-      if(log.action==='delete') return '<div class="payload-card text-muted">تم الحذف</div>';
-      if(log.action==='create') return renderSettingsDiff({},p,'after');
-      if(p.before&&p.after)     return renderSettingsDiff(p.before,p.after,'after');
-      if(p.after)               return renderSettingsDiff({},p.after,'after');
-      return renderSettingsDiff({},p,'after');
-    }
-    if(log.model==='User' && p.passwordChanged){ return renderPasswordChangeCard(p,'after'); } // ✅
-    if(isBulkUserPayload(log)) return renderBulkUsersList(p,'after');
-    if(log.action==='delete')  return '<div class="payload-card text-muted">تم الحذف</div>';
-    if(log.action==='create'){ const ks=p?new Set(Object.keys(p)):new Set(); return renderCardFromObjectWithDiff(log.model,p,ks,'after',{}); }
-    if(p.after&&p.before){ const diff=computeDiffKeys(p.before,p.after); return renderCardFromObjectWithDiff(log.model,p.after,diff,'after',p.before); }
-    if(p.after){ return renderCardFromObjectWithDiff(log.model,p.after,null,'after',{}); }
-    return renderCardFromObjectWithDiff(log.model,p,null,'after',{});
-  }
-
-  /* ===== تحميل السجلات ===== */
-  let page=1, limit=20, reachedEnd=false, rowCounterStart=1;
-  const selectedIds=new Set();
-  const updateSelectedCount=()=>{ document.getElementById('selectedCount').textContent=selectedIds.size; document.getElementById('btnDeleteSelected').disabled=selectedIds.size===0; };
-
-  const fFrom = document.getElementById('fFrom');
-  const fTo   = document.getElementById('fTo');
-
-  function buildQuery(){
-    const m=document.getElementById('fModel').value.trim();
-    const a=document.getElementById('fAction').value.trim();
-    const q=document.getElementById('fQuery').value.trim();
-    const f=document.getElementById('fFrom').value;
-    const t=document.getElementById('fTo').value;
-    const p=new URLSearchParams(); if(m)p.set('model',m); if(a)p.set('action',a); if(q)p.set('q',q); if(f)p.set('from',f); if(t)p.set('to',t);
-    p.set('page',page); p.set('limit',limit); return p.toString();
-  }
-
-  function formatDateParts(iso){
-    try{
-      if(!iso) return {date:'—',time:''};
+  function fmtDate(iso){
+    try {
       const d = new Date(iso);
-      if (isNaN(+d)) return {date:'—',time:''};
-      const date = d.toLocaleDateString('ar-EG', { weekday:'short', year:'numeric', month:'long', day:'numeric' });
-      const time = d.toLocaleTimeString('ar-EG', { hour:'2-digit', minute:'2-digit', hour12:true });
-      return {date, time};
-    }catch{ return {date:'—',time:''}; }
+      if (!+d) return '';
+      const y=d.getFullYear(), m=String(d.getMonth()+1).padStart(2,'0'), da=String(d.getDate()).padStart(2,'0');
+      const hh=String(d.getHours()).padStart(2,'0'), mm=String(d.getMinutes()).padStart(2,'0');
+      return `${y}-${m}-${da} ${hh}:${mm}`;
+    } catch { return ''; }
   }
 
-  async function loadLogs({append=false}={}){
-    if(reachedEnd && append) return;
-    const tbody=document.getElementById('logsTbody');
-
-    if(!append){
-      tbody.innerHTML = `<tr class="text-center text-muted"><td colspan="8">جاري التحميل…</td></tr>`;
-      rowCounterStart=(page-1)*limit + 1;
-      selectedIds.clear();
-      updateSelectedCount();
-      document.getElementById('chkAll').checked=false;
+  // عرض مخصص للـ payload لبعض النماذج، مع الحفاظ على طريقة العرض العامة
+  function renderPayloadCell(item){
+    const { model, payload } = item || {};
+    if (!payload || typeof payload !== 'object') {
+      return `<pre dir="ltr">${escapeHTML(JSON.stringify(payload))}</pre>`;
     }
 
-    const res = await fetchJSON(api('/api/audit-logs?')+buildQuery());
-    if(res.__nonJSON__ || res.__badJSON__ || !res.ok){
-      tbody.innerHTML = `<tr class="text-center text-danger"><td colspan="8">انتهت الجلسة أو تعذّر الاتصال. يُرجى تسجيل الدخول.</td></tr>`;
-      setToast(toastError, 'تعذّر جلب السجلات (جلسة منتهية/توجيه HTML)'); toastError.show();
-      setTimeout(()=>{
-        const rel = location.pathname + location.search + location.hash;
-        location.href = api(`/committees-login.html?next=${encodeURIComponent(rel)}`);
-      }, 800);
-      return;
-    }
-
-    const data  = res.data;
-    const items = Array.isArray(data) ? data : (data.items||[]);
-    reachedEnd  = Array.isArray(data) ? (items.length<limit) : (data.hasMore===false);
-
-    if(!append) tbody.innerHTML='';
-
-    if(items.length===0 && !append){
-      tbody.innerHTML = `<tr class="text-center text-muted"><td colspan="8">لا توجد سجلات</td></tr>`;
-      return;
-    }
-
-    let n=rowCounterStart;
-    items.forEach((log, idx)=>{
-      try{
-        if(!log){ throw new Error('سجل فارغ'); }
-        const id    = log._id || log.id || '';
-        const parts = formatDateParts(log.createdAt);
-        const when  = `<div class="date-cell"><div class="d">${parts.date}</div><div class="t">${parts.time}</div></div>`;
-
-        const row  = document.createElement('tr');
-        row.setAttribute('data-id',id);
-        row.innerHTML = `
-          <td class="text-center"><input class="form-check-input chkRow" type="checkbox" value="${id}" ${id?'':'disabled'} ${selectedIds.has(id)?'checked':''}></td>
-          <td class="text-muted">${n++}</td>
-          <td>${when}</td>
-          <td>${modelToPage(log.model)}</td>
-          <td>${badgeAction(log.action)}</td>
-          <td>${fmtUser(log.user)}</td>
-          <td class="col-before">${renderBeforeCell(log)}</td>
-          <td class="col-after">${renderAfterCell(log)}</td>`;
-        tbody.appendChild(row);
-      }catch(err){
-        console.error('تعذّر رسم سجل', err, items[idx]);
-        const badId = (log && (log._id || log.id)) || '';
-        const row = document.createElement('tr');
-        row.innerHTML = `
-          <td class="text-center">—</td>
-          <td class="text-muted">${n++}</td>
-          <td colspan="6" class="text-danger">
-            تعذّر عرض هذا السجل ${badId?`(ID: ${badId})`:''}. السبب: ${err && err.message ? err.message : 'خطأ غير معروف'}.
-          </td>`;
-        tbody.appendChild(row);
+    // CommitteeAssignment: عرض لقطة المستخدم before/after/create
+    if (model === 'CommitteeAssignment') {
+      // create: payload.user + college + committee_name + note
+      if (payload.user && !payload.before && !payload.after) {
+        return `
+          <div class="payload">
+            <div><span class="tag">create</span></div>
+            ${renderUserSnapshot(payload.user)}
+            <div><span class="k">الكلية:</span> <span class="v">${escapeHTML(payload.college||'')}</span></div>
+            <div><span class="k">اللجنة:</span> <span class="v">${escapeHTML(payload.committee_name||'')}</span></div>
+            ${payload.note ? `<div><span class="k">ملاحظة:</span> <span class="v">${escapeHTML(payload.note)}</span></div>`:''}
+          </div>
+        `;
       }
+      // update/delete: payload.before / payload.after وفي كليهما لقطة user
+      if (payload.before || payload.after) {
+        const before = payload.before || payload;
+        const after  = payload.after;
+        return `
+          <div class="payload">
+            <div><span class="tag">${after ? 'update' : 'delete'}</span></div>
+            <div><strong>قبل:</strong></div>
+            ${renderAssignmentSnapshot(before)}
+            ${after ? (`<div><strong>بعد:</strong></div>` + renderAssignmentSnapshot(after)) : ''}
+          </div>
+        `;
+      }
+    }
+
+    // CommitteeFiles: عرض urlObj والمصفوفات عبر normalize
+    if (model === 'CommitteeFiles') {
+      const k = (x)=>`<span class="k">${x}</span>`;
+      const blockUrl = (u) => {
+        if (!u || !u.value) return '<span class="muted">—</span>';
+        const t = (u.title||'').trim();
+        return `<a href="${escapeAttr(u.value)}" target="_blank" rel="noopener">${escapeHTML(t||u.value)}</a>`;
+      };
+      const listUrl = (arr) => {
+        if (!Array.isArray(arr) || !arr.length) return '<span class="muted">—</span>';
+        return `<ul class="url-list">` + arr.map(u=>`<li>${blockUrl(u)}</li>`).join('') + `</ul>`;
+      };
+      if (payload.before || payload.after) {
+        const before = payload.before||{};
+        const after  = payload.after||{};
+        return `
+          <div class="payload">
+            <div><span class="tag">${payload.after ? 'update' : 'delete'}</span></div>
+            <div><strong>قبل:</strong></div>
+            ${renderFilesSnapshot(before, {k, blockUrl, listUrl})}
+            ${payload.after ? (`<div><strong>بعد:</strong></div>` + renderFilesSnapshot(after, {k, blockUrl, listUrl})) : ''}
+          </div>
+        `;
+      } else {
+        // upsert/create
+        const p = payload;
+        return `
+          <div class="payload">
+            <div><span class="tag">${item.action}</span></div>
+            ${renderFilesTop(p)}
+            <div>${k('قرار التشكيل:')} ${blockUrl(p.formation_decision)}</div>
+            <div>${k('خطة العمل:')} ${blockUrl(p.work_plan)}</div>
+            <div>${k('الدعوات:')}</div>${listUrl(p.invitations)}
+            <div>${k('المحاضر:')}</div>${listUrl(p.minutes)}
+            <div>${k('كتب التغطية:')}</div>${listUrl(p.coverage_letters)}
+            <div>${k('تقرير 1:')} ${blockUrl(p.report1)}</div>
+            <div>${k('تقرير 2:')} ${blockUrl(p.report2)}</div>
+            <div>${k('تقرير 3:')} ${blockUrl(p.report3)}</div>
+            <div>${k('التحليل الإحصائي:')} ${blockUrl(p.statistical_analysis)}</div>
+          </div>
+        `;
+      }
+    }
+
+    // User: عرض حالات كلمات المرور كبطاقات صغيرة إن وجدت
+    if (model === 'User' && payload) {
+      if (payload.bulkPasswordReset || payload.selfPasswordChange || payload.passwordChanged) {
+        const chips = [];
+        if (payload.bulkPasswordReset) chips.push('<span class="tag">تغيير كلمات مرور جماعي</span>');
+        if (payload.selfPasswordChange) chips.push('<span class="tag">تغيير ذاتي</span>');
+        if (payload.passwordChanged && payload.targetName) {
+          chips.push(`<span class="tag">تغيير كلمة المرور: ${escapeHTML(payload.targetName)}</span>`);
+        }
+        return `
+          <div class="payload">
+            <div>${chips.join(' ')}</div>
+            <pre dir="ltr">${escapeHTML(JSON.stringify(payload, null, 2))}</pre>
+          </div>
+        `;
+      }
+    }
+
+    // الافتراضي: JSON عادي
+    return `<pre dir="ltr">${escapeHTML(JSON.stringify(payload, null, 2))}</pre>`;
+  }
+
+  function renderUserSnapshot(u){
+    if (!u) return '';
+    return `
+      <div><span class="k">المستخدم:</span>
+        <span class="v">${escapeHTML(u.name||'')}</span>
+        <span class="muted">(${escapeHTML(u.username||'')})</span>
+      </div>
+      <div class="muted">${escapeHTML(u.email||'')} · <span class="tag">${escapeHTML(u.role||'')}</span></div>
+    `;
+  }
+
+  function renderAssignmentSnapshot(x){
+    if (!x) return '';
+    const user = x.user || {};
+    return `
+      ${renderUserSnapshot(user)}
+      <div><span class="k">الكلية:</span> <span class="v">${escapeHTML(x.college||'')}</span></div>
+      <div><span class="k">اللجنة:</span> <span class="v">${escapeHTML(x.committee_name||'')}</span></div>
+      ${x.note ? `<div><span class="k">ملاحظة:</span> <span class="v">${escapeHTML(x.note)}</span></div>`:''}
+    `;
+  }
+
+  function renderFilesTop(p){
+    return `
+      <div><span class="k">الكلية:</span> <span class="v">${escapeHTML(p.college||'')}</span></div>
+      <div><span class="k">اللجنة:</span> <span class="v">${escapeHTML(p.committee_name||'')}</span></div>
+      <div><span class="k">العام الجامعي:</span> <span class="v">${escapeHTML(p.academicYear||'')}</span></div>
+      <div><span class="k">الفصل:</span> <span class="v">${escapeHTML(p.term||'')}</span></div>
+    `;
+  }
+
+  function renderFilesSnapshot(x, helpers){
+    if (!x) return '<div class="muted">—</div>';
+    const {k, blockUrl, listUrl} = helpers;
+    return `
+      ${renderFilesTop(x)}
+      <div>${k('قرار التشكيل:')} ${blockUrl(x.formation_decision)}</div>
+      <div>${k('خطة العمل:')} ${blockUrl(x.work_plan)}</div>
+      <div>${k('الدعوات:')}</div>${listUrl(x.invitations)}
+      <div>${k('المحاضر:')}</div>${listUrl(x.minutes)}
+      <div>${k('كتب التغطية:')}</div>${listUrl(x.coverage_letters)}
+      <div>${k('تقرير 1:')} ${blockUrl(x.report1)}</div>
+      <div>${k('تقرير 2:')} ${blockUrl(x.report2)}</div>
+      <div>${k('تقرير 3:')} ${blockUrl(x.report3)}</div>
+      <div>${k('التحليل الإحصائي:')} ${blockUrl(x.statistical_analysis)}</div>
+    `;
+  }
+
+  function escapeHTML(s){
+    return String(s==null?'':s)
+      .replace(/&/g,'&amp;')
+      .replace(/</g,'&lt;')
+      .replace(/>/g,'&gt;')
+      .replace(/"/g,'&quot;');
+  }
+  function escapeAttr(s){
+    return escapeHTML(s).replace(/"/g, '&quot;');
+  }
+
+  // تحميل البيانات
+  async function load(){
+    const params = new URLSearchParams();
+    if (state.model) params.set('model', state.model);
+    if (state.action) params.set('action', state.action);
+    if (state.from) params.set('from', state.from);
+    if (state.to) params.set('to', state.to);
+    if (state.q) params.set('q', state.q);
+    params.set('page', state.page);
+    params.set('limit', state.limit);
+
+    const url = `/api/audit-logs?${params.toString()}`;
+    const res = await fetch(url, { credentials:'include' });
+    if (!res.ok) {
+      qs('#rows').innerHTML = `<tr><td colspan="7" class="muted" style="text-align:center;padding:18px;">تعذر الجلب (${res.status})</td></tr>`;
+      return;
+    }
+    const data = await res.json();
+    state.items = data.items || [];
+    state.total = data.total || 0;
+    state.hasMore = !!data.hasMore;
+
+    qs('#totalCount').textContent = state.total;
+    qs('#pageNum').textContent = state.page;
+
+    renderRows();
+    pushUrlParams();
+  }
+
+  function renderRows(){
+    const tbody = qs('#rows');
+    if (!state.items.length) {
+      tbody.innerHTML = `<tr><td colspan="7" class="muted" style="text-align:center;padding:18px;">لا توجد بيانات.</td></tr>`;
+      return;
+    }
+    const rows = state.items.map(it=>{
+      const user = it.user || {};
+      const userLine = user
+        ? `${escapeHTML(user.name||'')} <span class="muted">(${escapeHTML(user.username||'')})</span><div class="muted">${escapeHTML(user.email||'')}</div>`
+        : '<span class="muted">—</span>';
+      const docId = it.docId ? `<code dir="ltr">${escapeHTML(it.docId)}</code>` : '<span class="muted">—</span>';
+      return `
+        <tr data-id="${escapeAttr(it._id)}">
+          <td><input type="checkbox" class="rowSel" /></td>
+          <td class="nowrap">${fmtDate(it.createdAt)}</td>
+          <td>${escapeHTML(it.model||'')}</td>
+          <td><span class="tag">${escapeHTML(it.action||'')}</span></td>
+          <td>${docId}</td>
+          <td>${userLine}</td>
+          <td>${renderPayloadCell(it)}</td>
+        </tr>
+      `;
+    }).join('');
+    tbody.innerHTML = rows;
+
+    // سلوك تحديد الكل
+    qs('#selAll').checked = false;
+    qsa('.rowSel').forEach(chk => {
+      chk.addEventListener('change', ()=> {
+        // لا شيء إضافي الآن
+      });
     });
-
-    rowCounterStart = n;
   }
 
-  /* ===== أزرار التحكم ===== */
-  document.getElementById('btnSearch').addEventListener('click', ()=>{ page=1; reachedEnd=false; loadLogs({append:false}); });
-  document.getElementById('btnClear').addEventListener('click', ()=>{
-    ['fModel','fAction','fQuery','fFrom','fTo'].forEach(id=>document.getElementById(id).value='');
-    selectedIds.clear(); document.getElementById('selectedCount').textContent='0';
-    document.getElementById('chkAll').checked=false;
-    page=1; reachedEnd=false; loadLogs({append:false});
+  // تحكم الصفحة
+  qs('#btnApply').addEventListener('click', () => {
+    state.page = 1;
+    state.limit = clamp(parseInt(qs('#filterLimit').value||'20',10),1,100);
+    state.model = qs('#filterModel').value;
+    state.action = qs('#filterAction').value;
+    state.from = qs('#filterFrom').value;
+    state.to   = qs('#filterTo').value;
+    state.q    = qs('#filterQ').value.trim();
+    load();
   });
-  document.getElementById('btnMore').addEventListener('click', ()=>{ if(!reachedEnd){ page++; loadLogs({append:true}); } else { setToast(toastInfo,'لا يوجد مزيد من السجلات'); toastInfo.show(); }});
+  qs('#btnReset').addEventListener('click', () => {
+    qs('#filterModel').value='';
+    qs('#filterAction').value='';
+    qs('#filterFrom').value='';
+    qs('#filterTo').value='';
+    qs('#filterQ').value='';
+    qs('#filterLimit').value='20';
+    state.page=1; state.limit=20; state.model=''; state.action=''; state.from=''; state.to=''; state.q='';
+    load();
+  });
 
-  async function loadAllLogs(){
-    const btn=document.getElementById('btnLoadAll');
-    const oldHTML=btn.innerHTML;
-    try{
-      btn.disabled=true;
-      btn.innerHTML='<span class="spinner-border spinner-border-sm"></span> جارِ التحميل...';
-      page=1; reachedEnd=false;
-      await loadLogs({append:false});
-      while(!reachedEnd){ page++; await loadLogs({append:true}); }
-      setToast(toastSuccess,'✅ تم تحميل جميع السجلات'); toastSuccess.show();
-    }catch(e){
-      console.error(e);
-      setToast(toastError,'❌ فشل تحميل جميع السجلات'); toastError.show();
-    }finally{
-      btn.disabled=false;
-      btn.innerHTML=oldHTML;
-    }
-  }
-  document.getElementById('btnLoadAll').addEventListener('click', loadAllLogs);
+  qs('#prevPage').addEventListener('click', ()=>{
+    if (state.page>1){ state.page--; load(); }
+  });
+  qs('#nextPage').addEventListener('click', ()=>{
+    if (state.hasMore){ state.page++; load(); }
+  });
 
-  document.getElementById('chkAll').addEventListener('change', (e)=>{
-    const chk=e.target.checked;
-    document.querySelectorAll('#logsTbody .chkRow:not([disabled])').forEach(i=>{ i.checked=chk; const id=i.value; if(chk) selectedIds.add(id); else selectedIds.delete(id); });
-    updateSelectedCount();
+  qs('#selAll').addEventListener('change', (e)=>{
+    qsa('.rowSel').forEach(chk=> chk.checked = e.target.checked);
   });
-  document.getElementById('logsTbody').addEventListener('change', (e)=>{
-    if(e.target.classList.contains('chkRow')){
-      const id=e.target.value;
-      if(e.target.checked) selectedIds.add(id); else selectedIds.delete(id);
-      const all=document.querySelectorAll('#logsTbody .chkRow:not([disabled])');
-      document.getElementById('chkAll').checked = all.length>0 && Array.from(all).every(x=>x.checked);
-      updateSelectedCount();
-    }
+
+  // حذف ضمن نطاق زمني
+  qs('#btnDeleteRange').addEventListener('click', async ()=>{
+    const from = qs('#filterFrom').value;
+    const to   = qs('#filterTo').value;
+    if (!from && !to) { alert('يجب تحديد تاريخ البداية أو النهاية.'); return; }
+    if (!confirm('سيتم حذف السجلات ضمن النطاق الزمني المحدد، هل أنت متأكد؟')) return;
+    const url = `/api/audit-logs?${new URLSearchParams({ ...(from?{from}:{}) , ...(to?{to}:{}) }).toString() }`;
+    const res = await fetch(url, { method:'DELETE', credentials:'include' });
+    if (!res.ok){ alert('تعذر الحذف.'); return; }
+    await load();
   });
-  document.getElementById('btnPurge').addEventListener('click', async ()=>{
-    const ok=await showConfirm({title:'تأكيد حذف الكل',message:'سيتم حذف جميع سجلات العمليات، ولا يمكن التراجع.',confirmText:'نعم، احذف الكل',confirmBtnClass:'btn-danger'});
-    if(!ok) return;
-    const r=await fetch(api('/api/audit-logs'),{method:'DELETE',credentials:'include'});
-    if(r.ok){ setToast(toastSuccess,'🧹 تم حذف جميع السجلات'); toastSuccess.show(); page=1; reachedEnd=false; loadLogs({append:false}); }
-    else { setToast(toastError,'❌ فشل حذف السجلات'); toastError.show(); }
-  });
-  document.getElementById('btnPurgeRange').addEventListener('click', async ()=>{
-    const f=document.getElementById('fFrom').value, t=document.getElementById('fTo').value;
-    if(!f && !t){ setToast(toastInfo,'حدّد تاريخ "من" أو "إلى"'); toastInfo.show(); return; }
-    if(f && t && (new Date(f)>new Date(t))){ setToast(toastError,'❌ نطاق التاريخ غير صحيح'); toastError.show(); return; }
-    const ok=await showConfirm({title:'تأكيد الحذف حسب التاريخ',message:`سيتم حذف ضمن النطاق: ${f||'—'} — ${t||'—'}.`,confirmText:'حذف ضمن النطاق',confirmBtnClass:'btn-warning'});
-    if(!ok) return;
-    const qs=new URLSearchParams(); if(f) qs.set('from',f); if(t) qs.set('to',t);
-    const r=await fetch(api('/api/audit-logs?')+qs.toString(),{method:'DELETE',credentials:'include'});
-    if(r.ok){ setToast(toastSuccess,'🗂️ تم حذف السجلات ضمن النطاق'); toastSuccess.show(); page=1; reachedEnd=false; loadLogs({append:false}); }
-    else { setToast(toastError,'❌ فشل في حذف السجلات ضمن النطاق'); toastError.show(); }
-  });
-  document.getElementById('btnDeleteSelected').addEventListener('click', async ()=>{
-    const count=selectedIds.size;
-    if(count===0){ setToast(toastInfo,'لم يتم تحديد أي سجلات'); toastInfo.show(); return; }
-    const ok=await showConfirm({title:'تأكيد حذف المحدد',message:`سيتم حذف ${count} من السجلات المحددة.`,confirmText:'حذف المحدد',confirmBtnClass:'btn-danger'});
-    if(!ok) return;
-    const r=await fetch(api('/api/audit-logs/by-ids'),{
+
+  // حذف المحدّد بالمعرفات
+  qs('#btnDeleteSelected').addEventListener('click', async ()=>{
+    const ids = qsa('#rows tr').filter(tr => qs('.rowSel', tr)?.checked).map(tr => tr.getAttribute('data-id'));
+    if (!ids.length){ alert('لم يتم تحديد أي سجل.'); return; }
+    if (!confirm(`سيتم حذف ${ids.length} سجلاً. هل أنت متأكد؟`)) return;
+    const res = await fetch('/api/audit-logs/by-ids', {
       method:'DELETE',
-      headers:{'Content-Type':'application/json'},
+      headers: { 'Content-Type':'application/json' },
       credentials:'include',
-      body:JSON.stringify({ids:Array.from(selectedIds)})
+      body: JSON.stringify({ ids })
     });
-    if(r.ok){ setToast(toastSuccess,'🗑️ تم حذف السجلات المحددة'); toastSuccess.show(); page=1; reachedEnd=false; loadLogs({append:false}); }
-    else { setToast(toastError,'❌ فشل حذف السجلات المحددة'); toastError.show(); }
+    if (!res.ok){ alert('تعذر الحذف.'); return; }
+    await load();
   });
 
-  ensureAdmin().then(()=>loadLogs({append:false}));
-  </script>
+  function clamp(n,min,max){ return Math.max(min, Math.min(max, isNaN(n)?min:n)); }
+
+  // بدء
+  parseUrlParams();
+  load();
+})();
+</script>
+
 </body>
 </html>
