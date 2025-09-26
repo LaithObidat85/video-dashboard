@@ -26,15 +26,25 @@
     /* ================= أساسيات ================= */
     body{background:#f8f9fa;font-family:'Segoe UI',sans-serif}
     .container-fluid{margin-top:30px}
-    table{background:#fff;border-radius:10px;overflow:hidden;font-size:14px;width:100%;margin:auto}
+
+    /* مهم: لا نستخدم overflow:hidden على الجدول حتى لا يكسر sticky */
+    table{
+      background:#fff;
+      border-radius:10px;
+      overflow:visible;            /* كان hidden */
+      font-size:14px;
+      width:100%;
+      margin:auto
+    }
+
     th,td{text-align:center;vertical-align:middle}
     th{background:#f8f9fa;color:#000;font-weight:700}
 
     /* منع تكسّر الحروف العربية في عناوين الأعمدة */
     #evaluationsTableWrapper thead th{
       white-space: normal;
-      word-break: keep-all;       /* لا تكسر الحروف مفردة */
-      overflow-wrap: anywhere;    /* اسمح بالالتفاف عند الحاجة */
+      word-break: keep-all;
+      overflow-wrap: anywhere;
       writing-mode: horizontal-tb; text-orientation: mixed;
     }
 
@@ -44,11 +54,13 @@
     .sticky-header{background:#f8f9fa;padding-top:10px}
 
     /* ===== ترويسة لاصقة + ارتفاع أكبر (مطابق لصفحة الإدارة) ===== */
-    #evaluationsTableWrapper thead{position:sticky;top:0;z-index:99;background:#f8f9fa}
+    #evaluationsTableWrapper thead{
+      position:sticky; top:0; z-index:99; background:#f8f9fa;
+    }
     #evaluationsTableWrapper thead th{
       position:sticky; top:0; z-index:100; background:#f8f9fa; color:#000;
       box-shadow:0 1px 0 rgba(0,0,0,.06);
-      padding-block: 1rem;        /* ↑ ارتفاع أكبر للرأس على الشاشة */
+      padding-block: 1rem;           /* ↑ ارتفاع أكبر للرأس على الشاشة */
       line-height:1.25;
     }
 
@@ -80,14 +92,18 @@
     th.col-college, td.col-college{width:9%}
     th.col-committee, td.col-committee{width:20%}            /* اسم اللجنة */
     th.col-date, td.col-date{width:8%}
-    th.col-consistency, td.col-consistency{width:13%}        /* التوافق بين الدعوات والاجتماعات */
-    th.col-notes, td[col-notes]{width:22%}                   /* الملاحظات */
+    th.col-consistency, td.col-consistency{width:13%}        /* التوافق بين الدعوات والاجتماعات (شاشة) */
+    th.col-notes, td[col-notes]{width:22%}                   /* الملاحظات (شاشة) */
     /* الحقول الرقمية – نجعلها أضيق */
     th.col-num, td.col-num{width:5%}
 
+    /* عناصر سطور العنوان القابلة للفصل في الطباعة */
+    .hline{display:inline}
+    .hline + .hline::before{content:" ";} /* مسافة بين الكلمات على الشاشة */
+
     /* ================= الطباعة ================= */
     @media print{
-      @page{ size: A4 landscape; margin: 4mm; } /* هوامش أصغر جدًا */
+      @page{ size: A4 landscape; margin: 4mm; } /* هوامش صغيرة جدًا */
 
       html,body{background:#fff}
       .no-print,.toast-container,.modal{display:none!important}
@@ -97,7 +113,7 @@
       /* تخطيط ثابت ليلتزم بعروض الأعمدة */
       #evaluationsTableWrapper{ table-layout: fixed; width:100%; }
       #evaluationsTableWrapper thead th{
-        padding-block: .6rem;        /* رأس أقل ارتفاعًا في الطباعة */
+        padding-block: .65rem;     /* رأس أقل ارتفاعًا في الطباعة */
         font-size:12px;
       }
       #evaluationsTableWrapper th, #evaluationsTableWrapper td{
@@ -106,10 +122,14 @@
         writing-mode: horizontal-tb !important; text-orientation: mixed !important;
       }
 
-      /* تأكيد نسب الأعمدة في الطباعة */
+      /* تفكيك العناوين إلى أسطر */
+      .hline{display:block}        /* كل جزء بسطر مستقل في الطباعة */
+      .hline + .hline::before{content:""}
+
+      /* ضبط نسب الأعمدة للطباعة (تقليل التوافق والملاحظات قليلاً) */
       th.col-committee, td.col-committee{width:20%}
-      th.col-consistency, td.col-consistency{width:13%}
-      th.col-notes, td[col-notes]{width:22%}
+      th.col-consistency, td.col-consistency{width:11.5%}  /* كانت ~13% */
+      th.col-notes, td[col-notes]{width:20%}               /* كانت ~22% */
       th.col-num, td.col-num{width:5%}
       th.col-college, td.col-college{width:9%}
       th.col-date, td.col-date{width:8%}
@@ -195,18 +215,33 @@
           <th class="col-committee">اسم اللجنة</th>
           <th class="date-col col-date hidden-col">تاريخ التدقيق</th>
 
-          <th class="col-num col-formation_decision">قرار التشكيل</th>
-          <th class="col-num col-work_plan">خطة العمل</th>
-          <th class="col-num col-performance_indicators">مؤشرات الأداء</th>
-          <th class="col-num col-meetings">عدد الاجتماعات</th>
-          <th class="col-consistency">التوافق بين الدعوات والاجتماعات</th>
-          <th class="col-num col-coverage_books">كتب التغطية</th>
+          <th class="col-num col-formation_decision">
+            <span class="hline">قرار</span><span class="hline">التشكيل</span>
+          </th>
+          <th class="col-num col-work_plan">
+            <span class="hline">خطة</span><span class="hline">العمل</span>
+          </th>
+          <th class="col-num col-performance_indicators">
+            <span class="hline">مؤشرات</span><span class="hline">الأداء</span>
+          </th>
+          <th class="col-num col-meetings">
+            <span class="hline">عدد</span><span class="hline">الاجتماعات</span>
+          </th>
+          <th class="col-consistency">
+            <span class="hline">التوافق بين</span><span class="hline">الدعوات</span><span class="hline">والاجتماعات</span>
+          </th>
+          <th class="col-num col-coverage_books">
+            <span class="hline">كتب</span><span class="hline">التغطية</span>
+          </th>
           <th class="col-num col-report1">تقرير إنجاز 1</th>
           <th class="col-num col-report2">تقرير إنجاز 2</th>
           <th class="col-num col-report3">تقرير إنجاز 3</th>
-          <th class="col-num col-statistical_analysis">التحليل الإحصائي</th>
+          <th class="col-num col-statistical_analysis">
+            <span class="hline">التحليل</span><span class="hline">الإحصائي</span>
+          </th>
 
-          <th id="availabilityHeader" class="col-num">درجة التوفر من (9)</th>
+          <!-- سنملؤه ديناميكياً بنفس البنية متعددة الأسطر -->
+          <th id="availabilityHeader" class="col-num"></th>
           <th class="col-notes">الملاحظات</th>
         </tr>
       </thead>
@@ -293,17 +328,28 @@
       }catch{return '—'}
     }
 
+    /* ===== تعيين عنوان "درجة التوفر" متعدد الأسطر مع رقم ديناميكي ===== */
+    function renderAvailabilityHeader(n){
+      const h = document.getElementById('availabilityHeader');
+      h.innerHTML = `
+        <span class="hline">درجة</span>
+        <span class="hline">التوفر</span>
+        <span class="hline">من</span>
+        <span class="hline">(${n})</span>
+      `;
+    }
+
     /* ===== تحديث عنوان التوفر ===== */
     function updateAvailabilityHeader(){
       const n=savedVisibleColumns.length;
-      document.getElementById('availabilityHeader').innerText=`درجة التوفر من (${n})`;
+      renderAvailabilityHeader(n);
     }
 
     /* ===== حساب درجة التوفر للصف ===== */
     function updateAvailability(row){
       let sum=0;
       availabilityFields.forEach(f=>{
-        const cell=row.querySelector(`[data-field="${f}"]`);
+        const cell=row.querySelector(\`[data-field="\${f}"]\`);
         if(cell && !cell.classList.contains('hidden-col')){
           sum += parseFloat(cell.innerText)||0;
         }
@@ -328,11 +374,11 @@
       const countDiv=document.getElementById('committeesCountContainer');
       const lc = lastCollege || 'جميع الكليات';
       if(lc && lc!=='جميع الكليات'){
-        completionDiv.innerHTML = `نسبة الاكتمال لكلية ${lc} = ${pct}%`;
-        countDiv.innerHTML      = `عدد لجان كلية ${lc} = ${rows.length}`;
+        completionDiv.innerHTML = \`نسبة الاكتمال لكلية \${lc} = \${pct}%\`;
+        countDiv.innerHTML      = \`عدد لجان كلية \${lc} = \${rows.length}\`;
       }else{
-        completionDiv.innerHTML = `نسبة الاكتمال لجميع الكليات = ${pct}%`;
-        countDiv.innerHTML      = `عدد لجان جميع الكليات = ${rows.length}`;
+        completionDiv.innerHTML = \`نسبة الاكتمال لجميع الكليات = \${pct}%\`;
+        countDiv.innerHTML      = \`عدد لجان جميع الكليات = \${rows.length}\`;
       }
     }
 
@@ -346,8 +392,8 @@
 
       availabilityFields.forEach(f=>{
         const show = savedVisibleColumns.includes(f);
-        document.querySelectorAll(`[data-field="${f}"]`).forEach(td=>td.classList.toggle('hidden-col', !show));
-        const th=document.querySelector(`.col-${f}`);
+        document.querySelectorAll(\`[data-field="\${f}"]\`).forEach(td=>td.classList.toggle('hidden-col', !show));
+        const th=document.querySelector(\`.col-\${f}\`);
         if(th) th.classList.toggle('hidden-col', !show);
       });
 
@@ -405,12 +451,12 @@
 
         const t = settingsCache.term || '—';
         const ay= settingsCache.academicYear || '—';
-        semesterEl.textContent = `${t} - ${ay}`;
+        semesterEl.textContent = \`\${t} - \${ay}\`;
 
         const visits = Array.isArray(settingsCache.selectedVisits) && settingsCache.selectedVisits.length
           ? settingsCache.selectedVisits.join(' | ')
           : 'لم يتم اختيار أي زيارة';
-        visitsEl.textContent = `الزيارات: ${visits}`;
+        visitsEl.textContent = \`الزيارات: \${visits}\`;
 
         return true;
       }catch(e){
