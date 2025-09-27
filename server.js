@@ -1821,6 +1821,55 @@ if (b.settings) {
     }
   });
 
+// ⬇️ ضع هذا مباشرة بعد مسار PUT وقبل مسار DELETE المفرد
+app.delete('/api/committees-files', authRequired, requireRole('admin'), async (req, res) => {
+  try {
+    // يدعم طريقتين:
+    // 1) ids[] في body لحذف المحدد
+    // 2) فلاتر عبر query لحذف كل ما ينطبق على الفلاتر (عند عدم وجود ids)
+    const ids = Array.isArray(req.body?.ids) ? req.body.ids.filter(Boolean) : [];
+
+    const { college = '', committee_name = '', academicYear = '', term = '' } = req.query || {};
+    const filter = {};
+
+    if (ids.length) {
+      filter._id = { $in: ids };
+    } else {
+      if (college) filter.college = college;
+      if (committee_name) filter.committee_name = committee_name;
+      if (academicYear) filter.academicYear = academicYear;
+      if (term) filter.term = term;
+    }
+
+    // اجلب العناصر قبل الحذف لأغراض الـ Audit
+    const beforeItems = await CommitteeFiles.find(filter).lean();
+    if (!beforeItems.length) {
+      return res.json({ message: 'لا توجد سجلات مطابقة للحذف', deletedCount: 0 });
+    }
+
+    const delRes = await CommitteeFiles.deleteMany({ _id: { $in: beforeItems.map(d => d._id) } });
+
+    // Audit: يمكن تسجيل سجل واحد مُجمّع لتفادي ثقل التكرار
+    await logAudit(req, {
+      model: 'CommitteeFiles',
+      action: 'bulk-delete',
+      docId: undefined,
+      payload: {
+        deletedCount: delRes.deletedCount || 0,
+        byIds: ids.length ? true : false,
+        filters: ids.length ? null : { college, committee_name, academicYear, term },
+        ids: beforeItems.map(it => String(it._id)).slice(0, 200) // لا تُكثر
+      }
+    });
+
+    return res.json({ message: '🗑️ تم الحذف الجماعي', deletedCount: delRes.deletedCount || 0 });
+  } catch (err) {
+    return res.status(500).json({ message: '❌ خطأ في الحذف الجماعي', error: err.message });
+  }
+});
+
+
+  
   app.delete('/api/committees-files/:id', authRequired, requireRole('admin'), async (req, res) => {
     try {
       const before = await CommitteeFiles.findById(req.params.id).lean();
